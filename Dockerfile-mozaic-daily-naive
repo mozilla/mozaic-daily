@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1
+
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Dockerfile reference guide at
+# https://docs.docker.com/go/dockerfile-reference/
+
+# This line specifies your base image.
+# For outerbounds, you should specify the platform as shown, even though that is not recommended online,
+# or else flows run into issues (especially when images are built on Macs and then run on Outerbounds's remote node pool machines).
+FROM --platform=linux/amd64 python:3.10.11-bullseye
+
+# Keeps Python from buffering stdout and stderr to avoid situations where
+# the application crashes without emitting any logs due to buffering.
+ENV PYTHONUNBUFFERED=1
+
+# Puts the dependencies from this requirement list into the Docker environment for installation
+COPY requirements.outerbounds.txt requirements.outerbounds.txt
+
+# Installs aforementioned dependencies
+RUN python -m pip install -r requirements.outerbounds.txt
+
+# Install Mozaic from github
+RUN python -m pip install -e 'git+https://github.com/mozilla/mozaic-forecasting#egg=mozaic'
+
+# Run a quick import test
+RUN python -c "import mozmlops, mozaic; print('Imports OK')"
+

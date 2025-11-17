@@ -1,0 +1,39 @@
+# syntax=docker/dockerfile:1
+# Always build for linux/amd64 since Outerbounds runs on that architecture
+FROM --platform=linux/amd64 python:3.10-slim-bullseye AS build
+
+# Install minimal build tools only in the builder stage
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential git \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /wheels
+
+# Copy requirements first for layer caching
+COPY requirements.outerbounds.txt /tmp/requirements.txt
+
+# Build wheels for everything in your requirements file
+RUN pip wheel --no-cache-dir -r /tmp/requirements.txt
+
+# Build a wheel for mozaic-forecasting directly from GitHub
+# Pin to a specific commit SHA for reproducibility.
+# Replace <COMMIT_SHA> below with an actual SHA from your coworker's repo.
+ARG MOZ_SHA=371d48332d0c309432a4530f2e3e3467240cb16d
+RUN pip wheel --no-cache-dir "git+https://github.com/mozilla/mozaic-forecasting@${MOZ_SHA}#egg=mozaic"
+
+# -------- runtime image --------
+FROM --platform=linux/amd64 python:3.10-slim-bullseye
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app
+
+# Copy and install the prebuilt wheels
+COPY --from=build /wheels /wheels
+COPY requirements.outerbounds.txt /tmp/requirements.txt
+
+
+RUN pip install --no-cache-dir --no-index --find-links=/wheels \
+      -r /tmp/requirements.txt mozaic \
+    && rm -rf /wheels
+
+# Quick import test (optional)
+RUN python -c "import mozmlops, mozaic; print('Imports OK')"
