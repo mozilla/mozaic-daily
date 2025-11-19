@@ -13,11 +13,13 @@ from metaflow import (
     step,
     environment,
     kubernetes,
+    schedule,
 )
 from metaflow.cards import Markdown
 
 #from bq_utilities import *
 
+@schedule(cron='0 7 * * ? *')
 class MozaicDailyFlow(FlowSpec):
     """
     This flow runs standard forecasts every day
