@@ -324,7 +324,7 @@ def format_output_table(
     return df
 
 
-def main() -> pd.DataFrame:
+def main(project: str = "moz-fx-data-bq-data-science") -> pd.DataFrame:
     # Establish constants
 
     # Dates
@@ -345,9 +345,6 @@ def main() -> pd.DataFrame:
     nonmonetized_google = set(["RU", "UA", "TR", "BY", "KZ", "CN"])
     all_markets = top_DAU_markets | top_google_markets | nonmonetized_google
     countries = ", ".join(f"'{i}'" for i in sorted(all_markets))
-
-    # Other
-    project = "moz-fx-data-bq-data-science"
 
 
     # Get data and process it
@@ -380,6 +377,10 @@ def main() -> pd.DataFrame:
     df = format_output_table(df, forecast_start_date, forecast_run_dt)
 
     return df
+
+
+TOKEN = "mozaic_daily test"
+
     
 
 if __name__ == '__main__':
