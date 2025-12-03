@@ -5,8 +5,13 @@
 FROM --platform=linux/amd64 python:3.10.11-bullseye AS builder
 #RUN python -m pip install -e 'git+https://github.com/mozilla/mozaic-forecasting#egg=mozaic'
 RUN mkdir -p /wheel
-RUN pip wheel --no-deps -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting@getters_branch#egg=mozaic' \
-	--wheel-dir /wheel
+#RUN pip wheel --no-deps -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting@getters_branch#egg=mozaic' \
+	#--wheel-dir /wheel
+
+RUN git clone https://github.com/brendanwells-moz/mozaic-forecasting /src && \
+    cd /src && git checkout getters_branch && \
+    git rev-parse HEAD > /wheel/mozaic_commit.txt && \
+    pip wheel --no-deps /src --wheel-dir /wheel
 
 # Runtime stage
 
@@ -29,6 +34,7 @@ RUN python -m pip install --no-cache-dir -r requirements.outerbounds.txt
 
 # Install Mozaic from /wheel with no dependencies (they're bloated)
 COPY --from=builder /wheel /wheel
+RUN mv /wheel/mozaic_commit.txt /mozaic_commit.txt
 RUN pip install --no-cache-dir --no-deps /wheel/* && rm -rf /wheel
 
 # Install actual dependencies

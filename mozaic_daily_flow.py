@@ -19,7 +19,7 @@ from metaflow.cards import Markdown
 
 #from bq_utilities import *
 
-@schedule(cron='* 7 * * ? *')
+@schedule(cron='0 7 * * ? *')
 class MozaicDailyFlow(FlowSpec):
     """
     This flow runs standard forecasts every day
@@ -70,9 +70,11 @@ class MozaicDailyFlow(FlowSpec):
         print('This flow is using docker image: "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.5_amd64"')
 
         import mozaic_daily
+        import pandas as pd
 
         df = mozaic_daily.main(project="moz-fx-mfouterbounds-prod-f98d")
-        print(df.head(10))
+        pd.set_option('display.max_columns', None)	
+        print(df.tail(10))
 
         # from mozaic_daily import TOKEN
         # print(TOKEN)

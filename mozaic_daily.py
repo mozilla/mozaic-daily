@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import json, os, re, subprocess
 from typing import Dict, Any
+from pathlib import Path
 
 
 import mozaic
@@ -32,6 +33,24 @@ def get_git_commit_hash_from_pip(package_name: str = "mozaic") -> str:
     except Exception:
         pass
     return "unknown"
+
+def get_git_commit_hash_from_file(path: str = '/mozaic_commit.txt') -> str:
+    """Return the commit/version string if the file exists, else None."""
+    p = Path(path)
+    if not p.exists():
+        return None
+
+    text = p.read_text().strip()
+    return text or None
+
+def get_git_commit_hash() -> str:
+    pip_version = get_git_commit_hash_from_pip()
+    if pip_version == 'unknown':
+        file_version = get_git_commit_hash_from_file()
+        if file_version:
+            return file_version
+
+    return pip_version 
 
 
 def desktop_query(
@@ -314,7 +333,7 @@ def format_output_table(
     df["country"] = df["country"].where(df["country"] != "None", "ALL")
     df["forecast_start_date"] = start_date
     df["forecast_run_timestamp"] = run_timestamp
-    df["mozaic_hash"] = get_git_commit_hash_from_pip()
+    df["mozaic_hash"] = get_git_commit_hash()
     df["source"] = np.where(df["source"] == "actual", "training", df["source"])
     metric = "DAU"
     df.rename(columns={"value": metric.lower()}, inplace=True)
