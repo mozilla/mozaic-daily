@@ -17,6 +17,8 @@ from metaflow import (
 )
 from metaflow.cards import Markdown
 
+IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.5_amd64"
+
 #from bq_utilities import *
 
 @schedule(cron='0 7 * * ? *')
@@ -48,6 +50,8 @@ class MozaicDailyFlow(FlowSpec):
         print('start')
         self.next(self.load)
 
+
+
     @card
     # You can uncomment and adjust this decorator to scale your flow remotely with a custom image.
     # Note: the image parameter must be a fully qualified registry path otherwise Metaflow will default to
@@ -57,7 +61,7 @@ class MozaicDailyFlow(FlowSpec):
     # scikit-learn (for the specific model called in this demo) and mozmlops (for all your ops tools).
     # Check https://docs.metaflow.org/api/step-decorators/kubernetes for details on @kubernetes decorator
     @kubernetes(
-        image="registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.5_amd64", 
+        image=IMAGE, 
         cpu=1,
         memory=16384
     )
@@ -67,50 +71,38 @@ class MozaicDailyFlow(FlowSpec):
 
         """
         print('load')
-        print('This flow is using docker image: "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.5_amd64"')
+        print(f'This flow is using docker image: "{IMAGE}"')
 
         import mozaic_daily
         import pandas as pd
+        from google.cloud import bigquery
 
-        df = mozaic_daily.main(project="moz-fx-mfouterbounds-prod-f98d")
+        project = "moz-fx-mfouterbounds-prod-f98d"
+
+        df = mozaic_daily.main(project=project)
         pd.set_option('display.max_columns', None)	
         print(df.tail(10))
 
-        # from mozaic_daily import TOKEN
-        # print(TOKEN)
+        write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1'
 
-        # forecast_date_dt = (datetime.datetime.today()-datetime.timedelta(days=3))
-        # forecast_start_date = forecast_date_dt.strftime("%Y-%m-%d")
+        mozaic_daily.validate_df_against_table(
+            df = df,
+            table_id = write_table,
+            project = project
+        )
 
-        # from google.cloud import bigquery
+        client = bigquery.Client(project)
+        job_config = bigquery.LoadJobConfig(
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        )
+        load_job = client.load_table_from_dataframe(df, write_table, job_config=job_config)
+        result = load_job.result()
 
-        # def desktop_query(x, y, table, countries, windows_version_column, where):
-        #     return (f"""
-        #     SELECT {x} AS x,
-        #            IF(country IN ({countries}), country, 'ROW') AS country,
-        #            IFNULL(LOWER({windows_version_column}) LIKE '%windows 10%', FALSE) AS win10,
-        #            IFNULL(LOWER({windows_version_column}) LIKE '%windows 11%', FALSE) AS win11,
-        #            IFNULL(LOWER({windows_version_column}) LIKE '%windows%' AND LOWER({windows_version_column}) NOT LIKE '%windows 10%' AND LOWER({windows_version_column}) NOT LIKE '%windows 11%', FALSE) AS winX,
-        #            SUM({y}) AS y,
-        #      FROM `{table}`
-        #     WHERE {where}
-        #     GROUP BY ALL
-        #     ORDER BY 1, 2 ASC
-        #     LIMIT 20
-        #     """)
-
-        # # Trivial query to test perms
-        # bq = bigquery.Client(project="moz-fx-mfouterbounds-prod-f98d")
-        # df = bq.query(desktop_query(
-        #         x="submission_date",
-        #         y="dau",
-        #         table="moz-fx-data-shared-prod.telemetry.active_users_aggregates",
-        #         countries=', '.join(f"'{i}'" for i in set(['US', 'GB', 'FR', 'AU', 'JP', 'PL'])),
-        #         windows_version_column="os_version",
-        #         where=f'app_name = "Firefox Desktop" AND submission_date >= "{forecast_start_date}"'
-        #     )
-        # ).to_dataframe()
-        # print(df)
+        table = client.get_table(write_table)
+        print(
+            f"Loaded {result.output_rows} rows into {write_table}. "
+            f"Table now has {table.num_rows} rows."
+        )
 
         self.next(self.end)
 
