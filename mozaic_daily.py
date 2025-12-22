@@ -522,7 +522,7 @@ def get_date_constraints() -> Dict[Tuple[str, str], Dict]:
         },
         ("desktop", "New Profiles"): {
             "date_field": "first_seen_date",
-            "start": '2023-06-07',
+            "start": '2023-07-01',
             "excludes": [('2023-07-18', '2023-07-19')],
         },
         ("desktop", "Existing Engagement DAU"): {
