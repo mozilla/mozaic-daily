@@ -9,32 +9,35 @@ import pandas as pd
 import json
 from datetime import datetime
 from functools import reduce
+from typing import Dict, List, Tuple, Optional, Any
+import re
 
 from google.cloud import bigquery
 
-from mozaic_daily import *
+from constants import *
 
 # Allowed value constants
 
-APP_NAMES = [
+APP_NAMES = set([
     'firefox_ios', 'focus_ios', 'fenix_android', 'focus_android', 
-    'other_mobile', 'desktop', 'ALL MOBILE', 'ALL'
-]
+    'desktop', 'ALL MOBILE', 'ALL'
+])
+OPTIONAL_APP_NAMES = set(['other_mobile'])
 
-APP_CATEGORIES = [
+APP_CATEGORIES = set([
     'Mobile', 'Desktop', 'ALL'
-]
+])
 
-OS_VALUES = [
+OS_VALUES = set([
     'win10', 'win11', 'winX', 'other', 'ALL', None
-]
+])
 
 # Validation
 
-def get_bigquery_fields(
+def _get_bigquery_fields(
     project: str, 
     table_id: str
-) -> Dict(str, bigquery.schema.SchemaField):
+) -> Dict[str, bigquery.schema.SchemaField]:
     table = bigquery.Client(project).get_table(table_id)
     bq_fields = {field.name: field for field in table.schema}
 
@@ -42,7 +45,7 @@ def get_bigquery_fields(
 
 def _check_column_presence(
     df: pd.DataFrame, 
-    bq_fields: Dict(str, bigquery.schema.SchemaField)
+    bq_fields: Dict[str, bigquery.schema.SchemaField]
 ) -> None:
     """There should be a column in the output dataframe corresponding to
     every column in the table schema and vice versa."""
@@ -64,7 +67,7 @@ def _check_column_presence(
 
 def _check_column_type(
     df: pd.DataFrame, 
-    bq_fields: Dict(str, bigquery.schema.SchemaField)
+    bq_fields: Dict[str, bigquery.schema.SchemaField]
 ) -> None:
     """The column types in the output table should roughly correspond
     to the columns in the schema. This is intentionally coarse; 
@@ -106,11 +109,14 @@ def _check_column_type(
 
 def _validate_string_column_formats(df: pd.DataFrame) -> None:
     def validate_column(col, validator):
-        mask = df[column].drop_duplicates().map(validator)
+        column_series = df[col].drop_duplicates()
+        mask = column_series.map(validator)
         if not mask.all():
-            bad = df.loc[~mask, column]
+            print(column_series)
+            print(mask)
+            bad = column_series[~mask]
             raise ValueError(
-                f"Validation failed for column '{column}'. "
+                f"Validation failed for column '{col}'. "
                 f"{len(bad)} invalid value(s), examples: {bad.head().tolist()}"
             )
 
@@ -160,11 +166,11 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
     )
 
     validate_column('country', 
-        make_allowed_string_validator(get_constants['countries'])
+        make_allowed_string_validator(get_constants()['validation_countries'])
     )
 
     validate_column('app_name', 
-        make_allowed_string_validator(APP_NAMES)
+        make_allowed_string_validator(APP_NAMES | OPTIONAL_APP_NAMES)
     )
 
     validate_column('app_category', 
@@ -193,11 +199,12 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
     
 def _check_row_counts(df: pd.DataFrame) -> None:
     constants = get_constants()
-    date_constraints = get_date_constraints(constants)
-    training_date_index_for = lambda key: get_training_date_index(key, date_constraints, constants['forecast_start_date'])
+    date_constraints = get_date_constraints()
+    training_date_index_for = lambda key: get_training_date_index(key, constants['forecast_start_date'])
 
     # Overall date checks, training
-    joint_training_index = reduce(lambda a, b: training_date_index_for(a).union(training_date_index_for(b)), get_date_keys())
+    date_keys = get_date_keys()
+    joint_training_index = reduce(lambda a, b: a.union(b), map(training_date_index_for, get_date_keys()))
     training_days = (
         df.loc[df["source"] == "training", 'target_date']
         .unique()
@@ -228,7 +235,7 @@ def _check_row_counts(df: pd.DataFrame) -> None:
     country_count_check = country_count_df['country'] == len(constants['countries'])
     if country_count_check.any():
         raise ValueError(
-            f'Countries incorrect for dates: {list(country_count_df[~country_count_check]['target_date'])}'
+            f'Countries incorrect for dates: {list(country_count_df[~country_count_check]["target_date"])}'
         )
 
     # Segment row checks
@@ -237,7 +244,8 @@ def _check_row_counts(df: pd.DataFrame) -> None:
         missing = [n for n in comparison if n not in present]
         if len(missing) > 0:
             raise ValueError(
-                f'Missing {human_readable_name}: {missing}'
+                f'Missing {human_readable_name}: {missing}\n'
+                f'Values present: {present}'
             )
         extra = [n for n in present if n not in comparison]
         if len(extra) > 0:
@@ -248,7 +256,7 @@ def _check_row_counts(df: pd.DataFrame) -> None:
     row_check('app_name', APP_NAMES, 'app name(s)')
     row_check('app_category', APP_CATEGORIES, 'app category')
     row_check('segment', 
-        [f"\{'os': '{x}'\}" for x in OS_VALUES if x is not None else '{}'],
+        [f'{{"os": "{x}"}}' if x is not None else '{}' for x in OS_VALUES ],
         'segment(s)'
     )
 
@@ -258,26 +266,29 @@ def _check_row_counts(df: pd.DataFrame) -> None:
     max_count_mask = max_count_df.iloc[:,1] > max_rows
     if max_count_mask.any():
         raise ValueError(
-            f'These dates have too many rows: {max_count_df[max_count_mask]['target_date']}'
+            f'These dates have too many rows: {max_count_df[max_count_mask]["target_date"]}'
         )
 
-def validate_null_values(df: pd.DataFrame) -> None:
+def _validate_null_values(df: pd.DataFrame) -> None:
     target_cols = {
         'DAU': 'dau',
         'New Profiles': 'new_profiles',
         'Existing Engagement DAU': 'existing_engagement_dau',
         'Existing Engagement MAU': 'existing_engagement_mau'
     }
+    max_columns = pd.get_option('display.max_columns')
+    pd.set_option('display.max_columns', None)
 
     for key in get_date_keys():
-        index = get_training_date_index(key).dt.strftime('%Y-%m-%d')
+        index = get_training_date_index(key).strftime('%Y-%m-%d')
         test_col_name = f'{key[0]}_{key[1]}_expected'
         expected_df = pd.Series(True, index=index, name=test_col_name).to_frame().reset_index()
 
         target_col = target_cols[key[1]]
 
         validation_df = (
-            df[(df['app_category'] == key[0]) & (df['source'] == 'training')]
+            df[(df['app_category'] == key[0].capitalize()) & (df['source'] == 'training') & (df[target_col].notna())]
+            .groupby('target_date')[target_col].sum().reset_index()
             .merge(
                 expected_df,
                 left_on = 'target_date',
@@ -302,8 +313,9 @@ def validate_null_values(df: pd.DataFrame) -> None:
                 {extra.head(5)}
                 """
             )
+    pd.set_option('display.max_columns', max_columns)
 
-def validate_duplicate_rows(df: pd.DataFrame) -> None:
+def _validate_duplicate_rows(df: pd.DataFrame) -> None:
     key_cols = [x for x in df.columns if x not in ('dau', 'new_profiles', 'existing_engagement_dau', 'existing_engagement_mau')]
     duplicates = df[df.duplicated(subset=key_cols, keep=False)]
 
@@ -315,38 +327,19 @@ def validate_duplicate_rows(df: pd.DataFrame) -> None:
             """
         )
 
-
-def validate_df_against_table(
-    df: pd.DataFrame,
-    table_id: str,
-    project: str,
-
-) -> None:
-    """
-    Utility method for the flow
-
-    Validate that:
-      - DataFrame columns match BigQuery table columns (no missing/extra).
-      - Pandas dtypes are roughly compatible with BigQuery field types.
-    Raises on problems.
-    """
-
-    # --- 1. Column presence checks ---
-    
-
-    # --- 2. Rough dtype ↔ BigQuery type compatibility ---
-    
-
-    # --- 3. Check for rows ---
-    # We can coarsly check that there's a least one row per target date. (There should be more with various countries and segments)
-    
-
-
-
-    # If we get here, validation passed
-    return
-
-
 # Validation entrypoint
+def validate_output_dataframe(df: pd.DataFrame):
+    constants = get_constants()
 
-def validate_output_dataframe(df: pd.DataFrame)
+    bq_fields = _get_bigquery_fields(constants['default_project'], constants['default_table'])
+    _check_column_presence(df, bq_fields)
+    _check_column_type(df, bq_fields)
+    _validate_string_column_formats(df)
+    _check_row_counts(df)
+    _validate_null_values(df)
+    _validate_duplicate_rows(df)
+
+
+if __name__ == '__main__':
+    df = pd.read_parquet(get_constants()['forecast_checkpoint_filename'])
+    validate_output_dataframe(df)

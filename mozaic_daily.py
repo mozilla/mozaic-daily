@@ -14,7 +14,7 @@ import mozaic
 import prophet
 from mozaic.models import desktop_forecast_model, mobile_forecast_model
 from mozaic import TileSet, Tile, Mozaic, populate_tiles, curate_mozaics, mozaic_divide
-
+from constants import *
 
 from google.cloud import bigquery
 
@@ -86,7 +86,7 @@ def mobile_query(
     return f"""
     SELECT {x} AS x,
            IF(country IN ({countries}), country, 'ROW') AS country,
-           IFNULL(LOWER({app_name_column}) LIKE '%fenix%', FALSE) AS fenix,
+           IFNULL(LOWER({app_name_column}) LIKE '%fenix%', FALSE) AS fenix_android,
            IFNULL(LOWER({app_name_column}) LIKE '%firefox ios%', FALSE) AS firefox_ios,
            IFNULL(LOWER({app_name_column}) LIKE '%focus android%', FALSE) AS focus_android,
            IFNULL(LOWER({app_name_column}) LIKE '%focus ios%', FALSE) AS focus_ios,
@@ -98,7 +98,6 @@ def mobile_query(
     """
 
 def get_queries(
-    constraints: Dict[Tuple[str, str], Dict], 
     countries: str
 ) -> Dict[str, Dict[str, str]]:
     queries = {"desktop": {}, "mobile": {}}
@@ -108,7 +107,7 @@ def get_queries(
         countries=countries,
         table="moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates",
         windows_version_column="os_version",
-        where=f'app_name = "Firefox Desktop" AND {get_sql_time_clause(("desktop", "DAU"), constraints)}',
+        where=f'app_name = "Firefox Desktop" AND {get_sql_time_clause(("desktop", "DAU"))}',
     )
 
     queries["desktop"]["New Profiles"] = desktop_query(
@@ -117,7 +116,7 @@ def get_queries(
         countries=countries,
         table="moz-fx-data-shared-prod.firefox_desktop.new_profiles_aggregates",
         windows_version_column="windows_version",
-        where=f'is_desktop AND {get_sql_time_clause(("desktop", "New Profiles"), constraints)}',
+        where=f'is_desktop AND {get_sql_time_clause(("desktop", "New Profiles"))}',
     )
 
     queries["desktop"]["Existing Engagement DAU"] = desktop_query(
@@ -126,7 +125,7 @@ def get_queries(
         countries=countries,
         table="moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates",
         windows_version_column="normalized_os_version",
-        where=f'is_desktop AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("desktop", "Existing Engagement DAU"), constraints)}',
+        where=f'is_desktop AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("desktop", "Existing Engagement DAU"))}',
     )
 
     queries["desktop"]["Existing Engagement MAU"] = desktop_query(
@@ -135,7 +134,7 @@ def get_queries(
         countries=countries,
         table="moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates",
         windows_version_column="normalized_os_version",
-        where=f'is_desktop AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("desktop", "Existing Engagement MAU"), constraints)}',
+        where=f'is_desktop AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("desktop", "Existing Engagement MAU"))}',
     )
 
     # Mobile
@@ -145,7 +144,7 @@ def get_queries(
         countries=countries,
         table="moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates",
         app_name_column="app_name",
-        where=f'app_name IN ("Fenix", "Firefox iOS", "Focus Android", "Focus iOS") AND {get_sql_time_clause(("mobile", "DAU"), constraints)}',
+        where=f'app_name IN ("Fenix", "Firefox iOS", "Focus Android", "Focus iOS") AND {get_sql_time_clause(("mobile", "DAU"))}',
     )
 
     queries["mobile"]["New Profiles"] = mobile_query(
@@ -154,7 +153,7 @@ def get_queries(
         countries=countries,
         table="moz-fx-data-shared-prod.telemetry.mobile_new_profiles",
         app_name_column="app_name",
-        where=f'is_mobile AND {get_sql_time_clause(("mobile", "New Profiles"), constraints)}',
+        where=f'is_mobile AND {get_sql_time_clause(("mobile", "New Profiles"))}',
     )
 
     queries["mobile"]["Existing Engagement DAU"] = mobile_query(
@@ -163,7 +162,7 @@ def get_queries(
         countries=countries,
         table="moz-fx-data-shared-prod.telemetry.mobile_engagement",
         app_name_column="app_name",
-        where=f'is_mobile AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("mobile", "Existing Engagement DAU"), constraints)}',
+        where=f'is_mobile AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("mobile", "Existing Engagement DAU"))}',
     )
 
     queries["mobile"]["Existing Engagement MAU"] = mobile_query(
@@ -172,7 +171,7 @@ def get_queries(
         countries=countries,
         table="moz-fx-data-shared-prod.telemetry.mobile_engagement",
         app_name_column="app_name",
-        where=f'is_mobile AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("mobile", "Existing Engagement MAU"), constraints)}',
+        where=f'is_mobile AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("mobile", "Existing Engagement MAU"))}',
     )
     return queries
 
@@ -311,7 +310,7 @@ def combine_tables(table_dict: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
 
 def update_desktop_format(df: pd.DataFrame) -> None:
-    df["app_name"] = "Desktop"
+    df["app_name"] = "desktop"
     df["app_category"] = "Desktop"
     df["segment"] = df["population"].apply(
         lambda x: json.dumps({"os": "ALL" if x == "None" else x})
@@ -403,146 +402,21 @@ def format_output_table(
     return df
 
 
-def get_constants() -> Dict[str, str]:
-    constants = {}
-
-    # Dates
-    forecast_run_dt = datetime.now()
-    constants['forecast_run_dt'] = forecast_run_dt
-    constants['forecast_start_date'] = (forecast_run_dt - timedelta(days=1)).strftime("%Y-%m-%d")
-    constants['forecast_end_date'] = datetime(forecast_run_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
-
-    # Markets
-    top_DAU_markets = set(
-        ["US", "BR", "CA", "MX", "AR", "IN", "ID", "JP", "IR", "CN", "DE", "FR", "PL", "RU", "IT"]
-    )
-    top_google_markets = set(
-        ["US", "DE", "FR", "GB", "PL", "CA", "CH", "IT", "AU", "NL", "ES", "JP", "AT"]
-    )
-    nonmonetized_google = set(["RU", "UA", "TR", "BY", "KZ", "CN"])
-    constants['countries'] = top_DAU_markets | top_google_markets | nonmonetized_google
-    constants['country_string'] = ", ".join(f"'{i}'" for i in sorted(constants['countries']))
-
-    return constants
-
-def get_date_constraints() -> Dict[Tuple[str, str], Dict]:
-    return {
-        ("desktop", "DAU"): {
-            "date_field": "submission_date",
-            "start": '2023-04-17',
-            "excludes": [],
-        },
-        ("desktop", "New Profiles"): {
-            "date_field": "first_seen_date",
-            "start": '2023-07-01',
-            "excludes": [('2023-07-18', '2023-07-19')],
-        },
-        ("desktop", "Existing Engagement DAU"): {
-            "date_field": "submission_date",
-            "start": '2023-06-07',
-            "excludes": [],
-        },
-        ("desktop", "Existing Engagement MAU"): {
-            "date_field": "submission_date",
-            "start": '2023-06-07',
-            "excludes": [],
-        },
-        ("mobile", "DAU"): {
-            "date_field": "submission_date",
-            "start": '2020-12-31',
-            "excludes": [],
-        },
-        ("mobile", "New Profiles"): {
-            "date_field": "first_seen_date",
-            "start": "2023-07-01",
-            "excludes": [('2023-07-18', '2023-07-19')],
-        },
-        ("mobile", "Existing Engagement DAU"): {
-            "date_field": "submission_date",
-            "start": "2023-07-01",
-            "excludes": [],
-        },
-        ("mobile", "Existing Engagement MAU"): {
-            "date_field": "submission_date",
-            "start": "2023-07-01",
-            "excludes": [],
-        },
-    }
-
-def get_date_keys():
-    return get_date_constraints.keys()
-
-
-
-def get_sql_time_clause(
-    key: Tuple[str, str],
-    constraints: Dict[Tuple[str, str], Dict],
-    quote: str = '"',
-) -> str:
-    if key not in constraints:
-        raise KeyError(f"Unknown key: {key}")
-
-    entry = constraints[key]
-    field = entry["date_field"]
-    start = entry["start"]
-    excludes: List[Tuple[str, str]] = entry.get("excludes", [])
-
-    parts = [f'{field} >= {quote}{start}{quote}']
-    for ex_start, ex_end in excludes:
-        parts.append(
-            f'{field} NOT BETWEEN {quote}{ex_start}{quote} AND {quote}{ex_end}{quote}'
-        )
-
-    return " AND ".join(parts)
-
-def get_training_date_index(
-    key: Tuple[str, str],
-    constraints: Dict[Tuple[str, str], Dict],
-    end: Optional[str] = None,
-) -> pd.DatetimeIndex:
-    if key not in constraints:
-        raise KeyError(f"Unknown key: {key}")
-
-    entry = constraints[key]
-    start = pd.to_datetime(entry["start"]).normalize()
-    end_dt = pd.to_datetime(end).normalize() if end else pd.Timestamp.now().normalize()
-
-    full = pd.date_range(start=start, end=end_dt, freq='D')
-
-    excludes = entry.get("excludes", [])
-    if not excludes:
-        return full
-
-    mask = pd.Series(True, index=full)
-
-    for ex_start, ex_end in excludes:
-        ex_s = pd.to_datetime(ex_start).normalize()
-        ex_e = pd.to_datetime(ex_end).normalize()
-        mask.loc[(full >= ex_s) & (full <= ex_e)] = False
-
-    return full[mask.values]
-
-def get_prediction_date_index(start: str, end: str) -> pd.DatetimeIndex:
-    start_dt = pd.to_datetime(end).normalize()
-    end_dt = pd.to_datetime(end).normalize()
-
-    full = pd.date_range(start=start_dt, end=end_dt, freq='D')
-
-def main(project: str = "moz-fx-data-bq-data-science") -> pd.DataFrame:
+def main(project: Optional[str] = None) -> pd.DataFrame:
     # Establish constants
     constants = get_constants()
-    date_constraints = get_date_constraints()
+    if not project:
+        project = constants['default_project']
 
     # Get the data
     # This method does internal file checkpointing
     datasets = get_aggregate_data(get_queries(
-            date_constraints,
             constants['country_string']
             ),
             project
         )
 
-    checkpoint_filename = 'mozaic_parts.forecast.parquet'
+    checkpoint_filename = constants['forecast_checkpoint_filename']
     df = None
     if os.path.exists(checkpoint_filename):
         df = pd.read_parquet(checkpoint_filename)
@@ -562,6 +436,7 @@ def main(project: str = "moz-fx-data-bq-data-science") -> pd.DataFrame:
                 constants['forecast_end_date']
             )
         )
+        print('\n\nDone with forecasts')
 
         # Format data
         update_desktop_format(df_desktop)
