@@ -176,7 +176,11 @@ def get_queries(
     return queries
 
 # Get data
-def get_aggregate_data(queries: Dict[str, Dict[str, str]], project: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+def get_aggregate_data(
+    queries: Dict[str, Dict[str, str]], 
+    project: str,
+    checkpoints: Optional[bool] = False,
+) -> Dict[str, Dict[str, pd.DataFrame]]:
     datasets = {"desktop": {}, "mobile": {}}
 
     make_filename = lambda platform, metric: f'mozaic_parts.raw.{platform}.{metric}.parquet'
@@ -185,28 +189,30 @@ def get_aggregate_data(queries: Dict[str, Dict[str, str]], project: str) -> Dict
     for metric, query in queries["desktop"].items():
         checkpoint_filename = make_filename("desktop", metric)
         df = None
-        if os.path.exists(checkpoint_filename):
+        if checkpoints and os.path.exists(checkpoint_filename):
             print(f'Desktop {metric} exists, loading')
             df = pd.read_parquet(checkpoint_filename)
-            datasets['desktop'][metric] = df
         else:
             print(f"Querying Desktop {metric}")
             print (query)
-            datasets["desktop"][metric] = bigquery.Client(project).query(query).to_dataframe()
-            datasets["desktop"][metric].to_parquet(checkpoint_filename)
+            df = bigquery.Client(project).query(query).to_dataframe()
+            if checkpoints:
+                df.to_parquet(checkpoint_filename)
+        datasets['desktop'][metric] = df        
 
     for metric, query in queries["mobile"].items():
         checkpoint_filename = make_filename("mobile", metric)
         df = None
-        if os.path.exists(checkpoint_filename):
+        if checkpoints and os.path.exists(checkpoint_filename):
             print(f'Mobile {metric} exists, loading')
             df = pd.read_parquet(checkpoint_filename)
-            datasets['mobile'][metric] = df
         else:
             print(f"Querying Mobile {metric}")
             print(query)
-            datasets["mobile"][metric] = bigquery.Client(project).query(query).to_dataframe()
-            datasets["mobile"][metric].to_parquet(checkpoint_filename)
+            df = bigquery.Client(project).query(query).to_dataframe()
+            if checkpoints:
+                df.to_parquet(checkpoint_filename)
+        datasets['mobile'][metric] = df
 
     return datasets
 
@@ -215,7 +221,7 @@ def get_forecast_dfs(
     datasets: Dict[str, pd.DataFrame],
     forecast_model: Any,
     forecast_start_date: str,
-    forecast_end_date: str,
+    forecast_end_date: str
 ) -> Dict[str, pd.DataFrame]:
     tileset = mozaic.TileSet()
 
@@ -402,7 +408,10 @@ def format_output_table(
     return df
 
 
-def main(project: Optional[str] = None) -> pd.DataFrame:
+def main(
+    project: Optional[str] = None,
+    checkpoints: Optional[bool] = False
+) -> pd.DataFrame:
     # Establish constants
     constants = get_constants()
     if not project:
@@ -410,15 +419,16 @@ def main(project: Optional[str] = None) -> pd.DataFrame:
 
     # Get the data
     # This method does internal file checkpointing
-    datasets = get_aggregate_data(get_queries(
-            constants['country_string']
-            ),
-            project
-        )
+    datasets = get_aggregate_data(
+        get_queries(constants['country_string']),
+        project,
+        checkpoints = checkpoints
+    )
 
     checkpoint_filename = constants['forecast_checkpoint_filename']
     df = None
-    if os.path.exists(checkpoint_filename):
+    if checkpoints and os.path.exists(checkpoint_filename):
+        print('Forecast already generated. Loading existing data.')
         df = pd.read_parquet(checkpoint_filename)
     else:
         # Process the data
@@ -444,12 +454,12 @@ def main(project: Optional[str] = None) -> pd.DataFrame:
 
         df = add_desktop_and_mobile_rows(pd.concat([df_desktop, df_mobile]))
         df = format_output_table(df, constants['forecast_start_date'], constants['forecast_run_dt'])
-
-        df.to_parquet(checkpoint_filename)
+        if checkpoints:
+            df.to_parquet(checkpoint_filename)
         
 
     return df
     
 
 if __name__ == '__main__':
-    main()
+    main(checkpoints=True)

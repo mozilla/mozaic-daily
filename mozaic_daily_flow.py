@@ -17,7 +17,7 @@ from metaflow import (
 )
 from metaflow.cards import Markdown
 
-IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.5_amd64"
+IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.6_amd64"
 
 #from bq_utilities import *
 
@@ -60,11 +60,11 @@ class MozaicDailyFlow(FlowSpec):
     # which has both the dependencies you need run this template flow:
     # scikit-learn (for the specific model called in this demo) and mozmlops (for all your ops tools).
     # Check https://docs.metaflow.org/api/step-decorators/kubernetes for details on @kubernetes decorator
-    @kubernetes(
-        image=IMAGE, 
-        cpu=1,
-        memory=16384
-    )
+    # @kubernetes(
+    #     image=IMAGE, 
+    #     cpu=1,
+    #     memory=16384
+    # )
     @step
     def load(self):
         """
@@ -74,22 +74,22 @@ class MozaicDailyFlow(FlowSpec):
         print(f'This flow is using docker image: "{IMAGE}"')
 
         import mozaic_daily
+        from mozaic_daily_validation import validate_output_dataframe
         import pandas as pd
         from google.cloud import bigquery
 
         project = "moz-fx-mfouterbounds-prod-f98d"
 
+        print ('Generating forecasts')
         df = mozaic_daily.main(project=project)
         pd.set_option('display.max_columns', None)	
         print(df.tail(10))
 
-        write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1'
+        print('Done\n\nValidating forecasts')
+        validate_output_dataframe(df)
 
-        mozaic_daily.validate_df_against_table(
-            df = df,
-            table_id = write_table,
-            project = project
-        )
+        print('Done\n\nSaving forecasts')
+        write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1'
 
         client = bigquery.Client(project)
         job_config = bigquery.LoadJobConfig(
@@ -100,6 +100,7 @@ class MozaicDailyFlow(FlowSpec):
 
         table = client.get_table(write_table)
         print(
+            "Done.\n"
             f"Loaded {result.output_rows} rows into {write_table}. "
             f"Table now has {table.num_rows} rows."
         )

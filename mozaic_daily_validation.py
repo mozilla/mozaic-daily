@@ -38,6 +38,7 @@ def _get_bigquery_fields(
     project: str, 
     table_id: str
 ) -> Dict[str, bigquery.schema.SchemaField]:
+    print('\t Validating fields')
     table = bigquery.Client(project).get_table(table_id)
     bq_fields = {field.name: field for field in table.schema}
 
@@ -49,6 +50,7 @@ def _check_column_presence(
 ) -> None:
     """There should be a column in the output dataframe corresponding to
     every column in the table schema and vice versa."""
+    print('\t Validating column presence')
     df_cols = set(df.columns)
     bq_cols = set(bq_fields.keys())
 
@@ -72,6 +74,7 @@ def _check_column_type(
     """The column types in the output table should roughly correspond
     to the columns in the schema. This is intentionally coarse; 
     BigQuery does some coercion, but we want to catch obvious mismatches."""
+    print('\t Validating column types')
 
     pandas_to_bq_rough = {
         "int64": {"INTEGER", "INT64", "NUMERIC"},
@@ -108,6 +111,7 @@ def _check_column_type(
             )
 
 def _validate_string_column_formats(df: pd.DataFrame) -> None:
+    print('\t Validating string column formats')
     def validate_column(col, validator):
         column_series = df[col].drop_duplicates()
         mask = column_series.map(validator)
@@ -198,6 +202,7 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
     df['segment'].apply(check_json_os)
     
 def _check_row_counts(df: pd.DataFrame) -> None:
+    print('\t Validating row counts')
     constants = get_constants()
     date_constraints = get_date_constraints()
     training_date_index_for = lambda key: get_training_date_index(key, constants['forecast_start_date'])
@@ -270,6 +275,7 @@ def _check_row_counts(df: pd.DataFrame) -> None:
         )
 
 def _validate_null_values(df: pd.DataFrame) -> None:
+    print('\t Validating null values')
     target_cols = {
         'DAU': 'dau',
         'New Profiles': 'new_profiles',
@@ -316,6 +322,7 @@ def _validate_null_values(df: pd.DataFrame) -> None:
     pd.set_option('display.max_columns', max_columns)
 
 def _validate_duplicate_rows(df: pd.DataFrame) -> None:
+    print('\t Validating duplicate rows')
     key_cols = [x for x in df.columns if x not in ('dau', 'new_profiles', 'existing_engagement_dau', 'existing_engagement_mau')]
     duplicates = df[df.duplicated(subset=key_cols, keep=False)]
 

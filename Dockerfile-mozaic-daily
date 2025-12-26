@@ -54,7 +54,7 @@ RUN pip uninstall -y matplotlib fonttools wandb botocore kubernetes
 RUN rm -rf /root/.cache/pip
 
 # Additional code files
-COPY mozaic_daily.py /
+COPY mozaic_daily.py mozaic_daily_validation.py constants.py /
 
 # Run a quick import test
 RUN python -c "import mozmlops; print('mozmlops import OK')"
