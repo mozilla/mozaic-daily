@@ -60,11 +60,11 @@ class MozaicDailyFlow(FlowSpec):
     # which has both the dependencies you need run this template flow:
     # scikit-learn (for the specific model called in this demo) and mozmlops (for all your ops tools).
     # Check https://docs.metaflow.org/api/step-decorators/kubernetes for details on @kubernetes decorator
-    # @kubernetes(
-    #     image=IMAGE, 
-    #     cpu=1,
-    #     memory=16384
-    # )
+    @kubernetes(
+        image=IMAGE, 
+        cpu=1,
+        memory=16384
+    )
     @step
     def load(self):
         """

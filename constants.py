@@ -64,17 +64,17 @@ def get_date_constraints() -> Dict[Tuple[str, str], Dict]:
         },
         ("mobile", "New Profiles"): {
             "date_field": "first_seen_date",
-            "start": "2023-07-01",
+            "start": '2023-07-01',
             "excludes": [('2023-07-18', '2023-07-19')],
         },
         ("mobile", "Existing Engagement DAU"): {
             "date_field": "submission_date",
-            "start": "2023-07-01",
+            "start": '2023-07-01',
             "excludes": [],
         },
         ("mobile", "Existing Engagement MAU"): {
             "date_field": "submission_date",
-            "start": "2023-07-01",
+            "start": '2023-07-01',
             "excludes": [],
         },
     }
