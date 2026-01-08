@@ -14,6 +14,10 @@ from typing import Dict, List, Tuple, Optional, Any
 
 import pandas as pd
 
+# Testing mode constants
+TESTING_MODE_ENABLE_STRING = 'ENABLE_TESTING_MODE'
+TESTING_MODE_CHECKPOINT_FILENAME = 'mozaic_parts.forecast.TESTING.parquet'
+
 def get_constants() -> Dict[str, str]:
     constants = {}
 

@@ -64,7 +64,8 @@ def mobile_query(
     """
 
 def get_queries(
-    countries: str
+    countries: str,
+    testing_mode: bool = False
 ) -> Dict[str, Dict[str, str]]:
     queries = {"desktop": {}, "mobile": {}}
     queries["desktop"]["DAU"] = desktop_query(
@@ -75,6 +76,9 @@ def get_queries(
         windows_version_column="os_version",
         where=f'app_name = "Firefox Desktop" AND {get_sql_time_clause(("desktop", "DAU"))}',
     )
+
+    if testing_mode:
+        return queries  # Early return with only desktop/DAU
 
     queries["desktop"]["New Profiles"] = desktop_query(
         x="first_seen_date",
