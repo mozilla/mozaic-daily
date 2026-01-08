@@ -18,18 +18,19 @@ mozaic-daily/
 │       ├── tables.py          # Table formatting/manipulation
 │       ├── validation.py      # Output validation
 │       └── main.py            # Main entry point
+├── scripts/                   # Helper scripts
+│   ├── run_main.py            # Run forecasting pipeline
+│   ├── run_validation.py      # Run validation on checkpoint
+│   └── test_local_docker.sh   # Test Docker builds
+├── docker/                    # Docker build files
+│   ├── Dockerfile             # Docker image definition
+│   ├── build_and_push.sh      # Docker build script
+│   └── requirements.outerbounds.txt  # Python dependencies for Docker
 ├── tests/                     # Test suite
-├── mozaic_daily.py            # Compatibility shim (temporary)
-├── mozaic_daily_validation.py # Compatibility shim (temporary)
-├── constants.py               # Compatibility shim (temporary)
 ├── mozaic_daily_flow.py       # Metaflow pipeline definition
-├── Dockerfile-mozaic-daily    # Docker build configuration
-├── build_and_push.sh          # Docker build script
 ├── pyproject.toml             # Package metadata
-└── CLAUDE.md                  # Development guide
-
-Note: Compatibility shims will be removed in a future update once the
-transition to the package structure is complete.
+├── CLAUDE.md                  # Development guide
+└── README.md                  # This file
 ```
 
 ## Setup

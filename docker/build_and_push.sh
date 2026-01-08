@@ -9,9 +9,10 @@ set -o pipefail
 
 ### --- Config ---------------------------------------------------------------
 
-DOCKERFILE="Dockerfile-mozaic-daily"
+DOCKERFILE="Dockerfile"
 IMAGE_BASE="mozaic-daily"
 REMOTE_USERNAME="brwells78094"
+BUILD_CONTEXT=".."  # Build context is parent directory
 
 ### --- Helpers --------------------------------------------------------------
 
@@ -102,8 +103,8 @@ info "Dockerfile:      $DOCKERFILE"
 
 if [[ "$MODE" == "local" ]]; then
   info "Performing local build (arm64)."
-  info "Running: docker build $NO_CACHE_FLAG -t \"$IMAGE_NAME\" -f \"$DOCKERFILE\" ."
-  docker build $NO_CACHE_FLAG -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+  info "Running: docker build $NO_CACHE_FLAG -t \"$IMAGE_NAME\" -f \"$DOCKERFILE\" \"$BUILD_CONTEXT\""
+  docker build $NO_CACHE_FLAG -t "$IMAGE_NAME" -f "$DOCKERFILE" "$BUILD_CONTEXT"
   info "Local build complete: $IMAGE_NAME"
 else
   # Remote build/push using buildx (amd64)
@@ -113,11 +114,11 @@ else
 
   FULL_REMOTE_REF="${REMOTE_USERNAME}/${IMAGE_NAME}"
   info "Performing remote buildx build (amd64) and pushing."
-  info "Running: docker buildx build $NO_CACHE_FLAG --platform=linux/amd64 -t \"$FULL_REMOTE_REF\" -f \"$DOCKERFILE\" --push ."
+  info "Running: docker buildx build $NO_CACHE_FLAG --platform=linux/amd64 -t \"$FULL_REMOTE_REF\" -f \"$DOCKERFILE\" --push \"$BUILD_CONTEXT\""
   docker buildx build $NO_CACHE_FLAG \
     --platform=linux/amd64 \
     -t "$FULL_REMOTE_REF" \
     -f "$DOCKERFILE" \
-    --push .
+    --push "$BUILD_CONTEXT"
   info "Remote build and push complete: $FULL_REMOTE_REF"
 fi

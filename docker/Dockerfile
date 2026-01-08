@@ -53,12 +53,11 @@ RUN pip uninstall -y matplotlib fonttools wandb botocore kubernetes
 
 RUN rm -rf /root/.cache/pip
 
-# Copy both package and compatibility shims
-COPY src/ /src/
-COPY mozaic_daily.py mozaic_daily_validation.py constants.py /
+# Copy package source code
+COPY ../src/ /src/
 
 # Copy test script for easy Docker validation
-COPY test_docker.py /test_docker.py
+COPY ../test_docker.py /test_docker.py
 
 # Run a quick import test
 RUN python -c "import mozmlops; print('mozmlops import OK')"

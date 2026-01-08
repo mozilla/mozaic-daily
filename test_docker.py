@@ -3,9 +3,12 @@
 import sys
 import pandas as pd
 
-# Import from existing files (works before and after refactoring via shims)
+# Add package to path
+sys.path.insert(0, '/src')
+
+# Import from mozaic_daily package
 from mozaic_daily import main
-from mozaic_daily_validation import validate_output_dataframe
+from mozaic_daily.validation import validate_output_dataframe
 
 def test_docker_image():
     """Run main function and validate output."""

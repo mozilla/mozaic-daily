@@ -75,15 +75,17 @@ class MozaicDailyFlow(FlowSpec):
         import os
         print(f'We are using code hash: {open("/mozaic_commit.txt").read().rstrip()}')
 
-        import mozaic_daily
-        from mozaic_daily_validation import validate_output_dataframe
+        import sys
+        sys.path.insert(0, '/src')
+        from mozaic_daily import main
+        from mozaic_daily.validation import validate_output_dataframe
         import pandas as pd
         from google.cloud import bigquery
 
         project = "moz-fx-mfouterbounds-prod-f98d"
 
         print ('Generating forecasts')
-        df = mozaic_daily.main(project=project)
+        df = main(project=project)
         pd.set_option('display.max_columns', None)	
         print(df.tail(10))
 
