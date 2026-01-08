@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Metaflow
+.metaflow/
+
+# Project-specific
+data-tmp/
+*.parquet
+
+# OS
+.DS_Store
