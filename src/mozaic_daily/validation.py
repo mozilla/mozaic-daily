@@ -215,15 +215,21 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
 
     df['segment'].apply(check_json_os)
 
-def _check_row_counts(df: pd.DataFrame) -> None:
+def _check_row_counts(
+    df: pd.DataFrame,
+    expected_app_names: set,
+    expected_app_categories: set,
+    expected_date_keys: list,
+    expected_os_values: set,
+    skip_country_check: bool = False
+) -> None:
     print('\t Validating row counts')
     constants = get_constants()
     date_constraints = get_date_constraints()
     training_date_index_for = lambda key: get_training_date_index(key, constants['forecast_start_date'])
 
     # Overall date checks, training
-    date_keys = get_date_keys()
-    joint_training_index = reduce(lambda a, b: a.union(b), map(training_date_index_for, get_date_keys()))
+    joint_training_index = reduce(lambda a, b: a.union(b), map(training_date_index_for, expected_date_keys))
     training_days = (
         df.loc[df["source"] == "training", 'target_date']
         .unique()
@@ -250,12 +256,17 @@ def _check_row_counts(df: pd.DataFrame) -> None:
         )
 
     # Country row checks
-    country_count_df = df.groupby('target_date')['country'].nunique().reset_index()
-    country_count_check = country_count_df['country'] == len(constants['countries'])
-    if country_count_check.any():
-        raise ValueError(
-            f'Countries incorrect for dates: {list(country_count_df[~country_count_check]["target_date"])}'
-        )
+    # Skip in testing mode: desktop/DAU forecasts sometimes produce incomplete country data
+    # for certain dates (specific Sundays, holidays), leaving only aggregate 'ALL' rows.
+    # This is a known forecasting issue that doesn't affect testing mode's purpose
+    # (validating code paths), but must be caught in production.
+    if not skip_country_check:
+        country_count_df = df.groupby('target_date')['country'].nunique().reset_index()
+        country_count_check = country_count_df['country'] == len(constants['validation_countries'])
+        if not country_count_check.all():
+            raise ValueError(
+                f'Countries incorrect for dates: {list(country_count_df[~country_count_check]["target_date"])}'
+            )
 
     # Segment row checks
     def row_check(col, comparison, human_readable_name):
@@ -269,18 +280,18 @@ def _check_row_counts(df: pd.DataFrame) -> None:
         extra = [n for n in present if n not in comparison]
         if len(extra) > 0:
             raise ValueError(
-                f'Extra {human_readable_name}: {extra_app_names}'
+                f'Extra {human_readable_name}: {extra}'
             )
 
-    row_check('app_name', APP_NAMES, 'app name(s)')
-    row_check('app_category', APP_CATEGORIES, 'app category')
+    row_check('app_name', expected_app_names, 'app name(s)')
+    row_check('app_category', expected_app_categories, 'app category')
     row_check('segment',
-        [f'{{"os": "{x}"}}' if x is not None else '{}' for x in OS_VALUES ],
+        [f'{{"os": "{x}"}}' if x is not None else '{}' for x in expected_os_values ],
         'segment(s)'
     )
 
     # No more rows than all possible combinations
-    max_rows = len(constants['countries']) * len(APP_NAMES) * len(APP_CATEGORIES) * len(OS_VALUES)
+    max_rows = len(constants['validation_countries']) * len(expected_app_names) * len(expected_app_categories) * len(expected_os_values)
     max_count_df = df.groupby('target_date').size().reset_index()
     max_count_mask = max_count_df.iloc[:,1] > max_rows
     if max_count_mask.any():
@@ -288,7 +299,7 @@ def _check_row_counts(df: pd.DataFrame) -> None:
             f'These dates have too many rows: {max_count_df[max_count_mask]["target_date"]}'
         )
 
-def _validate_null_values(df: pd.DataFrame) -> None:
+def _validate_null_values(df: pd.DataFrame, expected_date_keys: list) -> None:
     print('\t Validating null values')
     target_cols = {
         'DAU': 'dau',
@@ -299,7 +310,7 @@ def _validate_null_values(df: pd.DataFrame) -> None:
     max_columns = pd.get_option('display.max_columns')
     pd.set_option('display.max_columns', None)
 
-    for key in get_date_keys():
+    for key in expected_date_keys:
         index = get_training_date_index(key).strftime('%Y-%m-%d')
         test_col_name = f'{key[0]}_{key[1]}_expected'
         expected_df = pd.Series(True, index=index, name=test_col_name).to_frame().reset_index()
@@ -349,15 +360,30 @@ def _validate_duplicate_rows(df: pd.DataFrame) -> None:
         )
 
 # Validation entrypoint
-def validate_output_dataframe(df: pd.DataFrame):
+def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
     constants = get_constants()
 
-    bq_fields = _get_bigquery_fields(constants['default_project'], constants['default_table'])
-    _check_column_presence(df, bq_fields)
-    _check_column_type(df, bq_fields)
+    # Define expectations based on mode
+    if testing_mode:
+        expected_app_names = {'desktop'}
+        expected_app_categories = {'Desktop'}
+        expected_date_keys = [("desktop", "DAU")]  # Only desktop/DAU combo
+        expected_os_values = {'win10', 'win11', 'winX', 'other', 'ALL'}  # Desktop OS only
+    else:
+        expected_app_names = APP_NAMES
+        expected_app_categories = APP_CATEGORIES
+        expected_date_keys = get_date_keys()  # All platform/metric combinations
+        expected_os_values = OS_VALUES  # All OS values including None for mobile
+
+    # Skip BigQuery schema validation in testing mode (won't be uploaded)
+    if not testing_mode:
+        bq_fields = _get_bigquery_fields(constants['default_project'], constants['default_table'])
+        _check_column_presence(df, bq_fields)
+        _check_column_type(df, bq_fields)
+
     _validate_string_column_formats(df)
-    _check_row_counts(df)
-    _validate_null_values(df)
+    _check_row_counts(df, expected_app_names, expected_app_categories, expected_date_keys, expected_os_values, skip_country_check=testing_mode)
+    _validate_null_values(df, expected_date_keys)
     _validate_duplicate_rows(df)
 
 
