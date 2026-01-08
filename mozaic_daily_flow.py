@@ -72,6 +72,8 @@ class MozaicDailyFlow(FlowSpec):
         """
         print('load')
         print(f'This flow is using docker image: "{IMAGE}"')
+        import os
+        print(f'We are using code hash: {open("/mozaic_commit.txt").read().rstrip()}')
 
         import mozaic_daily
         from mozaic_daily_validation import validate_output_dataframe

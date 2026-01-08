@@ -1,9 +1,7 @@
 #!/usr/bin/env zsh
 # build_and_push.sh
 # Build a mozaic-daily Docker image locally or via remote buildx and (for remote) push it.
-# Usage: ./build_and_push.sh <local|remote> <version>
-#   - <local|remote>: build mode; must be exactly "local" or "remote"
-#   - <version>: must start with 'v' (e.g., v0.3.1)
+# Usage: ./build_and_push.sh <local|remote> <version> [--no-cache]
 
 set -e
 set -u
@@ -20,16 +18,17 @@ REMOTE_USERNAME="brwells78094"
 usage() {
   cat <<'EOF'
 Usage:
-  ./build_and_push.sh <local|remote> <version>
+  ./build_and_push.sh <local|remote> <version> [--no-cache]
 
 Arguments:
   local|remote   Build mode. "local" builds for arm64 on your machine.
                  "remote" builds for amd64 with buildx and pushes.
   version        Tag starting with 'v' (e.g., v1.2.3)
+  --no-cache     Pass --no-cache to docker build / buildx build
 
 Examples:
   ./build_and_push.sh local v1.2.3
-  ./build_and_push.sh remote v1.2.3
+  ./build_and_push.sh remote v1.2.3 --no-cache
 EOF
 }
 
@@ -42,7 +41,23 @@ info() {
   print -- "[info] $*"
 }
 
-### --- Argument validation --------------------------------------------------
+### --- Argument parsing -----------------------------------------------------
+
+NO_CACHE_FLAG=""
+
+ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --no-cache)
+      NO_CACHE_FLAG="--no-cache"
+      ;;
+    *)
+      ARGS+=("$arg")
+      ;;
+  esac
+done
+
+set -- "${ARGS[@]}"
 
 if [[ $# -ne 2 ]]; then
   usage
@@ -51,6 +66,8 @@ fi
 
 MODE="$1"       # "local" or "remote"
 VERSION="$2"    # must start with 'v'
+
+### --- Argument validation --------------------------------------------------
 
 if [[ "$MODE" != "local" && "$MODE" != "remote" ]]; then
   die "First argument must be 'local' or 'remote' (got: '$MODE')."
@@ -79,24 +96,28 @@ info "Base image name: $IMAGE_BASE"
 info "Version:         $VERSION"
 info "Computed tag:    $TAG"
 info "Dockerfile:      $DOCKERFILE"
+[[ -n "$NO_CACHE_FLAG" ]] && info "No-cache:        enabled"
 
 ### --- Build & (for remote) push -------------------------------------------
 
 if [[ "$MODE" == "local" ]]; then
   info "Performing local build (arm64)."
-  info "Running: docker build -t \"$IMAGE_NAME\" -f \"$DOCKERFILE\" ."
-  docker build -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+  info "Running: docker build $NO_CACHE_FLAG -t \"$IMAGE_NAME\" -f \"$DOCKERFILE\" ."
+  docker build $NO_CACHE_FLAG -t "$IMAGE_NAME" -f "$DOCKERFILE" .
   info "Local build complete: $IMAGE_NAME"
 else
   # Remote build/push using buildx (amd64)
-  command -v docker >/dev/null 2>&1 || die "'docker' is not installed or not on PATH."
   if ! docker buildx version >/dev/null 2>&1; then
     die "'docker buildx' is not available. Install/enable buildx to proceed."
   fi
 
   FULL_REMOTE_REF="${REMOTE_USERNAME}/${IMAGE_NAME}"
   info "Performing remote buildx build (amd64) and pushing."
-  info "Running: docker buildx build --platform=linux/amd64 -t \"$FULL_REMOTE_REF\" -f \"$DOCKERFILE\" --push ."
-  docker buildx build --platform=linux/amd64 -t "$FULL_REMOTE_REF" -f "$DOCKERFILE" --push .
+  info "Running: docker buildx build $NO_CACHE_FLAG --platform=linux/amd64 -t \"$FULL_REMOTE_REF\" -f \"$DOCKERFILE\" --push ."
+  docker buildx build $NO_CACHE_FLAG \
+    --platform=linux/amd64 \
+    -t "$FULL_REMOTE_REF" \
+    -f "$DOCKERFILE" \
+    --push .
   info "Remote build and push complete: $FULL_REMOTE_REF"
 fi

@@ -417,6 +417,7 @@ def main(
     if not project:
         project = constants['default_project']
     print(f'Running forecast from {constants["forecast_start_date"]} through {constants["forecast_end_date"]}')
+    print(f'Other constants:\n{constants}')
 
     # Get the data
     # This method does internal file checkpointing
