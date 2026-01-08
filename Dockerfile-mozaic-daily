@@ -56,6 +56,9 @@ RUN rm -rf /root/.cache/pip
 # Additional code files
 COPY mozaic_daily.py mozaic_daily_validation.py constants.py /
 
+# Copy test script for easy Docker validation
+COPY test_docker.py /test_docker.py
+
 # Run a quick import test
 RUN python -c "import mozmlops; print('mozmlops import OK')"
 RUN python -c "import numpy, pandas, scipy, prophet, plotly, holidays; print('mozaic stack import #OK')"
