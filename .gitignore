@@ -19,5 +19,10 @@ htmlcov/
 data-tmp/
 *.parquet
 
+# Build artifacts
+src/mozaic_daily.egg-info/
+build/
+dist/
+
 # OS
 .DS_Store
