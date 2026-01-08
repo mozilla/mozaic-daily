@@ -43,8 +43,8 @@ def test_pipeline_completes_without_crashing(sample_checkpoint_files, mocker):
     try:
         # Mock Mozaic components
         mock_tileset = MagicMock()
-        mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
-        mocker.patch('mozaic_daily.mozaic.populate_tiles')
+        mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
+        mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
 
         mock_mozaic_desktop = MagicMock()
         mock_mozaic_desktop.to_granular_forecast_df.return_value = generate_forecast_data(
@@ -75,7 +75,7 @@ def test_pipeline_completes_without_crashing(sample_checkpoint_files, mocker):
                 mozaics['Existing Engagement DAU'] = mock_mozaic_mobile
                 mozaics['Existing Engagement MAU'] = mock_mozaic_mobile
 
-        mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
+        mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
 
         mock_constants = {
             'forecast_start_date': '2024-01-31',
@@ -87,7 +87,7 @@ def test_pipeline_completes_without_crashing(sample_checkpoint_files, mocker):
             'country_string': "'DE', 'FR', 'US'",
             'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
         }
-        mocker.patch('mozaic_daily.get_constants', return_value=mock_constants)
+        mocker.patch('mozaic_daily.config.get_constants', return_value=mock_constants)
 
         # Run pipeline - should complete without exceptions
         df = main(project='test-project', checkpoints=True)
@@ -121,12 +121,12 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
 
         # Mock Mozaic
         mock_tileset = MagicMock()
-        mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
+        mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
 
         def mock_populate(*args):
             call_order.append('populate_tiles')
 
-        mocker.patch('mozaic_daily.mozaic.populate_tiles', side_effect=mock_populate)
+        mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles', side_effect=mock_populate)
 
         mock_mozaic = MagicMock()
         mock_mozaic.to_granular_forecast_df.return_value = generate_forecast_data(num_days=10)
@@ -138,7 +138,7 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
             args[3]['Existing Engagement DAU'] = mock_mozaic
             args[3]['Existing Engagement MAU'] = mock_mozaic
 
-        mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics', side_effect=mock_curate)
+        mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics', side_effect=mock_curate)
 
         mock_constants = {
             'forecast_start_date': '2024-01-31',
@@ -150,7 +150,7 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
             'country_string': "'DE', 'US'",
             'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
         }
-        mocker.patch('mozaic_daily.get_constants', return_value=mock_constants)
+        mocker.patch('mozaic_daily.config.get_constants', return_value=mock_constants)
 
         # Run pipeline
         df = main(project='test-project', checkpoints=True)
@@ -191,12 +191,12 @@ def test_checkpoint_system_works(tmp_path, mocker):
             return result
 
         mock_client.query.side_effect = mock_query_side_effect
-        mocker.patch('mozaic_daily.bigquery.Client', return_value=mock_client)
+        mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
 
         # Mock Mozaic
         mock_tileset = MagicMock()
-        mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
-        mocker.patch('mozaic_daily.mozaic.populate_tiles')
+        mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
+        mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
 
         mock_mozaic = MagicMock()
         mock_mozaic.to_granular_forecast_df.return_value = generate_forecast_data(num_days=10)
@@ -207,7 +207,7 @@ def test_checkpoint_system_works(tmp_path, mocker):
             mozaics['Existing Engagement DAU'] = mock_mozaic
             mozaics['Existing Engagement MAU'] = mock_mozaic
 
-        mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
+        mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
 
         mock_constants = {
             'forecast_start_date': '2024-01-31',
@@ -219,7 +219,7 @@ def test_checkpoint_system_works(tmp_path, mocker):
             'country_string': "'DE', 'US'",
             'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
         }
-        mocker.patch('mozaic_daily.get_constants', return_value=mock_constants)
+        mocker.patch('mozaic_daily.config.get_constants', return_value=mock_constants)
 
         # First run: create checkpoints
         df1 = main(project='test-project', checkpoints=True)
@@ -266,8 +266,8 @@ def test_desktop_and_mobile_processed_separately(sample_checkpoint_files, mocker
         models_used = []
 
         mock_tileset = MagicMock()
-        mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
-        mocker.patch('mozaic_daily.mozaic.populate_tiles')
+        mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
+        mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
 
         mock_mozaic = MagicMock()
         mock_mozaic.to_granular_forecast_df.return_value = generate_forecast_data(num_days=10)
@@ -279,7 +279,7 @@ def test_desktop_and_mobile_processed_separately(sample_checkpoint_files, mocker
             mozaics['Existing Engagement DAU'] = mock_mozaic
             mozaics['Existing Engagement MAU'] = mock_mozaic
 
-        mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
+        mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
 
         mock_constants = {
             'forecast_start_date': '2024-01-31',
@@ -291,7 +291,7 @@ def test_desktop_and_mobile_processed_separately(sample_checkpoint_files, mocker
             'country_string': "'DE', 'US'",
             'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
         }
-        mocker.patch('mozaic_daily.get_constants', return_value=mock_constants)
+        mocker.patch('mozaic_daily.config.get_constants', return_value=mock_constants)
 
         # Run pipeline
         df = main(project='test-project', checkpoints=True)

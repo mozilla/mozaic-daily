@@ -11,7 +11,7 @@ import pandas as pd
 import os
 from unittest.mock import MagicMock
 
-from mozaic_daily import get_aggregate_data, get_queries
+from mozaic_daily.data import get_aggregate_data, get_queries
 from tests.conftest import generate_desktop_raw_data, generate_mobile_raw_data
 
 
@@ -37,7 +37,7 @@ def test_get_aggregate_data_executes_all_queries(mocker):
     mock_query_result.to_dataframe.return_value = generate_desktop_raw_data(num_days=5)
     mock_client.query.return_value = mock_query_result
 
-    mocker.patch('mozaic_daily.bigquery.Client', return_value=mock_client)
+    mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
 
     # Get queries
     queries = get_queries("'US', 'DE', 'FR'")
@@ -65,7 +65,7 @@ def test_get_aggregate_data_returns_correct_structure(mocker):
     mock_query_result.to_dataframe.return_value = generate_desktop_raw_data(num_days=5)
     mock_client.query.return_value = mock_query_result
 
-    mocker.patch('mozaic_daily.bigquery.Client', return_value=mock_client)
+    mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
 
     queries = get_queries("'US', 'DE'")
     result = get_aggregate_data(queries, 'test-project', checkpoints=False)
@@ -103,7 +103,7 @@ def test_get_aggregate_data_handles_bigquery_errors(mocker):
     mock_client = MagicMock()
     mock_client.query.side_effect = Exception("BigQuery timeout")
 
-    mocker.patch('mozaic_daily.bigquery.Client', return_value=mock_client)
+    mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
 
     queries = get_queries("'US', 'DE'")
 
@@ -137,7 +137,7 @@ def test_checkpointing_saves_parquet_files(tmp_path, mocker):
         mock_query_result.to_dataframe.return_value = generate_desktop_raw_data(num_days=5)
         mock_client.query.return_value = mock_query_result
 
-        mocker.patch('mozaic_daily.bigquery.Client', return_value=mock_client)
+        mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
 
         queries = get_queries("'US', 'DE'")
         result = get_aggregate_data(queries, 'test-project', checkpoints=True)
@@ -190,7 +190,7 @@ def test_checkpointing_loads_existing_files_without_querying(tmp_path, mocker):
 
         # Mock BigQuery client (should NOT be called)
         mock_client = MagicMock()
-        mocker.patch('mozaic_daily.bigquery.Client', return_value=mock_client)
+        mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
 
         queries = get_queries("'US', 'DE'")
         result = get_aggregate_data(queries, 'test-project', checkpoints=True)
@@ -241,7 +241,7 @@ def test_checkpointing_skips_bigquery_when_files_exist(tmp_path, mocker):
         mock_query_result.to_dataframe.return_value = generate_desktop_raw_data(num_days=5)
         mock_client.query.return_value = mock_query_result
 
-        mocker.patch('mozaic_daily.bigquery.Client', return_value=mock_client)
+        mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
 
         # Run get_aggregate_data
         queries = get_queries("'US', 'DE'")

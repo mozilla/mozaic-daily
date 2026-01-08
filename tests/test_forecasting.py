@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 from unittest.mock import MagicMock
 
-from mozaic_daily import get_forecast_dfs, get_desktop_forecast_dfs, get_mobile_forecast_dfs
+from mozaic_daily.forecast import get_forecast_dfs, get_desktop_forecast_dfs, get_mobile_forecast_dfs
 from mozaic.models import desktop_forecast_model, mobile_forecast_model
 from tests.conftest import generate_forecast_data
 
@@ -28,10 +28,10 @@ def test_get_forecast_dfs_calls_populate_tiles(mocker, sample_datasets):
     """
     # Mock Mozaic components
     mock_tileset = MagicMock()
-    mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
+    mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
 
-    mock_populate = mocker.patch('mozaic_daily.mozaic.populate_tiles')
-    mock_curate = mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics')
+    mock_populate = mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
+    mock_curate = mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics')
 
     # Mock Mozaic.to_granular_forecast_df
     mock_mozaic = MagicMock()
@@ -74,10 +74,10 @@ def test_get_forecast_dfs_calls_curate_mozaics(mocker, sample_datasets):
     """
     # Mock Mozaic components
     mock_tileset = MagicMock()
-    mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
+    mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
 
-    mock_populate = mocker.patch('mozaic_daily.mozaic.populate_tiles')
-    mock_curate = mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics')
+    mock_populate = mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
+    mock_curate = mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics')
 
     # Mock Mozaic.to_granular_forecast_df
     mock_mozaic = MagicMock()
@@ -116,10 +116,10 @@ def test_get_forecast_dfs_returns_metric_dataframes(mocker, sample_datasets):
     """
     # Mock Mozaic components
     mock_tileset = MagicMock()
-    mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
+    mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
 
-    mock_populate = mocker.patch('mozaic_daily.mozaic.populate_tiles')
-    mock_curate = mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics')
+    mock_populate = mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
+    mock_curate = mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics')
 
     # Mock Mozaic.to_granular_forecast_df
     mock_mozaic_dau = MagicMock()
@@ -177,10 +177,10 @@ def test_desktop_forecast_uses_desktop_model(mocker, sample_datasets):
     """
     # Mock Mozaic components
     mock_tileset = MagicMock()
-    mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
+    mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
 
-    mock_populate = mocker.patch('mozaic_daily.mozaic.populate_tiles')
-    mock_curate = mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics')
+    mock_populate = mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
+    mock_curate = mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics')
 
     # Mock Mozaic.to_granular_forecast_df
     mock_mozaic = MagicMock()
@@ -216,10 +216,10 @@ def test_mobile_forecast_uses_mobile_model(mocker, sample_datasets):
     """
     # Mock Mozaic components
     mock_tileset = MagicMock()
-    mocker.patch('mozaic_daily.mozaic.TileSet', return_value=mock_tileset)
+    mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
 
-    mock_populate = mocker.patch('mozaic_daily.mozaic.populate_tiles')
-    mock_curate = mocker.patch('mozaic_daily.mozaic.utils.curate_mozaics')
+    mock_populate = mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
+    mock_curate = mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics')
 
     # Mock Mozaic.to_granular_forecast_df
     mock_mozaic = MagicMock()

@@ -15,7 +15,7 @@ import json
 from datetime import datetime
 from freezegun import freeze_time
 
-from mozaic_daily import (
+from mozaic_daily.tables import (
     combine_tables,
     update_desktop_format,
     update_mobile_format,
@@ -707,22 +707,22 @@ def test_get_git_commit_hash_fallback_priority(mocker, tmp_path):
     """
     # Test 1: pip succeeds
     # Mock the actual functions that get_git_commit_hash() calls
-    mocker.patch('mozaic_daily.get_git_commit_hash_from_pip', return_value='hash123')
-    mocker.patch('mozaic_daily.get_git_commit_hash_from_file', return_value='file_hash')
+    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_pip', return_value='hash123')
+    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_file', return_value='file_hash')
 
     result = get_git_commit_hash()
     assert result == 'hash123', "Should use pip hash when available"
 
     # Test 2: pip returns 'unknown', file succeeds
-    mocker.patch('mozaic_daily.get_git_commit_hash_from_pip', return_value='unknown')
-    mocker.patch('mozaic_daily.get_git_commit_hash_from_file', return_value='file_hash')
+    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_pip', return_value='unknown')
+    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_file', return_value='file_hash')
 
     result = get_git_commit_hash()
     assert result == 'file_hash', "Should use file hash when pip returns 'unknown'"
 
     # Test 3: both fail (pip returns 'unknown', file returns None)
-    mocker.patch('mozaic_daily.get_git_commit_hash_from_pip', return_value='unknown')
-    mocker.patch('mozaic_daily.get_git_commit_hash_from_file', return_value=None)
+    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_pip', return_value='unknown')
+    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_file', return_value=None)
 
     result = get_git_commit_hash()
     assert result == 'unknown', "Should return 'unknown' when both methods fail"
