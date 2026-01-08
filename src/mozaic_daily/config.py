@@ -2,7 +2,8 @@
 """Configuration and constants for mozaic-daily forecasting.
 
 This module defines:
-- Runtime constants (dates, projects, BigQuery tables)
+- Static configuration (true constants)
+- Runtime configuration (dates, projects, BigQuery tables)
 - Country/market lists
 - Date constraints for each metric (start dates, excluded ranges)
 - SQL time clause generation
@@ -14,23 +15,34 @@ from typing import Dict, List, Tuple, Optional, Any
 
 import pandas as pd
 
-# Testing mode constants
-TESTING_MODE_ENABLE_STRING = 'ENABLE_TESTING_MODE'
-TESTING_MODE_CHECKPOINT_FILENAME = 'mozaic_parts.forecast.TESTING.parquet'
+# Static configuration (true constants)
+STATIC_CONFIG = {
+    'default_project': 'moz-fx-data-bq-data-science',
+    'default_table': 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1',
+    'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
+    'raw_checkpoint_filename_template': 'mozaic_parts.raw.{platform}.{metric}.parquet',
+    'testing_mode_enable_string': 'ENABLE_TESTING_MODE',
+    'testing_mode_checkpoint_filename': 'mozaic_parts.forecast.TESTING.parquet',
+}
 
-def get_constants() -> Dict[str, str]:
-    constants = {}
+# Forecast configuration
+FORECAST_CONFIG = {
+    'quantile': 0.5,  # Default quantile for to_granular_forecast_df()
+}
 
-    constants['default_project'] = "moz-fx-data-bq-data-science"
-    constants['default_table'] = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1'
+def get_runtime_config() -> Dict[str, Any]:
+    """Calculate runtime configuration based on current datetime.
 
-    # Dates
+    Returns dates, markets, and derived values. Does not include static config.
+    """
+    config = {}
+
+    # Dates (calculated at runtime)
     forecast_run_dt = datetime.now()
-    constants['forecast_run_dt'] = forecast_run_dt
-    constants['forecast_start_date'] = (forecast_run_dt - timedelta(days=1)).strftime("%Y-%m-%d")
-    constants['forecast_end_date'] = datetime(forecast_run_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
-
-    constants['training_end_date'] = (forecast_run_dt-timedelta(days=2)).strftime("%Y-%m-%d")
+    config['forecast_run_dt'] = forecast_run_dt
+    config['forecast_start_date'] = (forecast_run_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+    config['forecast_end_date'] = datetime(forecast_run_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
+    config['training_end_date'] = (forecast_run_dt - timedelta(days=2)).strftime("%Y-%m-%d")
 
     # Markets
     top_DAU_markets = set(
@@ -40,13 +52,11 @@ def get_constants() -> Dict[str, str]:
         ["US", "DE", "FR", "GB", "PL", "CA", "CH", "IT", "AU", "NL", "ES", "JP", "AT"]
     )
     nonmonetized_google = set(["RU", "UA", "TR", "BY", "KZ", "CN"])
-    constants['countries'] = top_DAU_markets | top_google_markets | nonmonetized_google
-    constants['country_string'] = ", ".join(f"'{i}'" for i in sorted(constants['countries']))
-    constants['validation_countries'] = constants['countries'] | set(['ALL', 'ROW'])
+    config['countries'] = top_DAU_markets | top_google_markets | nonmonetized_google
+    config['country_string'] = ", ".join(f"'{i}'" for i in sorted(config['countries']))
+    config['validation_countries'] = config['countries'] | set(['ALL', 'ROW'])
 
-    constants['forecast_checkpoint_filename'] = 'mozaic_parts.forecast.parquet'
-
-    return constants
+    return config
 
 def get_date_constraints() -> Dict[Tuple[str, str], Dict]:
     return {
@@ -132,7 +142,7 @@ def get_training_date_index(
     if end:
         end_dt = pd.to_datetime(end).normalize()
     else:
-        end_dt = pd.to_datetime(get_constants()['training_end_date']).normalize()
+        end_dt = pd.to_datetime(get_runtime_config()['training_end_date']).normalize()
 
     full = pd.date_range(start=start, end=end_dt, freq='D')
 

@@ -21,7 +21,7 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from mozaic_daily import main
-from mozaic_daily.config import TESTING_MODE_ENABLE_STRING
+from mozaic_daily.config import STATIC_CONFIG
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -34,5 +34,5 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    testing_mode = TESTING_MODE_ENABLE_STRING if args.testing else None
+    testing_mode = STATIC_CONFIG['testing_mode_enable_string'] if args.testing else None
     main(checkpoints=True, testing_mode=testing_mode)

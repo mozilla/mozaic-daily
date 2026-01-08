@@ -12,11 +12,109 @@ Functions:
 - get_aggregate_data(): Fetches all Desktop and Mobile metrics
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple, List
 import pandas as pd
 from google.cloud import bigquery
 import os
-from .config import get_sql_time_clause
+from .config import STATIC_CONFIG
+
+# Consolidated query configuration: all metadata needed to build SQL queries
+QUERY_CONFIGS = {
+    ("desktop", "DAU"): {
+        'table': 'moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates',
+        'os_column': 'os_version',
+        'where_clause': 'app_name = "Firefox Desktop"',
+        'date_field': 'submission_date',
+        'date_start': '2023-04-17',
+        'date_excludes': [],
+        'x_column': 'submission_date',
+        'y_column': 'dau',
+    },
+    ("desktop", "New Profiles"): {
+        'table': 'moz-fx-data-shared-prod.firefox_desktop.new_profiles_aggregates',
+        'os_column': 'windows_version',
+        'where_clause': 'is_desktop',
+        'date_field': 'first_seen_date',
+        'date_start': '2023-07-01',
+        'date_excludes': [('2023-07-18', '2023-07-19')],
+        'x_column': 'first_seen_date',
+        'y_column': 'new_profiles',
+    },
+    ("desktop", "Existing Engagement DAU"): {
+        'table': 'moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates',
+        'os_column': 'normalized_os_version',
+        'where_clause': 'is_desktop AND lifecycle_stage = "existing_user"',
+        'date_field': 'submission_date',
+        'date_start': '2023-06-07',
+        'date_excludes': [],
+        'x_column': 'submission_date',
+        'y_column': 'dau',
+    },
+    ("desktop", "Existing Engagement MAU"): {
+        'table': 'moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates',
+        'os_column': 'normalized_os_version',
+        'where_clause': 'is_desktop AND lifecycle_stage = "existing_user"',
+        'date_field': 'submission_date',
+        'date_start': '2023-06-07',
+        'date_excludes': [],
+        'x_column': 'submission_date',
+        'y_column': 'mau',
+    },
+    ("mobile", "DAU"): {
+        'table': 'moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates',
+        'app_column': 'app_name',
+        'where_clause': 'app_name IN ("Fenix", "Firefox iOS", "Focus Android", "Focus iOS")',
+        'date_field': 'submission_date',
+        'date_start': '2020-12-31',
+        'date_excludes': [],
+        'x_column': 'submission_date',
+        'y_column': 'dau',
+    },
+    ("mobile", "New Profiles"): {
+        'table': 'moz-fx-data-shared-prod.telemetry.mobile_new_profiles',
+        'app_column': 'app_name',
+        'where_clause': 'is_mobile',
+        'date_field': 'first_seen_date',
+        'date_start': '2023-07-01',
+        'date_excludes': [('2023-07-18', '2023-07-19')],
+        'x_column': 'first_seen_date',
+        'y_column': 'new_profiles',
+    },
+    ("mobile", "Existing Engagement DAU"): {
+        'table': 'moz-fx-data-shared-prod.telemetry.mobile_engagement',
+        'app_column': 'app_name',
+        'where_clause': 'is_mobile AND lifecycle_stage = "existing_user"',
+        'date_field': 'submission_date',
+        'date_start': '2023-07-01',
+        'date_excludes': [],
+        'x_column': 'submission_date',
+        'y_column': 'dau',
+    },
+    ("mobile", "Existing Engagement MAU"): {
+        'table': 'moz-fx-data-shared-prod.telemetry.mobile_engagement',
+        'app_column': 'app_name',
+        'where_clause': 'is_mobile AND lifecycle_stage = "existing_user"',
+        'date_field': 'submission_date',
+        'date_start': '2023-07-01',
+        'date_excludes': [],
+        'x_column': 'submission_date',
+        'y_column': 'mau',
+    },
+}
+
+def build_sql_time_clause(key: Tuple[str, str], quote: str = '"') -> str:
+    """Build SQL time clause from QUERY_CONFIGS."""
+    cfg = QUERY_CONFIGS[key]
+    field = cfg['date_field']
+    start = cfg['date_start']
+    excludes: List[Tuple[str, str]] = cfg['date_excludes']
+
+    parts = [f'{field} >= {quote}{start}{quote}']
+    for ex_start, ex_end in excludes:
+        parts.append(
+            f'{field} NOT BETWEEN {quote}{ex_start}{quote} AND {quote}{ex_end}{quote}'
+        )
+    return " AND ".join(parts)
 
 
 def desktop_query(
@@ -67,82 +165,48 @@ def get_queries(
     countries: str,
     testing_mode: bool = False
 ) -> Dict[str, Dict[str, str]]:
+    """Build SQL queries for all platform/metric combinations.
+
+    Args:
+        countries: SQL-formatted country list string
+        testing_mode: If True, return only desktop/DAU query
+
+    Returns:
+        Nested dict: {platform: {metric: sql_query}}
+    """
     queries = {"desktop": {}, "mobile": {}}
-    queries["desktop"]["DAU"] = desktop_query(
-        x="submission_date",
-        y="dau",
-        countries=countries,
-        table="moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates",
-        windows_version_column="os_version",
-        where=f'app_name = "Firefox Desktop" AND {get_sql_time_clause(("desktop", "DAU"))}',
-    )
 
-    if testing_mode:
-        return queries  # Early return with only desktop/DAU
+    # Build queries from QUERY_CONFIGS
+    for (platform, metric), cfg in QUERY_CONFIGS.items():
+        # Build WHERE clause with date constraints
+        where_clause = f'{cfg["where_clause"]} AND {build_sql_time_clause((platform, metric))}'
 
-    queries["desktop"]["New Profiles"] = desktop_query(
-        x="first_seen_date",
-        y="new_profiles",
-        countries=countries,
-        table="moz-fx-data-shared-prod.firefox_desktop.new_profiles_aggregates",
-        windows_version_column="windows_version",
-        where=f'is_desktop AND {get_sql_time_clause(("desktop", "New Profiles"))}',
-    )
+        # Use appropriate query builder based on platform
+        if platform == "desktop":
+            query = desktop_query(
+                x=cfg['x_column'],
+                y=cfg['y_column'],
+                countries=countries,
+                table=cfg['table'],
+                windows_version_column=cfg['os_column'],
+                where=where_clause,
+            )
+        else:  # mobile
+            query = mobile_query(
+                x=cfg['x_column'],
+                y=cfg['y_column'],
+                countries=countries,
+                table=cfg['table'],
+                app_name_column=cfg['app_column'],
+                where=where_clause,
+            )
 
-    queries["desktop"]["Existing Engagement DAU"] = desktop_query(
-        x="submission_date",
-        y="dau",
-        countries=countries,
-        table="moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates",
-        windows_version_column="normalized_os_version",
-        where=f'is_desktop AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("desktop", "Existing Engagement DAU"))}',
-    )
+        queries[platform][metric] = query
 
-    queries["desktop"]["Existing Engagement MAU"] = desktop_query(
-        x="submission_date",
-        y="mau",
-        countries=countries,
-        table="moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates",
-        windows_version_column="normalized_os_version",
-        where=f'is_desktop AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("desktop", "Existing Engagement MAU"))}',
-    )
+        # Early return for testing mode (only desktop/DAU)
+        if testing_mode and platform == "desktop" and metric == "DAU":
+            return queries
 
-    # Mobile
-    queries["mobile"]["DAU"] = mobile_query(
-        x="submission_date",
-        y="dau",
-        countries=countries,
-        table="moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates",
-        app_name_column="app_name",
-        where=f'app_name IN ("Fenix", "Firefox iOS", "Focus Android", "Focus iOS") AND {get_sql_time_clause(("mobile", "DAU"))}',
-    )
-
-    queries["mobile"]["New Profiles"] = mobile_query(
-        x="first_seen_date",
-        y="new_profiles",
-        countries=countries,
-        table="moz-fx-data-shared-prod.telemetry.mobile_new_profiles",
-        app_name_column="app_name",
-        where=f'is_mobile AND {get_sql_time_clause(("mobile", "New Profiles"))}',
-    )
-
-    queries["mobile"]["Existing Engagement DAU"] = mobile_query(
-        x="submission_date",
-        y="dau",
-        countries=countries,
-        table="moz-fx-data-shared-prod.telemetry.mobile_engagement",
-        app_name_column="app_name",
-        where=f'is_mobile AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("mobile", "Existing Engagement DAU"))}',
-    )
-
-    queries["mobile"]["Existing Engagement MAU"] = mobile_query(
-        x="submission_date",
-        y="mau",
-        countries=countries,
-        table="moz-fx-data-shared-prod.telemetry.mobile_engagement",
-        app_name_column="app_name",
-        where=f'is_mobile AND lifecycle_stage = "existing_user" AND {get_sql_time_clause(("mobile", "Existing Engagement MAU"))}',
-    )
     return queries
 
 # Get data
@@ -153,11 +217,12 @@ def get_aggregate_data(
 ) -> Dict[str, Dict[str, pd.DataFrame]]:
     datasets = {"desktop": {}, "mobile": {}}
 
-    make_filename = lambda platform, metric: f'mozaic_parts.raw.{platform}.{metric}.parquet'
+    # Use template from STATIC_CONFIG for checkpoint filenames
+    filename_template = STATIC_CONFIG['raw_checkpoint_filename_template']
 
     # fetch query results and store the raw data
     for metric, query in queries["desktop"].items():
-        checkpoint_filename = make_filename("desktop", metric)
+        checkpoint_filename = filename_template.format(platform="desktop", metric=metric)
         df = None
         if checkpoints and os.path.exists(checkpoint_filename):
             print(f'Desktop {metric} exists, loading')
@@ -171,7 +236,7 @@ def get_aggregate_data(
         datasets['desktop'][metric] = df
 
     for metric, query in queries["mobile"].items():
-        checkpoint_filename = make_filename("mobile", metric)
+        checkpoint_filename = filename_template.format(platform="mobile", metric=metric)
         df = None
         if checkpoints and os.path.exists(checkpoint_filename):
             print(f'Mobile {metric} exists, loading')

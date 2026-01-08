@@ -22,7 +22,7 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 import pandas as pd
-from mozaic_daily.config import get_constants, TESTING_MODE_CHECKPOINT_FILENAME
+from mozaic_daily.config import STATIC_CONFIG
 from mozaic_daily.validation import validate_output_dataframe
 
 if __name__ == '__main__':
@@ -36,13 +36,11 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    constants = get_constants()
-
     if args.testing:
-        checkpoint_file = TESTING_MODE_CHECKPOINT_FILENAME
+        checkpoint_file = STATIC_CONFIG['testing_mode_checkpoint_filename']
         testing_mode = True
     else:
-        checkpoint_file = constants['forecast_checkpoint_filename']
+        checkpoint_file = STATIC_CONFIG['forecast_checkpoint_filename']
         testing_mode = False
 
     # Fail if expected checkpoint doesn't exist

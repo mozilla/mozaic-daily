@@ -26,7 +26,7 @@ import re
 from google.cloud import bigquery
 
 from .config import (
-    get_constants, get_date_constraints, get_date_keys,
+    get_runtime_config, STATIC_CONFIG, get_date_constraints, get_date_keys,
     get_training_date_index, get_prediction_date_index
 )
 
@@ -184,7 +184,7 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
     )
 
     validate_column('country',
-        make_allowed_string_validator(get_constants()['validation_countries'])
+        make_allowed_string_validator(get_runtime_config()['validation_countries'])
     )
 
     validate_column('app_name',
@@ -224,7 +224,7 @@ def _check_row_counts(
     skip_country_check: bool = False
 ) -> None:
     print('\t Validating row counts')
-    constants = get_constants()
+    constants = get_runtime_config()
     date_constraints = get_date_constraints()
     training_date_index_for = lambda key: get_training_date_index(key, constants['forecast_start_date'])
 
@@ -361,7 +361,7 @@ def _validate_duplicate_rows(df: pd.DataFrame) -> None:
 
 # Validation entrypoint
 def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
-    constants = get_constants()
+    constants = get_runtime_config()
 
     # Define expectations based on mode
     if testing_mode:
@@ -377,7 +377,7 @@ def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
 
     # Skip BigQuery schema validation in testing mode (won't be uploaded)
     if not testing_mode:
-        bq_fields = _get_bigquery_fields(constants['default_project'], constants['default_table'])
+        bq_fields = _get_bigquery_fields(STATIC_CONFIG['default_project'], STATIC_CONFIG['default_table'])
         _check_column_presence(df, bq_fields)
         _check_column_type(df, bq_fields)
 
@@ -388,5 +388,5 @@ def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
 
 
 if __name__ == '__main__':
-    df = pd.read_parquet(get_constants()['forecast_checkpoint_filename'])
+    df = pd.read_parquet(STATIC_CONFIG['forecast_checkpoint_filename'])
     validate_output_dataframe(df)

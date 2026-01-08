@@ -18,7 +18,7 @@ Usage:
 from typing import Optional
 import pandas as pd
 import os
-from .config import get_constants, TESTING_MODE_ENABLE_STRING, TESTING_MODE_CHECKPOINT_FILENAME
+from .config import get_runtime_config, STATIC_CONFIG
 from .data import get_queries, get_aggregate_data
 from .forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs
 from .tables import (
@@ -41,27 +41,26 @@ def main(
     checkpoints: Optional[bool] = False,
     testing_mode: Optional[str] = None
 ) -> pd.DataFrame:
-    # Establish constants
-    constants = get_constants()
+    config = get_runtime_config()
     if not project:
-        project = constants['default_project']
+        project = STATIC_CONFIG['default_project']
 
     # Enable testing only with exact string match (prevents accidents)
-    is_testing = (testing_mode == TESTING_MODE_ENABLE_STRING)
+    is_testing = (testing_mode == STATIC_CONFIG['testing_mode_enable_string'])
 
     if is_testing:
         print_testing_mode_banner()
-        checkpoint_filename = TESTING_MODE_CHECKPOINT_FILENAME
+        checkpoint_filename = STATIC_CONFIG['testing_mode_checkpoint_filename']
     else:
-        checkpoint_filename = constants['forecast_checkpoint_filename']
+        checkpoint_filename = STATIC_CONFIG['forecast_checkpoint_filename']
 
-    print(f'Running forecast from {constants["forecast_start_date"]} through {constants["forecast_end_date"]}')
-    print(f'Other constants:\n{constants}')
+    print(f'Running forecast from {config["forecast_start_date"]} through {config["forecast_end_date"]}')
+    print(f'Other config:\n{config}')
 
     # Get the data
     # This method does internal file checkpointing
     datasets = get_aggregate_data(
-        get_queries(constants['country_string'], testing_mode=is_testing),
+        get_queries(config['country_string'], testing_mode=is_testing),
         project,
         checkpoints = checkpoints
     )
@@ -75,8 +74,8 @@ def main(
         print('Desktop Forecasting\n')
         df_desktop = combine_tables(get_desktop_forecast_dfs(
                 datasets,
-                constants['forecast_start_date'],
-                constants['forecast_end_date']
+                config['forecast_start_date'],
+                config['forecast_end_date']
             )
         )
 
@@ -84,14 +83,14 @@ def main(
             # Skip mobile, format desktop only
             print('\n\nDone with forecasts (testing mode)')
             update_desktop_format(df_desktop)
-            df = format_output_table(df_desktop, constants['forecast_start_date'], constants['forecast_run_dt'])
+            df = format_output_table(df_desktop, config['forecast_start_date'], config['forecast_run_dt'])
         else:
             # Normal path: process both platforms
             print('Mobile Forecasting\n')
             df_mobile = combine_tables(get_mobile_forecast_dfs(
                     datasets,
-                    constants['forecast_start_date'],
-                    constants['forecast_end_date']
+                    config['forecast_start_date'],
+                    config['forecast_end_date']
                 )
             )
             print('\n\nDone with forecasts')
@@ -101,7 +100,7 @@ def main(
             update_mobile_format(df_mobile)
 
             df = add_desktop_and_mobile_rows(pd.concat([df_desktop, df_mobile]))
-            df = format_output_table(df, constants['forecast_start_date'], constants['forecast_run_dt'])
+            df = format_output_table(df, config['forecast_start_date'], config['forecast_run_dt'])
 
         if checkpoints:
             df.to_parquet(checkpoint_filename)

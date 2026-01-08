@@ -27,8 +27,31 @@ def get_forecast_dfs(
     datasets: Dict[str, pd.DataFrame],
     forecast_model: Any,
     forecast_start_date: str,
-    forecast_end_date: str
+    forecast_end_date: str,
+    quantile: float = None,
 ) -> Dict[str, pd.DataFrame]:
+    """Generate forecasts using Mozaic.
+
+    Args:
+        datasets: Dict of metric -> DataFrame with historical data
+        forecast_model: Mozaic forecast model (desktop or mobile)
+        forecast_start_date: Start date for forecast period
+        forecast_end_date: End date for forecast period
+        quantile: Quantile for point forecast (default: 0.5 from FORECAST_CONFIG)
+
+    Returns:
+        Dict of metric -> DataFrame with forecast results
+
+    Example - Iterating over quantiles:
+        # Compare forecasts at different quantiles
+        for q in [0.25, 0.5, 0.75]:
+            dfs = get_desktop_forecast_dfs(datasets, start, end, quantile=q)
+            # Analyze sensitivity to quantile choice
+    """
+    from .config import FORECAST_CONFIG
+
+    if quantile is None:
+        quantile = FORECAST_CONFIG['quantile']
     tileset = mozaic.TileSet()
 
     print('\n--- Populate tiles\n')
@@ -70,7 +93,7 @@ def get_forecast_dfs(
     dfs = {}
     for metric, moz in mozaics.items():
         print(metric)
-        dfs[metric] = moz.to_granular_forecast_df()
+        dfs[metric] = moz.to_granular_forecast_df(quantile=quantile)
 
     return dfs
 
@@ -79,12 +102,14 @@ def get_desktop_forecast_dfs(
     datasets: Dict[str, Dict[str, pd.DataFrame]],
     forecast_start_date: str,
     forecast_end_date: str,
+    quantile: float = None,
 ) -> Dict[str, pd.DataFrame]:
     return get_forecast_dfs(
         datasets["desktop"],
         desktop_forecast_model,
         forecast_start_date,
         forecast_end_date,
+        quantile=quantile,
     )
 
 
@@ -92,10 +117,12 @@ def get_mobile_forecast_dfs(
     datasets: Dict[str, Dict[str, pd.DataFrame]],
     forecast_start_date: str,
     forecast_end_date: str,
+    quantile: float = None,
 ) -> Dict[str, pd.DataFrame]:
     return get_forecast_dfs(
         datasets["mobile"],
         mobile_forecast_model,
         forecast_start_date,
         forecast_end_date,
+        quantile=quantile,
     )
