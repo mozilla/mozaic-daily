@@ -77,17 +77,15 @@ def test_pipeline_completes_without_crashing(sample_checkpoint_files, mocker):
 
         mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
 
-        mock_constants = {
+        mock_runtime_config = {
             'forecast_start_date': '2024-01-31',
             'forecast_end_date': '2024-12-31',
             'forecast_run_dt': datetime(2024, 1, 31, 10, 0, 0),
             'training_end_date': '2024-01-29',
-            'default_project': 'test-project',
             'countries': {'US', 'DE', 'FR'},
             'country_string': "'DE', 'FR', 'US'",
-            'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
         }
-        mocker.patch('mozaic_daily.config.get_constants', return_value=mock_constants)
+        mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
 
         # Run pipeline - should complete without exceptions
         df = main(project='test-project', checkpoints=True)
@@ -140,17 +138,15 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
 
         mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics', side_effect=mock_curate)
 
-        mock_constants = {
+        mock_runtime_config = {
             'forecast_start_date': '2024-01-31',
             'forecast_end_date': '2024-12-31',
             'forecast_run_dt': datetime(2024, 1, 31, 10, 0, 0),
             'training_end_date': '2024-01-29',
-            'default_project': 'test-project',
             'countries': {'US', 'DE'},
             'country_string': "'DE', 'US'",
-            'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
         }
-        mocker.patch('mozaic_daily.config.get_constants', return_value=mock_constants)
+        mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
 
         # Run pipeline
         df = main(project='test-project', checkpoints=True)
@@ -209,17 +205,15 @@ def test_checkpoint_system_works(tmp_path, mocker):
 
         mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
 
-        mock_constants = {
+        mock_runtime_config = {
             'forecast_start_date': '2024-01-31',
             'forecast_end_date': '2024-12-31',
             'forecast_run_dt': datetime(2024, 1, 31, 10, 0, 0),
             'training_end_date': '2024-01-29',
-            'default_project': 'test-project',
             'countries': {'US', 'DE'},
             'country_string': "'DE', 'US'",
-            'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
         }
-        mocker.patch('mozaic_daily.config.get_constants', return_value=mock_constants)
+        mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
 
         # First run: create checkpoints
         df1 = main(project='test-project', checkpoints=True)
@@ -281,17 +275,15 @@ def test_desktop_and_mobile_processed_separately(sample_checkpoint_files, mocker
 
         mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics', side_effect=mock_curate_side_effect)
 
-        mock_constants = {
+        mock_runtime_config = {
             'forecast_start_date': '2024-01-31',
             'forecast_end_date': '2024-12-31',
             'forecast_run_dt': datetime(2024, 1, 31, 10, 0, 0),
             'training_end_date': '2024-01-29',
-            'default_project': 'test-project',
             'countries': {'US', 'DE'},
             'country_string': "'DE', 'US'",
-            'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
         }
-        mocker.patch('mozaic_daily.config.get_constants', return_value=mock_constants)
+        mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
 
         # Run pipeline
         df = main(project='test-project', checkpoints=True)
