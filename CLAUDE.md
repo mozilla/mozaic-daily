@@ -49,7 +49,7 @@ src/mozaic_daily/
 ```python
 # In Docker container or with src/ in PYTHONPATH:
 from mozaic_daily import main
-from mozaic_daily.config import get_constants
+from mozaic_daily.config import get_runtime_config, STATIC_CONFIG, FORECAST_CONFIG
 from mozaic_daily.data import get_queries, get_aggregate_data
 from mozaic_daily.forecast import get_desktop_forecast_dfs
 from mozaic_daily.tables import format_output_table
@@ -62,6 +62,10 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `run_main.py` - Run the main forecasting pipeline with checkpoints
 - `run_validation.py` - Validate the checkpoint forecast file
 - `test_local_docker.sh` - Test Docker image builds locally
+
+The `docker/` directory contains Docker management scripts:
+- `build_and_push.sh` - Build and push Docker images for local (arm64) or remote (amd64)
+- `run_mozaic_docker.sh` - Run Docker containers interactively with proper Google Cloud credentials
 
 ## Key Commands
 
@@ -93,6 +97,35 @@ cd docker
 
 # Build without cache
 ./build_and_push.sh remote v1.2.3 --no-cache
+```
+
+### Docker Run
+```bash
+# Run from the docker/ directory
+cd docker
+
+# Run remote (amd64) image interactively
+./run_mozaic_docker.sh --remote
+
+# Run local (arm64) image interactively
+./run_mozaic_docker.sh --local
+
+# Run forecast inside container
+./run_mozaic_docker.sh --local -- /run_forecast.sh
+
+# Or manually inside container:
+./run_mozaic_docker.sh --local
+# Inside container:
+# /run_forecast.sh
+# OR
+# python -c "from mozaic_daily import main; main(checkpoints=True)"
+
+# Notes:
+# - Automatically mounts Google Cloud credentials from ~/.config/gcloud
+# - Sets CLOUDSDK_CONFIG environment variable for BigQuery access
+# - Use --local for arm64 (Mac M1/M2), --remote for amd64 (production platform)
+# - Default version is 0.0.7, override with -v flag
+# - PYTHONPATH is set to /src inside the container for package imports
 ```
 
 ### Metaflow Operations
@@ -142,9 +175,21 @@ python mozaic_daily_flow.py run --with kubernetes:image=<image>
 5. **Upload** (`mozaic_daily_flow.py:load`)
    - Appends validated forecast to `moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1`
 
-### Constants System (`mozaic_daily.config`)
+### Configuration System (`mozaic_daily.config`)
 
-The `get_constants()` function dynamically calculates dates and markets:
+The configuration system is split into static and runtime components:
+
+**Static Configuration (`STATIC_CONFIG`):**
+- Project names, table names, file paths
+- Testing mode constants
+- True constants that never change at runtime
+
+**Forecast Configuration (`FORECAST_CONFIG`):**
+- Default quantile for forecasting (0.5)
+- Other forecast-related parameters
+
+**Runtime Configuration (`get_runtime_config()`):**
+The `get_runtime_config()` function dynamically calculates dates and markets based on current time:
 - `forecast_start_date`: yesterday (T-1)
 - `forecast_end_date`: December 31 of next year
 - `training_end_date`: T-2
@@ -194,3 +239,24 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 - Training data must span from metric-specific start dates through `training_end_date`
 - Forecast data must span from `forecast_start_date` through `forecast_end_date`
 - No duplicate rows allowed (on non-metric columns)
+
+### Troubleshooting
+
+**Prophet/Stan Optimization Errors**
+
+If you see errors like `RuntimeError: Error during optimization!` when forecasting:
+
+1. **Architecture issues**: Prophet's Stan binaries work best on amd64. If testing locally on arm64 (Mac M1/M2), try the remote image instead:
+   ```bash
+   cd docker
+   ./run_mozaic_docker.sh --remote -- /run_forecast.sh
+   ```
+
+2. **Data quality**: Stan optimization can fail when:
+   - Too few data points for a segment
+   - All zeros or flat lines (no variation)
+   - Missing or invalid values (NaN, infinite)
+
+   Check the specific segment mentioned in the error (e.g., "AR: other") by examining the raw data.
+
+3. **Prophet configuration**: The models in `src/mozaic_daily/forecast.py` configure Prophet parameters. Segments with sparse data may need special handling.

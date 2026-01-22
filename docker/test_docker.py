@@ -20,11 +20,11 @@ def test_docker_image():
         print("\n[1/3] Running main forecast function...")
         print("Note: This requires BigQuery credentials or checkpoint files")
 
-        df = main(project="moz-fx-data-bq-data-science")
+        df = main(project="moz-fx-data-bq-data-science", testing_mode='ENABLE_TESTING_MODE')
         print(f"✓ Forecast generated: {len(df)} rows")
 
         print("\n[2/3] Running validation...")
-        validate_output_dataframe(df)
+        validate_output_dataframe(df, testing_mode=True)
         print("✓ Validation passed")
 
         print("\n[3/3] Sample output:")

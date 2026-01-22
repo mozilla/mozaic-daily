@@ -12,7 +12,7 @@ set -o pipefail
 DOCKERFILE="Dockerfile"
 IMAGE_BASE="mozaic-daily"
 REMOTE_USERNAME="brwells78094"
-BUILD_CONTEXT=".."  # Build context is parent directory
+BUILD_CONTEXT="../"  # Build context is parent directory (project root)
 
 ### --- Helpers --------------------------------------------------------------
 

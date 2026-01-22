@@ -160,7 +160,7 @@ def get_training_date_index(
     return full[mask.values]
 
 def get_prediction_date_index(start: str, end: str) -> pd.DatetimeIndex:
-    start_dt = pd.to_datetime(end).normalize()
+    start_dt = pd.to_datetime(start).normalize()
     end_dt = pd.to_datetime(end).normalize()
 
     return pd.date_range(start=start_dt, end=end_dt, freq='D')

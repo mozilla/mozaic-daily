@@ -17,9 +17,7 @@ from metaflow import (
 )
 from metaflow.cards import Markdown
 
-IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.6_amd64"
-
-#from bq_utilities import *
+IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.7_test_amd64"
 
 @schedule(cron='0 7 * * ? *')
 class MozaicDailyFlow(FlowSpec):
@@ -72,15 +70,15 @@ class MozaicDailyFlow(FlowSpec):
         """
         print('load')
         print(f'This flow is using docker image: "{IMAGE}"')
-        import os
-        print(f'We are using code hash: {open("/mozaic_commit.txt").read().rstrip()}')
 
-        import sys
+        import sys, os, os.path
         sys.path.insert(0, '/src')
-        from mozaic_daily import main
-        from mozaic_daily.validation import validate_output_dataframe
+        sys.path.insert(1, os.path.join(os.getcwd(),'/src'))
+        from mozaic_daily import main, validate_output_dataframe, get_git_commit_hash
         import pandas as pd
         from google.cloud import bigquery
+
+        print(f'We are using code hash: {get_git_commit_hash()}')
 
         project = "moz-fx-mfouterbounds-prod-f98d"
 
