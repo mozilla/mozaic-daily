@@ -19,8 +19,9 @@ from mozaic_daily.tables import (
     combine_tables,
     update_desktop_format,
     update_mobile_format,
-    add_desktop_and_mobile_rows,
     format_output_table,
+)
+from mozaic_daily.config import (
     get_git_commit_hash_from_pip,
     get_git_commit_hash_from_file,
     get_git_commit_hash,
@@ -87,7 +88,7 @@ def test_combine_tables_key_columns(sample_metric_dataframes):
 # ===== DESKTOP FORMATTING =====
 
 def test_update_desktop_format_adds_required_columns(sample_desktop_dataframe):
-    """Verify app_name='desktop', app_category='Desktop', segment JSON created.
+    """Verify app_name='desktop', data_source='Glean_Desktop', segment JSON created.
 
     Failure indicates required columns missing from output.
     """
@@ -95,12 +96,12 @@ def test_update_desktop_format_adds_required_columns(sample_desktop_dataframe):
     update_desktop_format(df)
 
     assert 'app_name' in df.columns, "Expected 'app_name' column after formatting"
-    assert 'app_category' in df.columns, "Expected 'app_category' column after formatting"
+    assert 'data_source' in df.columns, "Expected 'data_source' column after formatting"
     assert 'segment' in df.columns, "Expected 'segment' column after formatting"
 
     # Check values
     assert all(df['app_name'] == 'desktop'), "Expected app_name='desktop' for all rows"
-    assert all(df['app_category'] == 'Desktop'), "Expected app_category='Desktop' for all rows"
+    assert all(df['data_source'] == 'Glean_Desktop'), "Expected data_source='Glean_Desktop' for all rows"
 
 
 def test_update_desktop_format_segment_json_structure(sample_desktop_dataframe):
@@ -160,7 +161,7 @@ def test_update_desktop_format_removes_population_column(sample_desktop_datafram
 # ===== MOBILE FORMATTING =====
 
 def test_update_mobile_format_adds_required_columns(sample_mobile_dataframe):
-    """Verify app_category='Mobile', segment='{}' added.
+    """Verify data_source='Glean_Mobile', segment='{}' added.
 
     Failure indicates required columns missing.
     """
@@ -168,11 +169,11 @@ def test_update_mobile_format_adds_required_columns(sample_mobile_dataframe):
     update_mobile_format(df)
 
     assert 'app_name' in df.columns, "Expected 'app_name' column after formatting"
-    assert 'app_category' in df.columns, "Expected 'app_category' column after formatting"
+    assert 'data_source' in df.columns, "Expected 'data_source' column after formatting"
     assert 'segment' in df.columns, "Expected 'segment' column after formatting"
 
     # Check values
-    assert all(df['app_category'] == 'Mobile'), "Expected app_category='Mobile' for all rows"
+    assert all(df['data_source'] == 'Glean_Mobile'), "Expected data_source='Glean_Mobile' for all rows"
 
 
 def test_update_mobile_format_app_name_mapping(sample_mobile_dataframe):
@@ -218,171 +219,6 @@ def test_update_mobile_format_empty_segment(sample_mobile_dataframe):
             f"Row {idx}: Expected segment='{{}}' for mobile, got '{segment_str}'"
         )
 
-
-# ===== AGGREGATION =====
-
-def test_add_desktop_and_mobile_rows_creates_all_rows():
-    """Verify 'ALL' category rows are created by summing Desktop and Mobile.
-
-    Should sum:
-    - Desktop rows where segment='{"os": "ALL"}'
-    - Mobile rows where app_name='ALL MOBILE'
-
-    Failure indicates ALL category missing or wrong filtering.
-    """
-    # Create sample data with Desktop and Mobile
-    df_desktop = pd.DataFrame({
-        'target_date': pd.date_range('2024-01-01', periods=2),
-        'country': ['US', 'US'],
-        'source': ['forecast', 'forecast'],
-        'app_name': ['desktop', 'desktop'],
-        'app_category': ['Desktop', 'Desktop'],
-        'segment': ['{"os": "ALL"}', '{"os": "ALL"}'],
-        'DAU': [1000, 1100],
-        'New Profiles': [50, 60],
-        'Existing Engagement DAU': [800, 850],
-        'Existing Engagement MAU': [6000, 6200],
-    })
-
-    df_mobile = pd.DataFrame({
-        'target_date': pd.date_range('2024-01-01', periods=2),
-        'country': ['US', 'US'],
-        'source': ['forecast', 'forecast'],
-        'app_name': ['ALL MOBILE', 'ALL MOBILE'],
-        'app_category': ['Mobile', 'Mobile'],
-        'segment': ['{}', '{}'],
-        'DAU': [500, 550],
-        'New Profiles': [30, 35],
-        'Existing Engagement DAU': [400, 420],
-        'Existing Engagement MAU': [3000, 3100],
-    })
-
-    df_combined = pd.concat([df_desktop, df_mobile])
-    result = add_desktop_and_mobile_rows(df_combined)
-
-    # Check 'ALL' category exists
-    all_rows = result[result['app_category'] == 'ALL']
-    assert len(all_rows) > 0, "Expected 'ALL' category rows to be created"
-
-    # Check 'ALL' rows have correct app_name
-    assert all(all_rows['app_name'] == 'ALL'), (
-        f"Expected app_name='ALL' for ALL category. Found: {all_rows['app_name'].unique()}"
-    )
-
-
-def test_add_desktop_and_mobile_rows_sums_metrics_correctly():
-    """Verify metric values are summed correctly for ALL rows.
-
-    All 4 metrics should be summed: DAU, New Profiles, Existing Engagement DAU/MAU
-
-    Failure indicates math error, ALL category will be wrong.
-    """
-    # Create sample data with Desktop and Mobile
-    df_desktop = pd.DataFrame({
-        'target_date': ['2024-01-01'],
-        'country': ['US'],
-        'source': ['forecast'],
-        'app_name': ['desktop'],
-        'app_category': ['Desktop'],
-        'segment': ['{"os": "ALL"}'],
-        'DAU': [1000],
-        'New Profiles': [50],
-        'Existing Engagement DAU': [800],
-        'Existing Engagement MAU': [6000],
-    })
-
-    df_mobile = pd.DataFrame({
-        'target_date': ['2024-01-01'],
-        'country': ['US'],
-        'source': ['forecast'],
-        'app_name': ['ALL MOBILE'],
-        'app_category': ['Mobile'],
-        'segment': ['{}'],
-        'DAU': [500],
-        'New Profiles': [30],
-        'Existing Engagement DAU': [400],
-        'Existing Engagement MAU': [3000],
-    })
-
-    df_combined = pd.concat([df_desktop, df_mobile])
-    result = add_desktop_and_mobile_rows(df_combined)
-
-    # Get ALL row
-    all_row = result[
-        (result['app_category'] == 'ALL') &
-        (result['target_date'] == '2024-01-01') &
-        (result['country'] == 'US')
-    ]
-
-    assert len(all_row) == 1, f"Expected exactly 1 ALL row, found {len(all_row)}"
-
-    # Check sums
-    assert all_row['DAU'].iloc[0] == 1500, (
-        f"Expected DAU=1500 (1000+500), got {all_row['DAU'].iloc[0]}"
-    )
-    assert all_row['New Profiles'].iloc[0] == 80, (
-        f"Expected New Profiles=80 (50+30), got {all_row['New Profiles'].iloc[0]}"
-    )
-    assert all_row['Existing Engagement DAU'].iloc[0] == 1200, (
-        f"Expected Existing Engagement DAU=1200 (800+400), got {all_row['Existing Engagement DAU'].iloc[0]}"
-    )
-    assert all_row['Existing Engagement MAU'].iloc[0] == 9000, (
-        f"Expected Existing Engagement MAU=9000 (6000+3000), got {all_row['Existing Engagement MAU'].iloc[0]}"
-    )
-
-
-def test_add_desktop_and_mobile_rows_groups_by_correct_keys():
-    """Verify grouping happens by: target_date, country, source.
-
-    Failure indicates wrong grouping, duplicate or missing ALL rows.
-    """
-    # Create data with multiple dates/countries
-    dates = pd.date_range('2024-01-01', periods=2)
-    countries = ['US', 'DE']
-
-    data_desktop = []
-    data_mobile = []
-
-    for date in dates:
-        for country in countries:
-            data_desktop.append({
-                'target_date': date,
-                'country': country,
-                'source': 'forecast',
-                'app_name': 'desktop',
-                'app_category': 'Desktop',
-                'segment': '{"os": "ALL"}',
-                'DAU': 1000,
-                'New Profiles': 50,
-                'Existing Engagement DAU': 800,
-                'Existing Engagement MAU': 6000,
-            })
-            data_mobile.append({
-                'target_date': date,
-                'country': country,
-                'source': 'forecast',
-                'app_name': 'ALL MOBILE',
-                'app_category': 'Mobile',
-                'segment': '{}',
-                'DAU': 500,
-                'New Profiles': 30,
-                'Existing Engagement DAU': 400,
-                'Existing Engagement MAU': 3000,
-            })
-
-    df_combined = pd.concat([pd.DataFrame(data_desktop), pd.DataFrame(data_mobile)])
-    result = add_desktop_and_mobile_rows(df_combined)
-
-    # Should have one ALL row per date/country/source combination
-    # 2 dates × 2 countries = 4 ALL rows
-    all_rows = result[result['app_category'] == 'ALL']
-    expected_all_rows = 2 * 2  # dates × countries
-
-    assert len(all_rows) == expected_all_rows, (
-        f"Expected {expected_all_rows} ALL rows (2 dates × 2 countries), got {len(all_rows)}"
-    )
-
-
 # ===== OUTPUT FORMATTING =====
 
 def test_format_output_table_renames_metric_columns():
@@ -401,7 +237,7 @@ def test_format_output_table_renames_metric_columns():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'app_category': ['Desktop'],
+        'data_source': ['Glean_Desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -442,7 +278,7 @@ def test_format_output_table_adds_metadata_columns():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'app_category': ['Desktop'],
+        'data_source': ['Glean_Desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -477,7 +313,7 @@ def test_format_output_table_source_conversion():
         'country': ['US', 'US'],
         'source': ['actual', 'forecast'],
         'app_name': ['desktop', 'desktop'],
-        'app_category': ['Desktop', 'Desktop'],
+        'data_source': ['Glean_Desktop', 'Glean_Desktop'],
         'segment': ['{"os": "ALL"}', '{"os": "ALL"}'],
         'DAU': [1000, 1100],
         'New Profiles': [50, 55],
@@ -510,7 +346,7 @@ def test_format_output_table_country_all_conversion():
         'country': ['None', 'US'],
         'source': ['forecast', 'forecast'],
         'app_name': ['desktop', 'desktop'],
-        'app_category': ['Desktop', 'Desktop'],
+        'data_source': ['Glean_Desktop', 'Glean_Desktop'],
         'segment': ['{"os": "ALL"}', '{"os": "ALL"}'],
         'DAU': [1000, 1100],
         'New Profiles': [50, 55],
@@ -537,7 +373,7 @@ def test_format_output_table_column_types():
     """Verify string columns are explicitly cast to 'string' dtype.
 
     String columns: forecast_run_timestamp, target_date, mozaic_hash, source,
-                   country, app_name, app_category, segment
+                   country, app_name, data_source, segment
 
     Failure indicates wrong types, BigQuery upload may fail.
     """
@@ -546,7 +382,7 @@ def test_format_output_table_column_types():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'app_category': ['Desktop'],
+        'data_source': ['Glean_Desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -567,7 +403,7 @@ def test_format_output_table_column_types():
         'source',
         'country',
         'app_name',
-        'app_category',
+        'data_source',
         'segment',
     ]
 
@@ -581,7 +417,7 @@ def test_format_output_table_column_order():
     """Verify columns are in correct order: metadata columns first, then metrics.
 
     Order: forecast_start_date, forecast_run_timestamp, mozaic_hash, target_date,
-           source, country, app_name, app_category, segment, [metrics]
+           source, data_source, country, app_name, segment, [metrics]
 
     Failure indicates wrong column order, affects readability and debugging.
     """
@@ -590,7 +426,7 @@ def test_format_output_table_column_order():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'app_category': ['Desktop'],
+        'data_source': ['Glean_Desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -609,9 +445,9 @@ def test_format_output_table_column_order():
         'mozaic_hash',
         'target_date',
         'source',
+        'data_source',
         'country',
         'app_name',
-        'app_category',
         'segment',
     ]
 
@@ -635,7 +471,7 @@ def test_format_output_table_date_formats():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'app_category': ['Desktop'],
+        'data_source': ['Glean_Desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -707,22 +543,22 @@ def test_get_git_commit_hash_fallback_priority(mocker, tmp_path):
     """
     # Test 1: pip succeeds
     # Mock the actual functions that get_git_commit_hash() calls
-    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_pip', return_value='hash123')
-    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_file', return_value='file_hash')
+    mocker.patch('mozaic_daily.config.get_git_commit_hash_from_pip', return_value='hash123')
+    mocker.patch('mozaic_daily.config.get_git_commit_hash_from_file', return_value='file_hash')
 
     result = get_git_commit_hash()
     assert result == 'hash123', "Should use pip hash when available"
 
     # Test 2: pip returns 'unknown', file succeeds
-    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_pip', return_value='unknown')
-    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_file', return_value='file_hash')
+    mocker.patch('mozaic_daily.config.get_git_commit_hash_from_pip', return_value='unknown')
+    mocker.patch('mozaic_daily.config.get_git_commit_hash_from_file', return_value='file_hash')
 
     result = get_git_commit_hash()
     assert result == 'file_hash', "Should use file hash when pip returns 'unknown'"
 
     # Test 3: both fail (pip returns 'unknown', file returns None)
-    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_pip', return_value='unknown')
-    mocker.patch('mozaic_daily.tables.get_git_commit_hash_from_file', return_value=None)
+    mocker.patch('mozaic_daily.config.get_git_commit_hash_from_pip', return_value='unknown')
+    mocker.patch('mozaic_daily.config.get_git_commit_hash_from_file', return_value=None)
 
     result = get_git_commit_hash()
     assert result == 'unknown', "Should return 'unknown' when both methods fail"

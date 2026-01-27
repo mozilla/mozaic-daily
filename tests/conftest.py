@@ -22,7 +22,7 @@ def generate_desktop_raw_data(
 ):
     """Generate synthetic desktop data matching BigQuery schema.
 
-    Schema inferred from desktop_query() in mozaic_daily.py:
+    Schema inferred from QuerySpec.build_query() for Desktop in queries.py:
     - x: date column
     - country: string (country code or 'ROW')
     - win10, win11, winX: boolean flags
@@ -73,7 +73,7 @@ def generate_mobile_raw_data(
 ):
     """Generate synthetic mobile data matching BigQuery schema.
 
-    Schema inferred from mobile_query() in mozaic_daily.py:
+    Schema inferred from QuerySpec.build_query() for Mobile in queries.py:
     - x: date column
     - country: string (country code or 'ROW')
     - fenix_android, firefox_ios, focus_android, focus_ios: boolean flags
@@ -185,7 +185,7 @@ def mock_bigquery_client(mocker):
     mock_client.query.return_value = mock_query_result
 
     # Patch bigquery.Client to return our mock
-    mocker.patch('mozaic_daily.bigquery.Client', return_value=mock_client)
+    mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
 
     return mock_client
 

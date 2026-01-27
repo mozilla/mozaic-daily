@@ -8,12 +8,17 @@ This module defines:
 - Date constraints for each metric (start dates, excluded ranges)
 - SQL time clause generation
 - Date index generation for validation
+- Git hash retrieval for version tracking
 """
 
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional, Any
+import subprocess
+import re
+from pathlib import Path
 
 import pandas as pd
+from .queries import get_date_keys, get_training_date_index
 
 # Static configuration (true constants)
 STATIC_CONFIG = {
@@ -58,109 +63,43 @@ def get_runtime_config() -> Dict[str, Any]:
 
     return config
 
-def get_date_constraints() -> Dict[Tuple[str, str], Dict]:
-    return {
-        ("desktop", "DAU"): {
-            "date_field": "submission_date",
-            "start": '2023-04-17',
-            "excludes": [],
-        },
-        ("desktop", "New Profiles"): {
-            "date_field": "first_seen_date",
-            "start": '2023-07-01',
-            "excludes": [('2023-07-18', '2023-07-19')],
-        },
-        ("desktop", "Existing Engagement DAU"): {
-            "date_field": "submission_date",
-            "start": '2023-06-07',
-            "excludes": [],
-        },
-        ("desktop", "Existing Engagement MAU"): {
-            "date_field": "submission_date",
-            "start": '2023-06-07',
-            "excludes": [],
-        },
-        ("mobile", "DAU"): {
-            "date_field": "submission_date",
-            "start": '2020-12-31',
-            "excludes": [],
-        },
-        ("mobile", "New Profiles"): {
-            "date_field": "first_seen_date",
-            "start": '2023-07-01',
-            "excludes": [('2023-07-18', '2023-07-19')],
-        },
-        ("mobile", "Existing Engagement DAU"): {
-            "date_field": "submission_date",
-            "start": '2023-07-01',
-            "excludes": [],
-        },
-        ("mobile", "Existing Engagement MAU"): {
-            "date_field": "submission_date",
-            "start": '2023-07-01',
-            "excludes": [],
-        },
-    }
-
-def get_date_keys():
-    return get_date_constraints().keys()
-
-
-
-
-def get_sql_time_clause(
-    key: Tuple[str, str],
-    quote: str = '"',
-) -> str:
-    constraints = get_date_constraints()
-    if key not in constraints:
-        raise KeyError(f"Unknown key: {key}")
-
-    entry = constraints[key]
-    field = entry["date_field"]
-    start = entry["start"]
-    excludes: List[Tuple[str, str]] = entry.get("excludes", [])
-
-    parts = [f'{field} >= {quote}{start}{quote}']
-    for ex_start, ex_end in excludes:
-        parts.append(
-            f'{field} NOT BETWEEN {quote}{ex_start}{quote} AND {quote}{ex_end}{quote}'
-        )
-
-    return " AND ".join(parts)
-
-def get_training_date_index(
-    key: Tuple[str, str],
-    end: Optional[str] = None,
-) -> pd.DatetimeIndex:
-    constraints = get_date_constraints()
-    if key not in constraints:
-        raise KeyError(f"Unknown key: {key}")
-
-    entry = constraints[key]
-    start = pd.to_datetime(entry["start"]).normalize()
-    if end:
-        end_dt = pd.to_datetime(end).normalize()
-    else:
-        end_dt = pd.to_datetime(get_runtime_config()['training_end_date']).normalize()
-
-    full = pd.date_range(start=start, end=end_dt, freq='D')
-
-    excludes = entry.get("excludes", [])
-    if not excludes:
-        return full
-
-    mask = pd.Series(True, index=full)
-
-    for ex_start, ex_end in excludes:
-        ex_s = pd.to_datetime(ex_start).normalize()
-        ex_e = pd.to_datetime(ex_end).normalize()
-        mask.loc[(full >= ex_s) & (full <= ex_e)] = False
-
-    return full[mask.values]
 
 def get_prediction_date_index(start: str, end: str) -> pd.DatetimeIndex:
     start_dt = pd.to_datetime(start).normalize()
     end_dt = pd.to_datetime(end).normalize()
 
     return pd.date_range(start=start_dt, end=end_dt, freq='D')
+
+
+# Git hash retrieval functions
+
+def get_git_commit_hash_from_pip(package_name: str = "mozaic") -> str:
+    try:
+        output = subprocess.check_output(["pip", "freeze"], text=True)
+        for line in output.splitlines():
+            if line.startswith("-e git+") and f"#egg={package_name}" in line:
+                match = re.search(r"git\+(.+?)@([a-f0-9]+)#egg", line)
+                if match:
+                    base_url, sha = match.groups()
+                    return sha
+    except Exception:
+        pass
+    return "unknown"
+
+def get_git_commit_hash_from_file(path: str = '/mozaic_commit.txt') -> str:
+    """Return the commit/version string if the file exists, else None."""
+    p = Path(path)
+    if not p.exists():
+        return None
+
+    text = p.read_text().strip()
+    return text or None
+
+def get_git_commit_hash() -> str:
+    pip_version = get_git_commit_hash_from_pip()
+    if pip_version == 'unknown':
+        file_version = get_git_commit_hash_from_file()
+        if file_version:
+            return file_version
+
+    return pip_version

@@ -23,7 +23,7 @@ from .data import get_queries, get_aggregate_data
 from .forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs
 from .tables import (
     combine_tables, update_desktop_format, update_mobile_format,
-    add_desktop_and_mobile_rows, format_output_table
+    format_output_table
 )
 
 
@@ -99,7 +99,8 @@ def main(
             update_desktop_format(df_desktop)
             update_mobile_format(df_mobile)
 
-            df = add_desktop_and_mobile_rows(pd.concat([df_desktop, df_mobile]))
+            # Combine Desktop and Mobile (no cross-platform aggregation)
+            df = pd.concat([df_desktop, df_mobile], ignore_index=True)
             df = format_output_table(df, config['forecast_start_date'], config['forecast_run_dt'])
 
         if checkpoints:

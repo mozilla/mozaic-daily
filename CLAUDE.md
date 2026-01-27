@@ -6,6 +6,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository implements automated daily forecasting for Mozilla Firefox metrics using the Mozaic package. The system runs as a Metaflow pipeline on Outerbounds infrastructure, querying BigQuery for telemetry data and producing forecasts for Desktop and Mobile platforms.
 
+## Code Quality Standards
+
+**All code written in this repository must be human-readable and maintainable.** Code is written for humans to review, understand, and edit, not just for machines to execute.
+
+### Expectations
+
+- **Clean variable and function names**: Use descriptive, meaningful names that communicate purpose (e.g., `forecast_start_date`, not `fsd` or `x1`)
+- **Human-like decomposition**: Break complex logic into well-named functions with clear responsibilities
+- **Self-documenting code**: Code should be understandable without excessive comments through good naming and structure
+- **Consistent style**: Follow existing patterns in the codebase for formatting, naming conventions, and organization
+- **Logical organization**: Group related functionality together; keep functions focused on a single responsibility
+- **Readable flow**: Structure code in the order it will be read and understood, not just executed
+
+### What to Avoid
+
+- Cryptic abbreviations or single-letter variables (except standard loop counters like `i`, `j`)
+- Overly complex one-liners that sacrifice readability for brevity
+- Deep nesting that makes control flow hard to follow
+- Functions that do too many unrelated things
+- Magic numbers or strings without clear names
+
+Code reviews are a core part of development. Write code that will make sense to your future self and your colleagues.
+
+## Planning and Implementation
+
+**All implementation plans must include documentation and test updates.** When creating a plan for any code change:
+
+- **Documentation**: Plans must identify all documentation that needs updating (CLAUDE.md, docstrings, code comments, README files)
+- **Tests**: Plans must specify what tests need to be added, updated, or verified
+- **Verification**: Plans must include a verification step to ensure tests pass and documentation is accurate
+
+This is not optional. Documentation and tests are first-class artifacts, not afterthoughts. A plan that omits these is incomplete.
+
 ## Development Environment
 
 ### Virtual Environment
@@ -36,11 +69,12 @@ The codebase is organized as a Python package:
 ```
 src/mozaic_daily/
 ├── __init__.py       # Package exports
-├── config.py         # Constants and date logic (from constants.py)
-├── data.py           # BigQuery data fetching + SQL query builders
+├── config.py         # Constants and date logic
+├── queries.py        # SQL query specifications (QuerySpec.build_query() generates SQL)
+├── data.py           # BigQuery data fetching and query execution
 ├── forecast.py       # Mozaic forecasting logic
 ├── tables.py         # Table formatting and manipulation
-├── validation.py     # Output validation (from mozaic_daily_validation.py)
+├── validation.py     # Output validation
 └── main.py           # Main entry point
 ```
 

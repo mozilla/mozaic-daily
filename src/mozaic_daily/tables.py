@@ -1,69 +1,35 @@
 # -*- coding: utf-8 -*-
-"""Table formatting, manipulation, and version tracking.
+"""Table formatting and manipulation.
 
 This module transforms raw forecast DataFrames into the final output format
 for BigQuery upload. Key operations:
 - Combining metric tables into single DataFrame
-- Formatting Desktop/Mobile segments (app names, OS JSON)
-- Creating aggregate "ALL" rows (Desktop+Mobile combined)
+- Formatting Desktop/Mobile segments (app names, OS JSON, data_source)
 - Column renaming and type conversion
-- Git hash retrieval for version tracking
+
+Note: This module does NOT create cross-platform aggregate rows.
+Each row belongs to exactly one data_source (Glean_Desktop, Legacy_Desktop, or Glean_Mobile).
 
 Functions:
 - combine_tables(): Merges metric-specific DataFrames
 - update_desktop_format(): Formats Desktop segment columns
 - update_mobile_format(): Formats Mobile segment columns
-- add_desktop_and_mobile_rows(): Creates aggregate rows
 - format_output_table(): Final formatting for BigQuery
-- get_git_commit_hash*(): Version tracking utilities
 """
 
 import pandas as pd
 import numpy as np
 import json
-import re
-import subprocess
-from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 from datetime import datetime
 
-
-def get_git_commit_hash_from_pip(package_name: str = "mozaic") -> str:
-    try:
-        output = subprocess.check_output(["pip", "freeze"], text=True)
-        for line in output.splitlines():
-            if line.startswith("-e git+") and f"#egg={package_name}" in line:
-                match = re.search(r"git\+(.+?)@([a-f0-9]+)#egg", line)
-                if match:
-                    base_url, sha = match.groups()
-                    return sha
-    except Exception:
-        pass
-    return "unknown"
-
-def get_git_commit_hash_from_file(path: str = '/mozaic_commit.txt') -> str:
-    """Return the commit/version string if the file exists, else None."""
-    p = Path(path)
-    if not p.exists():
-        return None
-
-    text = p.read_text().strip()
-    return text or None
-
-def get_git_commit_hash() -> str:
-    pip_version = get_git_commit_hash_from_pip()
-    if pip_version == 'unknown':
-        file_version = get_git_commit_hash_from_file()
-        if file_version:
-            return file_version
-
-    return pip_version
+from .config import get_git_commit_hash
 
 
 # Table manipulation functions
 
 
-def combine_tables(table_dict: dict[str, pd.DataFrame]) -> pd.DataFrame:
+def combine_tables(table_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     base_df = None
     for metric, df in table_dict.items():
         tmp_df = df.rename(columns={"value": metric})
@@ -81,8 +47,15 @@ def combine_tables(table_dict: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
 
 def update_desktop_format(df: pd.DataFrame) -> None:
+    """Format Desktop forecast DataFrame.
+
+    Adds:
+    - app_name: "desktop"
+    - data_source: "Glean_Desktop" (all current Desktop queries use Glean)
+    - segment: JSON string with os field
+    """
     df["app_name"] = "desktop"
-    df["app_category"] = "Desktop"
+    df["data_source"] = "Glean_Desktop"
     df["segment"] = df["population"].apply(
         lambda x: json.dumps({"os": "ALL" if x == "None" else x})
     )
@@ -90,33 +63,17 @@ def update_desktop_format(df: pd.DataFrame) -> None:
 
 
 def update_mobile_format(df: pd.DataFrame) -> None:
+    """Format Mobile forecast DataFrame.
+
+    Adds:
+    - app_name: specific app name or "ALL MOBILE" for aggregates
+    - data_source: "Glean_Mobile" (all Mobile queries use Glean)
+    - segment: Empty JSON object (Mobile doesn't segment by OS)
+    """
     df["app_name"] = df["population"].where(df["population"] != "None", "ALL MOBILE")
-    df["app_category"] = "Mobile"
+    df["data_source"] = "Glean_Mobile"
     df["segment"] = "{}"
     df.drop("population", axis=1, inplace=True)
-
-
-def add_desktop_and_mobile_rows(df: pd.DataFrame) -> pd.DataFrame:
-    tmp_df = (
-        df[
-            ((df["app_category"] == "Mobile") & (df["app_name"] == "ALL MOBILE"))
-            | ((df["app_category"] == "Desktop") & (df["segment"] == '{"os": "ALL"}'))
-        ]
-        .groupby(["target_date", "country", "source"])
-        .agg(
-            {
-                "DAU": "sum",
-                "New Profiles": "sum",
-                "Existing Engagement DAU": "sum",
-                "Existing Engagement MAU": "sum",
-            }
-        )
-    )
-    tmp_df["app_category"] = "ALL"
-    tmp_df["app_name"] = "ALL"
-    tmp_df["segment"] = '{"os": "ALL"}'
-    tmp_df = tmp_df.reset_index()
-    return pd.concat([df, tmp_df[df.columns]])
 
 
 def format_output_table(
@@ -136,9 +93,9 @@ def format_output_table(
         "mozaic_hash",
         "target_date",
         "source",
+        "data_source",
         "country",
         "app_name",
-        "app_category",
         "segment",
     ]
     metric_cols = [
@@ -160,9 +117,9 @@ def format_output_table(
         "target_date",
         "mozaic_hash",
         "source",
+        "data_source",
         "country",
         "app_name",
-        "app_category",
         "segment",
     ]
 

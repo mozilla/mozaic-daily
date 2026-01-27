@@ -19,7 +19,7 @@ import warnings
 from collections import defaultdict
 import mozaic
 from mozaic.models import desktop_forecast_model, mobile_forecast_model
-from mozaic import TileSet, Tile, Mozaic, populate_tiles, curate_mozaics, mozaic_divide
+from mozaic import TileSet, Mozaic, populate_tiles, curate_mozaics
 
 
 # Do the forecasting
@@ -69,11 +69,11 @@ def get_forecast_dfs(
             forecast_end_date,
         )
 
-    mozaics: dict[str, Mozaic] = {}
+    mozaics: Dict[str, Mozaic] = {}
     _ctry = defaultdict(lambda: defaultdict(mozaic.Mozaic))
     _pop = defaultdict(lambda: defaultdict(mozaic.Mozaic))
 
-    print ('\n--- Curate Mozaics\n')
+    print('\n--- Curate Mozaics\n')
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",

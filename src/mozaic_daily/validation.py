@@ -26,7 +26,7 @@ import re
 from google.cloud import bigquery
 
 from .config import (
-    get_runtime_config, STATIC_CONFIG, get_date_constraints, get_date_keys,
+    get_runtime_config, STATIC_CONFIG, get_date_keys,
     get_training_date_index, get_prediction_date_index
 )
 
@@ -34,12 +34,13 @@ from .config import (
 
 APP_NAMES = set([
     'firefox_ios', 'focus_ios', 'fenix_android', 'focus_android',
-    'desktop', 'ALL MOBILE', 'ALL'
+    'desktop', 'ALL MOBILE'
 ])
 OPTIONAL_APP_NAMES = set(['other_mobile'])
 
-APP_CATEGORIES = set([
-    'Mobile', 'Desktop', 'ALL'
+# Data source values (replaces APP_CATEGORIES)
+DATA_SOURCES = set([
+    'Glean_Desktop', 'Legacy_Desktop', 'Glean_Mobile'
 ])
 
 OS_VALUES = set([
@@ -191,8 +192,8 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
         make_allowed_string_validator(APP_NAMES | OPTIONAL_APP_NAMES)
     )
 
-    validate_column('app_category',
-        make_allowed_string_validator(APP_CATEGORIES)
+    validate_column('data_source',
+        make_allowed_string_validator(DATA_SOURCES)
     )
 
     validate_column('segment', is_json_string)
@@ -218,14 +219,13 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
 def _check_row_counts(
     df: pd.DataFrame,
     expected_app_names: set,
-    expected_app_categories: set,
+    expected_data_sources: set,
     expected_date_keys: list,
     expected_os_values: set,
     skip_country_check: bool = False
 ) -> None:
     print('\t Validating row counts')
     constants = get_runtime_config()
-    date_constraints = get_date_constraints()
     training_date_index_for = lambda key: get_training_date_index(key, constants['forecast_start_date'])
 
     # Overall date checks, training
@@ -284,14 +284,14 @@ def _check_row_counts(
             )
 
     row_check('app_name', expected_app_names, 'app name(s)')
-    row_check('app_category', expected_app_categories, 'app category')
+    row_check('data_source', expected_data_sources, 'data source(s)')
     row_check('segment',
         [f'{{"os": "{x}"}}' if x is not None else '{}' for x in expected_os_values ],
         'segment(s)'
     )
 
     # No more rows than all possible combinations
-    max_rows = len(constants['validation_countries']) * len(expected_app_names) * len(expected_app_categories) * len(expected_os_values)
+    max_rows = len(constants['validation_countries']) * len(expected_app_names) * len(expected_data_sources) * len(expected_os_values)
     max_count_df = df.groupby('target_date').size().reset_index()
     max_count_mask = max_count_df.iloc[:,1] > max_rows
     if max_count_mask.any():
@@ -317,8 +317,16 @@ def _validate_null_values(df: pd.DataFrame, expected_date_keys: list) -> None:
 
         target_col = target_cols[key[1]]
 
+        # Map platform to data_source for filtering
+        # Note: Currently all queries use Glean, but this logic supports future Legacy queries
+        platform_to_data_source = {
+            'desktop': 'Glean_Desktop',
+            'mobile': 'Glean_Mobile'
+        }
+        data_source = platform_to_data_source[key[0]]
+
         validation_df = (
-            df[(df['app_category'] == key[0].capitalize()) & (df['source'] == 'training') & (df[target_col].notna())]
+            df[(df['data_source'] == data_source) & (df['source'] == 'training') & (df[target_col].notna())]
             .groupby('target_date')[target_col].sum().reset_index()
             .merge(
                 expected_df,
@@ -355,7 +363,7 @@ def _validate_duplicate_rows(df: pd.DataFrame) -> None:
         raise ValueError(
             f"""Duplicate rows found. Example rows:
 
-            {extra.head(6)}
+            {duplicates.head(6)}
             """
         )
 
@@ -366,12 +374,12 @@ def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
     # Define expectations based on mode
     if testing_mode:
         expected_app_names = {'desktop'}
-        expected_app_categories = {'Desktop'}
+        expected_data_sources = {'Glean_Desktop'}  # Testing mode uses only Desktop Glean
         expected_date_keys = [("desktop", "DAU")]  # Only desktop/DAU combo
         expected_os_values = {'win10', 'win11', 'winX', 'other', 'ALL'}  # Desktop OS only
     else:
         expected_app_names = APP_NAMES
-        expected_app_categories = APP_CATEGORIES
+        expected_data_sources = DATA_SOURCES  # All data sources
         expected_date_keys = get_date_keys()  # All platform/metric combinations
         expected_os_values = OS_VALUES  # All OS values including None for mobile
 
@@ -382,7 +390,7 @@ def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
         _check_column_type(df, bq_fields)
 
     _validate_string_column_formats(df)
-    _check_row_counts(df, expected_app_names, expected_app_categories, expected_date_keys, expected_os_values, skip_country_check=testing_mode)
+    _check_row_counts(df, expected_app_names, expected_data_sources, expected_date_keys, expected_os_values, skip_country_check=testing_mode)
     _validate_null_values(df, expected_date_keys)
     _validate_duplicate_rows(df)
 
