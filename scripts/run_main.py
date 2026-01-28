@@ -63,11 +63,20 @@ if __name__ == '__main__':
         type=str,
         help='Save output to directory as dau_forecast_{date}.parquet'
     )
+    parser.add_argument(
+        '--no-checkpoints',
+        action='store_true',
+        help='Disable checkpoint loading (required for batch historical processing)'
+    )
     args = parser.parse_args()
 
     testing_mode = STATIC_CONFIG['testing_mode_enable_string'] if args.testing else None
+
+    # Disable checkpoints if flag is set
+    use_checkpoints = not args.no_checkpoints
+
     main(
-        checkpoints=True,
+        checkpoints=use_checkpoints,
         testing_mode=testing_mode,
         forecast_start_date=args.forecast_start_date,
         forecast_only=args.forecast_only,

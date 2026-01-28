@@ -142,7 +142,8 @@ python scripts/run_main.py \
   --forecast-start-date 2024-06-15 \
   --dau-only \
   --forecast-only \
-  --output-dir ./forecasts
+  --output-dir ./forecasts \
+  --no-checkpoints  # Required when processing multiple dates
 
 # Process multiple historical dates (manual loop)
 for date in 2024-06-{01..30}; do
@@ -167,7 +168,9 @@ python scripts/combine_forecasts.py --input-dir ./forecasts --output combined.pa
 - When debug flags are active, validation is skipped (output may not match production schema)
 - `--forecast-start-date` adjusts all dates: training_end_date = date - 1 day, forecast_end_date = Dec 31 of (year + 1)
 - `--dau-only` filters queries before hitting BigQuery (saves cost and time)
+- `--no-checkpoints` disables checkpoint loading - **required when processing multiple historical dates** to prevent loading cached forecasts from previous runs
 - Output files are named `dau_forecast_{date}.parquet` when using `--output-dir`
+- The `batch_historical_forecasts.py` script automatically uses `--no-checkpoints`
 - Default behavior unchanged when no flags are provided
 
 ### Docker Build & Push

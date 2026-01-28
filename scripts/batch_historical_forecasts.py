@@ -48,7 +48,8 @@ def run_forecast_for_date(date: str, output_dir: str, repo_root: Path):
         "--forecast-start-date", date,
         "--dau-only",
         "--forecast-only",
-        "--output-dir", output_dir
+        "--output-dir", output_dir,
+        "--no-checkpoints"  # Required for batch processing different dates
     ]
 
     print(f"Running command: {' '.join(cmd)}")
@@ -121,7 +122,7 @@ def main():
     print(f"Date range: {args.start_date} to {args.end_date}")
     print(f"Total dates: {total_dates}")
     print(f"Output directory: {args.output_dir}")
-    print(f"Flags: --dau-only --forecast-only")
+    print(f"Flags: --dau-only --forecast-only --no-checkpoints")
     print("=" * 80)
     print()
 
