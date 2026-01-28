@@ -186,7 +186,11 @@ def generate_forecasts(
 def main(
     project: Optional[str] = None,
     checkpoints: Optional[bool] = False,
-    testing_mode: Optional[str] = None
+    testing_mode: Optional[str] = None,
+    forecast_start_date: Optional[str] = None,
+    forecast_only: bool = False,
+    dau_only: bool = False,
+    output_dir: Optional[str] = None
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
 
@@ -194,12 +198,20 @@ def main(
         project: GCP project ID for BigQuery (defaults to config value)
         checkpoints: Enable file-based checkpointing for faster iteration
         testing_mode: String flag to enable testing mode (must match exact value)
+        forecast_start_date: Override date (YYYY-MM-DD) for historical forecast runs.
+            Simulates running the forecast on this date.
+        forecast_only: If True, return only forecast rows (no training data).
+            Useful for research/analysis.
+        dau_only: If True, only query DAU metrics (reduces from 12 to 3 queries).
+            Useful for faster iteration when testing DAU models.
+        output_dir: If provided, save output to this directory as
+            dau_forecast_{date}.parquet. Skips validation when saving to custom location.
 
     Returns:
-        DataFrame with validated forecasts ready for BigQuery upload
+        DataFrame with forecasts (validated if output_dir not set, else raw output)
     """
-    # Load configuration
-    config = get_runtime_config()
+    # Load configuration with optional date override
+    config = get_runtime_config(forecast_start_date_override=forecast_start_date)
     if not project:
         project = STATIC_CONFIG['default_project']
 
@@ -207,6 +219,22 @@ def main(
     is_testing = (testing_mode == STATIC_CONFIG['testing_mode_enable_string'])
     if is_testing:
         print_testing_mode_banner()
+
+    # Print debug flags if active
+    debug_flags_active = forecast_start_date or forecast_only or dau_only or output_dir
+    if debug_flags_active:
+        print('\n' + '=' * 60)
+        print('DEBUG FLAGS ACTIVE')
+        if forecast_start_date:
+            print(f'  - forecast_start_date override: {forecast_start_date}')
+        if dau_only:
+            print(f'  - dau_only: True (querying only DAU metrics)')
+        if forecast_only:
+            print(f'  - forecast_only: True (output will exclude training data)')
+        if output_dir:
+            print(f'  - output_dir: {output_dir}')
+            print(f'  - Validation will be SKIPPED')
+        print('=' * 60 + '\n')
 
     print(f'Running forecast from {config["forecast_start_date"]} through {config["forecast_end_date"]}')
     print(f'Other config:\n{config}')
@@ -216,7 +244,7 @@ def main(
 
     # Fetch data from BigQuery (with internal checkpointing)
     datasets = get_aggregate_data(
-        get_queries(config['country_string'], testing_mode=is_testing),
+        get_queries(config['country_string'], testing_mode=is_testing, dau_only=dau_only),
         project,
         checkpoints=checkpoints
     )
@@ -230,6 +258,21 @@ def main(
         df = generate_forecasts(datasets, config, is_testing)
         if checkpoints:
             save_checkpoint(df, checkpoint_filename)
+
+    # Filter to forecast-only if requested
+    if forecast_only:
+        print('\nFiltering to forecast rows only (excluding training data)')
+        df = df[df['data_type'] == 'forecast'].copy()
+        print(f'Output rows after filter: {len(df)}')
+
+    # Save to custom output directory if requested
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        output_filename = f"dau_forecast_{config['forecast_start_date']}.parquet"
+        output_path = os.path.join(output_dir, output_filename)
+        df.to_parquet(output_path)
+        print(f'\nSaved to: {output_path}')
+        print('Validation skipped (debug mode)')
 
     # Return result
     return df

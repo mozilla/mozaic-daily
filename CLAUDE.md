@@ -118,6 +118,50 @@ python scripts/run_validation.py
 python mozaic_daily_flow.py run
 ```
 
+### Debug/Research Flags
+
+The forecasting pipeline supports debug flags for historical analysis and research:
+
+```bash
+# Run a historical forecast (simulates running on a past date)
+python scripts/run_main.py --forecast-start-date 2024-06-15
+
+# Query only DAU metrics (3 queries instead of 12, faster iteration)
+python scripts/run_main.py --dau-only
+
+# Return only forecast rows (exclude training data from output)
+python scripts/run_main.py --forecast-only
+
+# Save to custom directory with date-stamped filename
+python scripts/run_main.py --output-dir ./forecasts
+
+# Combine all flags for batch historical analysis
+python scripts/run_main.py \
+  --forecast-start-date 2024-06-15 \
+  --dau-only \
+  --forecast-only \
+  --output-dir ./forecasts
+
+# Process multiple historical dates
+for date in 2024-06-{01..30}; do
+    python scripts/run_main.py \
+      --forecast-start-date $date \
+      --dau-only \
+      --forecast-only \
+      --output-dir ./forecasts
+done
+
+# Combine all historical forecasts into a single file
+python scripts/combine_forecasts.py --input-dir ./forecasts --output combined.parquet
+```
+
+**Important Notes:**
+- When debug flags are active, validation is skipped (output may not match production schema)
+- `--forecast-start-date` adjusts all dates: training_end_date = date - 1 day, forecast_end_date = Dec 31 of (year + 1)
+- `--dau-only` filters queries before hitting BigQuery (saves cost and time)
+- Output files are named `dau_forecast_{date}.parquet` when using `--output-dir`
+- Default behavior unchanged when no flags are provided
+
 ### Docker Build & Push
 ```bash
 # All docker commands run from the docker/ directory

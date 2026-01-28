@@ -12,7 +12,7 @@ This module defines:
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import subprocess
 import re
 from pathlib import Path
@@ -34,19 +34,37 @@ FORECAST_CONFIG = {
     'quantile': 0.5,  # Default quantile for to_granular_forecast_df()
 }
 
-def get_runtime_config() -> Dict[str, Any]:
-    """Calculate runtime configuration based on current datetime.
+def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Dict[str, Any]:
+    """Calculate runtime configuration based on current datetime or override.
 
-    Returns dates, markets, and derived values. Does not include static config.
+    Args:
+        forecast_start_date_override: Optional date string (YYYY-MM-DD) to simulate
+            running the forecast on a historical date. When provided, treats this as
+            the forecast start date (T-0) and adjusts all other dates accordingly:
+            - training_end_date = override - 1 day (T-1)
+            - forecast_end_date = Dec 31 of (override year + 1)
+
+    Returns:
+        Dict with dates, markets, and derived values. Does not include static config.
     """
     config = {}
 
-    # Dates (calculated at runtime)
-    forecast_run_dt = datetime.now()
-    config['forecast_run_dt'] = forecast_run_dt
-    config['forecast_start_date'] = (forecast_run_dt - timedelta(days=1)).strftime("%Y-%m-%d")
-    config['forecast_end_date'] = datetime(forecast_run_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
-    config['training_end_date'] = (forecast_run_dt - timedelta(days=2)).strftime("%Y-%m-%d")
+    # Dates (calculated at runtime or from override)
+    if forecast_start_date_override:
+        # Parse override as the forecast start date (simulated "yesterday")
+        override_dt = datetime.strptime(forecast_start_date_override, "%Y-%m-%d")
+        forecast_run_dt = override_dt + timedelta(days=1)  # Simulated "today"
+        config['forecast_run_dt'] = forecast_run_dt
+        config['forecast_start_date'] = forecast_start_date_override
+        config['forecast_end_date'] = datetime(override_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
+        config['training_end_date'] = (override_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+    else:
+        # Default behavior: use current datetime
+        forecast_run_dt = datetime.now()
+        config['forecast_run_dt'] = forecast_run_dt
+        config['forecast_start_date'] = (forecast_run_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+        config['forecast_end_date'] = datetime(forecast_run_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
+        config['training_end_date'] = (forecast_run_dt - timedelta(days=2)).strftime("%Y-%m-%d")
 
     # Markets
     top_DAU_markets = set(
