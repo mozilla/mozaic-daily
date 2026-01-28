@@ -189,8 +189,8 @@ python mozaic_daily_flow.py run --with kubernetes:image=<image>
 
 2. **Forecasting** (`mozaic_daily.forecast:get_forecast_dfs`)
    - Uses the Mozaic package (`mozaic.TileSet`, `mozaic.Mozaic`)
-   - Creates tiles via `populate_tiles()` for each metric/country/population segment
-   - Curates mozaics via `curate_mozaics()` to aggregate tiles
+   - Creates tiles via `mozaic.populate_tiles()` for each metric/country/population segment
+   - Curates mozaics via `mozaic.utils.curate_mozaics()` to aggregate tiles
    - Applies platform-specific models: `desktop_forecast_model`, `mobile_forecast_model`
 
 3. **Table Formatting** (`mozaic_daily.tables:format_output_table`)
@@ -198,6 +198,8 @@ python mozaic_daily_flow.py run --with kubernetes:image=<image>
    - Creates aggregate "ALL" rows for Desktop+Mobile combined
    - Formats columns: renames metrics to lowercase, adds metadata (forecast_start_date, mozaic_hash)
    - Converts "actual" source to "training" for historical data
+   - Renames "source" column to "data_type"
+   - Sets data_source values to lowercase (glean_desktop, legacy_desktop, glean_mobile)
 
 4. **Validation** (`mozaic_daily.validation:validate_output_dataframe`)
    - Validates against BigQuery schema (column presence, types)
@@ -229,10 +231,11 @@ The `get_runtime_config()` function dynamically calculates dates and markets bas
 - `training_end_date`: T-2
 - Countries: union of top DAU markets, top Google markets, and non-monetized Google markets
 
-The `get_date_constraints()` function defines per-metric training data parameters:
+Per-metric training data parameters are defined using the `DateConstraints` dataclass in `mozaic_daily.queries`:
 - Start dates vary by metric (e.g., Desktop DAU from 2023-04-17, Mobile DAU from 2020-12-31)
 - Some metrics have excluded date ranges (e.g., New Profiles excludes 2023-07-18 to 2023-07-19)
 - Different date fields: `submission_date` vs `first_seen_date`
+- Each `QuerySpec` in the `QUERY_SPECS` dictionary contains a `DateConstraints` object that generates SQL WHERE clauses
 
 ### Metaflow Integration
 

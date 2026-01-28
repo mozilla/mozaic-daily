@@ -155,9 +155,10 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
         assert 'populate_tiles' in call_order, "populate_tiles was not called"
         assert 'curate_mozaics' in call_order, "curate_mozaics was not called"
 
-        # Verify both platforms were processed (2 populate + 2 curate = 4 total)
-        assert call_order.count('populate_tiles') == 2, "Expected 2 populate_tiles calls (desktop + mobile)"
-        assert call_order.count('curate_mozaics') == 2, "Expected 2 curate_mozaics calls (desktop + mobile)"
+        # Verify all data sources were processed (3 populate + 3 curate = 6 total)
+        # desktop glean, desktop legacy, mobile glean
+        assert call_order.count('populate_tiles') == 3, "Expected 3 populate_tiles calls (desktop glean + desktop legacy + mobile glean)"
+        assert call_order.count('curate_mozaics') == 3, "Expected 3 curate_mozaics calls (desktop glean + desktop legacy + mobile glean)"
 
     finally:
         os.chdir(original_dir)
@@ -218,10 +219,11 @@ def test_checkpoint_system_works(tmp_path, mocker):
         # First run: create checkpoints
         df1 = main(project='test-project', checkpoints=True)
 
-        # Verify checkpoint files were created
+        # Verify checkpoint files were created with new naming scheme
         expected_files = [
-            'mozaic_parts.raw.desktop.DAU.parquet',
-            'mozaic_parts.raw.mobile.DAU.parquet',
+            'mozaic_parts.raw.glean.desktop.DAU.parquet',
+            'mozaic_parts.raw.legacy.desktop.DAU.parquet',
+            'mozaic_parts.raw.glean.mobile.DAU.parquet',
             'mozaic_parts.forecast.parquet',
         ]
 
@@ -288,12 +290,14 @@ def test_desktop_and_mobile_processed_separately(sample_checkpoint_files, mocker
         # Run pipeline
         df = main(project='test-project', checkpoints=True)
 
-        # Verify both models were used
+        # Verify both models were used (desktop model called twice for glean+legacy, mobile once)
         from mozaic.models import desktop_forecast_model, mobile_forecast_model
 
         assert desktop_forecast_model in models_used, "Desktop model was not used"
         assert mobile_forecast_model in models_used, "Mobile model was not used"
-        assert len(models_used) == 2, f"Expected 2 model calls, got {len(models_used)}"
+        assert len(models_used) == 3, f"Expected 3 model calls (2 desktop + 1 mobile), got {len(models_used)}"
+        assert models_used.count(desktop_forecast_model) == 2, "Expected desktop model called twice (glean + legacy)"
+        assert models_used.count(mobile_forecast_model) == 1, "Expected mobile model called once"
 
     finally:
         os.chdir(original_dir)

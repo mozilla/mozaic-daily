@@ -18,14 +18,17 @@ from tests.conftest import generate_desktop_raw_data, generate_mobile_raw_data
 # ===== BIGQUERY INTEGRATION (100% MOCKED) =====
 
 def test_get_aggregate_data_executes_all_queries(mocker):
-    """Verify that all platform/metric queries are executed.
+    """Verify that all platform/metric/source queries are executed.
 
     BigQuery client is MOCKED - no actual queries sent to BigQuery.
     Returns synthetic DataFrames matching expected schema from SQL queries.
 
     Should execute:
-    - 4 desktop queries (DAU, New Profiles, Existing Engagement DAU, Existing Engagement MAU)
-    - 4 mobile queries (DAU, New Profiles, Existing Engagement DAU, Existing Engagement MAU)
+    - 4 desktop glean queries (DAU, New Profiles, Existing Engagement DAU, Existing Engagement MAU)
+    - 4 desktop legacy queries (DAU, New Profiles, Existing Engagement DAU, Existing Engagement MAU)
+    - 4 mobile glean queries (DAU, New Profiles, Existing Engagement DAU, Existing Engagement MAU)
+
+    Total: 12 queries
 
     Failure indicates missing query execution or wrong query count.
     """
@@ -46,14 +49,14 @@ def test_get_aggregate_data_executes_all_queries(mocker):
     result = get_aggregate_data(queries, 'test-project', checkpoints=False)
 
     # Verify queries were executed
-    # Should have called query() 8 times (4 desktop + 4 mobile)
-    assert mock_client.query.call_count == 8, (
-        f"Expected 8 queries to be executed (4 desktop + 4 mobile), got {mock_client.query.call_count}"
+    # Should have called query() 12 times (4 desktop glean + 4 desktop legacy + 4 mobile glean)
+    assert mock_client.query.call_count == 12, (
+        f"Expected 12 queries to be executed (4 desktop glean + 4 desktop legacy + 4 mobile glean), got {mock_client.query.call_count}"
     )
 
 
 def test_get_aggregate_data_returns_correct_structure(mocker):
-    """Verify returned data structure is nested dict: {platform: {metric: DataFrame}}.
+    """Verify returned data structure is nested dict: {platform: {source: {metric: DataFrame}}}.
 
     BigQuery client is MOCKED - returns synthetic data only.
 
@@ -70,24 +73,35 @@ def test_get_aggregate_data_returns_correct_structure(mocker):
     queries = get_queries("'US', 'DE'")
     result = get_aggregate_data(queries, 'test-project', checkpoints=False)
 
-    # Check structure: {platform: {metric: DataFrame}}
+    # Check structure: {platform: {source: {metric: DataFrame}}}
     assert 'desktop' in result, "Expected 'desktop' key in result"
     assert 'mobile' in result, "Expected 'mobile' key in result"
 
-    # Check desktop metrics
+    # Check desktop has both glean and legacy sources
+    assert 'glean' in result['desktop'], "Expected 'glean' source in desktop results"
+    assert 'legacy' in result['desktop'], "Expected 'legacy' source in desktop results"
+
+    # Check desktop glean metrics
     desktop_metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
     for metric in desktop_metrics:
-        assert metric in result['desktop'], f"Expected metric '{metric}' in desktop results"
-        assert isinstance(result['desktop'][metric], pd.DataFrame), (
-            f"Expected desktop['{metric}'] to be a DataFrame"
+        assert metric in result['desktop']['glean'], f"Expected metric '{metric}' in desktop glean results"
+        assert isinstance(result['desktop']['glean'][metric], pd.DataFrame), (
+            f"Expected desktop glean['{metric}'] to be a DataFrame"
+        )
+        assert metric in result['desktop']['legacy'], f"Expected metric '{metric}' in desktop legacy results"
+        assert isinstance(result['desktop']['legacy'][metric], pd.DataFrame), (
+            f"Expected desktop legacy['{metric}'] to be a DataFrame"
         )
 
-    # Check mobile metrics
+    # Check mobile has glean source
+    assert 'glean' in result['mobile'], "Expected 'glean' source in mobile results"
+
+    # Check mobile glean metrics
     mobile_metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
     for metric in mobile_metrics:
-        assert metric in result['mobile'], f"Expected metric '{metric}' in mobile results"
-        assert isinstance(result['mobile'][metric], pd.DataFrame), (
-            f"Expected mobile['{metric}'] to be a DataFrame"
+        assert metric in result['mobile']['glean'], f"Expected metric '{metric}' in mobile glean results"
+        assert isinstance(result['mobile']['glean'][metric], pd.DataFrame), (
+            f"Expected mobile glean['{metric}'] to be a DataFrame"
         )
 
 
@@ -122,7 +136,7 @@ def test_checkpointing_saves_parquet_files(tmp_path, mocker):
     """Verify checkpoint files are created in expected format.
 
     Uses synthetic data from mocked BigQuery client.
-    Expected files: mozaic_parts.raw.{platform}.{metric}.parquet
+    Expected files: mozaic_parts.raw.{source}.{platform}.{metric}.parquet
 
     Failure indicates checkpoint filenames changed or files not created.
     """
@@ -144,14 +158,21 @@ def test_checkpointing_saves_parquet_files(tmp_path, mocker):
 
         # Verify checkpoint files exist
         expected_files = [
-            'mozaic_parts.raw.desktop.DAU.parquet',
-            'mozaic_parts.raw.desktop.New Profiles.parquet',
-            'mozaic_parts.raw.desktop.Existing Engagement DAU.parquet',
-            'mozaic_parts.raw.desktop.Existing Engagement MAU.parquet',
-            'mozaic_parts.raw.mobile.DAU.parquet',
-            'mozaic_parts.raw.mobile.New Profiles.parquet',
-            'mozaic_parts.raw.mobile.Existing Engagement DAU.parquet',
-            'mozaic_parts.raw.mobile.Existing Engagement MAU.parquet',
+            # Desktop Glean
+            'mozaic_parts.raw.glean.desktop.DAU.parquet',
+            'mozaic_parts.raw.glean.desktop.New Profiles.parquet',
+            'mozaic_parts.raw.glean.desktop.Existing Engagement DAU.parquet',
+            'mozaic_parts.raw.glean.desktop.Existing Engagement MAU.parquet',
+            # Desktop Legacy
+            'mozaic_parts.raw.legacy.desktop.DAU.parquet',
+            'mozaic_parts.raw.legacy.desktop.New Profiles.parquet',
+            'mozaic_parts.raw.legacy.desktop.Existing Engagement DAU.parquet',
+            'mozaic_parts.raw.legacy.desktop.Existing Engagement MAU.parquet',
+            # Mobile Glean
+            'mozaic_parts.raw.glean.mobile.DAU.parquet',
+            'mozaic_parts.raw.glean.mobile.New Profiles.parquet',
+            'mozaic_parts.raw.glean.mobile.Existing Engagement DAU.parquet',
+            'mozaic_parts.raw.glean.mobile.Existing Engagement MAU.parquet',
         ]
 
         for filename in expected_files:
@@ -178,15 +199,21 @@ def test_checkpointing_loads_existing_files_without_querying(tmp_path, mocker):
     os.chdir(tmp_path)
 
     try:
-        # Create checkpoint files
+        # Create checkpoint files with new naming scheme
         metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
 
         for metric in metrics:
+            # Desktop Glean
             df_desktop = generate_desktop_raw_data(num_days=5)
-            df_desktop.to_parquet(tmp_path / f'mozaic_parts.raw.desktop.{metric}.parquet')
+            df_desktop.to_parquet(tmp_path / f'mozaic_parts.raw.glean.desktop.{metric}.parquet')
 
+            # Desktop Legacy
+            df_desktop = generate_desktop_raw_data(num_days=5)
+            df_desktop.to_parquet(tmp_path / f'mozaic_parts.raw.legacy.desktop.{metric}.parquet')
+
+            # Mobile Glean
             df_mobile = generate_mobile_raw_data(num_days=5)
-            df_mobile.to_parquet(tmp_path / f'mozaic_parts.raw.mobile.{metric}.parquet')
+            df_mobile.to_parquet(tmp_path / f'mozaic_parts.raw.glean.mobile.{metric}.parquet')
 
         # Mock BigQuery client (should NOT be called)
         mock_client = MagicMock()
@@ -201,10 +228,12 @@ def test_checkpointing_loads_existing_files_without_querying(tmp_path, mocker):
             f"but it was called {mock_client.query.call_count} times"
         )
 
-        # Verify data was loaded
+        # Verify data was loaded with correct structure
         assert 'desktop' in result, "Expected 'desktop' key in result"
         assert 'mobile' in result, "Expected 'mobile' key in result"
-        assert 'DAU' in result['desktop'], "Expected 'DAU' in desktop results"
+        assert 'glean' in result['desktop'], "Expected 'glean' source in desktop results"
+        assert 'legacy' in result['desktop'], "Expected 'legacy' source in desktop results"
+        assert 'DAU' in result['desktop']['glean'], "Expected 'DAU' in desktop glean results"
 
     finally:
         os.chdir(original_dir)
@@ -223,17 +252,21 @@ def test_checkpointing_skips_bigquery_when_files_exist(tmp_path, mocker):
     os.chdir(tmp_path)
 
     try:
-        # Create ALL checkpoint files first
+        # Create ALL checkpoint files first with new naming scheme
         metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
 
         for metric in metrics:
-            # Desktop
+            # Desktop Glean
             df_desktop = generate_desktop_raw_data(num_days=10, countries=['US', 'DE'])
-            df_desktop.to_parquet(tmp_path / f'mozaic_parts.raw.desktop.{metric}.parquet')
+            df_desktop.to_parquet(tmp_path / f'mozaic_parts.raw.glean.desktop.{metric}.parquet')
 
-            # Mobile
+            # Desktop Legacy
+            df_desktop = generate_desktop_raw_data(num_days=10, countries=['US', 'DE'])
+            df_desktop.to_parquet(tmp_path / f'mozaic_parts.raw.legacy.desktop.{metric}.parquet')
+
+            # Mobile Glean
             df_mobile = generate_mobile_raw_data(num_days=10, countries=['US', 'DE'])
-            df_mobile.to_parquet(tmp_path / f'mozaic_parts.raw.mobile.{metric}.parquet')
+            df_mobile.to_parquet(tmp_path / f'mozaic_parts.raw.glean.mobile.{metric}.parquet')
 
         # Mock BigQuery client
         mock_client = MagicMock()
@@ -253,10 +286,12 @@ def test_checkpointing_skips_bigquery_when_files_exist(tmp_path, mocker):
             f"Called {mock_client.query.call_count} times. This is inefficient!"
         )
 
-        # Verify we got data from checkpoints
+        # Verify we got data from checkpoints with correct structure
         assert 'desktop' in result
         assert 'mobile' in result
-        assert len(result['desktop']['DAU']) > 0, "Should have loaded data from checkpoint"
+        assert 'glean' in result['desktop']
+        assert 'legacy' in result['desktop']
+        assert len(result['desktop']['glean']['DAU']) > 0, "Should have loaded data from checkpoint"
 
     finally:
         os.chdir(original_dir)

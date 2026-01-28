@@ -19,7 +19,7 @@ import warnings
 from collections import defaultdict
 import mozaic
 from mozaic.models import desktop_forecast_model, mobile_forecast_model
-from mozaic import TileSet, Mozaic, populate_tiles, curate_mozaics
+from mozaic import Mozaic
 
 
 # Do the forecasting
@@ -99,13 +99,24 @@ def get_forecast_dfs(
 
 
 def get_desktop_forecast_dfs(
-    datasets: Dict[str, Dict[str, pd.DataFrame]],
+    metric_data: Dict[str, pd.DataFrame],
     forecast_start_date: str,
     forecast_end_date: str,
     quantile: float = None,
 ) -> Dict[str, pd.DataFrame]:
+    """Generate Desktop forecasts using Mozaic.
+
+    Args:
+        metric_data: Dict of metric -> DataFrame (already source-specific)
+        forecast_start_date: Start date for forecast period
+        forecast_end_date: End date for forecast period
+        quantile: Quantile for point forecast (default: 0.5)
+
+    Returns:
+        Dict of metric -> DataFrame with forecast results
+    """
     return get_forecast_dfs(
-        datasets["desktop"],
+        metric_data,
         desktop_forecast_model,
         forecast_start_date,
         forecast_end_date,
@@ -114,13 +125,24 @@ def get_desktop_forecast_dfs(
 
 
 def get_mobile_forecast_dfs(
-    datasets: Dict[str, Dict[str, pd.DataFrame]],
+    metric_data: Dict[str, pd.DataFrame],
     forecast_start_date: str,
     forecast_end_date: str,
     quantile: float = None,
 ) -> Dict[str, pd.DataFrame]:
+    """Generate Mobile forecasts using Mozaic.
+
+    Args:
+        metric_data: Dict of metric -> DataFrame (already source-specific)
+        forecast_start_date: Start date for forecast period
+        forecast_end_date: End date for forecast period
+        quantile: Quantile for point forecast (default: 0.5)
+
+    Returns:
+        Dict of metric -> DataFrame with forecast results
+    """
     return get_forecast_dfs(
-        datasets["mobile"],
+        metric_data,
         mobile_forecast_model,
         forecast_start_date,
         forecast_end_date,

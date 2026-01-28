@@ -5,10 +5,9 @@ Tests for SQL query specifications in mozaic_daily.queries.
 Tests cover query specs, date constraints, and SQL generation.
 """
 
-import pytest
 from mozaic_daily.queries import (
     QUERY_SPECS, Platform, Metric, TelemetrySource, DataSource,
-    QuerySpec, DateConstraints
+    DateConstraints
 )
 from mozaic_daily.data import get_queries
 from mozaic_daily.config import get_runtime_config
@@ -93,7 +92,7 @@ def test_query_specs_covers_all_platform_metric_combinations():
 # ===== QuerySpec.data_source TESTS =====
 
 def test_query_spec_data_source_desktop_glean():
-    """Verify Desktop + Glean = Glean_Desktop.
+    """Verify Desktop + Glean = glean_desktop.
 
     Failure indicates wrong data_source derivation.
     """
@@ -101,12 +100,12 @@ def test_query_spec_data_source_desktop_glean():
     spec = QUERY_SPECS[key]
 
     assert spec.data_source == DataSource.GLEAN_DESKTOP, (
-        f"Expected Desktop + Glean → Glean_Desktop, got {spec.data_source}"
+        f"Expected Desktop + Glean → glean_desktop, got {spec.data_source}"
     )
 
 
 def test_query_spec_data_source_desktop_legacy():
-    """Verify Desktop + Legacy = Legacy_Desktop.
+    """Verify Desktop + Legacy = legacy_desktop.
 
     Failure indicates wrong data_source derivation.
     """
@@ -114,12 +113,12 @@ def test_query_spec_data_source_desktop_legacy():
     spec = QUERY_SPECS[key]
 
     assert spec.data_source == DataSource.LEGACY_DESKTOP, (
-        f"Expected Desktop + Legacy → Legacy_Desktop, got {spec.data_source}"
+        f"Expected Desktop + Legacy → legacy_desktop, got {spec.data_source}"
     )
 
 
 def test_query_spec_data_source_mobile_glean():
-    """Verify Mobile + Glean = Glean_Mobile.
+    """Verify Mobile + Glean = glean_mobile.
 
     Failure indicates wrong data_source derivation.
     """
@@ -127,7 +126,7 @@ def test_query_spec_data_source_mobile_glean():
     spec = QUERY_SPECS[key]
 
     assert spec.data_source == DataSource.GLEAN_MOBILE, (
-        f"Expected Mobile + Glean → Glean_Mobile, got {spec.data_source}"
+        f"Expected Mobile + Glean → glean_mobile, got {spec.data_source}"
     )
 
 
@@ -149,15 +148,15 @@ def test_all_query_specs_have_valid_data_source():
         if platform == Platform.DESKTOP:
             if telemetry_source == TelemetrySource.GLEAN:
                 assert data_source == DataSource.GLEAN_DESKTOP, (
-                    f"Query spec {key}: expected Glean_Desktop, got {data_source}"
+                    f"Query spec {key}: expected glean_desktop, got {data_source}"
                 )
             else:  # LEGACY
                 assert data_source == DataSource.LEGACY_DESKTOP, (
-                    f"Query spec {key}: expected Legacy_Desktop, got {data_source}"
+                    f"Query spec {key}: expected legacy_desktop, got {data_source}"
                 )
         else:  # MOBILE
             assert data_source == DataSource.GLEAN_MOBILE, (
-                f"Query spec {key}: expected Glean_Mobile, got {data_source}"
+                f"Query spec {key}: expected glean_mobile, got {data_source}"
             )
 
 
@@ -249,7 +248,7 @@ def test_get_queries_returns_dict_with_platform_keys():
 
 
 def test_get_queries_desktop_contains_all_metrics():
-    """Verify Desktop queries contain all 4 metrics.
+    """Verify Desktop queries contain all 4 metrics in both glean and legacy sources.
 
     Expected: DAU, New Profiles, Existing Engagement DAU, Existing Engagement MAU
 
@@ -259,15 +258,26 @@ def test_get_queries_desktop_contains_all_metrics():
     queries = get_queries(config['country_string'], testing_mode=False)
 
     expected_metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
-    desktop_metrics = list(queries['desktop'].keys())
 
-    assert set(desktop_metrics) == set(expected_metrics), (
-        f"Expected Desktop metrics {expected_metrics}, got {desktop_metrics}"
+    # Check Desktop has both glean and legacy sources
+    assert 'glean' in queries['desktop'], "Expected 'glean' source in Desktop queries"
+    assert 'legacy' in queries['desktop'], "Expected 'legacy' source in Desktop queries"
+
+    # Check glean source has all metrics
+    desktop_glean_metrics = list(queries['desktop']['glean'].keys())
+    assert set(desktop_glean_metrics) == set(expected_metrics), (
+        f"Expected Desktop Glean metrics {expected_metrics}, got {desktop_glean_metrics}"
+    )
+
+    # Check legacy source has all metrics
+    desktop_legacy_metrics = list(queries['desktop']['legacy'].keys())
+    assert set(desktop_legacy_metrics) == set(expected_metrics), (
+        f"Expected Desktop Legacy metrics {expected_metrics}, got {desktop_legacy_metrics}"
     )
 
 
 def test_get_queries_mobile_contains_all_metrics():
-    """Verify Mobile queries contain all 4 metrics.
+    """Verify Mobile queries contain all 4 metrics in glean source.
 
     Expected: DAU, New Profiles, Existing Engagement DAU, Existing Engagement MAU
 
@@ -277,21 +287,21 @@ def test_get_queries_mobile_contains_all_metrics():
     queries = get_queries(config['country_string'], testing_mode=False)
 
     expected_metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
-    mobile_metrics = list(queries['mobile'].keys())
 
-    assert set(mobile_metrics) == set(expected_metrics), (
-        f"Expected Mobile metrics {expected_metrics}, got {mobile_metrics}"
+    # Check Mobile has glean source
+    assert 'glean' in queries['mobile'], "Expected 'glean' source in Mobile queries"
+
+    # Check glean source has all metrics
+    mobile_glean_metrics = list(queries['mobile']['glean'].keys())
+    assert set(mobile_glean_metrics) == set(expected_metrics), (
+        f"Expected Mobile Glean metrics {expected_metrics}, got {mobile_glean_metrics}"
     )
 
 
 def test_get_queries_includes_date_constraints_in_sql():
     """Verify generated SQL includes date constraints from QuerySpec.
 
-    Note: get_queries() returns the LAST query spec for each metric when
-    there are multiple (Glean + Legacy). For Desktop New Profiles, the
-    Legacy spec comes last with date_start='2020-01-01'.
-
-    Checks Desktop New Profiles query for:
+    Checks Desktop Legacy New Profiles query for:
     - first_seen_date >= "2020-01-01" (Legacy Desktop constraint)
     - first_seen_date NOT BETWEEN "2023-07-18" AND "2023-07-19"
 
@@ -300,14 +310,15 @@ def test_get_queries_includes_date_constraints_in_sql():
     config = get_runtime_config()
     queries = get_queries(config['country_string'], testing_mode=False)
 
-    desktop_new_profiles_sql = queries['desktop']['New Profiles']
+    # Access the SQL from the (sql, spec) tuple
+    desktop_new_profiles_sql, _ = queries['desktop']['legacy']['New Profiles']
 
-    # Check for the Legacy Desktop date constraint (whichever comes last)
-    assert 'first_seen_date >=' in desktop_new_profiles_sql, (
-        "Expected date start constraint in Desktop New Profiles SQL"
+    # Check for the Legacy Desktop date constraint
+    assert 'first_seen_date >= "2020-01-01"' in desktop_new_profiles_sql, (
+        "Expected date start constraint in Desktop Legacy New Profiles SQL"
     )
     assert 'first_seen_date NOT BETWEEN "2023-07-18" AND "2023-07-19"' in desktop_new_profiles_sql, (
-        "Expected date exclusion in Desktop New Profiles SQL"
+        "Expected date exclusion in Desktop Legacy New Profiles SQL"
     )
 
 
@@ -320,7 +331,8 @@ def test_get_queries_includes_country_filter():
     country_string = "'US', 'DE', 'FR'"
     queries = get_queries(country_string, testing_mode=False)
 
-    desktop_dau_sql = queries['desktop']['DAU']
+    # Access the SQL from the (sql, spec) tuple
+    desktop_dau_sql, _ = queries['desktop']['glean']['DAU']
 
     # Country filter appears in IF(country IN (...), country, 'ROW') clause
     assert country_string in desktop_dau_sql, (
@@ -329,7 +341,7 @@ def test_get_queries_includes_country_filter():
 
 
 def test_get_queries_testing_mode_returns_single_query():
-    """Verify testing_mode=True returns only Desktop DAU query.
+    """Verify testing_mode=True returns only Desktop Glean DAU query.
 
     Useful for quick integration tests without querying all metrics.
 
@@ -338,21 +350,27 @@ def test_get_queries_testing_mode_returns_single_query():
     config = get_runtime_config()
     queries = get_queries(config['country_string'], testing_mode=True)
 
-    # Should have desktop key
+    # Should have desktop and mobile keys
     assert 'desktop' in queries, "Expected 'desktop' key in testing mode"
     assert 'mobile' in queries, "Expected 'mobile' key in testing mode"
 
-    # Desktop should have exactly 1 query (DAU)
-    assert len(queries['desktop']) == 1, (
-        f"Expected 1 Desktop query in testing mode, got {len(queries['desktop'])}"
+    # Desktop should have glean source with exactly 1 query (DAU)
+    assert 'glean' in queries['desktop'], "Expected 'glean' source in Desktop queries"
+    assert len(queries['desktop']['glean']) == 1, (
+        f"Expected 1 Desktop Glean query in testing mode, got {len(queries['desktop']['glean'])}"
     )
-    assert 'DAU' in queries['desktop'], (
-        f"Expected 'DAU' query in testing mode. Found: {list(queries['desktop'].keys())}"
+    assert 'DAU' in queries['desktop']['glean'], (
+        f"Expected 'DAU' query in testing mode. Found: {list(queries['desktop']['glean'].keys())}"
+    )
+
+    # Desktop legacy should be empty
+    assert len(queries['desktop']['legacy']) == 0, (
+        f"Expected 0 Desktop Legacy queries in testing mode, got {len(queries['desktop']['legacy'])}"
     )
 
     # Mobile should be empty
-    assert len(queries['mobile']) == 0, (
-        f"Expected 0 Mobile queries in testing mode, got {len(queries['mobile'])}"
+    assert len(queries['mobile']['glean']) == 0, (
+        f"Expected 0 Mobile queries in testing mode, got {len(queries['mobile']['glean'])}"
     )
 
 

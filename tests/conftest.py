@@ -9,7 +9,7 @@ No real BigQuery data is used in any tests.
 import os
 import pandas as pd
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import MagicMock
 
 
@@ -409,24 +409,34 @@ def sample_checkpoint_files(tmp_path):
     os.chdir(tmp_path)
 
     try:
-        # Desktop metrics
+        # Desktop Glean metrics
         for metric in ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']:
             df = generate_desktop_raw_data(
                 start_date='2024-01-01',
                 num_days=30,
                 countries=['US', 'DE', 'FR']
             )
-            filename = f'mozaic_parts.raw.desktop.{metric}.parquet'
+            filename = f'mozaic_parts.raw.glean.desktop.{metric}.parquet'
             df.to_parquet(tmp_path / filename)
 
-        # Mobile metrics
+        # Desktop Legacy metrics
+        for metric in ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']:
+            df = generate_desktop_raw_data(
+                start_date='2024-01-01',
+                num_days=30,
+                countries=['US', 'DE', 'FR']
+            )
+            filename = f'mozaic_parts.raw.legacy.desktop.{metric}.parquet'
+            df.to_parquet(tmp_path / filename)
+
+        # Mobile Glean metrics
         for metric in ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']:
             df = generate_mobile_raw_data(
                 start_date='2024-01-01',
                 num_days=30,
                 countries=['US', 'DE']
             )
-            filename = f'mozaic_parts.raw.mobile.{metric}.parquet'
+            filename = f'mozaic_parts.raw.glean.mobile.{metric}.parquet'
             df.to_parquet(tmp_path / filename)
 
     finally:

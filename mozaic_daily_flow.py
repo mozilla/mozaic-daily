@@ -2,20 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import os, datetime
-
 from metaflow import (
     FlowSpec,
-    IncludeFile,
-    Parameter,
     card,
-    current,
     step,
-    environment,
     kubernetes,
     schedule,
 )
-from metaflow.cards import Markdown
 
 IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.7_test_amd64"
 

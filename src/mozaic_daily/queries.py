@@ -45,10 +45,57 @@ class TelemetrySource(Enum):
 
 class DataSource(Enum):
     """Output data_source column values (derived from Platform + TelemetrySource)."""
-    GLEAN_DESKTOP = "Glean_Desktop"
-    LEGACY_DESKTOP = "Legacy_Desktop"
-    GLEAN_MOBILE = "Glean_Mobile"
+    GLEAN_DESKTOP = "glean_desktop"
+    LEGACY_DESKTOP = "legacy_desktop"
+    GLEAN_MOBILE = "glean_mobile"
     # Note: LEGACY_MOBILE does not exist
+
+    @property
+    def platform(self) -> Platform:
+        """Return the platform for this data source."""
+        if self in (DataSource.GLEAN_DESKTOP, DataSource.LEGACY_DESKTOP):
+            return Platform.DESKTOP
+        return Platform.MOBILE
+
+    @property
+    def telemetry_source(self) -> TelemetrySource:
+        """Return the telemetry source for this data source."""
+        if self in (DataSource.GLEAN_DESKTOP, DataSource.GLEAN_MOBILE):
+            return TelemetrySource.GLEAN
+        return TelemetrySource.LEGACY
+
+    @property
+    def display_name(self) -> str:
+        """Return human-readable name for logging (e.g., 'Desktop Glean')."""
+        return f"{self.platform.value.capitalize()} {self.telemetry_source.value.capitalize()}"
+
+    @classmethod
+    def from_platform_source(cls, platform: str, source: str) -> 'DataSource':
+        """Convert platform and source strings to DataSource enum.
+
+        Args:
+            platform: Platform string ('desktop' or 'mobile')
+            source: Telemetry source string ('glean' or 'legacy')
+
+        Returns:
+            Corresponding DataSource enum value
+
+        Raises:
+            ValueError: If combination is invalid (e.g., 'mobile' + 'legacy')
+        """
+        platform_lower = platform.lower()
+        source_lower = source.lower()
+
+        if platform_lower == 'desktop':
+            if source_lower == 'glean':
+                return cls.GLEAN_DESKTOP
+            elif source_lower == 'legacy':
+                return cls.LEGACY_DESKTOP
+        elif platform_lower == 'mobile':
+            if source_lower == 'glean':
+                return cls.GLEAN_MOBILE
+
+        raise ValueError(f"Invalid platform/source combination: {platform}/{source}")
 
 
 # Query key is a 3-tuple
@@ -376,16 +423,16 @@ QUERY_SPECS: Dict[QueryKey, QuerySpec] = {
 # HELPERS
 # =============================================================================
 
-def get_date_keys() -> List[Tuple[str, str]]:
-    """Return all unique (platform, metric) keys from query specifications.
+def get_date_keys() -> List[Tuple[str, str, str]]:
+    """Return all unique (platform, metric, source) keys from query specifications.
 
     Returns:
-        List of (platform, metric) tuples
+        List of (platform, metric, source) 3-tuples
     """
     seen = set()
     keys = []
     for spec in QUERY_SPECS.values():
-        key = (spec.platform.value, spec.metric.value)
+        key = (spec.platform.value, spec.metric.value, spec.telemetry_source.value)
         if key not in seen:
             seen.add(key)
             keys.append(key)
@@ -393,13 +440,13 @@ def get_date_keys() -> List[Tuple[str, str]]:
 
 
 def get_training_date_index(
-    key: Tuple[str, str],
+    key: Tuple[str, str, str],
     end: Optional[str] = None,
 ) -> pd.DatetimeIndex:
     """Generate DatetimeIndex for training data, excluding specified date ranges.
 
     Args:
-        key: (platform, metric) tuple
+        key: (platform, metric, source) 3-tuple
         end: Optional end date string, defaults to training_end_date from runtime config
 
     Returns:
@@ -410,7 +457,7 @@ def get_training_date_index(
     """
     # Find matching spec
     for spec in QUERY_SPECS.values():
-        if (spec.platform.value, spec.metric.value) == key:
+        if (spec.platform.value, spec.metric.value, spec.telemetry_source.value) == key:
             start = pd.to_datetime(spec.date_constraints.date_start).normalize()
             if end:
                 end_dt = pd.to_datetime(end).normalize()

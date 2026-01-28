@@ -10,10 +10,8 @@ the final output format.
 
 import pytest
 import pandas as pd
-import numpy as np
 import json
 from datetime import datetime
-from freezegun import freeze_time
 
 from mozaic_daily.tables import (
     combine_tables,
@@ -101,7 +99,7 @@ def test_update_desktop_format_adds_required_columns(sample_desktop_dataframe):
 
     # Check values
     assert all(df['app_name'] == 'desktop'), "Expected app_name='desktop' for all rows"
-    assert all(df['data_source'] == 'Glean_Desktop'), "Expected data_source='Glean_Desktop' for all rows"
+    assert all(df['data_source'] == 'glean_desktop'), "Expected data_source='glean_desktop' for all rows"
 
 
 def test_update_desktop_format_segment_json_structure(sample_desktop_dataframe):
@@ -173,7 +171,7 @@ def test_update_mobile_format_adds_required_columns(sample_mobile_dataframe):
     assert 'segment' in df.columns, "Expected 'segment' column after formatting"
 
     # Check values
-    assert all(df['data_source'] == 'Glean_Mobile'), "Expected data_source='Glean_Mobile' for all rows"
+    assert all(df['data_source'] == 'glean_mobile'), "Expected data_source='glean_mobile' for all rows"
 
 
 def test_update_mobile_format_app_name_mapping(sample_mobile_dataframe):
@@ -237,7 +235,7 @@ def test_format_output_table_renames_metric_columns():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'data_source': ['Glean_Desktop'],
+        'data_source': ['glean_desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -278,7 +276,7 @@ def test_format_output_table_adds_metadata_columns():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'data_source': ['Glean_Desktop'],
+        'data_source': ['glean_desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -304,16 +302,16 @@ def test_format_output_table_adds_metadata_columns():
 
 
 def test_format_output_table_source_conversion():
-    """Verify 'actual' source is converted to 'training'.
+    """Verify 'actual' source is converted to 'training' and column renamed to 'data_type'.
 
-    Failure indicates wrong source values, validation will fail.
+    Failure indicates wrong source values or column name, validation will fail.
     """
     df = pd.DataFrame({
         'target_date': ['2024-01-01', '2024-01-02'],
         'country': ['US', 'US'],
         'source': ['actual', 'forecast'],
         'app_name': ['desktop', 'desktop'],
-        'data_source': ['Glean_Desktop', 'Glean_Desktop'],
+        'data_source': ['glean_desktop', 'glean_desktop'],
         'segment': ['{"os": "ALL"}', '{"os": "ALL"}'],
         'DAU': [1000, 1100],
         'New Profiles': [50, 55],
@@ -327,12 +325,12 @@ def test_format_output_table_source_conversion():
     result = format_output_table(df, start_date, run_timestamp)
 
     # Check 'actual' converted to 'training'
-    assert result['source'].iloc[0] == 'training', (
-        f"Expected source='actual' → 'training', got '{result['source'].iloc[0]}'"
+    assert result['data_type'].iloc[0] == 'training', (
+        f"Expected source='actual' → data_type='training', got '{result['data_type'].iloc[0]}'"
     )
     # Check 'forecast' unchanged
-    assert result['source'].iloc[1] == 'forecast', (
-        f"Expected source='forecast' unchanged, got '{result['source'].iloc[1]}'"
+    assert result['data_type'].iloc[1] == 'forecast', (
+        f"Expected source='forecast' → data_type='forecast', got '{result['data_type'].iloc[1]}'"
     )
 
 
@@ -346,7 +344,7 @@ def test_format_output_table_country_all_conversion():
         'country': ['None', 'US'],
         'source': ['forecast', 'forecast'],
         'app_name': ['desktop', 'desktop'],
-        'data_source': ['Glean_Desktop', 'Glean_Desktop'],
+        'data_source': ['glean_desktop', 'glean_desktop'],
         'segment': ['{"os": "ALL"}', '{"os": "ALL"}'],
         'DAU': [1000, 1100],
         'New Profiles': [50, 55],
@@ -372,7 +370,7 @@ def test_format_output_table_country_all_conversion():
 def test_format_output_table_column_types():
     """Verify string columns are explicitly cast to 'string' dtype.
 
-    String columns: forecast_run_timestamp, target_date, mozaic_hash, source,
+    String columns: forecast_run_timestamp, target_date, mozaic_hash, data_type,
                    country, app_name, data_source, segment
 
     Failure indicates wrong types, BigQuery upload may fail.
@@ -382,7 +380,7 @@ def test_format_output_table_column_types():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'data_source': ['Glean_Desktop'],
+        'data_source': ['glean_desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -400,7 +398,7 @@ def test_format_output_table_column_types():
         'forecast_run_timestamp',
         'target_date',
         'mozaic_hash',
-        'source',
+        'data_type',
         'country',
         'app_name',
         'data_source',
@@ -416,8 +414,8 @@ def test_format_output_table_column_types():
 def test_format_output_table_column_order():
     """Verify columns are in correct order: metadata columns first, then metrics.
 
-    Order: forecast_start_date, forecast_run_timestamp, mozaic_hash, target_date,
-           source, data_source, country, app_name, segment, [metrics]
+    Order: forecast_start_date, forecast_run_timestamp, mozaic_hash, data_source,
+           target_date, data_type, country, app_name, segment, [metrics]
 
     Failure indicates wrong column order, affects readability and debugging.
     """
@@ -426,7 +424,7 @@ def test_format_output_table_column_order():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'data_source': ['Glean_Desktop'],
+        'data_source': ['glean_desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],
@@ -443,9 +441,9 @@ def test_format_output_table_column_order():
         'forecast_start_date',
         'forecast_run_timestamp',
         'mozaic_hash',
-        'target_date',
-        'source',
         'data_source',
+        'target_date',
+        'data_type',
         'country',
         'app_name',
         'segment',
@@ -471,7 +469,7 @@ def test_format_output_table_date_formats():
         'country': ['US'],
         'source': ['forecast'],
         'app_name': ['desktop'],
-        'data_source': ['Glean_Desktop'],
+        'data_source': ['glean_desktop'],
         'segment': ['{"os": "ALL"}'],
         'DAU': [1000],
         'New Profiles': [50],

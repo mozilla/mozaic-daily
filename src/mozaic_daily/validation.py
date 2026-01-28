@@ -20,15 +20,15 @@ import pandas as pd
 import json
 from datetime import datetime
 from functools import reduce
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict
 import re
 
 from google.cloud import bigquery
 
 from .config import (
-    get_runtime_config, STATIC_CONFIG, get_date_keys,
-    get_training_date_index, get_prediction_date_index
+    get_runtime_config, STATIC_CONFIG, get_prediction_date_index
 )
+from .queries import get_date_keys, get_training_date_index, DataSource
 
 # Allowed value constants
 
@@ -40,7 +40,7 @@ OPTIONAL_APP_NAMES = set(['other_mobile'])
 
 # Data source values (replaces APP_CATEGORIES)
 DATA_SOURCES = set([
-    'Glean_Desktop', 'Legacy_Desktop', 'Glean_Mobile'
+    'glean_desktop', 'legacy_desktop', 'glean_mobile'
 ])
 
 OS_VALUES = set([
@@ -180,7 +180,7 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
 
     validate_column('target_date', is_date_only)
 
-    validate_column('source',
+    validate_column('data_type',
         make_allowed_string_validator(('training', 'forecast'))
     )
 
@@ -231,7 +231,7 @@ def _check_row_counts(
     # Overall date checks, training
     joint_training_index = reduce(lambda a, b: a.union(b), map(training_date_index_for, expected_date_keys))
     training_days = (
-        df.loc[df["source"] == "training", 'target_date']
+        df.loc[df["data_type"] == "training", 'target_date']
         .unique()
     )
     required_training_days = joint_training_index.strftime('%Y-%m-%d')[:-1] # Don't include the final day
@@ -244,7 +244,7 @@ def _check_row_counts(
 
     # Overall date checks, forecast
     forecast_days = (
-        df.loc[df["source"] == "forecast", 'target_date']
+        df.loc[df["data_type"] == "forecast", 'target_date']
         .unique()
     )
     required_forecast_days = get_prediction_date_index(constants['forecast_start_date'], constants['forecast_end_date']).strftime('%Y-%m-%d')
@@ -312,21 +312,18 @@ def _validate_null_values(df: pd.DataFrame, expected_date_keys: list) -> None:
 
     for key in expected_date_keys:
         index = get_training_date_index(key).strftime('%Y-%m-%d')
-        test_col_name = f'{key[0]}_{key[1]}_expected'
+        test_col_name = f'{key[0]}_{key[1]}_{key[2]}_expected'
         expected_df = pd.Series(True, index=index, name=test_col_name).to_frame().reset_index()
 
         target_col = target_cols[key[1]]
 
-        # Map platform to data_source for filtering
-        # Note: Currently all queries use Glean, but this logic supports future Legacy queries
-        platform_to_data_source = {
-            'desktop': 'Glean_Desktop',
-            'mobile': 'Glean_Mobile'
-        }
-        data_source = platform_to_data_source[key[0]]
+        # Map (platform, source) to data_source for filtering
+        # key is (platform, metric, source)
+        platform, metric, source = key
+        data_source = DataSource.from_platform_source(platform, source).value
 
         validation_df = (
-            df[(df['data_source'] == data_source) & (df['source'] == 'training') & (df[target_col].notna())]
+            df[(df['data_source'] == data_source) & (df['data_type'] == 'training') & (df[target_col].notna())]
             .groupby('target_date')[target_col].sum().reset_index()
             .merge(
                 expected_df,
@@ -374,13 +371,13 @@ def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
     # Define expectations based on mode
     if testing_mode:
         expected_app_names = {'desktop'}
-        expected_data_sources = {'Glean_Desktop'}  # Testing mode uses only Desktop Glean
-        expected_date_keys = [("desktop", "DAU")]  # Only desktop/DAU combo
+        expected_data_sources = {'glean_desktop'}  # Testing mode uses only Desktop Glean
+        expected_date_keys = [("desktop", "DAU", "glean")]  # Only desktop/DAU/glean combo
         expected_os_values = {'win10', 'win11', 'winX', 'other', 'ALL'}  # Desktop OS only
     else:
         expected_app_names = APP_NAMES
-        expected_data_sources = DATA_SOURCES  # All data sources
-        expected_date_keys = get_date_keys()  # All platform/metric combinations
+        expected_data_sources = DATA_SOURCES  # All data sources (Glean_Desktop, Legacy_Desktop, Glean_Mobile)
+        expected_date_keys = get_date_keys()  # All (platform, metric, source) 3-tuples
         expected_os_values = OS_VALUES  # All OS values including None for mobile
 
     # Skip BigQuery schema validation in testing mode (won't be uploaded)

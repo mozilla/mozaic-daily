@@ -7,9 +7,7 @@ Tests Mozaic integration and forecast DataFrame generation.
 🔒 SECURITY: Uses synthetic test data only.
 """
 
-import pytest
 import pandas as pd
-import numpy as np
 from unittest.mock import MagicMock
 
 from mozaic_daily.forecast import get_forecast_dfs, get_desktop_forecast_dfs, get_mobile_forecast_dfs

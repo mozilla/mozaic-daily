@@ -12,20 +12,19 @@ This module defines:
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, Any
 import subprocess
 import re
 from pathlib import Path
 
 import pandas as pd
-from .queries import get_date_keys, get_training_date_index
 
 # Static configuration (true constants)
 STATIC_CONFIG = {
     'default_project': 'moz-fx-data-bq-data-science',
     'default_table': 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1',
     'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
-    'raw_checkpoint_filename_template': 'mozaic_parts.raw.{platform}.{metric}.parquet',
+    'raw_checkpoint_filename_template': 'mozaic_parts.raw.{source}.{platform}.{metric}.parquet',
     'testing_mode_enable_string': 'ENABLE_TESTING_MODE',
     'testing_mode_checkpoint_filename': 'mozaic_parts.forecast.TESTING.parquet',
 }
@@ -82,7 +81,8 @@ def get_git_commit_hash_from_pip(package_name: str = "mozaic") -> str:
                 if match:
                     base_url, sha = match.groups()
                     return sha
-    except Exception:
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # pip command failed or pip not found
         pass
     return "unknown"
 
