@@ -95,6 +95,8 @@ from mozaic_daily.validation import validate_output_dataframe
 The `scripts/` directory contains helper scripts for common tasks:
 - `run_main.py` - Run the main forecasting pipeline with checkpoints
 - `run_validation.py` - Validate the checkpoint forecast file
+- `batch_historical_forecasts.py` - Batch process historical forecasts for a date range
+- `combine_forecasts.py` - Combine multiple forecast parquet files into one
 - `test_local_docker.sh` - Test Docker image builds locally
 
 The `docker/` directory contains Docker management scripts:
@@ -142,7 +144,7 @@ python scripts/run_main.py \
   --forecast-only \
   --output-dir ./forecasts
 
-# Process multiple historical dates
+# Process multiple historical dates (manual loop)
 for date in 2024-06-{01..30}; do
     python scripts/run_main.py \
       --forecast-start-date $date \
@@ -151,7 +153,13 @@ for date in 2024-06-{01..30}; do
       --output-dir ./forecasts
 done
 
-# Combine all historical forecasts into a single file
+# OR use the automated batch processing script
+python scripts/batch_historical_forecasts.py 2024-06-01 2024-06-30
+
+# Batch script with custom output directory
+python scripts/batch_historical_forecasts.py 2024-06-01 2024-06-30 --output-dir ./my_forecasts
+
+# Combine all historical forecasts into a single file (manual)
 python scripts/combine_forecasts.py --input-dir ./forecasts --output combined.parquet
 ```
 
