@@ -150,7 +150,7 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
             datetime.fromisoformat(x)
             # Make sure it actually includes time
             return "T" in x or " " in x
-        except Exception:
+        except (ValueError, TypeError):
             return False
 
     def is_date_only(x):
@@ -158,7 +158,7 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
             dt = datetime.fromisoformat(x)
             # Reject if time information is present
             return dt.time() == datetime.min.time()
-        except Exception:
+        except (ValueError, TypeError):
             return False
 
     SHA1_RE = re.compile(r"^[0-9a-fA-F]{40}$")
@@ -171,7 +171,7 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
         try:
             json.loads(x)
             return True
-        except Exception:
+        except json.JSONDecodeError:
             return False
 
     validate_column('forecast_run_timestamp', is_full_timestamp)
@@ -202,18 +202,21 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
         validator = make_allowed_string_validator(OS_VALUES)
         try:
             obj = json.loads(val)
-            value = obj.get("os")
-            if not validator(value):
-                raise ValueError(
-                    f"Validation failed for json column 'segment'. "
-                    f"Invalid OS value found: '{value}'"
-                )
-        except Exception:
+        except json.JSONDecodeError as e:
             raise ValueError(
-                f"Validation failed for json column 'segment'."
-                f"OS value not found."
+                f"Validation failed for json column 'segment'. "
+                f"Invalid JSON: {e}"
             )
 
+        value = obj.get("os")
+        if not validator(value):
+            raise ValueError(
+                f"Validation failed for json column 'segment'. "
+                f"Invalid OS value found: '{value}'"
+            )
+
+    # Validate all segment JSON values contain valid OS field
+    # (check_json_os raises ValueError on invalid data)
     df['segment'].apply(check_json_os)
 
 def _check_row_counts(

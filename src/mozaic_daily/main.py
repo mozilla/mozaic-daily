@@ -111,8 +111,6 @@ def process_data_source(
     Returns:
         DataFrame with forecasts for this data source, properly formatted
     """
-    print(f'{data_source.display_name} Forecasting\n')
-
     # Get platform-specific data and functions
     platform = data_source.platform
     source = data_source.telemetry_source
@@ -147,10 +145,18 @@ def generate_forecasts(
     """
     all_dfs = []
 
+    # Calculate total sources for progress tracking
+    total_sources = len([ds for ds in DATA_SOURCES_TO_PROCESS
+                         if not is_testing or should_process_in_testing_mode(ds)])
+    source_num = 0
+
     for data_source in DATA_SOURCES_TO_PROCESS:
         # In testing mode, only process Desktop Glean
         if is_testing and not should_process_in_testing_mode(data_source):
             continue
+
+        source_num += 1
+        print(f'\n[{source_num}/{total_sources}] Forecasting {data_source.display_name}')
 
         df = process_data_source(
             data_source,

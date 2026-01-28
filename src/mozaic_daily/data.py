@@ -86,11 +86,16 @@ def get_aggregate_data(
     # Use template from STATIC_CONFIG for checkpoint filenames
     filename_template = STATIC_CONFIG['raw_checkpoint_filename_template']
 
+    # Calculate total queries for progress tracking
+    total_queries = sum(len(metrics) for sources in queries.values() for metrics in sources.values())
+    query_num = 0
+
     # Fetch query results and store the raw data
     # Iterate over platform -> source -> metric
     for platform, sources in queries.items():
         for source, metrics in sources.items():
             for metric, (query, spec) in metrics.items():
+                query_num += 1
                 checkpoint_filename = filename_template.format(
                     source=source,
                     platform=platform,
@@ -98,12 +103,20 @@ def get_aggregate_data(
                 )
                 df = None
                 if checkpoints and os.path.exists(checkpoint_filename):
-                    print(f'{spec.data_source.display_name} {metric} exists, loading')
+                    print(f'[{query_num}/{total_queries}] {spec.data_source.display_name} {metric} exists, loading')
                     df = pd.read_parquet(checkpoint_filename)
                 else:
-                    print(f"Querying {spec.data_source.display_name} {metric}")
+                    print(f"[{query_num}/{total_queries}] Querying {spec.data_source.display_name} {metric}")
                     print(query)
                     df = bigquery.Client(project).query(query).to_dataframe()
+
+                    # Check for empty results
+                    if df.empty:
+                        raise ValueError(
+                            f"BigQuery returned 0 rows for {spec.data_source.display_name} {metric}. "
+                            f"Check if date range or country filter is too restrictive."
+                        )
+
                     if checkpoints:
                         df.to_parquet(checkpoint_filename)
                 datasets[platform][source][metric] = df

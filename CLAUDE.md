@@ -297,3 +297,48 @@ If you see errors like `RuntimeError: Error during optimization!` when forecasti
    Check the specific segment mentioned in the error (e.g., "AR: other") by examining the raw data.
 
 3. **Prophet configuration**: The models in `src/mozaic_daily/forecast.py` configure Prophet parameters. Segments with sparse data may need special handling.
+
+4. **Error context**: The error handling in `src/mozaic_daily/forecast.py` provides context about which metrics and date ranges were being processed when Mozaic fails. Look for error messages like:
+   ```
+   ERROR: Mozaic populate_tiles failed
+   Processing metrics: ['DAU', 'New Profiles', ...]
+   Forecast period: 2024-02-01 to 2025-12-31
+   ```
+
+**Data Quality Errors**
+
+The pipeline includes automated checks to catch data quality issues early:
+
+1. **Empty query results**: If you see `BigQuery returned 0 rows for...`:
+   - Check the date range in runtime config
+   - Verify the country list includes expected countries
+   - Check if the metric is available for the time period
+   - Review the SQL query output in the logs
+
+2. **Data health warnings**: If you see warnings like `Zero variance in metric...`:
+   - The segment may have flat/constant data
+   - Stan optimization may fail downstream
+   - Check if this segment/country combination is expected to have data
+   - These warnings appear in the `--- Populate tiles` section of logs
+
+3. **Progress tracking**: The pipeline logs progress for:
+   - BigQuery queries: `[X/Y] Querying Desktop Glean DAU`
+   - Data source forecasting: `[X/Y] Forecasting Desktop Glean`
+   - Metric extraction: `[X/Y] DAU` during forecast generation
+
+### Testing
+
+**Validation Tests**
+
+The validation module has comprehensive test coverage in `tests/test_validation.py`:
+- Column presence and type validation
+- String format validation (timestamps, git hashes, JSON, countries, etc.)
+- Row count validation (training/forecast dates, countries, segments)
+- Null value validation
+- Duplicate row detection
+- Integration tests with full validation pipeline
+
+Run validation tests:
+```bash
+pytest tests/test_validation.py -v
+```

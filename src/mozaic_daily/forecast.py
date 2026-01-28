@@ -23,6 +23,33 @@ from mozaic import Mozaic
 
 
 # Do the forecasting
+def _check_data_health(datasets: Dict[str, pd.DataFrame]) -> None:
+    """Check input data for conditions that may cause Mozaic failures.
+
+    Prints warnings for:
+    - Empty datasets
+    - Zero-variance data (all values identical)
+    - All-zero data
+
+    Args:
+        datasets: Dict of metric -> DataFrame with historical data
+    """
+    for metric, df in datasets.items():
+        # Skip if not a DataFrame (shouldn't happen in production, but handles test mocks)
+        if not isinstance(df, pd.DataFrame):
+            continue
+
+        if df.empty:
+            print(f'WARNING: Empty data for metric "{metric}"')
+            continue
+
+        if 'y' in df.columns:
+            if df['y'].std() == 0:
+                print(f'WARNING: Zero variance in metric "{metric}" - all values are {df["y"].iloc[0]}')
+            if (df['y'] == 0).all():
+                print(f'WARNING: All-zero data for metric "{metric}"')
+
+
 def get_forecast_dfs(
     datasets: Dict[str, pd.DataFrame],
     forecast_model: Any,
@@ -52,6 +79,10 @@ def get_forecast_dfs(
 
     if quantile is None:
         quantile = FORECAST_CONFIG['quantile']
+
+    # Check data health before forecasting
+    _check_data_health(datasets)
+
     tileset = mozaic.TileSet()
 
     print('\n--- Populate tiles\n')
@@ -61,13 +92,20 @@ def get_forecast_dfs(
             category=RuntimeWarning,
             message=".*divide by zero.*|.*overflow.*|.*invalid value.*"
         )
-        mozaic.populate_tiles(
-            datasets,
-            tileset,
-            forecast_model,
-            forecast_start_date,
-            forecast_end_date,
-        )
+        try:
+            mozaic.populate_tiles(
+                datasets,
+                tileset,
+                forecast_model,
+                forecast_start_date,
+                forecast_end_date,
+            )
+        except Exception as e:
+            print(f'\nERROR: Mozaic populate_tiles failed')
+            print(f'Processing metrics: {list(datasets.keys())}')
+            print(f'Forecast period: {forecast_start_date} to {forecast_end_date}')
+            print(f'Original error: {e}')
+            raise
 
     mozaics: Dict[str, Mozaic] = {}
     _ctry = defaultdict(lambda: defaultdict(mozaic.Mozaic))
@@ -81,18 +119,25 @@ def get_forecast_dfs(
             message=".*divide by zero.*|.*overflow.*|.*invalid value.*"
         )
 
-        mozaic.utils.curate_mozaics(
-            datasets,
-            tileset,
-            forecast_model,
-            mozaics,
-            _ctry,
-            _pop,
-        )
+        try:
+            mozaic.utils.curate_mozaics(
+                datasets,
+                tileset,
+                forecast_model,
+                mozaics,
+                _ctry,
+                _pop,
+            )
+        except Exception as e:
+            print(f'\nERROR: Mozaic curate_mozaics failed')
+            print(f'Processing metrics: {list(datasets.keys())}')
+            print(f'Original error: {e}')
+            raise
 
+    print(f'\n--- Extracting forecasts ({len(mozaics)} metrics)')
     dfs = {}
-    for metric, moz in mozaics.items():
-        print(metric)
+    for i, (metric, moz) in enumerate(mozaics.items(), 1):
+        print(f'  [{i}/{len(mozaics)}] {metric}')
         dfs[metric] = moz.to_granular_forecast_df(quantile=quantile)
 
     return dfs

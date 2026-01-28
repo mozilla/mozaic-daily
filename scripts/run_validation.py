@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 """Run validation on the mozaic-daily forecast checkpoint file.
 
-This script mimics the old behavior of running `python mozaic_daily_validation.py`.
-It reads the checkpoint parquet file and validates it against BigQuery schema.
+This script reads the checkpoint parquet file and validates it against BigQuery schema.
 It can be run from anywhere in the project.
 
 Usage:
