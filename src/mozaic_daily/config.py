@@ -52,28 +52,25 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
     """
     config = {}
 
+
+    config['forecast_run_dt'] = datetime.now()
+
     # Dates (calculated at runtime or from override)
     if forecast_start_date_override:
         # Parse override as the forecast start date (simulated "yesterday")
-        override_dt = datetime.strptime(forecast_start_date_override, "%Y-%m-%d")
+        forecast_start_dt = datetime.strptime(forecast_start_date_override, "%Y-%m-%d")
 
         # Validate that override date is not in the future
         today = datetime.now().date()
-        if override_dt.date() > today:
+        if forecast_start_dt.date() > today:
             raise ValueError(f"forecast_start_date_override ({forecast_start_date_override}) cannot be in the future")
-
-        forecast_run_dt = override_dt + timedelta(days=1)  # Simulated "today"
-        config['forecast_run_dt'] = forecast_run_dt
-        config['forecast_start_date'] = forecast_start_date_override
-        config['forecast_end_date'] = datetime(override_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
-        config['training_end_date'] = (override_dt - timedelta(days=1)).strftime("%Y-%m-%d")
     else:
-        # Default behavior: use current datetime
-        forecast_run_dt = datetime.now()
-        config['forecast_run_dt'] = forecast_run_dt
-        config['forecast_start_date'] = (forecast_run_dt - timedelta(days=1)).strftime("%Y-%m-%d")
-        config['forecast_end_date'] = datetime(forecast_run_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
-        config['training_end_date'] = (forecast_run_dt - timedelta(days=2)).strftime("%Y-%m-%d")
+        # Default behavior: use yesterday
+        forecast_start_dt = datetime.now() - timedelta(days=1)
+
+    config['forecast_start_date'] = (forecast_start_dt).strftime("%Y-%m-%d")
+    config['forecast_end_date'] = datetime(forecast_start_dt.year + 1, 12, 31).strftime("%Y-%m-%d")
+    config['training_end_date'] = (forecast_start_dt - timedelta(days=1)).strftime("%Y-%m-%d")
 
     # Markets
     top_DAU_markets = set(

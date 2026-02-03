@@ -12,12 +12,9 @@ Usage:
     # Testing mode (desktop/DAU only)
     python scripts/run_main.py --testing
 
-    # Historical forecast with debug flags
+    # Historical forecast
     python scripts/run_main.py \
-      --forecast-start-date 2024-06-15 \
-      --dau-only \
-      --forecast-only \
-      --output-dir ./forecasts
+      --forecast-start-date 2024-06-15
 """
 
 import sys
@@ -51,7 +48,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--no-checkpoints',
         action='store_true',
-        help='Disable checkpoint loading (required for batch historical processing)'
+        help='Disable checkpoint loading (required for local batch historical processing)'
     )
     args = parser.parse_args()
 

@@ -42,9 +42,9 @@ def test_runtime_config_with_date_override():
     # Verify forecast_end_date is Dec 31 of next year
     assert config['forecast_end_date'] == "2025-12-31"
 
-    # Verify forecast_run_dt is simulated "today" (override + 1 day)
-    expected_run_dt = datetime(2024, 6, 16)
-    assert config['forecast_run_dt'] == expected_run_dt
+    # Verify forecast_run_dt is still actually today
+    expected_run_dt = datetime.now().date()
+    assert config['forecast_run_dt'].date() == expected_run_dt
 
 
 def test_runtime_config_override_year_boundary():
