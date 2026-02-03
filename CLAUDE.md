@@ -96,7 +96,6 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `run_flow.py` - Unified runner for Metaflow operations (local, deploy, backfill)
 - `run_main.py` - Run the main forecasting pipeline with checkpoints (local development)
 - `run_validation.py` - Validate the checkpoint forecast file
-- `combine_forecasts.py` - Combine multiple forecast parquet files into one
 - `test_local_docker.sh` - Test Docker image builds locally
 
 The `docker/` directory contains Docker management scripts:
