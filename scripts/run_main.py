@@ -6,8 +6,15 @@ This script mimics the old behavior of running `python mozaic_daily.py`.
 It can be run from anywhere in the project.
 
 Usage:
-    python scripts/run_main.py           # Normal mode (all platforms/metrics)
-    python scripts/run_main.py --testing # Testing mode (desktop/DAU only)
+    # Normal mode (all platforms/metrics)
+    python scripts/run_main.py
+
+    # Testing mode (desktop/DAU only)
+    python scripts/run_main.py --testing
+
+    # Historical forecast
+    python scripts/run_main.py \
+      --forecast-start-date 2024-06-15
 """
 
 import sys
@@ -25,14 +32,33 @@ from mozaic_daily.config import STATIC_CONFIG
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Run the mozaic-daily forecasting pipeline'
+        description='Run the mozaic-daily forecasting pipeline',
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
         '--testing',
         action='store_true',
         help='Run in testing mode (desktop/DAU only)'
     )
+    parser.add_argument(
+        '--forecast-start-date',
+        type=str,
+        help='Override forecast start date (YYYY-MM-DD) for historical runs'
+    )
+    parser.add_argument(
+        '--no-checkpoints',
+        action='store_true',
+        help='Disable checkpoint loading (required for local batch historical processing)'
+    )
     args = parser.parse_args()
 
     testing_mode = STATIC_CONFIG['testing_mode_enable_string'] if args.testing else None
-    main(checkpoints=True, testing_mode=testing_mode)
+
+    # Disable checkpoints if flag is set
+    use_checkpoints = not args.no_checkpoints
+
+    main(
+        checkpoints=use_checkpoints,
+        testing_mode=testing_mode,
+        forecast_start_date=args.forecast_start_date
+    )

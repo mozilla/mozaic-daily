@@ -30,6 +30,10 @@ def get_queries(
 ) -> Dict[str, Dict[str, Dict[str, Tuple[str, QuerySpec]]]]:
     """Build SQL queries for all platform/metric/source combinations.
 
+    Args:
+        countries: SQL-formatted country string (e.g., "'US', 'CA', 'GB'")
+        testing_mode: If True, only query Desktop Glean DAU
+
     Returns:
         Nested dict structure: {platform: {source: {metric: (sql, spec)}}}
         Example:
@@ -59,7 +63,7 @@ def get_queries(
         sql = spec.build_query(countries)
 
         queries[platform][source][metric] = (sql, spec)
-        
+
     return queries
 
 # Get data

@@ -26,3 +26,8 @@ dist/
 
 # OS
 .DS_Store
+
+# Debug files
+docker/Dockerfile.bak
+docker/Dockerfile.plus1
+test_files/

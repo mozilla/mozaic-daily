@@ -4,6 +4,7 @@
 
 from metaflow import (
     FlowSpec,
+    Parameter,
     card,
     step,
     kubernetes,
@@ -17,6 +18,12 @@ class MozaicDailyFlow(FlowSpec):
     """
     This flow runs standard forecasts every day
     """
+
+    forecast_start_date = Parameter(
+        'forecast_start_date',
+        default=None,
+        help='Override forecast start date (YYYY-MM-DD) for backfills'
+    )
 
     # You can import the contents of files from your file system to use in flows.
     # This is meant for small files—in this example, a bit of config.
@@ -64,9 +71,10 @@ class MozaicDailyFlow(FlowSpec):
         print('load')
         print(f'This flow is using docker image: "{IMAGE}"')
 
-        import sys, os, os.path
+        import sys
+        import os
         sys.path.insert(0, '/src')
-        sys.path.insert(1, os.path.join(os.getcwd(),'/src'))
+        sys.path.insert(1, os.path.join(os.getcwd(), '/src'))
         from mozaic_daily import main, validate_output_dataframe, get_git_commit_hash
         import pandas as pd
         from google.cloud import bigquery
@@ -76,7 +84,7 @@ class MozaicDailyFlow(FlowSpec):
         project = "moz-fx-mfouterbounds-prod-f98d"
 
         print ('Generating forecasts')
-        df = main(project=project)
+        df = main(project=project, forecast_start_date=self.forecast_start_date)
         pd.set_option('display.max_columns', None)	
         print(df.tail(10))
 

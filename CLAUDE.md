@@ -93,7 +93,8 @@ from mozaic_daily.validation import validate_output_dataframe
 ### Scripts
 
 The `scripts/` directory contains helper scripts for common tasks:
-- `run_main.py` - Run the main forecasting pipeline with checkpoints
+- `run_flow.py` - Unified runner for Metaflow operations (local, deploy, backfill)
+- `run_main.py` - Run the main forecasting pipeline with checkpoints (local development)
 - `run_validation.py` - Validate the checkpoint forecast file
 - `test_local_docker.sh` - Test Docker image builds locally
 
@@ -113,9 +114,6 @@ python scripts/run_main.py
 
 # Run validation on checkpointed forecast data
 python scripts/run_validation.py
-
-# Run the Metaflow flow locally
-python mozaic_daily_flow.py run
 ```
 
 ### Docker Build & Push
@@ -167,15 +165,29 @@ cd docker
 # Activate virtual environment first
 source .venv/bin/activate
 
-# Run the flow locally
-python mozaic_daily_flow.py run
+# Run flow locally (uses today's date)
+python scripts/run_flow.py local
 
-# Deploy to production with schedule (cron: 7 AM daily)
-python mozaic_daily_flow.py argo-workflows create
+# Deploy/update scheduled job
+python scripts/run_flow.py deploy
 
-# Test specific step
-python mozaic_daily_flow.py run --with kubernetes:image=<image>
+# Backfill single date
+python scripts/run_flow.py backfill 2024-06-15
+
+# Backfill date range (inclusive, sequential)
+python scripts/run_flow.py backfill 2024-06-01 2024-06-30
+
+# Backfill with parallel workers (faster for large date ranges)
+python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --parallel 4
 ```
+
+**Backfill Notes:**
+- Date ranges are inclusive (both start and end dates are processed)
+- Each run creates a log file in `logs/backfill_YYYY-MM-DD.log` for debugging
+- Parallel execution uses ProcessPoolExecutor for true parallelism
+- Failed runs continue processing remaining dates - check summary for failures
+- Historical forecasts validate that the date is not in the future
+- All forecasts write to `moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2`
 
 ## Architecture
 

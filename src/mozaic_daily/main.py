@@ -186,7 +186,8 @@ def generate_forecasts(
 def main(
     project: Optional[str] = None,
     checkpoints: Optional[bool] = False,
-    testing_mode: Optional[str] = None
+    testing_mode: Optional[str] = None,
+    forecast_start_date: Optional[str] = None
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
 
@@ -194,12 +195,14 @@ def main(
         project: GCP project ID for BigQuery (defaults to config value)
         checkpoints: Enable file-based checkpointing for faster iteration
         testing_mode: String flag to enable testing mode (must match exact value)
+        forecast_start_date: Override date (YYYY-MM-DD) for historical forecast runs.
+            Simulates running the forecast on this date.
 
     Returns:
-        DataFrame with validated forecasts ready for BigQuery upload
+        DataFrame with forecasts
     """
-    # Load configuration
-    config = get_runtime_config()
+    # Load configuration with optional date override
+    config = get_runtime_config(forecast_start_date_override=forecast_start_date)
     if not project:
         project = STATIC_CONFIG['default_project']
 
