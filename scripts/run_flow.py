@@ -90,7 +90,7 @@ def run_single_backfill(date: str, log_dir: Path) -> Tuple[str, bool, str]:
             cmd,
             capture_output=True,
             text=True,
-            timeout=7200  # 2 hour timeout per run
+            timeout=14400  # 4 hour timeout per run
         )
 
         # Write output to log file
@@ -106,7 +106,7 @@ def run_single_backfill(date: str, log_dir: Path) -> Tuple[str, bool, str]:
         return (date, success, str(log_file))
 
     except subprocess.TimeoutExpired:
-        error_msg = f"Timeout after 2 hours"
+        error_msg = f"Timeout after 4 hours"
         with open(log_file, 'w') as f:
             f.write(f"Command: {' '.join(cmd)}\n")
             f.write(f"Error: {error_msg}\n")
