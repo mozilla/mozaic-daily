@@ -49,21 +49,6 @@ if __name__ == '__main__':
         help='Override forecast start date (YYYY-MM-DD) for historical runs'
     )
     parser.add_argument(
-        '--dau-only',
-        action='store_true',
-        help='Only query DAU metrics (reduces from 12 to 3 queries)'
-    )
-    parser.add_argument(
-        '--forecast-only',
-        action='store_true',
-        help='Return only forecast rows (exclude training data)'
-    )
-    parser.add_argument(
-        '--output-dir',
-        type=str,
-        help='Save output to directory as dau_forecast_{date}.parquet'
-    )
-    parser.add_argument(
         '--no-checkpoints',
         action='store_true',
         help='Disable checkpoint loading (required for batch historical processing)'
@@ -78,8 +63,5 @@ if __name__ == '__main__':
     main(
         checkpoints=use_checkpoints,
         testing_mode=testing_mode,
-        forecast_start_date=args.forecast_start_date,
-        forecast_only=args.forecast_only,
-        dau_only=args.dau_only,
-        output_dir=args.output_dir
+        forecast_start_date=args.forecast_start_date
     )

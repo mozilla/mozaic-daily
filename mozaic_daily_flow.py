@@ -71,9 +71,10 @@ class MozaicDailyFlow(FlowSpec):
         print('load')
         print(f'This flow is using docker image: "{IMAGE}"')
 
-        import sys, os, os.path
+        import sys
+        import os
         sys.path.insert(0, '/src')
-        sys.path.insert(1, os.path.join(os.getcwd(),'/src'))
+        sys.path.insert(1, os.path.join(os.getcwd(), '/src'))
         from mozaic_daily import main, validate_output_dataframe, get_git_commit_hash
         import pandas as pd
         from google.cloud import bigquery
