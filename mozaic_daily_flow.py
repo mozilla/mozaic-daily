@@ -4,6 +4,7 @@
 
 from metaflow import (
     FlowSpec,
+    Parameter,
     card,
     step,
     kubernetes,
@@ -17,6 +18,12 @@ class MozaicDailyFlow(FlowSpec):
     """
     This flow runs standard forecasts every day
     """
+
+    forecast_start_date = Parameter(
+        'forecast_start_date',
+        default=None,
+        help='Override forecast start date (YYYY-MM-DD) for backfills'
+    )
 
     # You can import the contents of files from your file system to use in flows.
     # This is meant for small files—in this example, a bit of config.
@@ -76,7 +83,7 @@ class MozaicDailyFlow(FlowSpec):
         project = "moz-fx-mfouterbounds-prod-f98d"
 
         print ('Generating forecasts')
-        df = main(project=project)
+        df = main(project=project, forecast_start_date=self.forecast_start_date)
         pd.set_option('display.max_columns', None)	
         print(df.tail(10))
 
@@ -84,7 +91,7 @@ class MozaicDailyFlow(FlowSpec):
         validate_output_dataframe(df)
 
         print('Done\n\nSaving forecasts')
-        write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1'
+        write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2'
 
         client = bigquery.Client(project)
         job_config = bigquery.LoadJobConfig(

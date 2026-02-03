@@ -93,9 +93,9 @@ from mozaic_daily.validation import validate_output_dataframe
 ### Scripts
 
 The `scripts/` directory contains helper scripts for common tasks:
-- `run_main.py` - Run the main forecasting pipeline with checkpoints
+- `run_flow.py` - Unified runner for Metaflow operations (local, deploy, backfill)
+- `run_main.py` - Run the main forecasting pipeline with checkpoints (local development)
 - `run_validation.py` - Validate the checkpoint forecast file
-- `batch_historical_forecasts.py` - Batch process historical forecasts for a date range
 - `combine_forecasts.py` - Combine multiple forecast parquet files into one
 - `test_local_docker.sh` - Test Docker image builds locally
 
@@ -115,63 +115,7 @@ python scripts/run_main.py
 
 # Run validation on checkpointed forecast data
 python scripts/run_validation.py
-
-# Run the Metaflow flow locally
-python mozaic_daily_flow.py run
 ```
-
-### Debug/Research Flags
-
-The forecasting pipeline supports debug flags for historical analysis and research:
-
-```bash
-# Run a historical forecast (simulates running on a past date)
-python scripts/run_main.py --forecast-start-date 2024-06-15
-
-# Query only DAU metrics (3 queries instead of 12, faster iteration)
-python scripts/run_main.py --dau-only
-
-# Return only forecast rows (exclude training data from output)
-python scripts/run_main.py --forecast-only
-
-# Save to custom directory with date-stamped filename
-python scripts/run_main.py --output-dir ./forecasts
-
-# Combine all flags for batch historical analysis
-python scripts/run_main.py \
-  --forecast-start-date 2024-06-15 \
-  --dau-only \
-  --forecast-only \
-  --output-dir ./forecasts \
-  --no-checkpoints  # Required when processing multiple dates
-
-# Process multiple historical dates (manual loop)
-for date in 2024-06-{01..30}; do
-    python scripts/run_main.py \
-      --forecast-start-date $date \
-      --dau-only \
-      --forecast-only \
-      --output-dir ./forecasts
-done
-
-# OR use the automated batch processing script
-python scripts/batch_historical_forecasts.py 2024-06-01 2024-06-30
-
-# Batch script with custom output directory
-python scripts/batch_historical_forecasts.py 2024-06-01 2024-06-30 --output-dir ./my_forecasts
-
-# Combine all historical forecasts into a single file (manual)
-python scripts/combine_forecasts.py --input-dir ./forecasts --output combined.parquet
-```
-
-**Important Notes:**
-- When debug flags are active, validation is skipped (output may not match production schema)
-- `--forecast-start-date` adjusts all dates: training_end_date = date - 1 day, forecast_end_date = Dec 31 of (year + 1)
-- `--dau-only` filters queries before hitting BigQuery (saves cost and time)
-- `--no-checkpoints` disables checkpoint loading - **required when processing multiple historical dates** to prevent loading cached forecasts from previous runs
-- Output files are named `dau_forecast_{date}.parquet` when using `--output-dir`
-- The `batch_historical_forecasts.py` script automatically uses `--no-checkpoints`
-- Default behavior unchanged when no flags are provided
 
 ### Docker Build & Push
 ```bash
@@ -222,15 +166,25 @@ cd docker
 # Activate virtual environment first
 source .venv/bin/activate
 
-# Run the flow locally
-python mozaic_daily_flow.py run
+# Run flow locally (uses today's date)
+python scripts/run_flow.py local
 
-# Deploy to production with schedule (cron: 7 AM daily)
-python mozaic_daily_flow.py argo-workflows create
+# Deploy/update scheduled job
+python scripts/run_flow.py deploy
 
-# Test specific step
-python mozaic_daily_flow.py run --with kubernetes:image=<image>
+# Backfill historical dates (sequential)
+python scripts/run_flow.py backfill 2024-06-01 2024-06-30
+
+# Backfill with parallel workers (faster for large date ranges)
+python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --parallel 4
 ```
+
+**Backfill Notes:**
+- Each run creates a log file in `logs/backfill_YYYY-MM-DD.log` for debugging
+- Parallel execution uses ProcessPoolExecutor for true parallelism
+- Failed runs continue processing remaining dates - check summary for failures
+- Historical forecasts validate that the date is not in the future
+- All forecasts write to `moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2`
 
 ## Architecture
 

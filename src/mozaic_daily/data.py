@@ -26,16 +26,13 @@ from .queries import QUERY_SPECS, Platform, Metric, TelemetrySource, QuerySpec
 
 def get_queries(
     countries: str,
-    testing_mode: bool = False,
-    dau_only: bool = False
+    testing_mode: bool = False
 ) -> Dict[str, Dict[str, Dict[str, Tuple[str, QuerySpec]]]]:
     """Build SQL queries for all platform/metric/source combinations.
 
     Args:
         countries: SQL-formatted country string (e.g., "'US', 'CA', 'GB'")
         testing_mode: If True, only query Desktop Glean DAU
-        dau_only: If True, only query DAU metrics (all platforms/sources).
-            Reduces from 12 queries to 3 queries.
 
     Returns:
         Nested dict structure: {platform: {source: {metric: (sql, spec)}}}
@@ -61,10 +58,6 @@ def get_queries(
         metric = spec.metric.value
         # In testing mode, only return Desktop Glean DAU
         if testing_mode and not (spec.platform == Platform.DESKTOP and spec.telemetry_source == TelemetrySource.GLEAN and spec.metric == Metric.DAU):
-            continue
-
-        # If dau_only flag set, skip all non-DAU metrics
-        if dau_only and spec.metric != Metric.DAU:
             continue
 
         sql = spec.build_query(countries)

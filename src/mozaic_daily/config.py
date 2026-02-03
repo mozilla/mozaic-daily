@@ -46,6 +46,9 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
 
     Returns:
         Dict with dates, markets, and derived values. Does not include static config.
+
+    Raises:
+        ValueError: If forecast_start_date_override is in the future
     """
     config = {}
 
@@ -53,6 +56,12 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
     if forecast_start_date_override:
         # Parse override as the forecast start date (simulated "yesterday")
         override_dt = datetime.strptime(forecast_start_date_override, "%Y-%m-%d")
+
+        # Validate that override date is not in the future
+        today = datetime.now().date()
+        if override_dt.date() > today:
+            raise ValueError(f"forecast_start_date_override ({forecast_start_date_override}) cannot be in the future")
+
         forecast_run_dt = override_dt + timedelta(days=1)  # Simulated "today"
         config['forecast_run_dt'] = forecast_run_dt
         config['forecast_start_date'] = forecast_start_date_override
