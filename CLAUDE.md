@@ -171,7 +171,10 @@ python scripts/run_flow.py local
 # Deploy/update scheduled job
 python scripts/run_flow.py deploy
 
-# Backfill historical dates (sequential)
+# Backfill single date
+python scripts/run_flow.py backfill 2024-06-15
+
+# Backfill date range (inclusive, sequential)
 python scripts/run_flow.py backfill 2024-06-01 2024-06-30
 
 # Backfill with parallel workers (faster for large date ranges)
@@ -179,6 +182,7 @@ python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --parallel 4
 ```
 
 **Backfill Notes:**
+- Date ranges are inclusive (both start and end dates are processed)
 - Each run creates a log file in `logs/backfill_YYYY-MM-DD.log` for debugging
 - Parallel execution uses ProcessPoolExecutor for true parallelism
 - Failed runs continue processing remaining dates - check summary for failures

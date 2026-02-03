@@ -9,6 +9,7 @@ This script provides three execution modes:
 Usage:
     python scripts/run_flow.py local
     python scripts/run_flow.py deploy
+    python scripts/run_flow.py backfill 2024-06-15
     python scripts/run_flow.py backfill 2024-06-01 2024-06-30
     python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --parallel 4
 """
@@ -122,8 +123,8 @@ def run_backfill(start_date: str, end_date: str, parallel: int = 1) -> int:
     """Run backfill for a date range with optional parallelism.
 
     Args:
-        start_date: Start date in YYYY-MM-DD format
-        end_date: End date in YYYY-MM-DD format
+        start_date: Start date in YYYY-MM-DD format (inclusive)
+        end_date: End date in YYYY-MM-DD format (inclusive)
         parallel: Number of concurrent workers (default: 1 for sequential)
 
     Returns:
@@ -209,7 +210,10 @@ Examples:
   # Deploy scheduled job
   python scripts/run_flow.py deploy
 
-  # Backfill date range (sequential)
+  # Backfill single date
+  python scripts/run_flow.py backfill 2024-06-15
+
+  # Backfill date range (inclusive, sequential)
   python scripts/run_flow.py backfill 2024-06-01 2024-06-30
 
   # Backfill with 4 parallel workers
@@ -228,7 +232,11 @@ Examples:
     # Backfill mode
     backfill_parser = subparsers.add_parser("backfill", help="Run historical backfill")
     backfill_parser.add_argument("start_date", help="Start date (YYYY-MM-DD)")
-    backfill_parser.add_argument("end_date", help="End date (YYYY-MM-DD)")
+    backfill_parser.add_argument(
+        "end_date",
+        nargs="?",
+        help="End date (YYYY-MM-DD, inclusive). Defaults to start_date for single-date backfill."
+    )
     backfill_parser.add_argument(
         "--parallel",
         type=int,
@@ -244,7 +252,9 @@ Examples:
     elif args.mode == "deploy":
         exit_code = run_deploy()
     elif args.mode == "backfill":
-        exit_code = run_backfill(args.start_date, args.end_date, args.parallel)
+        # Default end_date to start_date if not provided
+        end_date = args.end_date if args.end_date else args.start_date
+        exit_code = run_backfill(args.start_date, end_date, args.parallel)
     else:
         print(f"Unknown mode: {args.mode}")
         exit_code = 1
