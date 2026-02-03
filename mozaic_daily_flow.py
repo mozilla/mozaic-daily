@@ -84,7 +84,7 @@ class MozaicDailyFlow(FlowSpec):
         validate_output_dataframe(df)
 
         print('Done\n\nSaving forecasts')
-        write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1'
+        write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2'
 
         client = bigquery.Client(project)
         job_config = bigquery.LoadJobConfig(
