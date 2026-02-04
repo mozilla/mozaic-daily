@@ -25,6 +25,12 @@ class MozaicDailyFlow(FlowSpec):
         help='Override forecast start date (YYYY-MM-DD) for backfills'
     )
 
+    output_table = Parameter(
+        'output_table',
+        default=None,
+        help='Override output BigQuery table (defaults to STATIC_CONFIG default_table)'
+    )
+
     # You can import the contents of files from your file system to use in flows.
     # This is meant for small files—in this example, a bit of config.
     # example_config = IncludeFile("example_config", default="./example_config.json")
@@ -76,6 +82,7 @@ class MozaicDailyFlow(FlowSpec):
         sys.path.insert(0, '/src')
         sys.path.insert(1, os.path.join(os.getcwd(), '/src'))
         from mozaic_daily import main, validate_output_dataframe, get_git_commit_hash
+        from mozaic_daily.config import STATIC_CONFIG
         import pandas as pd
         from google.cloud import bigquery
 
@@ -84,15 +91,16 @@ class MozaicDailyFlow(FlowSpec):
         project = "moz-fx-mfouterbounds-prod-f98d"
 
         print ('Generating forecasts')
-        df = main(project=project, forecast_start_date=self.forecast_start_date)
-        pd.set_option('display.max_columns', None)	
+        df = main(project=project, forecast_start_date=self.forecast_start_date, output_table=self.output_table)
+        pd.set_option('display.max_columns', None)
         print(df.tail(10))
 
         print('Done\n\nValidating forecasts')
         validate_output_dataframe(df)
 
         print('Done\n\nSaving forecasts')
-        write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2'
+        write_table = self.output_table or STATIC_CONFIG['default_table']
+        print(f'Writing to table: {write_table}')
 
         client = bigquery.Client(project)
         job_config = bigquery.LoadJobConfig(

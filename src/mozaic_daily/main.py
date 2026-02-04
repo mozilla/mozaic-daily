@@ -187,7 +187,8 @@ def main(
     project: Optional[str] = None,
     checkpoints: Optional[bool] = False,
     testing_mode: Optional[str] = None,
-    forecast_start_date: Optional[str] = None
+    forecast_start_date: Optional[str] = None,
+    output_table: Optional[str] = None
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
 
@@ -197,12 +198,21 @@ def main(
         testing_mode: String flag to enable testing mode (must match exact value)
         forecast_start_date: Override date (YYYY-MM-DD) for historical forecast runs.
             Simulates running the forecast on this date.
+        output_table: Override output BigQuery table for validation schema checks.
+            When provided, updates STATIC_CONFIG['default_table'] so all code uses it.
 
     Returns:
         DataFrame with forecasts
     """
     # Load configuration with optional date override
-    config = get_runtime_config(forecast_start_date_override=forecast_start_date)
+    config = get_runtime_config(
+        forecast_start_date_override=forecast_start_date,
+        output_table_override=output_table
+    )
+
+    # Update STATIC_CONFIG so validation uses the correct table
+    if output_table:
+        STATIC_CONFIG['default_table'] = output_table
     if not project:
         project = STATIC_CONFIG['default_project']
 

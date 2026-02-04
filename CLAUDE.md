@@ -221,7 +221,8 @@ python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --parallel 4
    - Detects duplicate rows
 
 5. **Upload** (`mozaic_daily_flow.py:load`)
-   - Appends validated forecast to `moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1`
+   - Appends validated forecast to `moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2`
+   - Output table can be overridden via Metaflow Parameter (flows through main() to update config)
 
 ### Configuration System (`mozaic_daily.config`)
 
@@ -280,7 +281,7 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 ### BigQuery Projects
 - Default project: `moz-fx-data-bq-data-science`
 - Production project (in flow): `moz-fx-mfouterbounds-prod-f98d`
-- Output table: `moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1`
+- Output table: `moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2` (configurable via Metaflow Parameter)
 
 ### Validation Requirements
 - All string columns have strict format requirements (ISO timestamps, SHA1 hashes, JSON segments)

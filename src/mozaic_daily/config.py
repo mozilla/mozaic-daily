@@ -22,7 +22,7 @@ import pandas as pd
 # Static configuration (true constants)
 STATIC_CONFIG = {
     'default_project': 'moz-fx-data-bq-data-science',
-    'default_table': 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1',
+    'default_table': 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2',
     'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
     'raw_checkpoint_filename_template': 'mozaic_parts.raw.{source}.{platform}.{metric}.parquet',
     'testing_mode_enable_string': 'ENABLE_TESTING_MODE',
@@ -34,7 +34,10 @@ FORECAST_CONFIG = {
     'quantile': 0.5,  # Default quantile for to_granular_forecast_df()
 }
 
-def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Dict[str, Any]:
+def get_runtime_config(
+    forecast_start_date_override: Optional[str] = None,
+    output_table_override: Optional[str] = None
+) -> Dict[str, Any]:
     """Calculate runtime configuration based on current datetime or override.
 
     Args:
@@ -43,6 +46,8 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
             the forecast start date (T-0) and adjusts all other dates accordingly:
             - training_end_date = override - 1 day (T-1)
             - forecast_end_date = Dec 31 of (override year + 1)
+        output_table_override: Override output BigQuery table for validation schema checks.
+            When provided, updates STATIC_CONFIG['default_table'] so all code uses it.
 
     Returns:
         Dict with dates, markets, and derived values. Does not include static config.
@@ -83,6 +88,9 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
     config['countries'] = top_DAU_markets | top_google_markets | nonmonetized_google
     config['country_string'] = ", ".join(f"'{i}'" for i in sorted(config['countries']))
     config['validation_countries'] = config['countries'] | set(['ALL', 'ROW'])
+
+    # Output table (override or default from STATIC_CONFIG)
+    config['output_table'] = output_table_override or STATIC_CONFIG['default_table']
 
     return config
 

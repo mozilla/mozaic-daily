@@ -70,3 +70,11 @@ def test_runtime_config_override_preserves_countries():
     # Countries should be identical
     assert config_default['countries'] == config_override['countries']
     assert config_default['country_string'] == config_override['country_string']
+
+
+def test_static_config_default_table_is_v2():
+    """Test that default_table points to the v2 production table."""
+    from mozaic_daily.config import STATIC_CONFIG
+
+    expected_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2'
+    assert STATIC_CONFIG['default_table'] == expected_table
