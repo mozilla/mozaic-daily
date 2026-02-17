@@ -5,7 +5,7 @@ set -euo pipefail
 # Defaults (remote / amd64)
 # ---------------------------------
 MODE="remote"          # remote | local
-VERSION="0.0.7"
+VERSION=""             # Required - no default
 
 REMOTE_PLATFORM="linux/amd64"
 REMOTE_IMAGE="brwells78094/mozaic-daily"
@@ -25,7 +25,7 @@ Usage: $0 [options] [-- command]
 Common options:
   --local                 Use local (arm64) image
   --remote                Use remote (amd64) image (default)
-  -v, --version <ver>     Version number (e.g. 0.0.6)
+  -v, --version <ver>     Version number (e.g. 0.0.6) [required]
 
 Advanced / escape hatches:
   -p, --platform <plat>   Override platform
@@ -36,11 +36,9 @@ Other:
   -h, --help              Show this help
 
 Examples:
-  $0                      # remote, v0.0.7_amd64
-  $0 --local              # local,  v0.0.7_arm64
-  $0 --local -v 0.0.8     # local,  v0.0.8_arm64
-  $0 --remote -v 0.0.8    # remote, v0.0.8_amd64
-  $0 --local -- /run_forecast.sh   # run forecast in local container
+  $0 --remote -v 0.0.9    # remote, v0.0.9_amd64
+  $0 --local -v 0.0.9     # local,  v0.0.9_arm64
+  $0 --local -v 0.0.9 -- /run_forecast.sh   # run forecast in local container
 EOF
 }
 
@@ -89,6 +87,16 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# ---------------------------------
+# Validate required arguments
+# ---------------------------------
+if [[ -z "$VERSION" ]]; then
+  echo "Error: Version is required (use -v or --version)" >&2
+  echo "" >&2
+  usage
+  exit 1
+fi
 
 # ---------------------------------
 # Resolve platform / image / tag

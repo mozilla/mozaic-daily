@@ -1,7 +1,7 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 # build_and_push.sh
 # Build a mozaic-daily Docker image locally or via remote buildx and (for remote) push it.
-# Usage: ./build_and_push.sh <local|remote> <version> [--no-cache]
+# Usage: ./build_and_push.sh --local|--remote -v <version> [--no-cache]
 
 set -e
 set -u
@@ -19,63 +19,85 @@ BUILD_CONTEXT="../"  # Build context is parent directory (project root)
 usage() {
   cat <<'EOF'
 Usage:
-  ./build_and_push.sh <local|remote> <version> [--no-cache]
+  ./build_and_push.sh --local|--remote -v <version> [--no-cache]
 
-Arguments:
-  local|remote   Build mode. "local" builds for arm64 on your machine.
-                 "remote" builds for amd64 with buildx and pushes.
-  version        Tag starting with 'v' (e.g., v1.2.3)
-  --no-cache     Pass --no-cache to docker build / buildx build
+Options:
+  --local             Build for arm64 on your machine
+  --remote            Build for amd64 with buildx and push to registry
+  -v, --version <ver> Version number without 'v' prefix (e.g., 1.2.3) [required]
+  --no-cache          Pass --no-cache to docker build / buildx build
+  -h, --help          Show this help
 
 Examples:
-  ./build_and_push.sh local v1.2.3
-  ./build_and_push.sh remote v1.2.3 --no-cache
+  ./build_and_push.sh --local -v 1.2.3
+  ./build_and_push.sh --remote -v 1.2.3 --no-cache
 EOF
 }
 
 die() {
-  print -u2 -- "Error: $*"
+  echo "Error: $*" >&2
   exit 1
 }
 
 info() {
-  print -- "[info] $*"
+  echo "[info] $*"
 }
 
 ### --- Argument parsing -----------------------------------------------------
 
+MODE=""
+VERSION=""
 NO_CACHE_FLAG=""
 
-ARGS=()
-for arg in "$@"; do
-  case "$arg" in
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --local)
+      MODE="local"
+      shift
+      ;;
+    --remote)
+      MODE="remote"
+      shift
+      ;;
+    -v|--version)
+      if [[ $# -lt 2 ]]; then
+        die "Option -v/--version requires an argument"
+      fi
+      VERSION="$2"
+      shift 2
+      ;;
     --no-cache)
       NO_CACHE_FLAG="--no-cache"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
       ;;
     *)
-      ARGS+=("$arg")
+      die "Unknown argument: $1"
       ;;
   esac
 done
 
-set -- "${ARGS[@]}"
+### --- Argument validation --------------------------------------------------
 
-if [[ $# -ne 2 ]]; then
+if [[ -z "$MODE" ]]; then
+  echo "Error: Must specify --local or --remote" >&2
+  echo "" >&2
   usage
   exit 1
 fi
 
-MODE="$1"       # "local" or "remote"
-VERSION="$2"    # must start with 'v'
-
-### --- Argument validation --------------------------------------------------
-
-if [[ "$MODE" != "local" && "$MODE" != "remote" ]]; then
-  die "First argument must be 'local' or 'remote' (got: '$MODE')."
+if [[ -z "$VERSION" ]]; then
+  echo "Error: Version is required (use -v or --version)" >&2
+  echo "" >&2
+  usage
+  exit 1
 fi
 
-if [[ ! "$VERSION" == v* ]]; then
-  die "Version must start with 'v' (got: '$VERSION')."
+if [[ "$VERSION" == v* ]]; then
+  die "Version should not include 'v' prefix (got: '$VERSION'). Use '${VERSION#v}' instead."
 fi
 
 [[ -f "$DOCKERFILE" ]] || die "Dockerfile '$DOCKERFILE' not found in current directory."
@@ -89,7 +111,7 @@ case "$MODE" in
   local)  SUFFIX="_arm64" ;;
 esac
 
-TAG="${VERSION}${SUFFIX}"
+TAG="v${VERSION}${SUFFIX}"
 IMAGE_NAME="${IMAGE_BASE}:${TAG}"
 
 info "Build mode:      $MODE"

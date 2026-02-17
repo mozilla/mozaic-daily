@@ -2,8 +2,8 @@
 # Test local Docker image build and functionality
 set -e
 
-VERSION=${1:-"v0.0.1"}
-IMAGE_NAME="mozaic-daily:${VERSION}_refactor_arm64"
+VERSION=${1:-"0.0.1"}
+IMAGE_NAME="mozaic-daily:v${VERSION}_refactor_arm64"
 
 echo "=============================================="
 echo "Testing Local Docker Image (Refactor)"
@@ -12,7 +12,7 @@ echo ""
 
 # Build
 echo "[1/3] Building image..."
-./build_and_push.sh local "${VERSION}_refactor"
+./build_and_push.sh --local -v "${VERSION}_refactor"
 echo "✓ Build complete"
 echo ""
 

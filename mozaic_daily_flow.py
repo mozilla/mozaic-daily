@@ -74,7 +74,8 @@ class MozaicDailyFlow(FlowSpec):
 
         """
         print('load')
-        print(f'This flow is using docker image: "{IMAGE}"')
+        if not LOCAL_MODE:
+            print(f'This flow is using remote docker image: "{IMAGE}"')
 
         import sys
         import os

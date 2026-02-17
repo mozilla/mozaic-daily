@@ -122,13 +122,13 @@ python scripts/run_validation.py
 cd docker
 
 # Build locally for arm64 (development/testing)
-./build_and_push.sh local v1.2.3
+./build_and_push.sh --local -v 1.2.3
 
 # Build for amd64 and push to Docker Hub (production)
-./build_and_push.sh remote v1.2.3
+./build_and_push.sh --remote -v 1.2.3
 
 # Build without cache
-./build_and_push.sh remote v1.2.3 --no-cache
+./build_and_push.sh --remote -v 1.2.3 --no-cache
 ```
 
 ### Docker Run
@@ -137,16 +137,16 @@ cd docker
 cd docker
 
 # Run remote (amd64) image interactively
-./run_mozaic_docker.sh --remote
+./run_mozaic_docker.sh --remote -v 0.0.9
 
 # Run local (arm64) image interactively
-./run_mozaic_docker.sh --local
+./run_mozaic_docker.sh --local -v 0.0.9
 
 # Run forecast inside container
-./run_mozaic_docker.sh --local -- /run_forecast.sh
+./run_mozaic_docker.sh --local -v 0.0.9 -- /run_forecast.sh
 
 # Or manually inside container:
-./run_mozaic_docker.sh --local
+./run_mozaic_docker.sh --local -v 0.0.9
 # Inside container:
 # /run_forecast.sh
 # OR
@@ -156,7 +156,7 @@ cd docker
 # - Automatically mounts Google Cloud credentials from ~/.config/gcloud
 # - Sets CLOUDSDK_CONFIG environment variable for BigQuery access
 # - Use --local for arm64 (Mac M1/M2), --remote for amd64 (production platform)
-# - Default version is 0.0.7, override with -v flag
+# - Version must be specified with -v flag (required)
 # - PYTHONPATH is set to /src inside the container for package imports
 ```
 
