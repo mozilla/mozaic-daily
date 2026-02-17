@@ -22,7 +22,7 @@ import pandas as pd
 # Static configuration (true constants)
 STATIC_CONFIG = {
     'default_project': 'moz-fx-data-bq-data-science',
-    'default_table': 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v1',
+    'default_table': 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2',
     'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
     'raw_checkpoint_filename_template': 'mozaic_parts.raw.{source}.{platform}.{metric}.parquet',
     'testing_mode_enable_string': 'ENABLE_TESTING_MODE',
