@@ -321,7 +321,7 @@ QUERY_SPECS: Dict[QueryKey, QuerySpec] = {
         where_clause='is_desktop',
         date_constraints=DateConstraints(
             date_field='first_seen_date',
-            date_start='2020-01-01',
+            date_start='2021-01-01',
             date_excludes=(('2023-07-18', '2023-07-19'),),
         ),
         x_column='first_seen_date',
@@ -336,7 +336,7 @@ QUERY_SPECS: Dict[QueryKey, QuerySpec] = {
         where_clause='is_desktop AND lifecycle_stage = "existing_user"',
         date_constraints=DateConstraints(
             date_field='submission_date',
-            date_start='2020-01-01',
+            date_start='2021-01-01',
         ),
         x_column='submission_date',
         y_column='dau',
@@ -350,7 +350,7 @@ QUERY_SPECS: Dict[QueryKey, QuerySpec] = {
         where_clause='is_desktop AND lifecycle_stage = "existing_user"',
         date_constraints=DateConstraints(
             date_field='submission_date',
-            date_start='2020-01-01',
+            date_start='2021-01-01',
         ),
         x_column='submission_date',
         y_column='mau',

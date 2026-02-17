@@ -314,7 +314,7 @@ def test_get_queries_includes_date_constraints_in_sql():
     desktop_new_profiles_sql, _ = queries['desktop']['legacy']['New Profiles']
 
     # Check for the Legacy Desktop date constraint
-    assert 'first_seen_date >= "2020-01-01"' in desktop_new_profiles_sql, (
+    assert 'first_seen_date >= "2021-01-01"' in desktop_new_profiles_sql, (
         "Expected date start constraint in Desktop Legacy New Profiles SQL"
     )
     assert 'first_seen_date NOT BETWEEN "2023-07-18" AND "2023-07-19"' in desktop_new_profiles_sql, (
