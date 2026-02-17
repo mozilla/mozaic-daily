@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import os
 from metaflow import (
     FlowSpec,
     Parameter,
@@ -11,7 +12,18 @@ from metaflow import (
     schedule,
 )
 
-IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.8_amd64"
+IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.9_amd64"
+
+# Check if running in local mode (skip Kubernetes)
+LOCAL_MODE = os.environ.get("METAFLOW_LOCAL_MODE", "").lower() == "true"
+
+def conditional_kubernetes(*args, **kwargs):
+    """Apply kubernetes decorator only if not in local mode."""
+    def decorator(func):
+        if LOCAL_MODE:
+            return func
+        return kubernetes(*args, **kwargs)(func)
+    return decorator
 
 @schedule(cron='0 7 * * ? *')
 class MozaicDailyFlow(FlowSpec):
@@ -51,18 +63,11 @@ class MozaicDailyFlow(FlowSpec):
 
 
     @card
-    # You can uncomment and adjust this decorator to scale your flow remotely with a custom image.
-    # Note: the image parameter must be a fully qualified registry path otherwise Metaflow will default to
-    # the AWS public registry.
-    # The image referenced HERE is the mozmlops demo image,
-    # which has both the dependencies you need run this template flow:
-    # scikit-learn (for the specific model called in this demo) and mozmlops (for all your ops tools).
-    # Check https://docs.metaflow.org/api/step-decorators/kubernetes for details on @kubernetes decorator
-    # @kubernetes(
-    #     image=IMAGE, 
-    #     cpu=1,
-    #     memory=16384
-    # )
+    @conditional_kubernetes(
+        image=IMAGE,
+        cpu=1,
+        memory=16384
+    )
     @step
     def load(self):
         """

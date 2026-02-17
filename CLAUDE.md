@@ -168,6 +168,9 @@ source .venv/bin/activate
 # Run flow locally (uses today's date)
 python scripts/run_flow.py local
 
+# Run flow with Kubernetes (test production path)
+python scripts/run_flow.py remote
+
 # Deploy/update scheduled job
 python scripts/run_flow.py deploy
 
@@ -179,9 +182,58 @@ python scripts/run_flow.py backfill 2024-06-01 2024-06-30
 
 # Backfill with parallel workers (faster for large date ranges)
 python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --parallel 4
+
+# Backfill only Mondays (useful for day-of-week patterns)
+python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --weekday monday --parallel 2
+
+# Backfill multiple weekdays
+python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --weekday monday --weekday friday
+
+# Preview backfill plan without executing (dry run)
+python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --weekday monday --dry-run
+
+# Resume a previous backfill (skips completed dates)
+python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --weekday monday --resume --parallel 2
+
+# Run backfill in local mode (no Kubernetes)
+python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --local
 ```
 
-**Backfill Notes:**
+#### Backfill Configuration
+
+The backfill mode supports several advanced features for large-scale historical forecasting:
+
+**Flags:**
+- `--parallel N` — Run N backfills concurrently using ProcessPoolExecutor
+- `--weekday DAY` — Filter to specific weekday(s). Can be specified multiple times (e.g., `--weekday monday --weekday friday`). Valid values: monday, tuesday, wednesday, thursday, friday, saturday, sunday
+- `--dry-run` — Print execution plan (dates, weekdays, mode) without running backfill. Useful for previewing large date ranges before execution
+- `--resume` — Skip dates from previous runs based on state file. Allows interrupted backfills to continue without re-running completed dates
+- `--local` — Run in local mode without Kubernetes (default: remote with Kubernetes)
+
+**State Files:**
+Backfill runs create state files in `logs/backfill_state_{start}_{end}[_{weekday}].json` that track:
+- Completed dates (for `--resume`)
+- Failed dates
+- Configuration (date range, weekdays, local/remote mode)
+- Timestamps (created_at, updated_at)
+
+The state file path is deterministic based on start date, end date, and weekdays, so `--resume` automatically finds the correct state file for the same backfill configuration.
+
+**State File Format:**
+```json
+{
+    "start_date": "2025-07-01",
+    "end_date": "2026-02-01",
+    "weekdays": ["monday"],
+    "local_mode": false,
+    "created_at": "2026-02-17T10:30:00",
+    "updated_at": "2026-02-17T14:45:00",
+    "completed_dates": ["2025-07-07", "2025-07-14"],
+    "failed_dates": ["2025-07-28"]
+}
+```
+
+**General Notes:**
 - Date ranges are inclusive (both start and end dates are processed)
 - Each run creates a log file in `logs/backfill_YYYY-MM-DD.log` for debugging
 - Parallel execution uses ProcessPoolExecutor for true parallelism

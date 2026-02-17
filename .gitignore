@@ -18,6 +18,7 @@ htmlcov/
 # Project-specific
 data-tmp/
 *.parquet
+logs/
 
 # Build artifacts
 src/mozaic_daily.egg-info/
