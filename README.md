@@ -48,6 +48,7 @@ mozaic-daily/
 
 ```bash
 # After cloning the repo and cd-ing into it:
+pip install --upgrade pip
 python3.10 -m venv .venv
 source .venv/bin/activate
 pip install -r docker/requirements.outerbounds.txt
@@ -59,6 +60,8 @@ pip install numpy pandas scipy pyarrow plotly holidays python-dateutil
 pip install pytest
 pip install -e .
 python -c "from mozaic_daily import main; print('Setup OK')"
+python -m pip install -U 'outerbounds[gcp]'
+<outerbounds setup command>
 ```
 
 ### 1. Prerequisites
