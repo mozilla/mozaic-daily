@@ -214,6 +214,25 @@ class QuerySpec:
     """
 
 
+@dataclass(frozen=True)
+class AvailabilityCheckQuery:
+    """Query to check maximum available date in a BigQuery table.
+
+    Used for pre-flight checks to verify training data has landed before
+    starting the full pipeline.
+
+    Attributes:
+        table: Full BigQuery table name
+        date_field: Name of the date column to check
+        where_clause: SQL WHERE clause to filter rows (same as the main query)
+        sql: Complete SQL query string ready for BigQuery execution
+    """
+    table: str
+    date_field: str
+    where_clause: str
+    sql: str
+
+
 def _build_desktop_segment_columns(segment_column: str) -> str:
     """Build SQL SELECT columns for Windows version segmentation."""
     return f"""IFNULL(LOWER({segment_column}) LIKE '%windows 10%', FALSE) AS win10,
@@ -422,6 +441,45 @@ QUERY_SPECS: Dict[QueryKey, QuerySpec] = {
 # =============================================================================
 # HELPERS
 # =============================================================================
+
+def get_availability_check_queries() -> List[AvailabilityCheckQuery]:
+    """Build pre-flight check queries for all unique table/date combinations.
+
+    Deduplicates QUERY_SPECS by (table, date_field, where_clause) so that tables
+    shared across metrics (e.g., desktop_engagement_aggregates for DAU and MAU)
+    are only checked once. The 12 query specs reduce to 9 unique checks.
+
+    Each check queries MAX(date_field) to verify training data has landed in BQ.
+
+    Returns:
+        List of AvailabilityCheckQuery instances, one per unique table/date combo
+    """
+    seen = set()
+    checks = []
+
+    for spec in QUERY_SPECS.values():
+        dedup_key = (spec.table, spec.date_constraints.date_field, spec.where_clause)
+        if dedup_key in seen:
+            continue
+        seen.add(dedup_key)
+
+        table = spec.table
+        date_field = spec.date_constraints.date_field
+        where_clause = spec.where_clause
+        sql = (
+            f"SELECT MAX({date_field}) AS max_date FROM `{table}`"
+            f" WHERE {where_clause}"
+            f" AND {date_field} >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
+        )
+        checks.append(AvailabilityCheckQuery(
+            table=table,
+            date_field=date_field,
+            where_clause=where_clause,
+            sql=sql,
+        ))
+
+    return checks
+
 
 def get_date_keys() -> List[Tuple[str, str, str]]:
     """Return all unique (platform, metric, source) keys from query specifications.

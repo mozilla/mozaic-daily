@@ -7,7 +7,7 @@ Tests cover query specs, date constraints, and SQL generation.
 
 from mozaic_daily.queries import (
     QUERY_SPECS, Platform, Metric, TelemetrySource, DataSource,
-    DateConstraints
+    DateConstraints, AvailabilityCheckQuery, get_availability_check_queries,
 )
 from mozaic_daily.data import get_queries
 from mozaic_daily.config import get_runtime_config
@@ -437,3 +437,112 @@ def test_build_query_mobile_includes_app_segments():
     assert 'focus_ios' in query.lower(), (
         "Expected focus_ios column in Mobile SQL"
     )
+
+
+# ===== get_availability_check_queries() TESTS =====
+
+def test_get_availability_check_queries_returns_list_of_correct_type():
+    """Verify get_availability_check_queries() returns a list of AvailabilityCheckQuery.
+
+    Failure indicates wrong return type from the function.
+    """
+    checks = get_availability_check_queries()
+
+    assert isinstance(checks, list), (
+        f"Expected list, got {type(checks)}"
+    )
+    for check in checks:
+        assert isinstance(check, AvailabilityCheckQuery), (
+            f"Expected AvailabilityCheckQuery, got {type(check)}: {check}"
+        )
+
+
+def test_get_availability_check_queries_deduplicates():
+    """Verify deduplication reduces 12 query specs to fewer unique checks.
+
+    Desktop Glean EE DAU/MAU share the same table and filter.
+    Desktop Legacy EE DAU/MAU share the same table and filter.
+    Mobile Glean EE DAU/MAU share the same table and filter.
+    So 12 specs -> 9 unique checks.
+
+    Failure indicates deduplication is not working.
+    """
+    checks = get_availability_check_queries()
+
+    assert len(checks) < len(QUERY_SPECS), (
+        f"Expected fewer checks than query specs ({len(QUERY_SPECS)}), "
+        f"got {len(checks)} — deduplication may not be working"
+    )
+    assert len(checks) == 9, (
+        f"Expected 9 unique availability checks (12 specs minus 3 duplicates), "
+        f"got {len(checks)}"
+    )
+
+
+def test_get_availability_check_queries_each_has_nonempty_fields():
+    """Verify every check has non-empty table, date_field, where_clause, and sql.
+
+    Failure indicates incomplete AvailabilityCheckQuery construction.
+    """
+    checks = get_availability_check_queries()
+
+    for check in checks:
+        assert check.table, f"Expected non-empty table, got: {check.table!r}"
+        assert check.date_field, f"Expected non-empty date_field, got: {check.date_field!r}"
+        assert check.where_clause, f"Expected non-empty where_clause, got: {check.where_clause!r}"
+        assert check.sql, f"Expected non-empty sql, got: {check.sql!r}"
+
+
+def test_get_availability_check_queries_sql_structure():
+    """Verify each check's SQL is a valid MAX(date_field) query with partition filter.
+
+    Expected form:
+        SELECT MAX(date_field) AS max_date FROM `table`
+        WHERE where_clause AND date_field >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+
+    The DATE_SUB filter is required for BigQuery partition elimination — the tables
+    are views over partitioned underlying tables that reject unfiltered scans.
+
+    Failure indicates wrong SQL construction.
+    """
+    checks = get_availability_check_queries()
+
+    for check in checks:
+        sql_upper = check.sql.upper()
+        assert 'SELECT MAX(' in sql_upper, (
+            f"Expected 'SELECT MAX(' in SQL: {check.sql}"
+        )
+        assert 'AS MAX_DATE' in sql_upper, (
+            f"Expected 'AS max_date' in SQL: {check.sql}"
+        )
+        assert 'FROM' in sql_upper, (
+            f"Expected 'FROM' in SQL: {check.sql}"
+        )
+        assert 'WHERE' in sql_upper, (
+            f"Expected 'WHERE' in SQL: {check.sql}"
+        )
+        # Table name should be backtick-quoted for BigQuery
+        assert f'`{check.table}`' in check.sql, (
+            f"Expected table name '{check.table}' to be backtick-quoted in SQL: {check.sql}"
+        )
+        # Partition filter is required to satisfy BigQuery partition elimination
+        assert 'DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)' in check.sql, (
+            f"Expected DATE_SUB partition filter in SQL: {check.sql}"
+        )
+
+
+def test_get_availability_check_queries_no_duplicate_combinations():
+    """Verify no two checks have the same (table, date_field, where_clause).
+
+    Failure indicates deduplication logic is broken.
+    """
+    checks = get_availability_check_queries()
+    seen_keys = set()
+
+    for check in checks:
+        key = (check.table, check.date_field, check.where_clause)
+        assert key not in seen_keys, (
+            f"Duplicate check found: table={check.table}, "
+            f"date_field={check.date_field}, where_clause={check.where_clause}"
+        )
+        seen_keys.add(key)

@@ -11,7 +11,7 @@ import pandas as pd
 import os
 from unittest.mock import MagicMock
 
-from mozaic_daily.data import get_aggregate_data, get_queries
+from mozaic_daily.data import get_aggregate_data, get_queries, check_training_data_availability
 from tests.conftest import generate_desktop_raw_data, generate_mobile_raw_data
 
 
@@ -295,3 +295,120 @@ def test_checkpointing_skips_bigquery_when_files_exist(tmp_path, mocker):
 
     finally:
         os.chdir(original_dir)
+
+
+# ===== check_training_data_availability() TESTS =====
+
+def _make_mock_client_with_max_date(mocker, max_date_value):
+    """Helper to mock bigquery.Client returning a fixed max_date for all queries."""
+    mock_client = MagicMock()
+    mock_result = MagicMock()
+    mock_result.to_dataframe.return_value = pd.DataFrame({'max_date': [max_date_value]})
+    mock_client.query.return_value = mock_result
+    mocker.patch('mozaic_daily.data.bigquery.Client', return_value=mock_client)
+    return mock_client
+
+
+def test_check_training_data_availability_passes_when_data_is_current(mocker):
+    """Verify no exception raised when all tables have data on training_end_date.
+
+    BigQuery client is MOCKED to return max_date == training_end_date.
+
+    Failure indicates the availability check incorrectly blocks valid runs.
+    """
+    training_end_date = '2026-02-16'
+    _make_mock_client_with_max_date(mocker, pd.Timestamp('2026-02-16'))
+
+    # Should not raise
+    check_training_data_availability('test-project', training_end_date)
+
+
+def test_check_training_data_availability_passes_when_data_is_ahead(mocker):
+    """Verify no exception raised when tables have data beyond training_end_date.
+
+    BigQuery client is MOCKED to return max_date > training_end_date.
+
+    Failure indicates the check incorrectly fails when tables are ahead.
+    """
+    training_end_date = '2026-02-16'
+    _make_mock_client_with_max_date(mocker, pd.Timestamp('2026-02-17'))
+
+    # Should not raise
+    check_training_data_availability('test-project', training_end_date)
+
+
+def test_check_training_data_availability_raises_when_data_is_behind(mocker):
+    """Verify ValueError raised when a table's max date is before training_end_date.
+
+    BigQuery client is MOCKED to return max_date one day before required.
+
+    Failure indicates the pre-flight check is not catching the problem.
+    """
+    training_end_date = '2026-02-16'
+    _make_mock_client_with_max_date(mocker, pd.Timestamp('2026-02-15'))
+
+    with pytest.raises(ValueError):
+        check_training_data_availability('test-project', training_end_date)
+
+
+def test_check_training_data_availability_error_includes_dates(mocker):
+    """Verify the ValueError message includes the required and available dates.
+
+    BigQuery client is MOCKED to return max_date one day before required.
+
+    Failure indicates unhelpful error messages that make debugging harder.
+    """
+    training_end_date = '2026-02-16'
+    _make_mock_client_with_max_date(mocker, pd.Timestamp('2026-02-15'))
+
+    with pytest.raises(ValueError) as exc_info:
+        check_training_data_availability('test-project', training_end_date)
+
+    error_message = str(exc_info.value)
+    assert '2026-02-16' in error_message, (
+        f"Expected required date '2026-02-16' in error message: {error_message}"
+    )
+    assert '2026-02-15' in error_message, (
+        f"Expected available date '2026-02-15' in error message: {error_message}"
+    )
+
+
+def test_check_training_data_availability_error_suggests_forecast_start_date(mocker):
+    """Verify the ValueError message suggests an actionable --forecast_start_date.
+
+    When data is available through 2026-02-15, the suggested start date is 2026-02-16
+    (available date + 1 day), so the pipeline uses T-1 data that actually exists.
+
+    Failure indicates missing actionable guidance in the error message.
+    """
+    training_end_date = '2026-02-16'
+    _make_mock_client_with_max_date(mocker, pd.Timestamp('2026-02-15'))
+
+    with pytest.raises(ValueError) as exc_info:
+        check_training_data_availability('test-project', training_end_date)
+
+    error_message = str(exc_info.value)
+    # Suggested date = max_date + 1 day = 2026-02-16
+    assert '--forecast_start_date 2026-02-16' in error_message, (
+        f"Expected '--forecast_start_date 2026-02-16' in error message: {error_message}"
+    )
+
+
+def test_check_training_data_availability_error_includes_table_name(mocker):
+    """Verify the ValueError message includes the name of the unavailable table.
+
+    BigQuery client is MOCKED to return max_date one day before required.
+
+    Failure indicates the error message doesn't help identify which table is behind.
+    """
+    training_end_date = '2026-02-16'
+    mock_client = _make_mock_client_with_max_date(mocker, pd.Timestamp('2026-02-15'))
+
+    with pytest.raises(ValueError) as exc_info:
+        check_training_data_availability('test-project', training_end_date)
+
+    error_message = str(exc_info.value)
+    # The error should mention a BigQuery table name (contains project.dataset.table format)
+    assert 'moz-fx-data-shared-prod' in error_message, (
+        f"Expected BigQuery project name in error message: {error_message}"
+    )

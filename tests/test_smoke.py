@@ -12,6 +12,7 @@ covered in unit tests (test_table_manipulation.py, etc.).
 import pytest
 import pandas as pd
 import os
+import sys
 from datetime import datetime
 from unittest.mock import MagicMock
 
@@ -21,6 +22,19 @@ from tests.conftest import (
     generate_mobile_raw_data,
     generate_forecast_data
 )
+
+
+def _patch_availability_check(mocker):
+    """Patch check_training_data_availability in the main module.
+
+    mozaic_daily.__init__ exports 'main' as a function, which shadows
+    the module when mock.patch resolves 'mozaic_daily.main'. We use
+    sys.modules to get the actual module object and patch via patch.object.
+    """
+    return mocker.patch.object(
+        sys.modules['mozaic_daily.main'],
+        'check_training_data_availability'
+    )
 
 
 # Mark all tests in this file as smoke tests
@@ -86,6 +100,7 @@ def test_pipeline_completes_without_crashing(sample_checkpoint_files, mocker):
             'country_string': "'DE', 'FR', 'US'",
         }
         mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
+        _patch_availability_check(mocker)
 
         # Run pipeline - should complete without exceptions
         df = main(project='test-project', checkpoints=True)
@@ -147,6 +162,7 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
             'country_string': "'DE', 'US'",
         }
         mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
+        _patch_availability_check(mocker)
 
         # Run pipeline
         df = main(project='test-project', checkpoints=True)
@@ -215,6 +231,7 @@ def test_checkpoint_system_works(tmp_path, mocker):
             'country_string': "'DE', 'US'",
         }
         mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
+        _patch_availability_check(mocker)
 
         # First run: create checkpoints
         df1 = main(project='test-project', checkpoints=True)
@@ -286,6 +303,7 @@ def test_desktop_and_mobile_processed_separately(sample_checkpoint_files, mocker
             'country_string': "'DE', 'US'",
         }
         mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
+        _patch_availability_check(mocker)
 
         # Run pipeline
         df = main(project='test-project', checkpoints=True)

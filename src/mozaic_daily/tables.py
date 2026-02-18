@@ -30,6 +30,21 @@ from .config import get_git_commit_hash
 
 
 def combine_tables(table_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Combine multiple metric-specific DataFrames into a single wide DataFrame.
+
+    Performs outer joins on common index columns (target_date, country, population, source)
+    to merge metric values from separate DataFrames into columns of a single DataFrame.
+
+    Args:
+        table_dict: Dictionary mapping metric names to DataFrames. Each DataFrame must have
+                   a 'value' column and common index columns (target_date, country,
+                   population, source).
+
+    Returns:
+        Combined DataFrame with metrics as separate columns. The 'value' column from each
+        input DataFrame is renamed to the corresponding metric name.
+    """
     base_df = None
     for metric, df in table_dict.items():
         tmp_df = df.rename(columns={"value": metric})

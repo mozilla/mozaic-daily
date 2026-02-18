@@ -343,6 +343,24 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 
 ### Troubleshooting
 
+**Pre-flight Data Availability Check**
+
+The pipeline runs a fast pre-flight check (~30 seconds) before querying BigQuery to verify that training data has landed for all tables through `training_end_date`. If any table is behind, the pipeline fails immediately with an actionable error rather than running for ~90 minutes before validation catches the problem.
+
+Common cause: running at 5 PM PST (= 1 AM UTC next day). The Kubernetes pod computes `training_end_date = yesterday` in UTC, which may reference a date whose BigQuery data hasn't landed yet.
+
+Error example:
+```
+Pre-flight check failed: training data not yet available.
+  Table: moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates
+  Required through: 2026-02-16
+  Available through: 2026-02-15
+
+Suggested fix: --forecast_start_date 2026-02-16
+```
+
+To fix: re-run with the suggested `--forecast_start_date`, which shifts the pipeline to use data that has actually landed. The check is skipped automatically when a forecast checkpoint file already exists.
+
 **Prophet/Stan Optimization Errors**
 
 If you see errors like `RuntimeError: Error during optimization!` when forecasting:

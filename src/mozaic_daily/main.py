@@ -19,7 +19,7 @@ from typing import Optional
 import pandas as pd
 import os
 from .config import get_runtime_config, STATIC_CONFIG
-from .data import get_queries, get_aggregate_data
+from .data import get_queries, get_aggregate_data, check_training_data_availability
 from .forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs
 from .tables import (
     combine_tables, update_desktop_format, update_mobile_format,
@@ -216,6 +216,12 @@ def main(
 
     # Set up checkpointing
     checkpoint_filename = get_checkpoint_filename(is_testing)
+
+    # Run pre-flight data availability check unless forecast checkpoint already exists.
+    # Skipping when the checkpoint exists avoids unnecessary BQ calls during iteration.
+    forecast_checkpoint_exists = checkpoints and os.path.exists(checkpoint_filename)
+    if not forecast_checkpoint_exists:
+        check_training_data_availability(project, config['training_end_date'])
 
     # Fetch data from BigQuery (with internal checkpointing)
     datasets = get_aggregate_data(

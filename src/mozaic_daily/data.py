@@ -17,11 +17,71 @@ Functions:
 """
 
 from typing import Dict, Optional, Tuple
+import datetime
 import pandas as pd
 from google.cloud import bigquery
 import os
 from .config import STATIC_CONFIG
-from .queries import QUERY_SPECS, Platform, Metric, TelemetrySource, QuerySpec
+from .queries import (
+    QUERY_SPECS, Platform, Metric, TelemetrySource, QuerySpec,
+    AvailabilityCheckQuery, get_availability_check_queries,
+)
+
+
+def check_training_data_availability(project: str, training_end_date: str) -> None:
+    """Verify that all BigQuery tables have data through training_end_date.
+
+    Runs a fast MAX(date_field) query against each unique table/date combination
+    before the full pipeline starts. Raises immediately if any table is behind,
+    saving ~90 minutes compared to discovering the issue at validation time.
+
+    This commonly fails when running at 5 PM PST (= 1 AM UTC next day), because
+    the Kubernetes pod computes training_end_date in UTC, referencing a date whose
+    BigQuery data hasn't landed yet.
+
+    Args:
+        project: BigQuery project ID
+        training_end_date: Required end date for training data (YYYY-MM-DD)
+
+    Raises:
+        ValueError: If any table's most recent data is before training_end_date,
+                    with the unavailable table, available date, and a suggested
+                    --forecast_start_date to use instead.
+    """
+    required_date = datetime.date.fromisoformat(training_end_date)
+    checks = get_availability_check_queries()
+    client = bigquery.Client(project)
+
+    print(f"Pre-flight check: verifying training data is available through {training_end_date}...")
+
+    for check in checks:
+        result = client.query(check.sql).to_dataframe()
+        max_date_raw = result['max_date'].iloc[0]
+
+        if pd.isna(max_date_raw):
+            raise ValueError(
+                f"Pre-flight check failed: no data found in {check.table}.\n"
+                f"  Date field: {check.date_field}\n"
+                f"  Filter: {check.where_clause}\n"
+            )
+
+        max_date = pd.to_datetime(max_date_raw).date()
+
+        if max_date < required_date:
+            suggested_start = (max_date + datetime.timedelta(days=1)).isoformat()
+            raise ValueError(
+                f"Pre-flight check failed: training data not yet available.\n"
+                f"  Table: {check.table}\n"
+                f"  Required through: {training_end_date}\n"
+                f"  Available through: {max_date}\n"
+                f"\n"
+                f"This commonly happens when the UTC date on the Kubernetes pod is ahead\n"
+                f"of your local date (e.g., running at 5 PM PST which is 1 AM UTC next day).\n"
+                f"\n"
+                f"Suggested fix: --forecast_start_date {suggested_start}"
+            )
+
+    print(f"Pre-flight check passed: all tables have data through {training_end_date}.")
 
 
 def get_queries(

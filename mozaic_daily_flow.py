@@ -71,10 +71,20 @@ class MozaicDailyFlow(FlowSpec):
     @step
     def load(self):
         """
+        Generate daily forecasts, validate output, and upload to BigQuery.
 
+        This step:
+        1. Runs the main forecasting pipeline via mozaic_daily.main()
+        2. Validates the forecast DataFrame
+        3. Appends validated forecast to the production table
+
+        The forecast data is written to:
+        moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2
         """
         print('load')
-        if not LOCAL_MODE:
+        if LOCAL_MODE:
+            print('Running in local mode')
+        else:
             print(f'This flow is using remote docker image: "{IMAGE}"')
 
         import sys

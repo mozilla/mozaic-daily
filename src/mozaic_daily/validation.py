@@ -240,7 +240,7 @@ def _check_row_counts(
     required_training_days = joint_training_index.strftime('%Y-%m-%d')[:-1] # Don't include the final day
 
     missing_training_days = [d for d in required_training_days if d not in training_days]
-    if len (missing_training_days) > 0:
+    if len(missing_training_days) > 0:
         raise ValueError(
             f"Training target days missing: {missing_training_days}' "
         )
@@ -253,7 +253,7 @@ def _check_row_counts(
     required_forecast_days = get_prediction_date_index(constants['forecast_start_date'], constants['forecast_end_date']).strftime('%Y-%m-%d')
 
     missing_forecast_days = [d for d in required_forecast_days if d not in forecast_days]
-    if len (missing_forecast_days) > 0:
+    if len(missing_forecast_days) > 0:
         raise ValueError(
             f"Forecast target days missing: {missing_forecast_days}' "
         )
