@@ -54,7 +54,7 @@ pip install -r docker/requirements.outerbounds.txt
 
 # The Mozaic package is installed from a specific branch
 # (already in .venv if cloned, but to reinstall):
-pip install -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting@getters_branch#egg=mozaic'
+pip install -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting#egg=mozaic'
 
 # Deactivate when done
 deactivate
@@ -312,7 +312,7 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 ## Important Notes
 
 ### Mozaic Package
-- Installed from a fork: `github.com/brendanwells-moz/mozaic-forecasting@getters_branch`
+- Installed from a fork: `github.com/brendanwells-moz/mozaic-forecasting`
 - Git commit hash is captured during Docker build and stored in `/mozaic_commit.txt`
 - Hash is retrieved via `get_git_commit_hash()` and added to forecast output as `mozaic_hash` column
 

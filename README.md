@@ -51,7 +51,7 @@ mozaic-daily/
 python3.10 -m venv .venv
 source .venv/bin/activate
 pip install -r docker/requirements.outerbounds.txt
-pip install -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting@getters_branch#egg=mozaic'
+pip install -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting#egg=mozaic'
 pip install metaflow
 pip install cmdstanpy prophet
 python -c "import cmdstanpy; cmdstanpy.install_cmdstan()"
@@ -108,7 +108,7 @@ With the virtual environment active:
 pip install -r docker/requirements.outerbounds.txt
 
 # Install the Mozaic forecasting package from the Mozilla fork
-pip install -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting@getters_branch#egg=mozaic'
+pip install -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting#egg=mozaic'
 
 # Install Metaflow for pipeline orchestration
 pip install metaflow
