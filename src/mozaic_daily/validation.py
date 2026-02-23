@@ -20,7 +20,7 @@ import pandas as pd
 import json
 from datetime import datetime
 from functools import reduce
-from typing import Dict
+from typing import Dict, Optional
 import re
 
 from google.cloud import bigquery
@@ -125,7 +125,7 @@ def _check_column_type(
                 f"pandas dtype '{pd_dtype_str}' may not be compatible with BigQuery type '{bq_type}'."
             )
 
-def _validate_string_column_formats(df: pd.DataFrame) -> None:
+def _validate_string_column_formats(df: pd.DataFrame, validation_countries: set) -> None:
     print('\t Validating string column formats')
     def validate_column(col, validator):
         column_series = df[col].drop_duplicates()
@@ -185,7 +185,7 @@ def _validate_string_column_formats(df: pd.DataFrame) -> None:
     )
 
     validate_column('country',
-        make_allowed_string_validator(get_runtime_config()['validation_countries'])
+        make_allowed_string_validator(validation_countries)
     )
 
     validate_column('app_name',
@@ -225,10 +225,10 @@ def _check_row_counts(
     expected_data_sources: set,
     expected_date_keys: list,
     expected_os_values: set,
+    constants: dict,
     skip_country_check: bool = False
 ) -> None:
     print('\t Validating row counts')
-    constants = get_runtime_config()
     training_date_index_for = lambda key: get_training_date_index(key, constants['forecast_start_date'])
 
     # Overall date checks, training
@@ -302,7 +302,7 @@ def _check_row_counts(
             f'These dates have too many rows: {max_count_df[max_count_mask]["target_date"]}'
         )
 
-def _validate_null_values(df: pd.DataFrame, expected_date_keys: list) -> None:
+def _validate_null_values(df: pd.DataFrame, expected_date_keys: list, training_end_date: str) -> None:
     print('\t Validating null values')
     target_cols = {
         'DAU': 'dau',
@@ -314,7 +314,7 @@ def _validate_null_values(df: pd.DataFrame, expected_date_keys: list) -> None:
     pd.set_option('display.max_columns', None)
 
     for key in expected_date_keys:
-        index = get_training_date_index(key).strftime('%Y-%m-%d')
+        index = get_training_date_index(key, training_end_date).strftime('%Y-%m-%d')
         test_col_name = f'{key[0]}_{key[1]}_{key[2]}_expected'
         expected_df = pd.Series(True, index=index, name=test_col_name).to_frame().reset_index()
 
@@ -368,8 +368,12 @@ def _validate_duplicate_rows(df: pd.DataFrame) -> None:
         )
 
 # Validation entrypoint
-def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
-    constants = get_runtime_config()
+def validate_output_dataframe(
+    df: pd.DataFrame,
+    testing_mode: bool = False,
+    forecast_start_date: Optional[str] = None,
+):
+    constants = get_runtime_config(forecast_start_date_override=forecast_start_date)
 
     # Define expectations based on mode
     if testing_mode:
@@ -389,9 +393,9 @@ def validate_output_dataframe(df: pd.DataFrame, testing_mode: bool = False):
         _check_column_presence(df, bq_fields)
         _check_column_type(df, bq_fields)
 
-    _validate_string_column_formats(df)
-    _check_row_counts(df, expected_app_names, expected_data_sources, expected_date_keys, expected_os_values, skip_country_check=testing_mode)
-    _validate_null_values(df, expected_date_keys)
+    _validate_string_column_formats(df, constants['validation_countries'])
+    _check_row_counts(df, expected_app_names, expected_data_sources, expected_date_keys, expected_os_values, constants, skip_country_check=testing_mode)
+    _validate_null_values(df, expected_date_keys, constants['training_end_date'])
     _validate_duplicate_rows(df)
 
 

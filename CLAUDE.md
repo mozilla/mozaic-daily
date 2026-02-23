@@ -75,6 +75,7 @@ src/mozaic_daily/
 ├── forecast.py       # Mozaic forecasting logic
 ├── tables.py         # Table formatting and manipulation
 ├── validation.py     # Output validation
+├── reports.py        # Debug/research reporting (null counts, data inspection)
 └── main.py           # Main entry point
 ```
 
@@ -96,6 +97,7 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `run_flow.py` - Unified runner for Metaflow operations (local, deploy, backfill)
 - `run_main.py` - Run the main forecasting pipeline with checkpoints (local development)
 - `run_validation.py` - Validate the checkpoint forecast file
+- `inspect_nulls.py` - Inspect rows with null DAU values in a parquet file or BigQuery (interactive or direct)
 - `test_local_docker.sh` - Test Docker image builds locally
 
 The `docker/` directory contains Docker management scripts:
@@ -115,6 +117,81 @@ python scripts/run_main.py
 # Run validation on checkpointed forecast data
 python scripts/run_validation.py
 ```
+
+### Debug/Research Flags
+
+`scripts/run_main.py` supports several flags for narrowing scope, saving intermediate data, and inspecting null values — useful when investigating forecast quality issues.
+
+**Scope flags** (composable):
+```bash
+# Only query DAU metrics (3 queries instead of 12)
+python scripts/run_main.py --dau-only --no-checkpoints
+
+# Restrict to one data source
+python scripts/run_main.py --data-source glean_desktop
+python scripts/run_main.py --data-source legacy_desktop
+python scripts/run_main.py --data-source glean_mobile
+
+# Combine: 1 query total
+python scripts/run_main.py --dau-only --data-source glean_desktop
+```
+
+**Output filter**:
+```bash
+# Strip training rows, keep only forecast rows
+python scripts/run_main.py --forecast-only
+```
+
+**Repeatability**:
+```bash
+# Run pipeline N times, save each output for comparison (forces --no-checkpoints)
+python scripts/run_main.py --repeat 3 --no-checkpoints
+```
+
+**Introspection flags**:
+```bash
+# Fetch BigQuery data, skip Mozaic entirely (returns raw datasets)
+python scripts/run_main.py --historical-only --output-dir ./debug_output
+
+# Save raw BigQuery results before forecasting
+python scripts/run_main.py --save-raw-data --output-dir ./debug_output
+
+# Save DataFrames after each pipeline stage
+python scripts/run_main.py --save-intermediate --output-dir ./debug_output
+
+# Print null counts by date x country x segment after pipeline completes
+python scripts/run_main.py --null-report
+```
+
+**Output directory** (default: `./debug_output`, created automatically):
+```bash
+python scripts/run_main.py --save-raw-data --output-dir ./my_investigation
+```
+
+**Inspecting null DAU rows in production BigQuery**:
+```bash
+# Query today's production forecast for null DAU rows
+python scripts/inspect_nulls.py --bigquery
+
+# Query a specific date
+python scripts/inspect_nulls.py --bigquery --date 2026-02-20
+
+# Query and save null rows to bq_nulls_2026-02-20.parquet
+python scripts/inspect_nulls.py --bigquery --date 2026-02-20 --save
+```
+
+**Flag interaction rules**:
+- `--dau-only` and `--data-source` are composable (e.g., `--dau-only --data-source glean_desktop` = 1 query)
+- `--repeat N` requires `--no-checkpoints`
+- `--historical-only` is incompatible with `--forecast-only`, `--null-report`, `--save-intermediate`
+- `--testing` is incompatible with `--dau-only` / `--data-source`
+- The script checks for output file collisions before starting the pipeline (avoids running 90+ minutes only to fail at save time)
+
+**Output file naming**:
+- Single run: `forecast_output.parquet`
+- Repeat runs: `forecast_run_1.parquet`, `forecast_run_2.parquet`, ...
+- Raw data: `raw_{platform}_{source}_{metric}.parquet`
+- Intermediates: `intermediate_forecast_{data_source}.parquet`, `intermediate_pre_format.parquet`, `intermediate_post_format.parquet`
 
 ### Docker Build & Push
 ```bash

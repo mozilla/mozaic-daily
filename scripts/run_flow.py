@@ -258,7 +258,8 @@ def save_backfill_state(state_file: Path, state: Dict[str, Any]) -> None:
 def run_single_backfill(
     date: str,
     log_dir: Path,
-    local_mode: bool = False
+    local_mode: bool = False,
+    stream_to_terminal: bool = False
 ) -> Tuple[str, bool, str]:
     """Run a single backfill for a specific date.
 
@@ -266,31 +267,41 @@ def run_single_backfill(
         date: Date string in YYYY-MM-DD format
         log_dir: Directory to write log files
         local_mode: If True, run in local mode (no Kubernetes)
+        stream_to_terminal: If True, stream output to terminal instead of
+            capturing to log file. Used for single-date backfills where the
+            user wants to see output in real time.
 
     Returns:
         Tuple of (date, success, log_file_path)
     """
     log_file = log_dir / f"backfill_{date}.log"
     extra_args = ["--forecast_start_date", date]
+    mode_str = "local" if local_mode else "remote"
 
     try:
         result = run_flow_subprocess(
             extra_args,
             local_mode=local_mode,
-            capture_output=True,
+            capture_output=not stream_to_terminal,
             timeout=14400  # 4 hour timeout per run
         )
 
-        # Write output to log file
-        mode_str = "local" if local_mode else "remote"
-        with open(log_file, 'w') as f:
-            f.write(f"Mode: {mode_str}\n")
-            f.write(f"Date: {date}\n")
-            f.write(f"Exit code: {result.returncode}\n\n")
-            f.write("=== STDOUT ===\n")
-            f.write(result.stdout)
-            f.write("\n\n=== STDERR ===\n")
-            f.write(result.stderr)
+        if stream_to_terminal:
+            # Output already went to terminal; write just the summary to the log
+            with open(log_file, 'w') as f:
+                f.write(f"Mode: {mode_str}\n")
+                f.write(f"Date: {date}\n")
+                f.write(f"Exit code: {result.returncode}\n")
+                f.write("(output streamed to terminal)\n")
+        else:
+            with open(log_file, 'w') as f:
+                f.write(f"Mode: {mode_str}\n")
+                f.write(f"Date: {date}\n")
+                f.write(f"Exit code: {result.returncode}\n\n")
+                f.write("=== STDOUT ===\n")
+                f.write(result.stdout)
+                f.write("\n\n=== STDERR ===\n")
+                f.write(result.stderr)
 
         success = result.returncode == 0
         return (date, success, str(log_file))
@@ -426,19 +437,23 @@ def run_backfill(
                 status = "✓" if success else "✗"
                 print(f"[{completed}/{total_dates}] {status} {date} (log: {log_file})")
     else:
-        # Sequential execution
+        # Sequential execution; stream output to terminal when there's only one date
+        single_date = total_dates == 1
         for i, date in enumerate(dates, 1):
-            print(f"[{i}/{total_dates}] Processing {date}...")
-            date_result, success, log_file = run_single_backfill(date, log_dir, local_mode)
+            if not single_date:
+                print(f"[{i}/{total_dates}] Processing {date}...")
+            date_result, success, log_file = run_single_backfill(date, log_dir, local_mode, stream_to_terminal=single_date)
 
             if success:
                 succeeded.append(date_result)
                 state["completed_dates"].append(date_result)
-                print(f"  ✓ Success (log: {log_file})")
+                if not single_date:
+                    print(f"  ✓ Success (log: {log_file})")
             else:
                 failed.append(date_result)
                 state["failed_dates"].append(date_result)
-                print(f"  ✗ Failed (log: {log_file})")
+                if not single_date:
+                    print(f"  ✗ Failed (log: {log_file})")
 
             # Update state file
             save_backfill_state(state_file, state)

@@ -86,13 +86,18 @@ def check_training_data_availability(project: str, training_end_date: str) -> No
 
 def get_queries(
     countries: str,
-    testing_mode: bool = False
+    testing_mode: bool = False,
+    dau_only: bool = False,
+    data_source_filter: Optional[str] = None,
 ) -> Dict[str, Dict[str, Dict[str, Tuple[str, QuerySpec]]]]:
     """Build SQL queries for all platform/metric/source combinations.
 
     Args:
         countries: SQL-formatted country string (e.g., "'US', 'CA', 'GB'")
         testing_mode: If True, only query Desktop Glean DAU
+        dau_only: If True, only query DAU metric (reduces 12 queries to 3)
+        data_source_filter: If set, only query this data source value
+            (e.g., 'glean_desktop', 'legacy_desktop', 'glean_mobile')
 
     Returns:
         Nested dict structure: {platform: {source: {metric: (sql, spec)}}}
@@ -118,6 +123,10 @@ def get_queries(
         metric = spec.metric.value
         # In testing mode, only return Desktop Glean DAU
         if testing_mode and not (spec.platform == Platform.DESKTOP and spec.telemetry_source == TelemetrySource.GLEAN and spec.metric == Metric.DAU):
+            continue
+        if dau_only and spec.metric != Metric.DAU:
+            continue
+        if data_source_filter and spec.data_source.value != data_source_filter:
             continue
 
         sql = spec.build_query(countries)
