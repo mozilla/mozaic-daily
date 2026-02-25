@@ -208,19 +208,14 @@ def test_check_column_type_mismatch(mock_bigquery_schema):
 # STRING FORMAT TESTS
 # =============================================================================
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_string_formats_valid(mock_get_config, mock_runtime_config, valid_output_dataframe):
+def test_validate_string_formats_valid(mock_runtime_config, valid_output_dataframe):
     """Test that valid string formats pass."""
-    mock_get_config.return_value = mock_runtime_config
     # Should not raise
-    _validate_string_column_formats(valid_output_dataframe)
+    _validate_string_column_formats(valid_output_dataframe, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_timestamp_format_invalid(mock_get_config, mock_runtime_config):
+def test_validate_timestamp_format_invalid(mock_runtime_config):
     """Test that invalid timestamp format raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01'],  # Missing time component
         'mozaic_hash': ['a' * 40],
@@ -233,14 +228,11 @@ def test_validate_timestamp_format_invalid(mock_get_config, mock_runtime_config)
     })
 
     with pytest.raises(ValueError, match="Validation failed for column 'forecast_run_timestamp'"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_git_hash_invalid(mock_get_config, mock_runtime_config):
+def test_validate_git_hash_invalid(mock_runtime_config):
     """Test that invalid git hash raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01T10:30:00'],
         'mozaic_hash': ['invalid_hash'],  # Not 40 hex chars
@@ -253,14 +245,11 @@ def test_validate_git_hash_invalid(mock_get_config, mock_runtime_config):
     })
 
     with pytest.raises(ValueError, match="Validation failed for column 'mozaic_hash'"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_target_date_format_invalid(mock_get_config, mock_runtime_config):
+def test_validate_target_date_format_invalid(mock_runtime_config):
     """Test that target_date with time component raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01T10:30:00'],
         'mozaic_hash': ['a' * 40],
@@ -273,14 +262,11 @@ def test_validate_target_date_format_invalid(mock_get_config, mock_runtime_confi
     })
 
     with pytest.raises(ValueError, match="Validation failed for column 'target_date'"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_data_type_invalid(mock_get_config, mock_runtime_config):
+def test_validate_data_type_invalid(mock_runtime_config):
     """Test that invalid data_type raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01T10:30:00'],
         'mozaic_hash': ['a' * 40],
@@ -293,14 +279,11 @@ def test_validate_data_type_invalid(mock_get_config, mock_runtime_config):
     })
 
     with pytest.raises(ValueError, match="Validation failed for column 'data_type'"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_segment_json_invalid(mock_get_config, mock_runtime_config):
+def test_validate_segment_json_invalid(mock_runtime_config):
     """Test that invalid JSON in segment raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01T10:30:00'],
         'mozaic_hash': ['a' * 40],
@@ -313,14 +296,11 @@ def test_validate_segment_json_invalid(mock_get_config, mock_runtime_config):
     })
 
     with pytest.raises(ValueError, match="Validation failed for column 'segment'"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_segment_os_value_invalid(mock_get_config, mock_runtime_config):
+def test_validate_segment_os_value_invalid(mock_runtime_config):
     """Test that invalid OS value in segment JSON raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01T10:30:00'],
         'mozaic_hash': ['a' * 40],
@@ -334,14 +314,11 @@ def test_validate_segment_os_value_invalid(mock_get_config, mock_runtime_config)
 
     # The check_json_os function raises ValueError within df.apply()
     with pytest.raises(ValueError, match="(Invalid OS value found|Validation failed for json column)"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_country_invalid(mock_get_config, mock_runtime_config):
+def test_validate_country_invalid(mock_runtime_config):
     """Test that invalid country code raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01T10:30:00'],
         'mozaic_hash': ['a' * 40],
@@ -354,14 +331,11 @@ def test_validate_country_invalid(mock_get_config, mock_runtime_config):
     })
 
     with pytest.raises(ValueError, match="Validation failed for column 'country'"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_app_name_invalid(mock_get_config, mock_runtime_config):
+def test_validate_app_name_invalid(mock_runtime_config):
     """Test that invalid app_name raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01T10:30:00'],
         'mozaic_hash': ['a' * 40],
@@ -374,14 +348,11 @@ def test_validate_app_name_invalid(mock_get_config, mock_runtime_config):
     })
 
     with pytest.raises(ValueError, match="Validation failed for column 'app_name'"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
-def test_validate_data_source_invalid(mock_get_config, mock_runtime_config):
+def test_validate_data_source_invalid(mock_runtime_config):
     """Test that invalid data_source raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     df = pd.DataFrame({
         'forecast_run_timestamp': ['2024-02-01T10:30:00'],
         'mozaic_hash': ['a' * 40],
@@ -394,26 +365,22 @@ def test_validate_data_source_invalid(mock_get_config, mock_runtime_config):
     })
 
     with pytest.raises(ValueError, match="Validation failed for column 'data_source'"):
-        _validate_string_column_formats(df)
+        _validate_string_column_formats(df, mock_runtime_config['validation_countries'])
 
 
 # =============================================================================
 # ROW COUNT TESTS
 # =============================================================================
 
-@patch('mozaic_daily.validation.get_runtime_config')
 @patch('mozaic_daily.validation.get_training_date_index')
 @patch('mozaic_daily.validation.get_prediction_date_index')
 def test_check_row_counts_valid(
     mock_prediction_index,
     mock_training_index,
-    mock_get_config,
     mock_runtime_config,
     valid_output_dataframe
 ):
     """Test that valid row counts pass."""
-    mock_get_config.return_value = mock_runtime_config
-
     # Mock training and forecast date indices to match our test data
     # get_training_date_index is called with (key, forecast_start_date) so return proper dates
     training_dates = pd.date_range('2024-01-22', periods=11, freq='D')
@@ -438,23 +405,20 @@ def test_check_row_counts_valid(
         expected_data_sources,
         expected_date_keys,
         expected_os_values,
+        mock_runtime_config,
         skip_country_check=True  # Skip country check for this test
     )
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
 @patch('mozaic_daily.validation.get_training_date_index')
 @patch('mozaic_daily.validation.get_prediction_date_index')
 def test_check_row_counts_missing_training_days(
     mock_prediction_index,
     mock_training_index,
-    mock_get_config,
     mock_runtime_config,
     valid_output_dataframe
 ):
     """Test that missing training days raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     # Mock to expect MORE training days than we have
     training_dates = pd.date_range('2024-01-01', periods=60, freq='D')
     forecast_dates = pd.date_range('2024-02-01', periods=5, freq='D')
@@ -473,23 +437,20 @@ def test_check_row_counts_missing_training_days(
             expected_data_sources,
             expected_date_keys,
             expected_os_values,
+            mock_runtime_config,
             skip_country_check=True
         )
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
 @patch('mozaic_daily.validation.get_training_date_index')
 @patch('mozaic_daily.validation.get_prediction_date_index')
 def test_check_row_counts_missing_forecast_days(
     mock_prediction_index,
     mock_training_index,
-    mock_get_config,
     mock_runtime_config,
     valid_output_dataframe
 ):
     """Test that missing forecast days raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     # Mock to expect MORE forecast days than we have
     training_dates = pd.date_range('2024-01-22', periods=11, freq='D')
     forecast_dates = pd.date_range('2024-02-01', periods=30, freq='D')
@@ -508,23 +469,20 @@ def test_check_row_counts_missing_forecast_days(
             expected_data_sources,
             expected_date_keys,
             expected_os_values,
+            mock_runtime_config,
             skip_country_check=True
         )
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
 @patch('mozaic_daily.validation.get_training_date_index')
 @patch('mozaic_daily.validation.get_prediction_date_index')
 def test_check_row_counts_missing_app_name(
     mock_prediction_index,
     mock_training_index,
-    mock_get_config,
     mock_runtime_config,
     valid_output_dataframe
 ):
     """Test that missing app_name raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     training_dates = pd.date_range('2024-01-22', periods=11, freq='D')
     forecast_dates = pd.date_range('2024-02-01', periods=5, freq='D')
     mock_training_index.return_value = pd.DatetimeIndex(training_dates)
@@ -542,23 +500,20 @@ def test_check_row_counts_missing_app_name(
             expected_data_sources,
             expected_date_keys,
             expected_os_values,
+            mock_runtime_config,
             skip_country_check=True
         )
 
 
-@patch('mozaic_daily.validation.get_runtime_config')
 @patch('mozaic_daily.validation.get_training_date_index')
 @patch('mozaic_daily.validation.get_prediction_date_index')
 def test_check_row_counts_extra_segment(
     mock_prediction_index,
     mock_training_index,
-    mock_get_config,
     mock_runtime_config,
     valid_output_dataframe
 ):
     """Test that extra segment raises ValueError."""
-    mock_get_config.return_value = mock_runtime_config
-
     training_dates = pd.date_range('2024-01-22', periods=11, freq='D')
     forecast_dates = pd.date_range('2024-02-01', periods=5, freq='D')
     mock_training_index.return_value = pd.DatetimeIndex(training_dates)
@@ -576,6 +531,7 @@ def test_check_row_counts_extra_segment(
             expected_data_sources,
             expected_date_keys,
             expected_os_values,
+            mock_runtime_config,
             skip_country_check=True
         )
 
@@ -591,8 +547,7 @@ def test_validate_null_values_valid(mock_get_training_date_index, valid_output_d
     # Training dates should NOT include forecast_start_date (2024-02-01)
     training_dates = pd.date_range('2024-01-22', periods=10, freq='D')  # Jan 22-31
 
-    # Make mock work with any key argument
-    def mock_training_func(key):
+    def mock_training_func(key, end=None):
         return pd.DatetimeIndex(training_dates)
 
     mock_get_training_date_index.side_effect = mock_training_func
@@ -600,7 +555,7 @@ def test_validate_null_values_valid(mock_get_training_date_index, valid_output_d
     expected_date_keys = [('desktop', 'DAU', 'glean')]
 
     # Should not raise
-    _validate_null_values(valid_output_dataframe, expected_date_keys)
+    _validate_null_values(valid_output_dataframe, expected_date_keys, training_end_date='2024-01-31')
 
 
 @patch('mozaic_daily.validation.get_training_date_index')
@@ -609,8 +564,7 @@ def test_validate_null_values_missing_dates(mock_get_training_date_index, valid_
     # Mock training date index to expect more dates than we have
     training_dates = pd.date_range('2024-01-01', periods=60, freq='D')
 
-    # Make mock work with any key argument
-    def mock_training_func(key):
+    def mock_training_func(key, end=None):
         return pd.DatetimeIndex(training_dates)
 
     mock_get_training_date_index.side_effect = mock_training_func
@@ -618,7 +572,7 @@ def test_validate_null_values_missing_dates(mock_get_training_date_index, valid_
     expected_date_keys = [('desktop', 'DAU', 'glean')]
 
     with pytest.raises(ValueError, match="Missing dates for dataset"):
-        _validate_null_values(valid_output_dataframe, expected_date_keys)
+        _validate_null_values(valid_output_dataframe, expected_date_keys, training_end_date='2024-01-31')
 
 
 # =============================================================================
@@ -725,3 +679,34 @@ def test_validate_output_dataframe_invalid_raises_error(mock_get_config, mock_ru
 
     with pytest.raises((ValueError, KeyError)):
         validate_output_dataframe(df, testing_mode=True)
+
+
+@patch('mozaic_daily.validation.get_runtime_config')
+@patch('mozaic_daily.validation.get_training_date_index')
+@patch('mozaic_daily.validation.get_prediction_date_index')
+def test_validate_output_dataframe_passes_forecast_start_date_to_config(
+    mock_prediction_index,
+    mock_training_index,
+    mock_get_config,
+    mock_runtime_config,
+    valid_output_dataframe
+):
+    """Test that forecast_start_date is forwarded to get_runtime_config as the override.
+
+    This ensures backfill runs validate against the correct historical date rather
+    than today's date.
+    """
+    mock_get_config.return_value = mock_runtime_config
+
+    training_dates = pd.date_range('2024-01-22', periods=10, freq='D')
+    forecast_dates = pd.date_range('2024-02-01', periods=5, freq='D')
+
+    def mock_training_func(key, end=None):
+        return pd.DatetimeIndex(training_dates)
+
+    mock_training_index.side_effect = mock_training_func
+    mock_prediction_index.return_value = pd.DatetimeIndex(forecast_dates)
+
+    validate_output_dataframe(valid_output_dataframe, testing_mode=True, forecast_start_date='2024-02-01')
+
+    mock_get_config.assert_called_once_with(forecast_start_date_override='2024-02-01')

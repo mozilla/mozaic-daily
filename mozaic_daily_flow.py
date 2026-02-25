@@ -105,7 +105,7 @@ class MozaicDailyFlow(FlowSpec):
         print(df.tail(10))
 
         print('Done\n\nValidating forecasts')
-        validate_output_dataframe(df)
+        validate_output_dataframe(df, forecast_start_date=self.forecast_start_date)
 
         print('Done\n\nSaving forecasts')
         write_table = 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2'
