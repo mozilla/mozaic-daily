@@ -15,6 +15,7 @@ Functions:
 
 from typing import Dict, Any
 import pandas as pd
+import numpy as np
 import warnings
 from collections import defaultdict
 import mozaic
@@ -134,13 +135,151 @@ def get_forecast_dfs(
             print(f'Original error: {e}')
             raise
 
+    # --- DEBUG: Dump tileset contents ---
+    print('\n--- DEBUG: Tileset tile inventory ---')
+    for metric_key, countries in tileset.tiles.items():
+        for country_key, populations in countries.items():
+            pop_names = sorted(populations.keys())
+            print(f'  {metric_key} | {country_key}: {pop_names}')
+
+    # --- DEBUG: Dump mozaic contents ---
+    print('\n--- DEBUG: Mozaic inventory ---')
+    for metric_key, moz in mozaics.items():
+        print(f'  {metric_key}: {len(moz.tiles)} tiles, '
+              f'countries={sorted(moz.get_countries())}, '
+              f'populations={sorted(moz.get_populations())}')
+
     print(f'\n--- Extracting forecasts ({len(mozaics)} metrics)')
     dfs = {}
     for i, (metric, moz) in enumerate(mozaics.items(), 1):
         print(f'  [{i}/{len(mozaics)}] {metric}')
-        dfs[metric] = moz.to_granular_forecast_df(quantile=quantile)
+        granular_df = moz.to_granular_forecast_df(quantile=quantile)
+        dfs[metric] = granular_df
+
+        # --- DEBUG: Per-metric forecast completeness ---
+        _debug_granular_forecast(metric, granular_df, moz)
+
+    # --- DEBUG: Cross-metric date coverage comparison ---
+    _debug_cross_metric_coverage(dfs)
 
     return dfs
+
+
+# =============================================================================
+# DEBUG HELPERS (temporary - debug branch only)
+# =============================================================================
+
+def _debug_granular_forecast(metric: str, granular_df: pd.DataFrame, moz: Mozaic) -> None:
+    """Print debug info about a single metric's granular forecast DataFrame."""
+    forecast_rows = granular_df[granular_df['source'] == 'forecast']
+    actual_rows = granular_df[granular_df['source'] == 'actual']
+
+    forecast_dates = sorted(forecast_rows['target_date'].unique())
+    actual_dates = sorted(actual_rows['target_date'].unique())
+
+    # Count unique (country, population) combos per source type
+    forecast_combos = forecast_rows.groupby(['country', 'population']).size()
+    actual_combos = actual_rows.groupby(['country', 'population']).size()
+
+    print(f'\n    DEBUG [{metric}] granular_forecast_df:')
+    print(f'      Total rows: {len(granular_df):,}  '
+          f'(actual={len(actual_rows):,}, forecast={len(forecast_rows):,})')
+    print(f'      Forecast date range: {forecast_dates[0]} to {forecast_dates[-1]}  '
+          f'({len(forecast_dates)} dates)')
+    print(f'      Actual date range: {actual_dates[0]} to {actual_dates[-1]}  '
+          f'({len(actual_dates)} dates)')
+    print(f'      Forecast (country, population) combos: {len(forecast_combos)}')
+    print(f'      Actual (country, population) combos: {len(actual_combos)}')
+
+    # Check for null values in the value column (should be none after _standard_df_to_forecast_df)
+    null_values = granular_df['value'].isna().sum()
+    if null_values > 0:
+        print(f'      WARNING: {null_values} null values in "value" column!')
+
+    # Check if any (country, population) combos have fewer forecast dates than expected
+    expected_forecast_count = len(forecast_dates)
+    short_combos = forecast_combos[forecast_combos < expected_forecast_count]
+    if len(short_combos) > 0:
+        print(f'      WARNING: {len(short_combos)} combos have fewer forecast dates '
+              f'than the max ({expected_forecast_count}):')
+        for (country, population), count in short_combos.items():
+            missing_count = expected_forecast_count - count
+            # Find which dates are missing for this combo
+            combo_dates = set(
+                forecast_rows[
+                    (forecast_rows['country'] == country) &
+                    (forecast_rows['population'] == population)
+                ]['target_date'].values
+            )
+            all_forecast_dates = set(forecast_rows['target_date'].unique())
+            missing_dates = sorted(all_forecast_dates - combo_dates)
+            # Show up to 5 missing dates
+            date_preview = ', '.join(str(d)[:10] for d in missing_dates[:5])
+            if len(missing_dates) > 5:
+                date_preview += f', ... (+{len(missing_dates) - 5} more)'
+            print(f'        {country}/{population}: {count} dates '
+                  f'(missing {missing_count}: {date_preview})')
+
+    # --- DEBUG: Inspect individual tile forecasts for this metric ---
+    # Check each tile's raw forecast DataFrame for NaN in the 'forecast' column
+    print(f'      Tile-level forecast NaN check:')
+    for tile in moz.tiles:
+        tile_df = tile.to_df(quantile=0.5)
+        if 'forecast' not in tile_df.columns:
+            print(f'        {tile.country}/{tile.population}: '
+                  f'NO "forecast" column! Columns: {list(tile_df.columns)}')
+            continue
+        forecast_slice = tile_df[tile_df['submission_date'] >= pd.to_datetime(tile.forecast_start_date)]
+        nan_forecast = forecast_slice['forecast'].isna()
+        nan_count = nan_forecast.sum()
+        if nan_count > 0:
+            nan_dates = forecast_slice.loc[nan_forecast, 'submission_date']
+            date_preview = ', '.join(str(d)[:10] for d in sorted(nan_dates.values)[:5])
+            if len(nan_dates) > 5:
+                date_preview += f', ... (+{len(nan_dates) - 5} more)'
+            print(f'        {tile.country}/{tile.population}: '
+                  f'{nan_count} NaN forecast dates: {date_preview}')
+        else:
+            print(f'        {tile.country}/{tile.population}: OK '
+                  f'({len(forecast_slice)} forecast dates, 0 NaN)')
+
+
+def _debug_cross_metric_coverage(dfs: Dict[str, pd.DataFrame]) -> None:
+    """Compare date x country x population coverage across metrics."""
+    print('\n--- DEBUG: Cross-metric forecast date coverage ---')
+
+    # Build sets of (target_date, country, population) for forecast rows per metric
+    metric_keys = {}
+    for metric, df in dfs.items():
+        forecast_rows = df[df['source'] == 'forecast']
+        keys = set(
+            zip(forecast_rows['target_date'], forecast_rows['country'], forecast_rows['population'])
+        )
+        metric_keys[metric] = keys
+        print(f'  {metric}: {len(keys):,} forecast (date, country, population) keys')
+
+    # Find keys present in ANY metric
+    all_keys = set()
+    for keys in metric_keys.values():
+        all_keys |= keys
+
+    # For each metric, find missing keys and report
+    for metric, keys in metric_keys.items():
+        missing = all_keys - keys
+        if missing:
+            # Group missing keys by (country, population) to show which combos are affected
+            from collections import Counter
+            combo_counts = Counter((c, p) for _, c, p in missing)
+            print(f'  {metric}: MISSING {len(missing)} keys present in other metrics')
+            for (country, pop), count in combo_counts.most_common(10):
+                # Show which dates are missing for this combo
+                missing_dates = sorted(d for d, c, p in missing if c == country and p == pop)
+                date_preview = ', '.join(str(d)[:10] for d in missing_dates[:3])
+                if len(missing_dates) > 3:
+                    date_preview += f', ... (+{len(missing_dates) - 3} more)'
+                print(f'    {country}/{pop}: missing {count} dates ({date_preview})')
+        else:
+            print(f'  {metric}: complete coverage (no missing keys)')
 
 
 def get_desktop_forecast_dfs(

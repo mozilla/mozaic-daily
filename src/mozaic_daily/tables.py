@@ -45,6 +45,14 @@ def combine_tables(table_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
         Combined DataFrame with metrics as separate columns. The 'value' column from each
         input DataFrame is renamed to the corresponding metric name.
     """
+    # --- DEBUG: Pre-merge per-metric shapes ---
+    print('\n    DEBUG combine_tables: per-metric input shapes')
+    for metric, df in table_dict.items():
+        forecast_rows = df[df['source'] == 'forecast']
+        actual_rows = df[df['source'] == 'actual']
+        print(f'      {metric}: {len(df):,} rows '
+              f'(actual={len(actual_rows):,}, forecast={len(forecast_rows):,})')
+
     base_df = None
     for metric, df in table_dict.items():
         tmp_df = df.rename(columns={"value": metric})
@@ -52,11 +60,43 @@ def combine_tables(table_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
         if base_df is None:
             base_df = tmp_df
         else:
+            pre_merge_len = len(base_df)
             base_df = base_df.merge(
                 tmp_df,
                 how="outer",
                 on=["target_date", "country", "population", "source"],
             )
+            # --- DEBUG: Report rows added by each merge ---
+            new_rows = len(base_df) - pre_merge_len
+            null_in_metric = base_df[metric].isna().sum()
+            print(f'      After merging {metric}: {len(base_df):,} rows '
+                  f'(+{new_rows} from outer join, {null_in_metric} nulls in {metric})')
+
+    # --- DEBUG: Post-merge null analysis ---
+    metric_cols = [m for m in table_dict.keys()]
+    print('\n    DEBUG combine_tables: post-merge null summary')
+    for col in metric_cols:
+        null_count = base_df[col].isna().sum()
+        if null_count > 0:
+            # Show which (country, population, source) combos have nulls
+            null_rows = base_df[base_df[col].isna()]
+            null_forecast = null_rows[null_rows['source'] == 'forecast']
+            null_actual = null_rows[null_rows['source'] == 'actual']
+            print(f'      {col}: {null_count} nulls '
+                  f'(forecast={len(null_forecast)}, actual={len(null_actual)})')
+            # Show unique dates with nulls in forecast rows
+            if len(null_forecast) > 0:
+                null_dates = sorted(null_forecast['target_date'].unique())
+                date_preview = ', '.join(str(d)[:10] for d in null_dates[:5])
+                if len(null_dates) > 5:
+                    date_preview += f', ... (+{len(null_dates) - 5} more)'
+                print(f'        Forecast null dates: {date_preview}')
+                # Show affected combos
+                combos = null_forecast.groupby(['country', 'population']).size()
+                for (c, p), cnt in combos.head(10).items():
+                    print(f'        {c}/{p}: {cnt} null forecast rows')
+        else:
+            print(f'      {col}: 0 nulls')
 
     return base_df
 

@@ -139,8 +139,25 @@ def process_data_source(
     forecast_func = get_forecast_function(platform)
     forecast_dfs = forecast_func(source_data, forecast_start, forecast_end)
 
+    # --- DEBUG: Per-metric DataFrame dumps before combine ---
+    print(f'\n--- DEBUG: Pre-combine per-metric DataFrames for {data_source.display_name} ---')
+    for metric_name, metric_df in forecast_dfs.items():
+        null_vals = metric_df['value'].isna().sum()
+        print(f'  {metric_name}: {len(metric_df):,} rows, {null_vals} null values')
+
     # Combine and format
     df_combined = combine_tables(forecast_dfs)
+
+    # --- DEBUG: Post-combine, pre-format null check ---
+    print(f'\n--- DEBUG: Post-combine for {data_source.display_name} ---')
+    metric_cols = [col for col in df_combined.columns
+                   if col not in ('target_date', 'country', 'population', 'source',
+                                  'app_name', 'data_source', 'segment')]
+    for col in metric_cols:
+        null_count = df_combined[col].isna().sum()
+        if null_count > 0:
+            print(f'  {col}: {null_count} nulls in combined table')
+
     format_func = get_format_function(platform)
     format_func(df_combined, data_source=data_source.value)
 

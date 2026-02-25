@@ -178,6 +178,9 @@ python scripts/inspect_nulls.py --bigquery --date 2026-02-20
 
 # Query and save null rows to bq_nulls_2026-02-20.parquet
 python scripts/inspect_nulls.py --bigquery --date 2026-02-20 --save
+
+# Query and print individual null rows (default is summary only)
+python scripts/inspect_nulls.py --bigquery --date 2026-02-20 --print-rows
 ```
 
 **Flag interaction rules**:

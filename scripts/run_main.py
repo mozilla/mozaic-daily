@@ -35,6 +35,7 @@ Usage:
 """
 
 import sys
+import io
 import argparse
 from pathlib import Path
 
@@ -49,6 +50,28 @@ from mozaic_daily.config import STATIC_CONFIG
 
 
 VALID_DATA_SOURCES = ['glean_desktop', 'legacy_desktop', 'glean_mobile']
+
+
+class TeeWriter:
+    """Write to both a file and the original stream (stdout/stderr)."""
+
+    def __init__(self, file_handle, original_stream):
+        self.file_handle = file_handle
+        self.original_stream = original_stream
+
+    def write(self, text):
+        self.original_stream.write(text)
+        self.file_handle.write(text)
+        self.file_handle.flush()
+
+    def flush(self):
+        self.original_stream.flush()
+        self.file_handle.flush()
+
+    # Forward any other attribute access to the original stream so libraries
+    # that inspect stdout (e.g., isatty()) don't break.
+    def __getattr__(self, name):
+        return getattr(self.original_stream, name)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -238,6 +261,13 @@ if __name__ == '__main__':
 
     # Create output directory if we'll be writing any files
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Tee all stdout/stderr to a log file so debug output is captured
+    log_path = output_dir / "run_log.txt"
+    log_file = open(log_path, "w")
+    sys.stdout = TeeWriter(log_file, sys.__stdout__)
+    sys.stderr = TeeWriter(log_file, sys.__stderr__)
+    print(f"Logging all output to {log_path}")
 
     # --repeat N: run pipeline multiple times and save each output
     if args.repeat > 1:

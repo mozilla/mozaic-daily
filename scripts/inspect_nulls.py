@@ -3,7 +3,8 @@
 """Inspect rows with null DAU values in a pipeline output parquet file or BigQuery.
 
 Useful for investigating forecast quality issues. Reads a parquet file (or
-queries BigQuery directly) and prints every row where DAU is null, untruncated.
+queries BigQuery directly) and prints a summary of null DAU counts.
+Pass --print-rows to also print each null row untruncated.
 Optionally saves null rows to a new parquet file for further analysis.
 
 Usage:
@@ -12,6 +13,9 @@ Usage:
 
     # Inspect a specific file
     python scripts/inspect_nulls.py ./debug_output/forecast_output.parquet
+
+    # Inspect and print individual null rows
+    python scripts/inspect_nulls.py ./debug_output/forecast_output.parquet --print-rows
 
     # Inspect and save null rows (auto-named)
     python scripts/inspect_nulls.py ./debug_output/forecast_output.parquet --save
@@ -30,6 +34,9 @@ Usage:
 
     # Query BigQuery and save null rows
     python scripts/inspect_nulls.py --bigquery --date 2026-02-20 --save
+
+    # Query BigQuery and print individual null rows
+    python scripts/inspect_nulls.py --bigquery --date 2026-02-20 --print-rows
 """
 
 import sys
@@ -88,6 +95,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
             'forecast_start_date to query in BigQuery mode (default: today). '
             'Only meaningful with --bigquery.'
         ),
+    )
+    parser.add_argument(
+        '--print-rows',
+        action='store_true',
+        help='Print each null row untruncated (default: summary only).',
     )
 
     return parser
@@ -187,13 +199,26 @@ def query_bigquery_null_counts(client, table: str, date_str: str) -> tuple[int, 
     return int(row.total), int(row.null_dau)
 
 
+def normalize_bq_date_types(df) -> None:
+    """Convert BigQuery date extension types (dbdate) to strings in-place.
+
+    BigQuery returns DATE columns as 'dbdate' (a db-dtypes Arrow extension type).
+    When saved to parquet, this type is embedded in the schema metadata and can
+    only be read back if db_dtypes is imported first. Converting to strings makes
+    the parquet file universally readable without that dependency.
+    """
+    import pandas as pd
+    for col in df.columns:
+        if str(df[col].dtype) in ('dbdate', 'dbtime', 'dbtimestamp'):
+            df[col] = df[col].astype(str)
+
+
 def query_bigquery_null_rows(client, table: str, date_str: str):
     """Query BigQuery for all rows with null DAU for a given date.
 
-    Returns a pandas DataFrame.
+    Returns a pandas DataFrame with date extension types converted to strings.
     """
     from google.cloud import bigquery
-    import pandas as pd
 
     sql = f"""
         SELECT *
@@ -206,15 +231,17 @@ def query_bigquery_null_rows(client, table: str, date_str: str):
             bigquery.ScalarQueryParameter('date', 'DATE', date_str),
         ]
     )
-    return client.query(sql, job_config=job_config).to_dataframe()
+    df = client.query(sql, job_config=job_config).to_dataframe()
+    normalize_bq_date_types(df)
+    return df
 
 
-def run_bigquery_mode(date_str: str, save_arg) -> None:
+def run_bigquery_mode(date_str: str, save_arg, print_rows: bool = False) -> None:
     """Orchestrate the BigQuery null inspection workflow.
 
     Tries the primary table first, falls back to the public view on
-    permission or not-found errors. Prints null counts and row details,
-    then optionally saves null rows to parquet.
+    permission or not-found errors. Prints null counts and optionally row
+    details, then optionally saves null rows to parquet.
     """
     from google.cloud import bigquery
     from google.api_core import exceptions as google_exceptions
@@ -254,7 +281,9 @@ def run_bigquery_mode(date_str: str, save_arg) -> None:
         sys.exit(0)
 
     null_rows = query_bigquery_null_rows(client, table, date_str)
-    print_null_rows(null_rows)
+
+    if print_rows:
+        print_null_rows(null_rows)
 
     if save_arg is not None:
         save_path = resolve_save_path(save_arg, date_str=date_str)
@@ -294,7 +323,7 @@ if __name__ == '__main__':
     # BigQuery mode
     if args.bigquery:
         date_str = args.date or datetime.date.today().isoformat()
-        run_bigquery_mode(date_str, args.save)
+        run_bigquery_mode(date_str, args.save, print_rows=args.print_rows)
         sys.exit(0)
 
     # File mode: resolve the input file either from the positional argument or interactively
@@ -325,7 +354,8 @@ if __name__ == '__main__':
         print("No null DAU rows found.")
         sys.exit(0)
 
-    print_null_rows(null_rows)
+    if args.print_rows:
+        print_null_rows(null_rows)
 
     if args.save is not None:
         save_path = resolve_save_path(args.save, input_file=input_file)
