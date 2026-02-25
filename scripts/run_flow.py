@@ -258,7 +258,8 @@ def save_backfill_state(state_file: Path, state: Dict[str, Any]) -> None:
 def run_single_backfill(
     date: str,
     log_dir: Path,
-    local_mode: bool = False
+    local_mode: bool = False,
+    tee_output: bool = False
 ) -> Tuple[str, bool, str]:
     """Run a single backfill for a specific date.
 
@@ -266,6 +267,7 @@ def run_single_backfill(
         date: Date string in YYYY-MM-DD format
         log_dir: Directory to write log files
         local_mode: If True, run in local mode (no Kubernetes)
+        tee_output: If True, stream output to terminal and log file simultaneously
 
     Returns:
         Tuple of (date, success, log_file_path)
@@ -274,38 +276,66 @@ def run_single_backfill(
     extra_args = ["--forecast_start_date", date]
 
     try:
-        result = run_flow_subprocess(
-            extra_args,
-            local_mode=local_mode,
-            capture_output=True,
-            timeout=14400  # 4 hour timeout per run
-        )
+        if tee_output:
+            cmd = ["python", "mozaic_daily_flow.py", "run"] + extra_args
+            env = os.environ.copy()
+            if local_mode:
+                env["METAFLOW_LOCAL_MODE"] = "true"
 
-        # Write output to log file
-        mode_str = "local" if local_mode else "remote"
-        with open(log_file, 'w') as f:
-            f.write(f"Mode: {mode_str}\n")
-            f.write(f"Date: {date}\n")
-            f.write(f"Exit code: {result.returncode}\n\n")
-            f.write("=== STDOUT ===\n")
-            f.write(result.stdout)
-            f.write("\n\n=== STDERR ===\n")
-            f.write(result.stderr)
+            log_dir.mkdir(exist_ok=True)
+            with open(log_file, 'w') as f:
+                mode_str = "local" if local_mode else "remote"
+                f.write(f"Mode: {mode_str}\n")
+                f.write(f"Date: {date}\n\n")
 
-        success = result.returncode == 0
+                process = subprocess.Popen(
+                    cmd,
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True
+                )
+                for line in process.stdout:
+                    print(line, end="", flush=True)
+                    f.write(line)
+
+                process.wait(timeout=14400)
+                returncode = process.returncode
+                f.write(f"\nExit code: {returncode}\n")
+
+            success = returncode == 0
+        else:
+            result = run_flow_subprocess(
+                extra_args,
+                local_mode=local_mode,
+                capture_output=True,
+                timeout=14400  # 4 hour timeout per run
+            )
+
+            # Write output to log file
+            mode_str = "local" if local_mode else "remote"
+            with open(log_file, 'w') as f:
+                f.write(f"Mode: {mode_str}\n")
+                f.write(f"Date: {date}\n")
+                f.write(f"Exit code: {result.returncode}\n\n")
+                f.write("=== STDOUT ===\n")
+                f.write(result.stdout)
+                f.write("\n\n=== STDERR ===\n")
+                f.write(result.stderr)
+
+            success = result.returncode == 0
+
         return (date, success, str(log_file))
 
     except subprocess.TimeoutExpired:
         error_msg = f"Timeout after 4 hours"
-        with open(log_file, 'w') as f:
-            f.write(f"Date: {date}\n")
-            f.write(f"Error: {error_msg}\n")
+        with open(log_file, 'a') as f:
+            f.write(f"\nError: {error_msg}\n")
         return (date, False, str(log_file))
     except Exception as e:
         error_msg = f"Exception: {str(e)}"
-        with open(log_file, 'w') as f:
-            f.write(f"Date: {date}\n")
-            f.write(f"Error: {error_msg}\n")
+        with open(log_file, 'a') as f:
+            f.write(f"\nError: {error_msg}\n")
         return (date, False, str(log_file))
 
 
@@ -427,9 +457,10 @@ def run_backfill(
                 print(f"[{completed}/{total_dates}] {status} {date} (log: {log_file})")
     else:
         # Sequential execution
+        is_single_date = len(dates) == 1
         for i, date in enumerate(dates, 1):
             print(f"[{i}/{total_dates}] Processing {date}...")
-            date_result, success, log_file = run_single_backfill(date, log_dir, local_mode)
+            date_result, success, log_file = run_single_backfill(date, log_dir, local_mode, tee_output=is_single_date)
 
             if success:
                 succeeded.append(date_result)
