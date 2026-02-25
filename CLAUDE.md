@@ -112,8 +112,14 @@ source .venv/bin/activate
 # Run the main forecasting pipeline locally with checkpoints
 python scripts/run_main.py
 
+# Write checkpoint files to a specific directory (avoids conflicts between parallel runs)
+python scripts/run_main.py --output-dir /tmp/my-run
+
 # Run validation on checkpointed forecast data
 python scripts/run_validation.py
+
+# Validate checkpoint files in a specific directory
+python scripts/run_validation.py --output-dir /tmp/my-run
 ```
 
 ### Docker Build & Push

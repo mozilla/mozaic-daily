@@ -15,6 +15,9 @@ Usage:
     # Historical forecast
     python scripts/run_main.py \
       --forecast-start-date 2024-06-15
+
+    # Write checkpoints to a specific directory
+    python scripts/run_main.py --output-dir /tmp/my-run
 """
 
 import sys
@@ -50,6 +53,12 @@ if __name__ == '__main__':
         action='store_true',
         help='Disable checkpoint loading (required for local batch historical processing)'
     )
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default=None,
+        help='Directory to write checkpoint files to (default: current directory)'
+    )
     args = parser.parse_args()
 
     testing_mode = STATIC_CONFIG['testing_mode_enable_string'] if args.testing else None
@@ -60,5 +69,6 @@ if __name__ == '__main__':
     main(
         checkpoints=use_checkpoints,
         testing_mode=testing_mode,
-        forecast_start_date=args.forecast_start_date
+        forecast_start_date=args.forecast_start_date,
+        output_dir=args.output_dir
     )

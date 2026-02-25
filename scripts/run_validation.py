@@ -6,8 +6,9 @@ This script reads the checkpoint parquet file and validates it against BigQuery 
 It can be run from anywhere in the project.
 
 Usage:
-    python scripts/run_validation.py           # Validate normal checkpoint
-    python scripts/run_validation.py --testing # Validate testing checkpoint
+    python scripts/run_validation.py                          # Validate normal checkpoint
+    python scripts/run_validation.py --testing                # Validate testing checkpoint
+    python scripts/run_validation.py --output-dir /tmp/my-run # Validate checkpoint in custom directory
 """
 
 import sys
@@ -33,14 +34,23 @@ if __name__ == '__main__':
         action='store_true',
         help='Validate testing mode checkpoint (desktop/DAU only)'
     )
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default=None,
+        help='Directory containing checkpoint files (default: current directory)'
+    )
     args = parser.parse_args()
 
     if args.testing:
-        checkpoint_file = STATIC_CONFIG['testing_mode_checkpoint_filename']
+        checkpoint_filename = STATIC_CONFIG['testing_mode_checkpoint_filename']
         testing_mode = True
     else:
-        checkpoint_file = STATIC_CONFIG['forecast_checkpoint_filename']
+        checkpoint_filename = STATIC_CONFIG['forecast_checkpoint_filename']
         testing_mode = False
+
+    output_dir = args.output_dir if args.output_dir is not None else "."
+    checkpoint_file = str(Path(output_dir) / checkpoint_filename)
 
     # Fail if expected checkpoint doesn't exist
     if not Path(checkpoint_file).exists():

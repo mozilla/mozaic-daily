@@ -66,11 +66,13 @@ def get_forecast_function(platform: Platform):
     return get_mobile_forecast_dfs
 
 
-def get_checkpoint_filename(is_testing: bool) -> str:
-    """Return appropriate checkpoint filename based on testing mode."""
+def get_checkpoint_filename(is_testing: bool, output_dir: str = ".") -> str:
+    """Return appropriate checkpoint filename based on testing mode and output directory."""
     if is_testing:
-        return STATIC_CONFIG['testing_mode_checkpoint_filename']
-    return STATIC_CONFIG['forecast_checkpoint_filename']
+        filename = STATIC_CONFIG['testing_mode_checkpoint_filename']
+    else:
+        filename = STATIC_CONFIG['forecast_checkpoint_filename']
+    return os.path.join(output_dir, filename)
 
 
 def load_checkpoint_if_exists(filename: str) -> Optional[pd.DataFrame]:
@@ -187,7 +189,8 @@ def main(
     project: Optional[str] = None,
     checkpoints: Optional[bool] = False,
     testing_mode: Optional[str] = None,
-    forecast_start_date: Optional[str] = None
+    forecast_start_date: Optional[str] = None,
+    output_dir: Optional[str] = None
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
 
@@ -197,10 +200,16 @@ def main(
         testing_mode: String flag to enable testing mode (must match exact value)
         forecast_start_date: Override date (YYYY-MM-DD) for historical forecast runs.
             Simulates running the forecast on this date.
+        output_dir: Directory to write checkpoint files to (defaults to current directory).
+            Created automatically if it doesn't exist.
 
     Returns:
         DataFrame with forecasts
     """
+    # Resolve output directory and create it if needed
+    resolved_output_dir = output_dir if output_dir is not None else "."
+    os.makedirs(resolved_output_dir, exist_ok=True)
+
     # Load configuration with optional date override
     config = get_runtime_config(forecast_start_date_override=forecast_start_date)
     if not project:
@@ -215,7 +224,7 @@ def main(
     print(f'Other config:\n{config}')
 
     # Set up checkpointing
-    checkpoint_filename = get_checkpoint_filename(is_testing)
+    checkpoint_filename = get_checkpoint_filename(is_testing, resolved_output_dir)
 
     # Run pre-flight data availability check unless forecast checkpoint already exists.
     # Skipping when the checkpoint exists avoids unnecessary BQ calls during iteration.
@@ -227,7 +236,8 @@ def main(
     datasets = get_aggregate_data(
         get_queries(config['country_string'], testing_mode=is_testing),
         project,
-        checkpoints=checkpoints
+        checkpoints=checkpoints,
+        output_dir=resolved_output_dir
     )
 
     # Load checkpoint OR generate forecasts
