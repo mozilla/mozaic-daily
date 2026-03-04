@@ -115,8 +115,11 @@ python scripts/run_main.py
 # Write checkpoint files to a specific directory (avoids conflicts between parallel runs)
 python scripts/run_main.py --output-dir /tmp/my-run
 
-# Run validation on checkpointed forecast data
+# Run validation on checkpointed forecast data (defaults to yesterday's date)
 python scripts/run_validation.py
+
+# Validate checkpoint for a specific forecast date
+python scripts/run_validation.py --forecast-start-date 2026-02-24
 
 # Validate checkpoint files in a specific directory
 python scripts/run_validation.py --output-dir /tmp/my-run
@@ -331,8 +334,9 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 
 ### Checkpointing
 - Set `checkpoints=True` in `main()` to enable file-based checkpointing
-- Raw query results saved as `mozaic_parts.raw.{platform}.{metric}.parquet`
-- Final forecast saved as `mozaic_parts.forecast.parquet`
+- Raw query results saved as `mozaic_parts.raw.{source}.{platform}.{metric}.parquet`
+- Final forecast saved as `mozaic_daily_forecast.{forecast_start_date}.parquet` (e.g., `mozaic_daily_forecast.2026-02-24.parquet`)
+- Testing mode forecast saved as `mozaic_parts.forecast.TESTING.parquet`
 - Useful for development to avoid re-querying BigQuery and re-running forecasts
 
 ### BigQuery Projects

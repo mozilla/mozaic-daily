@@ -230,18 +230,21 @@ def test_checkpoint_system_works(tmp_path, mocker):
             'countries': {'US', 'DE'},
             'country_string': "'DE', 'US'",
         }
-        mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
+        mocker.patch.object(
+            sys.modules['mozaic_daily.main'], 'get_runtime_config', return_value=mock_runtime_config
+        )
         _patch_availability_check(mocker)
 
         # First run: create checkpoints
         df1 = main(project='test-project', checkpoints=True)
 
         # Verify checkpoint files were created with new naming scheme
+        forecast_date = mock_runtime_config['forecast_start_date']
         expected_files = [
             'mozaic_parts.raw.glean.desktop.DAU.parquet',
             'mozaic_parts.raw.legacy.desktop.DAU.parquet',
             'mozaic_parts.raw.glean.mobile.DAU.parquet',
-            'mozaic_parts.forecast.parquet',
+            f'mozaic_daily_forecast.{forecast_date}.parquet',
         ]
 
         for filename in expected_files:

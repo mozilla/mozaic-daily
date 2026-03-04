@@ -7,6 +7,7 @@ __pycache__/
 
 # Pytest
 .pytest_cache/
+pytest-of-*/
 
 # Coverage
 .coverage

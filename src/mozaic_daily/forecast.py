@@ -108,8 +108,8 @@ def get_forecast_dfs(
             raise
 
     mozaics: Dict[str, Mozaic] = {}
-    _ctry = defaultdict(lambda: defaultdict(mozaic.Mozaic))
-    _pop = defaultdict(lambda: defaultdict(mozaic.Mozaic))
+    country_mozaics = defaultdict(lambda: defaultdict(mozaic.Mozaic))
+    population_mozaics = defaultdict(lambda: defaultdict(mozaic.Mozaic))
 
     print('\n--- Curate Mozaics\n')
     with warnings.catch_warnings():
@@ -125,8 +125,8 @@ def get_forecast_dfs(
                 tileset,
                 forecast_model,
                 mozaics,
-                _ctry,
-                _pop,
+                country_mozaics,
+                population_mozaics,
             )
         except Exception as e:
             print(f'\nERROR: Mozaic curate_mozaics failed')

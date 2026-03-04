@@ -102,7 +102,21 @@ def update_mobile_format(df: pd.DataFrame, data_source: str = "glean_mobile") ->
 def format_output_table(
     df: pd.DataFrame, start_date: datetime, run_timestamp: datetime
 ) -> pd.DataFrame:
+    """Finalize the combined forecast DataFrame for BigQuery upload.
 
+    Renames metric columns to lowercase snake_case, converts "actual" data_type
+    to "training", adds forecast metadata columns (forecast_start_date,
+    forecast_run_timestamp, mozaic_hash), casts string columns to string dtype,
+    and orders columns and rows consistently.
+
+    Args:
+        df: Combined forecast DataFrame from all data sources
+        start_date: Forecast start date (becomes forecast_start_date column)
+        run_timestamp: When this forecast run started (becomes forecast_run_timestamp)
+
+    Returns:
+        Formatted DataFrame ready for BigQuery upload
+    """
     df.rename(columns={
         'DAU': 'dau',
         'New Profiles': 'new_profiles',

@@ -47,6 +47,8 @@ OS_VALUES = set([
     'win10', 'win11', 'winX', 'other', 'ALL', None
 ])
 
+SHA1_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+
 # Validation
 
 def _get_bigquery_fields(
@@ -161,7 +163,6 @@ def _validate_string_column_formats(df: pd.DataFrame, validation_countries: set)
         except (ValueError, TypeError):
             return False
 
-    SHA1_RE = re.compile(r"^[0-9a-fA-F]{40}$")
     def is_git_hash(x):
         return bool(SHA1_RE.match(x))
 
@@ -229,10 +230,12 @@ def _check_row_counts(
     skip_country_check: bool = False
 ) -> None:
     print('\t Validating row counts')
-    training_date_index_for = lambda key: get_training_date_index(key, constants['forecast_start_date'])
+
+    def get_training_index_for(key):
+        return get_training_date_index(key, constants['forecast_start_date'])
 
     # Overall date checks, training
-    joint_training_index = reduce(lambda a, b: a.union(b), map(training_date_index_for, expected_date_keys))
+    joint_training_index = reduce(lambda a, b: a.union(b), map(get_training_index_for, expected_date_keys))
     training_days = (
         df.loc[df["data_type"] == "training", 'target_date']
         .unique()
@@ -394,11 +397,19 @@ def validate_output_dataframe(
         _check_column_type(df, bq_fields)
 
     _validate_string_column_formats(df, constants['validation_countries'])
-    _check_row_counts(df, expected_app_names, expected_data_sources, expected_date_keys, expected_os_values, constants, skip_country_check=testing_mode)
+    _check_row_counts(
+        df, expected_app_names, expected_data_sources,
+        expected_date_keys, expected_os_values, constants,
+        skip_country_check=testing_mode
+    )
     _validate_null_values(df, expected_date_keys, constants['training_end_date'])
     _validate_duplicate_rows(df)
 
 
 if __name__ == '__main__':
-    df = pd.read_parquet(STATIC_CONFIG['forecast_checkpoint_filename'])
+    config = get_runtime_config()
+    checkpoint_filename = STATIC_CONFIG['forecast_checkpoint_filename_template'].format(
+        date=config['forecast_start_date']
+    )
+    df = pd.read_parquet(checkpoint_filename)
     validate_output_dataframe(df)

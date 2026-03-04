@@ -16,15 +16,16 @@ Functions:
 - get_aggregate_data(): Fetch all Desktop and Mobile metrics from BigQuery
 """
 
-from typing import Dict, Optional, Tuple
 import datetime
+import os
+from typing import Dict, Optional, Tuple
+
 import pandas as pd
 from google.cloud import bigquery
-import os
 from .config import STATIC_CONFIG
 from .queries import (
     QUERY_SPECS, Platform, Metric, TelemetrySource, QuerySpec,
-    AvailabilityCheckQuery, get_availability_check_queries,
+    get_availability_check_queries,
 )
 
 
@@ -117,7 +118,12 @@ def get_queries(
         source = spec.telemetry_source.value
         metric = spec.metric.value
         # In testing mode, only return Desktop Glean DAU
-        if testing_mode and not (spec.platform == Platform.DESKTOP and spec.telemetry_source == TelemetrySource.GLEAN and spec.metric == Metric.DAU):
+        is_desktop_glean_dau = (
+            spec.platform == Platform.DESKTOP
+            and spec.telemetry_source == TelemetrySource.GLEAN
+            and spec.metric == Metric.DAU
+        )
+        if testing_mode and not is_desktop_glean_dau:
             continue
 
         sql = spec.build_query(countries)

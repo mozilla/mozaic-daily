@@ -6,9 +6,10 @@ This script reads the checkpoint parquet file and validates it against BigQuery 
 It can be run from anywhere in the project.
 
 Usage:
-    python scripts/run_validation.py                          # Validate normal checkpoint
-    python scripts/run_validation.py --testing                # Validate testing checkpoint
-    python scripts/run_validation.py --output-dir /tmp/my-run # Validate checkpoint in custom directory
+    python scripts/run_validation.py                                    # Validate today's normal checkpoint
+    python scripts/run_validation.py --forecast-start-date 2026-02-24  # Validate checkpoint for a specific date
+    python scripts/run_validation.py --testing                          # Validate testing checkpoint
+    python scripts/run_validation.py --output-dir /tmp/my-run          # Validate checkpoint in custom directory
 """
 
 import sys
@@ -22,7 +23,7 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 import pandas as pd
-from mozaic_daily.config import STATIC_CONFIG
+from mozaic_daily.config import STATIC_CONFIG, get_runtime_config
 from mozaic_daily.validation import validate_output_dataframe
 
 if __name__ == '__main__':
@@ -40,13 +41,24 @@ if __name__ == '__main__':
         default=None,
         help='Directory containing checkpoint files (default: current directory)'
     )
+    parser.add_argument(
+        '--forecast-start-date',
+        type=str,
+        default=None,
+        help='Forecast start date (YYYY-MM-DD) to select the checkpoint file (default: yesterday)'
+    )
     args = parser.parse_args()
 
     if args.testing:
         checkpoint_filename = STATIC_CONFIG['testing_mode_checkpoint_filename']
         testing_mode = True
     else:
-        checkpoint_filename = STATIC_CONFIG['forecast_checkpoint_filename']
+        if args.forecast_start_date:
+            date = args.forecast_start_date
+        else:
+            runtime_config = get_runtime_config()
+            date = runtime_config['forecast_start_date']
+        checkpoint_filename = STATIC_CONFIG['forecast_checkpoint_filename_template'].format(date=date)
         testing_mode = False
 
     output_dir = args.output_dir if args.output_dir is not None else "."
@@ -58,4 +70,4 @@ if __name__ == '__main__':
 
     print(f"Validating checkpoint: {checkpoint_file}")
     df = pd.read_parquet(checkpoint_file)
-    validate_output_dataframe(df, testing_mode=testing_mode)
+    validate_output_dataframe(df, testing_mode=testing_mode, forecast_start_date=args.forecast_start_date)

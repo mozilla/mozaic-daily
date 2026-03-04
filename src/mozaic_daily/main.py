@@ -66,12 +66,12 @@ def get_forecast_function(platform: Platform):
     return get_mobile_forecast_dfs
 
 
-def get_checkpoint_filename(is_testing: bool, output_dir: str = ".") -> str:
+def get_checkpoint_filename(is_testing: bool, forecast_start_date: str, output_dir: str = ".") -> str:
     """Return appropriate checkpoint filename based on testing mode and output directory."""
     if is_testing:
         filename = STATIC_CONFIG['testing_mode_checkpoint_filename']
     else:
-        filename = STATIC_CONFIG['forecast_checkpoint_filename']
+        filename = STATIC_CONFIG['forecast_checkpoint_filename_template'].format(date=forecast_start_date)
     return os.path.join(output_dir, filename)
 
 
@@ -187,7 +187,7 @@ def generate_forecasts(
 
 def main(
     project: Optional[str] = None,
-    checkpoints: Optional[bool] = False,
+    checkpoints: bool = False,
     testing_mode: Optional[str] = None,
     forecast_start_date: Optional[str] = None,
     output_dir: Optional[str] = None
@@ -224,7 +224,7 @@ def main(
     print(f'Other config:\n{config}')
 
     # Set up checkpointing
-    checkpoint_filename = get_checkpoint_filename(is_testing, resolved_output_dir)
+    checkpoint_filename = get_checkpoint_filename(is_testing, config['forecast_start_date'], resolved_output_dir)
 
     # Run pre-flight data availability check unless forecast checkpoint already exists.
     # Skipping when the checkpoint exists avoids unnecessary BQ calls during iteration.

@@ -23,7 +23,7 @@ import pandas as pd
 STATIC_CONFIG = {
     'default_project': 'moz-fx-data-bq-data-science',
     'default_table': 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2',
-    'forecast_checkpoint_filename': 'mozaic_parts.forecast.parquet',
+    'forecast_checkpoint_filename_template': 'mozaic_daily_forecast.{date}.parquet',
     'raw_checkpoint_filename_template': 'mozaic_parts.raw.{source}.{platform}.{metric}.parquet',
     'testing_mode_enable_string': 'ENABLE_TESTING_MODE',
     'testing_mode_checkpoint_filename': 'mozaic_parts.forecast.TESTING.parquet',
@@ -51,7 +51,6 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
         ValueError: If forecast_start_date_override is in the future
     """
     config = {}
-
 
     config['forecast_run_dt'] = datetime.now()
 
@@ -88,6 +87,7 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
 
 
 def get_prediction_date_index(start: str, end: str) -> pd.DatetimeIndex:
+    """Return a DatetimeIndex of daily dates from start to end (inclusive)."""
     start_dt = pd.to_datetime(start).normalize()
     end_dt = pd.to_datetime(end).normalize()
 
@@ -97,6 +97,11 @@ def get_prediction_date_index(start: str, end: str) -> pd.DatetimeIndex:
 # Git hash retrieval functions
 
 def get_git_commit_hash_from_pip(package_name: str = "mozaic") -> str:
+    """Return the git commit SHA for an editable pip package, or 'unknown'.
+
+    Parses `pip freeze` output to find the commit hash for packages installed
+    via `-e git+...@<sha>#egg=<name>`.
+    """
     try:
         output = subprocess.check_output(["pip", "freeze"], text=True)
         for line in output.splitlines():
@@ -110,7 +115,7 @@ def get_git_commit_hash_from_pip(package_name: str = "mozaic") -> str:
         pass
     return "unknown"
 
-def get_git_commit_hash_from_file(path: str = '/mozaic_commit.txt') -> str:
+def get_git_commit_hash_from_file(path: str = '/mozaic_commit.txt') -> Optional[str]:
     """Return the commit/version string if the file exists, else None."""
     p = Path(path)
     if not p.exists():
@@ -120,6 +125,10 @@ def get_git_commit_hash_from_file(path: str = '/mozaic_commit.txt') -> str:
     return text or None
 
 def get_git_commit_hash() -> str:
+    """Return the Mozaic git commit hash, trying pip freeze first then the commit file.
+
+    Falls back to 'unknown' if neither source is available.
+    """
     pip_version = get_git_commit_hash_from_pip()
     if pip_version == 'unknown':
         file_version = get_git_commit_hash_from_file()
