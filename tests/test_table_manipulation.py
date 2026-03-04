@@ -107,7 +107,7 @@ def test_update_desktop_format_segment_json_structure(sample_desktop_dataframe):
 
     Examples:
     - population='win10' → segment='{"os": "win10"}'
-    - population='None' → segment='{"os": "ALL"}'
+    - population='ALL' → segment='{"os": "ALL"}'
 
     Failure indicates invalid JSON format, validation will fail.
     """
@@ -124,20 +124,20 @@ def test_update_desktop_format_segment_json_structure(sample_desktop_dataframe):
         # Check 'os' key exists
         assert 'os' in segment, f"Row {idx}: segment missing 'os' key: {segment_str}"
 
-    # Check specific mapping for 'None' population
-    df_with_none = pd.DataFrame({
-        'population': ['None', 'win10', 'win11'],
+    # Check specific mapping for 'ALL' population (aggregate row from mozaic package)
+    df_with_all = pd.DataFrame({
+        'population': ['ALL', 'win10', 'win11'],
         'target_date': pd.date_range('2024-01-01', periods=3),
         'country': ['US'] * 3,
         'source': ['forecast'] * 3,
         'DAU': [1000] * 3,
     })
-    update_desktop_format(df_with_none)
+    update_desktop_format(df_with_all)
 
-    segment0 = json.loads(df_with_none['segment'].iloc[0])
-    assert segment0['os'] == 'ALL', f"Expected population='None' → segment={{'os': 'ALL'}}, got {segment0}"
+    segment0 = json.loads(df_with_all['segment'].iloc[0])
+    assert segment0['os'] == 'ALL', f"Expected population='ALL' → segment={{'os': 'ALL'}}, got {segment0}"
 
-    segment1 = json.loads(df_with_none['segment'].iloc[1])
+    segment1 = json.loads(df_with_all['segment'].iloc[1])
     assert segment1['os'] == 'win10', f"Expected population='win10' → segment={{'os': 'win10'}}, got {segment1}"
 
 
@@ -179,12 +179,12 @@ def test_update_mobile_format_app_name_mapping(sample_mobile_dataframe):
 
     Examples:
     - population='fenix_android' → app_name='fenix_android'
-    - population='None' → app_name='ALL MOBILE'
+    - population='ALL' → app_name='ALL MOBILE'
 
     Failure indicates incorrect app name mapping, breaks downstream filtering.
     """
     df_test = pd.DataFrame({
-        'population': ['None', 'fenix_android', 'firefox_ios'],
+        'population': ['ALL', 'fenix_android', 'firefox_ios'],
         'target_date': pd.date_range('2024-01-01', periods=3),
         'country': ['US'] * 3,
         'source': ['forecast'] * 3,
@@ -193,7 +193,7 @@ def test_update_mobile_format_app_name_mapping(sample_mobile_dataframe):
     update_mobile_format(df_test)
 
     assert df_test['app_name'].iloc[0] == 'ALL MOBILE', (
-        f"Expected population='None' → app_name='ALL MOBILE', got '{df_test['app_name'].iloc[0]}'"
+        f"Expected population='ALL' → app_name='ALL MOBILE', got '{df_test['app_name'].iloc[0]}'"
     )
     assert df_test['app_name'].iloc[1] == 'fenix_android', (
         f"Expected population='fenix_android' → app_name='fenix_android', got '{df_test['app_name'].iloc[1]}'"
@@ -334,14 +334,14 @@ def test_format_output_table_source_conversion():
     )
 
 
-def test_format_output_table_country_all_conversion():
-    """Verify 'None' country is converted to 'ALL'.
+def test_format_output_table_country_all_passthrough():
+    """Verify 'ALL' country (aggregate row from mozaic package) passes through unchanged.
 
-    Failure indicates wrong country values, validation will fail.
+    Failure indicates aggregate country rows are being dropped or mis-transformed.
     """
     df = pd.DataFrame({
         'target_date': ['2024-01-01', '2024-01-02'],
-        'country': ['None', 'US'],
+        'country': ['ALL', 'US'],
         'source': ['forecast', 'forecast'],
         'app_name': ['desktop', 'desktop'],
         'data_source': ['glean_desktop', 'glean_desktop'],
@@ -357,9 +357,9 @@ def test_format_output_table_country_all_conversion():
 
     result = format_output_table(df, start_date, run_timestamp)
 
-    # Check 'None' converted to 'ALL'
+    # Check 'ALL' passes through unchanged
     assert result['country'].iloc[0] == 'ALL', (
-        f"Expected country='None' → 'ALL', got '{result['country'].iloc[0]}'"
+        f"Expected country='ALL' to pass through unchanged, got '{result['country'].iloc[0]}'"
     )
     # Check 'US' unchanged
     assert result['country'].iloc[1] == 'US', (
@@ -506,7 +506,7 @@ def test_get_git_commit_hash_from_pip(mocker):
     mock_output = """
 numpy==1.24.0
 pandas==1.5.3
--e git+https://github.com/brendanwells-moz/mozaic-forecasting@abc123def456#egg=mozaic
+-e git+https://github.com/mozilla/mozaic-forecasting@abc123def456#egg=mozaic
 scipy==1.10.0
 """
     mocker.patch('subprocess.check_output', return_value=mock_output)

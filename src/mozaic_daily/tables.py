@@ -76,7 +76,7 @@ def update_desktop_format(df: pd.DataFrame, data_source: str = "glean_desktop") 
     df["app_name"] = "desktop"
     df["data_source"] = data_source
     df["segment"] = df["population"].apply(
-        lambda x: json.dumps({"os": "ALL" if x == "None" else x})
+        lambda x: json.dumps({"os": x})
     )
     df.drop("population", axis=1, inplace=True)
 
@@ -93,7 +93,7 @@ def update_mobile_format(df: pd.DataFrame, data_source: str = "glean_mobile") ->
     - data_source: Provided data_source parameter (always glean_mobile)
     - segment: Empty JSON object (Mobile doesn't segment by OS)
     """
-    df["app_name"] = df["population"].where(df["population"] != "None", "ALL MOBILE")
+    df["app_name"] = df["population"].where(df["population"] != "ALL", "ALL MOBILE")
     df["data_source"] = data_source
     df["segment"] = "{}"
     df.drop("population", axis=1, inplace=True)
@@ -124,7 +124,6 @@ def format_output_table(
         'Existing Engagement MAU': 'existing_engagement_mau',
     }, inplace=True)
 
-    df["country"] = df["country"].where(df["country"] != "None", "ALL")
     df["forecast_start_date"] = start_date
     df['forecast_start_date'] = pd.to_datetime(df['forecast_start_date'])
     df["forecast_run_timestamp"] = run_timestamp
