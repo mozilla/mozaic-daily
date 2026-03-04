@@ -12,7 +12,7 @@ from metaflow import (
     schedule,
 )
 
-IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.9_amd64"
+IMAGE = "registry.hub.docker.com/brwells78094/mozaic-daily:v0.0.10_amd64"
 
 # Check if running in local mode (skip Kubernetes)
 LOCAL_MODE = os.environ.get("METAFLOW_LOCAL_MODE", "").lower() == "true"
