@@ -18,6 +18,8 @@ Usage:
     python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --weekday monday --dry-run
     python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --weekday monday --resume
     python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --local
+    python scripts/run_flow.py backfill --dates-file failures.txt
+    python scripts/run_flow.py backfill --dates-file failures.txt --parallel 4
 """
 
 import argparse
@@ -186,6 +188,99 @@ def filter_dates_by_weekday(dates: List[str], weekdays: List[str]) -> List[str]:
     return filtered
 
 
+def get_log_file_path(log_dir: Path, date: str) -> Path:
+    """Get next available log file path for a date, preserving history across reruns.
+
+    First run:  backfill_YYYY-MM-DD.log
+    Second run: backfill_YYYY-MM-DD.run2.log
+    Third run:  backfill_YYYY-MM-DD.run3.log
+
+    Args:
+        log_dir: Directory containing log files
+        date: Date string in YYYY-MM-DD format
+
+    Returns:
+        Path to the next available log file
+    """
+    base_path = log_dir / f"backfill_{date}.log"
+    if not base_path.exists():
+        return base_path
+
+    # Find existing run files for this date
+    run_number = 2
+    while True:
+        run_path = log_dir / f"backfill_{date}.run{run_number}.log"
+        if not run_path.exists():
+            return run_path
+        run_number += 1
+
+
+def load_dates_file(file_path: str) -> List[str]:
+    """Load and validate a file of dates (one YYYY-MM-DD per line).
+
+    Args:
+        file_path: Path to the dates file
+
+    Returns:
+        Sorted list of validated date strings
+
+    Raises:
+        SystemExit: If file is invalid or contains bad dates
+    """
+    path = Path(file_path)
+    if not path.is_file():
+        print(f"Error: '{file_path}' is not a file or does not exist.", file=sys.stderr)
+        sys.exit(1)
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    dates = []
+    seen = set()
+
+    for line_number, raw_line in enumerate(path.read_text().splitlines(), 1):
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        # Validate date format
+        try:
+            datetime.strptime(line, "%Y-%m-%d")
+        except ValueError:
+            print(
+                f"Error: Invalid date '{line}' on line {line_number} of {file_path}. "
+                f"Expected YYYY-MM-DD format.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # Check for future dates
+        if line >= today:
+            print(
+                f"Error: Date '{line}' on line {line_number} of {file_path} "
+                f"is today or in the future.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # Check for duplicates
+        if line in seen:
+            print(
+                f"Error: Duplicate date '{line}' on line {line_number} of {file_path}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        seen.add(line)
+        dates.append(line)
+
+    if not dates:
+        print(f"Error: No dates found in {file_path}.", file=sys.stderr)
+        sys.exit(1)
+
+    dates.sort()
+    print(f"Loaded {len(dates)} dates from {file_path} ({dates[0]} to {dates[-1]})")
+    return dates
+
+
 def get_state_file_path(
     log_dir: Path,
     start_date: str,
@@ -272,7 +367,7 @@ def run_single_backfill(
     Returns:
         Tuple of (date, success, log_file_path)
     """
-    log_file = log_dir / f"backfill_{date}.log"
+    log_file = get_log_file_path(log_dir, date)
     extra_args = ["--forecast_start_date", date]
 
     try:
@@ -340,64 +435,24 @@ def run_single_backfill(
 
 
 def run_backfill(
-    start_date: str,
-    end_date: str,
+    dates: List[str],
     parallel: int = 1,
-    weekdays: Optional[List[str]] = None,
     dry_run: bool = False,
-    resume: bool = False,
-    local_mode: bool = False
+    local_mode: bool = False,
+    description: str = "",
 ) -> int:
-    """Run backfill for a date range with optional parallelism.
+    """Run backfill for a list of dates with optional parallelism.
 
     Args:
-        start_date: Start date in YYYY-MM-DD format (inclusive)
-        end_date: End date in YYYY-MM-DD format (inclusive)
+        dates: List of date strings in YYYY-MM-DD format
         parallel: Number of concurrent workers (default: 1 for sequential)
-        weekdays: Optional list of weekday names to filter (e.g., ['monday', 'friday'])
         dry_run: If True, print plan and exit without running
-        resume: If True, skip dates from previous runs
         local_mode: If True, run in local mode (no Kubernetes)
+        description: Source description for dry-run header (e.g., "from failures.txt")
 
     Returns:
         Exit code (0 if all succeeded, 1 if any failed)
     """
-    # Generate and filter date list
-    dates = generate_date_range(start_date, end_date)
-
-    if weekdays:
-        dates = filter_dates_by_weekday(dates, weekdays)
-        weekday_str = ", ".join(weekdays)
-        print(f"Filtered to weekdays: {weekday_str}")
-
-    # Create logs directory
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-
-    # Handle resume mode
-    state_file = get_state_file_path(log_dir, start_date, end_date, weekdays)
-    state = None
-
-    if resume:
-        state = load_backfill_state(state_file)
-        completed = state.get("completed_dates", [])
-        if completed:
-            print(f"Resuming from previous run, skipping {len(completed)} completed dates")
-            dates = [d for d in dates if d not in completed]
-
-    # Initialize or update state
-    if state is None:
-        state = {
-            "start_date": start_date,
-            "end_date": end_date,
-            "weekdays": weekdays,
-            "local_mode": local_mode,
-            "created_at": datetime.now().isoformat(),
-            "completed_dates": [],
-            "failed_dates": [],
-        }
-        save_backfill_state(state_file, state)
-
     total_dates = len(dates)
 
     # Dry run mode - print plan and exit
@@ -405,9 +460,8 @@ def run_backfill(
         print("\n" + "=" * 60)
         print("DRY RUN - Backfill Plan")
         print("=" * 60)
-        print(f"Date range: {start_date} to {end_date}")
-        if weekdays:
-            print(f"Weekdays: {', '.join(weekdays)}")
+        if description:
+            print(f"Source: {description}")
         print(f"Execution mode: {'local' if local_mode else 'remote'}")
         print(f"Parallel workers: {parallel}")
         print(f"Total dates to process: {total_dates}")
@@ -418,11 +472,14 @@ def run_backfill(
             print(f"  - {date_str} ({weekday_name})")
         return 0
 
+    # Create logs directory
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+
     # Normal execution
-    print(f"Backfilling {total_dates} dates from {start_date} to {end_date}")
+    print(f"Backfilling {total_dates} dates{' ' + description if description else ''}")
     print(f"Execution mode: {'local' if local_mode else 'remote'}")
     print(f"Parallel workers: {parallel}")
-    print(f"State file: {state_file}")
 
     # Track results
     succeeded = []
@@ -443,18 +500,13 @@ def run_backfill(
 
                 if success:
                     succeeded.append(date)
-                    state["completed_dates"].append(date)
                 else:
                     failed.append(date)
-                    state["failed_dates"].append(date)
-
-                # Update state file
-                save_backfill_state(state_file, state)
 
                 # Show progress
-                completed = len(succeeded) + len(failed)
+                completed_count = len(succeeded) + len(failed)
                 status = "✓" if success else "✗"
-                print(f"[{completed}/{total_dates}] {status} {date} (log: {log_file})")
+                print(f"[{completed_count}/{total_dates}] {status} {date} (log: {log_file})")
     else:
         # Sequential execution
         is_single_date = len(dates) == 1
@@ -464,15 +516,10 @@ def run_backfill(
 
             if success:
                 succeeded.append(date_result)
-                state["completed_dates"].append(date_result)
                 print(f"  ✓ Success (log: {log_file})")
             else:
                 failed.append(date_result)
-                state["failed_dates"].append(date_result)
                 print(f"  ✗ Failed (log: {log_file})")
-
-            # Update state file
-            save_backfill_state(state_file, state)
 
     # Print summary
     print_backfill_summary(total_dates, succeeded, failed)
@@ -515,6 +562,12 @@ Examples:
 
   # Run backfill in local mode (no Kubernetes)
   python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --local
+
+  # Backfill from a file of dates (one YYYY-MM-DD per line)
+  python scripts/run_flow.py backfill --dates-file failures.txt
+
+  # Backfill from file with parallel workers
+  python scripts/run_flow.py backfill --dates-file failures.txt --parallel 4
         """
     )
 
@@ -531,11 +584,19 @@ Examples:
 
     # Backfill mode
     backfill_parser = subparsers.add_parser("backfill", help="Run historical backfill")
-    backfill_parser.add_argument("start_date", help="Start date (YYYY-MM-DD)")
+    backfill_parser.add_argument(
+        "start_date",
+        nargs="?",
+        help="Start date (YYYY-MM-DD). Required unless --dates-file is used."
+    )
     backfill_parser.add_argument(
         "end_date",
         nargs="?",
         help="End date (YYYY-MM-DD, inclusive). Defaults to start_date for single-date backfill."
+    )
+    backfill_parser.add_argument(
+        "--dates-file", "-f",
+        help="File containing dates to backfill (one YYYY-MM-DD per line)"
     )
     backfill_parser.add_argument(
         "--parallel",
@@ -575,16 +636,70 @@ Examples:
     elif args.mode == "deploy":
         exit_code = run_deploy()
     elif args.mode == "backfill":
-        # Default end_date to start_date if not provided
-        end_date = args.end_date if args.end_date else args.start_date
+        # Validate argument combinations
+        if args.dates_file and args.start_date:
+            print(
+                "Error: Cannot combine --dates-file with positional date arguments. "
+                "Use one or the other.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if args.dates_file and args.weekday:
+            print(
+                "Error: Cannot use --weekday with --dates-file. "
+                "The file already contains the exact dates to process.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if args.dates_file and args.resume:
+            print(
+                "Error: Cannot use --resume with --dates-file. "
+                "To retry failures, generate a new dates file with check_logs.py.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if not args.dates_file and not args.start_date:
+            print(
+                "Error: Either start_date or --dates-file is required.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # Resolve dates from either source
+        if args.dates_file:
+            dates = load_dates_file(args.dates_file)
+            description = f"from {args.dates_file}"
+        else:
+            start_date = args.start_date
+            end_date = args.end_date if args.end_date else start_date
+            dates = generate_date_range(start_date, end_date)
+
+            if args.weekday:
+                dates = filter_dates_by_weekday(dates, args.weekday)
+                weekday_str = ", ".join(args.weekday)
+                print(f"Filtered to weekdays: {weekday_str}")
+
+            # Handle resume mode (only for date-range mode)
+            if args.resume:
+                log_dir = Path("logs")
+                state_file = get_state_file_path(log_dir, start_date, end_date, args.weekday)
+                state = load_backfill_state(state_file)
+                completed = state.get("completed_dates", [])
+                if completed:
+                    print(f"Resuming from previous run, skipping {len(completed)} completed dates")
+                    dates = [d for d in dates if d not in completed]
+
+            description = f"{start_date} to {end_date}"
+
         exit_code = run_backfill(
-            args.start_date,
-            end_date,
+            dates,
             parallel=args.parallel,
-            weekdays=args.weekday,
             dry_run=args.dry_run,
-            resume=args.resume,
-            local_mode=args.local
+            local_mode=args.local,
+            description=description,
         )
     else:
         print(f"Unknown mode: {args.mode}")

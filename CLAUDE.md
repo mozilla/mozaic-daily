@@ -96,6 +96,7 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `run_flow.py` - Unified runner for Metaflow operations (local, deploy, backfill)
 - `run_main.py` - Run the main forecasting pipeline with checkpoints (local development)
 - `run_validation.py` - Validate the checkpoint forecast file
+- `check_logs.py` - Check backfill log files for successes, failures, and ambiguous results
 - `test_local_docker.sh` - Test Docker image builds locally
 
 The `docker/` directory contains Docker management scripts:
@@ -206,6 +207,15 @@ python scripts/run_flow.py backfill 2025-07-01 2026-02-01 --weekday monday --res
 
 # Run backfill in local mode (no Kubernetes)
 python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --local
+
+# Backfill from a file of dates (one YYYY-MM-DD per line)
+python scripts/run_flow.py backfill --dates-file failures.txt
+
+# Preview dates from file without executing
+python scripts/run_flow.py backfill --dates-file failures.txt --dry-run
+
+# Backfill from file with parallel workers
+python scripts/run_flow.py backfill --dates-file failures.txt --parallel 4
 ```
 
 #### Backfill Configuration
@@ -213,10 +223,11 @@ python scripts/run_flow.py backfill 2024-06-01 2024-06-30 --local
 The backfill mode supports several advanced features for large-scale historical forecasting:
 
 **Flags:**
+- `--dates-file FILE` / `-f FILE` — Backfill specific dates from a file (one YYYY-MM-DD per line, e.g. output of `check_logs.py -o`). Cannot be combined with positional date arguments, `--weekday`, or `--resume`
 - `--parallel N` — Run N backfills concurrently using ProcessPoolExecutor
-- `--weekday DAY` — Filter to specific weekday(s). Can be specified multiple times (e.g., `--weekday monday --weekday friday`). Valid values: monday, tuesday, wednesday, thursday, friday, saturday, sunday
-- `--dry-run` — Print execution plan (dates, weekdays, mode) without running backfill. Useful for previewing large date ranges before execution
-- `--resume` — Skip dates from previous runs based on state file. Allows interrupted backfills to continue without re-running completed dates
+- `--weekday DAY` — Filter to specific weekday(s). Can be specified multiple times (e.g., `--weekday monday --weekday friday`). Valid values: monday, tuesday, wednesday, thursday, friday, saturday, sunday. Only for date-range mode
+- `--dry-run` — Print execution plan (dates, weekdays, mode) without running backfill. Works with both date-range and `--dates-file` modes
+- `--resume` — Skip dates from previous runs based on state file. Only for date-range mode
 - `--local` — Run in local mode without Kubernetes (default: remote with Kubernetes)
 
 **State Files:**
@@ -244,7 +255,7 @@ The state file path is deterministic based on start date, end date, and weekdays
 
 **General Notes:**
 - Date ranges are inclusive (both start and end dates are processed)
-- Each run creates a log file in `logs/backfill_YYYY-MM-DD.log` for debugging
+- Each run creates a log file in `logs/backfill_YYYY-MM-DD.log` for debugging. Reruns for the same date create `backfill_YYYY-MM-DD.run2.log`, `.run3.log`, etc. to preserve history
 - Parallel execution uses ProcessPoolExecutor for true parallelism
 - Failed runs continue processing remaining dates - check summary for failures
 - Historical forecasts validate that the date is not in the future
