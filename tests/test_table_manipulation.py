@@ -106,7 +106,7 @@ def test_update_desktop_format_segment_json_structure(sample_desktop_dataframe):
     """Verify segment is valid JSON with 'os' key.
 
     Examples:
-    - population='win10' → segment='{"os": "win10"}'
+    - population='modern_windows' → segment='{"os": "modern_windows"}'
     - population='ALL' → segment='{"os": "ALL"}'
 
     Failure indicates invalid JSON format, validation will fail.
@@ -126,7 +126,7 @@ def test_update_desktop_format_segment_json_structure(sample_desktop_dataframe):
 
     # Check specific mapping for 'ALL' population (aggregate row from mozaic package)
     df_with_all = pd.DataFrame({
-        'population': ['ALL', 'win10', 'win11'],
+        'population': ['ALL', 'modern_windows', 'winX'],
         'target_date': pd.date_range('2024-01-01', periods=3),
         'country': ['US'] * 3,
         'source': ['forecast'] * 3,
@@ -138,7 +138,7 @@ def test_update_desktop_format_segment_json_structure(sample_desktop_dataframe):
     assert segment0['os'] == 'ALL', f"Expected population='ALL' → segment={{'os': 'ALL'}}, got {segment0}"
 
     segment1 = json.loads(df_with_all['segment'].iloc[1])
-    assert segment1['os'] == 'win10', f"Expected population='win10' → segment={{'os': 'win10'}}, got {segment1}"
+    assert segment1['os'] == 'modern_windows', f"Expected population='modern_windows' → segment={{'os': 'modern_windows'}}, got {segment1}"
 
 
 def test_update_desktop_format_removes_population_column(sample_desktop_dataframe):

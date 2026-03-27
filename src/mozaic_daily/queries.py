@@ -13,10 +13,12 @@ Key components:
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Type
 from enum import Enum
 
+import holidays
 import pandas as pd
+from mozaic.holiday_smart import DesktopBugs
 
 
 # =============================================================================
@@ -35,6 +37,16 @@ class Metric(Enum):
     NEW_PROFILES = "New Profiles"
     EXISTING_ENGAGEMENT_DAU = "Existing Engagement DAU"
     EXISTING_ENGAGEMENT_MAU = "Existing Engagement MAU"
+
+    @property
+    def short_code(self) -> str:
+        """Short code for use in checkpoint filenames."""
+        return {
+            "DAU": "D",
+            "New Profiles": "NP",
+            "Existing Engagement DAU": "EED",
+            "Existing Engagement MAU": "EEM",
+        }[self.value]
 
 
 class TelemetrySource(Enum):
@@ -63,6 +75,15 @@ class DataSource(Enum):
         if self in (DataSource.GLEAN_DESKTOP, DataSource.GLEAN_MOBILE):
             return TelemetrySource.GLEAN
         return TelemetrySource.LEGACY
+
+    @property
+    def short_code(self) -> str:
+        """Short code for use in checkpoint filenames."""
+        return {
+            "glean_desktop": "gd",
+            "legacy_desktop": "ld",
+            "glean_mobile": "gm",
+        }[self.value]
 
     @property
     def display_name(self) -> str:
@@ -186,7 +207,7 @@ class QuerySpec:
         """Build the complete SQL query for this specification.
 
         Automatically uses the appropriate segmentation logic based on platform:
-        - Desktop: win10, win11, winX columns from Windows version
+        - Desktop: modern_windows, winX columns from Windows version
         - Mobile: fenix_android, firefox_ios, focus_android, focus_ios from app name
 
         Args:
@@ -235,8 +256,7 @@ class AvailabilityCheckQuery:
 
 def _build_desktop_segment_columns(segment_column: str) -> str:
     """Build SQL SELECT columns for Windows version segmentation."""
-    return f"""IFNULL(LOWER({segment_column}) LIKE '%windows 10%', FALSE) AS win10,
-           IFNULL(LOWER({segment_column}) LIKE '%windows 11%', FALSE) AS win11,
+    return f"""IFNULL(LOWER({segment_column}) LIKE '%windows 1%', FALSE) AS modern_windows,
            IFNULL(LOWER({segment_column}) LIKE '%windows%' AND LOWER({segment_column}) NOT LIKE '%windows 10%' AND LOWER({segment_column}) NOT LIKE '%windows 11%', FALSE) AS winX"""
 
 
@@ -435,6 +455,20 @@ QUERY_SPECS: Dict[QueryKey, QuerySpec] = {
         x_column='submission_date',
         y_column='mau',
     ),
+}
+
+
+# =============================================================================
+# ADDITIONAL HOLIDAYS
+# =============================================================================
+
+# Additional holiday calendars by data source.
+# These are passed to mozaic.populate_tiles() and apply to ALL metrics
+# within the data source (not per-query). populate_tiles receives all
+# metrics for a data source at once, so holidays declared here affect
+# every metric in that source's forecast run.
+ADDITIONAL_HOLIDAYS: Dict[DataSource, List[Type[holidays.HolidayBase]]] = {
+    DataSource.LEGACY_DESKTOP: [DesktopBugs],
 }
 
 

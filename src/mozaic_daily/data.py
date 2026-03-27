@@ -18,13 +18,13 @@ Functions:
 
 import datetime
 import os
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 import pandas as pd
 from google.cloud import bigquery
 from .config import STATIC_CONFIG
 from .queries import (
-    QUERY_SPECS, Platform, Metric, TelemetrySource, QuerySpec,
+    QUERY_SPECS, Platform, Metric, TelemetrySource, DataSource, QuerySpec,
     get_availability_check_queries,
 )
 
@@ -87,13 +87,15 @@ def check_training_data_availability(project: str, training_end_date: str) -> No
 
 def get_queries(
     countries: str,
-    testing_mode: bool = False
+    data_source_filter: Optional[Set[DataSource]] = None,
+    metric_filter: Optional[Set[Metric]] = None,
 ) -> Dict[str, Dict[str, Dict[str, Tuple[str, QuerySpec]]]]:
     """Build SQL queries for all platform/metric/source combinations.
 
     Args:
         countries: SQL-formatted country string (e.g., "'US', 'CA', 'GB'")
-        testing_mode: If True, only query Desktop Glean DAU
+        data_source_filter: If set, only include specs matching these data sources
+        metric_filter: If set, only include specs matching these metrics
 
     Returns:
         Nested dict structure: {platform: {source: {metric: (sql, spec)}}}
@@ -114,18 +116,14 @@ def get_queries(
     }
 
     for spec in QUERY_SPECS.values():
+        if data_source_filter is not None and spec.data_source not in data_source_filter:
+            continue
+        if metric_filter is not None and spec.metric not in metric_filter:
+            continue
+
         platform = spec.platform.value
         source = spec.telemetry_source.value
         metric = spec.metric.value
-        # In testing mode, only return Desktop Glean DAU
-        is_desktop_glean_dau = (
-            spec.platform == Platform.DESKTOP
-            and spec.telemetry_source == TelemetrySource.GLEAN
-            and spec.metric == Metric.DAU
-        )
-        if testing_mode and not is_desktop_glean_dau:
-            continue
-
         sql = spec.build_query(countries)
 
         queries[platform][source][metric] = (sql, spec)

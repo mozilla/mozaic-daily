@@ -7,11 +7,13 @@ Tests Mozaic integration and forecast DataFrame generation.
 🔒 SECURITY: Uses synthetic test data only.
 """
 
+import holidays
 import pandas as pd
 from unittest.mock import MagicMock
 
 from mozaic_daily.forecast import get_forecast_dfs, get_desktop_forecast_dfs, get_mobile_forecast_dfs
 from mozaic.models import desktop_forecast_model, mobile_forecast_model
+from mozaic.holiday_smart import DesktopBugs
 from tests.conftest import generate_forecast_data
 
 
@@ -62,6 +64,11 @@ def test_get_forecast_dfs_calls_populate_tiles(mocker, sample_datasets):
     args, kwargs = call_args
     assert len(args) == 5, (
         f"Expected populate_tiles to be called with 5 args (datasets, tileset, model, start, end), got {len(args)}"
+    )
+
+    # Check additional_holidays kwarg is passed
+    assert 'additional_holidays' in kwargs, (
+        f"Expected 'additional_holidays' kwarg in populate_tiles call, got kwargs: {kwargs}"
     )
 
 
@@ -244,3 +251,70 @@ def test_mobile_forecast_uses_mobile_model(mocker, sample_datasets):
 
     # If we reach here, the assertion in mock_curate_side_effect passed
     assert mock_curate.called, "curate_mozaics should have been called"
+
+
+# ===== ADDITIONAL HOLIDAYS =====
+
+def test_get_forecast_dfs_default_holidays_is_empty_list(mocker, sample_datasets):
+    """Verify populate_tiles receives an empty list when no holidays are specified.
+
+    Failure indicates default additional_holidays is not an empty list.
+    """
+    mock_tileset = MagicMock()
+    mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
+
+    mock_populate = mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
+    mock_curate = mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics')
+
+    mock_mozaic = MagicMock()
+    mock_mozaic.to_granular_forecast_df.return_value = generate_forecast_data(num_days=10)
+
+    def mock_curate_side_effect(datasets, tileset, model, mozaics, *args):
+        mozaics['DAU'] = mock_mozaic
+
+    mock_curate.side_effect = mock_curate_side_effect
+
+    get_forecast_dfs(
+        sample_datasets['desktop'],
+        desktop_forecast_model,
+        '2024-02-01',
+        '2024-12-31'
+    )
+
+    _, kwargs = mock_populate.call_args
+    assert kwargs['additional_holidays'] == [], (
+        f"Expected empty list for default additional_holidays, got {kwargs['additional_holidays']}"
+    )
+
+
+def test_get_forecast_dfs_passes_custom_holidays(mocker, sample_datasets):
+    """Verify populate_tiles receives custom holidays when provided.
+
+    Failure indicates additional_holidays is not being forwarded to populate_tiles.
+    """
+    mock_tileset = MagicMock()
+    mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
+
+    mock_populate = mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles')
+    mock_curate = mocker.patch('mozaic_daily.forecast.mozaic.utils.curate_mozaics')
+
+    mock_mozaic = MagicMock()
+    mock_mozaic.to_granular_forecast_df.return_value = generate_forecast_data(num_days=10)
+
+    def mock_curate_side_effect(datasets, tileset, model, mozaics, *args):
+        mozaics['DAU'] = mock_mozaic
+
+    mock_curate.side_effect = mock_curate_side_effect
+
+    get_forecast_dfs(
+        sample_datasets['desktop'],
+        desktop_forecast_model,
+        '2024-02-01',
+        '2024-12-31',
+        additional_holidays=[DesktopBugs],
+    )
+
+    _, kwargs = mock_populate.call_args
+    assert kwargs['additional_holidays'] == [DesktopBugs], (
+        f"Expected [DesktopBugs] for additional_holidays, got {kwargs['additional_holidays']}"
+    )

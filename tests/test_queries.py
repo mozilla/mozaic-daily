@@ -5,12 +5,16 @@ Tests for SQL query specifications in mozaic_daily.queries.
 Tests cover query specs, date constraints, and SQL generation.
 """
 
+import holidays
+
 from mozaic_daily.queries import (
-    QUERY_SPECS, Platform, Metric, TelemetrySource, DataSource,
+    QUERY_SPECS, ADDITIONAL_HOLIDAYS,
+    Platform, Metric, TelemetrySource, DataSource,
     DateConstraints, AvailabilityCheckQuery, get_availability_check_queries,
 )
+from mozaic.holiday_smart import DesktopBugs
 from mozaic_daily.data import get_queries
-from mozaic_daily.config import get_runtime_config
+from mozaic_daily.config import get_runtime_config, build_filter_code
 
 
 # ===== QUERY_SPECS STRUCTURE =====
@@ -234,7 +238,7 @@ def test_get_queries_returns_dict_with_platform_keys():
     Failure indicates wrong return structure.
     """
     config = get_runtime_config()
-    queries = get_queries(config['country_string'], testing_mode=False)
+    queries = get_queries(config['country_string'])
 
     assert isinstance(queries, dict), (
         f"Expected dict, got {type(queries)}"
@@ -255,7 +259,7 @@ def test_get_queries_desktop_contains_all_metrics():
     Failure indicates missing Desktop metric queries.
     """
     config = get_runtime_config()
-    queries = get_queries(config['country_string'], testing_mode=False)
+    queries = get_queries(config['country_string'])
 
     expected_metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
 
@@ -284,7 +288,7 @@ def test_get_queries_mobile_contains_all_metrics():
     Failure indicates missing Mobile metric queries.
     """
     config = get_runtime_config()
-    queries = get_queries(config['country_string'], testing_mode=False)
+    queries = get_queries(config['country_string'])
 
     expected_metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
 
@@ -308,7 +312,7 @@ def test_get_queries_includes_date_constraints_in_sql():
     Failure indicates date constraints not applied to SQL.
     """
     config = get_runtime_config()
-    queries = get_queries(config['country_string'], testing_mode=False)
+    queries = get_queries(config['country_string'])
 
     # Access the SQL from the (sql, spec) tuple
     desktop_new_profiles_sql, _ = queries['desktop']['legacy']['New Profiles']
@@ -329,7 +333,7 @@ def test_get_queries_includes_country_filter():
     """
     config = get_runtime_config()
     country_string = "'US', 'DE', 'FR'"
-    queries = get_queries(country_string, testing_mode=False)
+    queries = get_queries(country_string)
 
     # Access the SQL from the (sql, spec) tuple
     desktop_dau_sql, _ = queries['desktop']['glean']['DAU']
@@ -340,38 +344,60 @@ def test_get_queries_includes_country_filter():
     )
 
 
-def test_get_queries_testing_mode_returns_single_query():
-    """Verify testing_mode=True returns only Desktop Glean DAU query.
+def test_get_queries_data_source_filter_returns_matching_queries():
+    """Verify data_source_filter limits queries to the specified data source.
 
-    Useful for quick integration tests without querying all metrics.
-
-    Failure indicates testing mode not working.
+    Failure indicates filter not working.
     """
     config = get_runtime_config()
-    queries = get_queries(config['country_string'], testing_mode=True)
-
-    # Should have desktop and mobile keys
-    assert 'desktop' in queries, "Expected 'desktop' key in testing mode"
-    assert 'mobile' in queries, "Expected 'mobile' key in testing mode"
-
-    # Desktop should have glean source with exactly 1 query (DAU)
-    assert 'glean' in queries['desktop'], "Expected 'glean' source in Desktop queries"
-    assert len(queries['desktop']['glean']) == 1, (
-        f"Expected 1 Desktop Glean query in testing mode, got {len(queries['desktop']['glean'])}"
-    )
-    assert 'DAU' in queries['desktop']['glean'], (
-        f"Expected 'DAU' query in testing mode. Found: {list(queries['desktop']['glean'].keys())}"
+    queries = get_queries(
+        config['country_string'],
+        data_source_filter={DataSource.GLEAN_DESKTOP},
     )
 
-    # Desktop legacy should be empty
+    # Desktop Glean should have all metrics
+    assert len(queries['desktop']['glean']) > 0, "Expected Desktop Glean queries"
+
+    # Desktop legacy and mobile should be empty
     assert len(queries['desktop']['legacy']) == 0, (
-        f"Expected 0 Desktop Legacy queries in testing mode, got {len(queries['desktop']['legacy'])}"
+        f"Expected 0 Desktop Legacy queries, got {len(queries['desktop']['legacy'])}"
+    )
+    assert len(queries['mobile']['glean']) == 0, (
+        f"Expected 0 Mobile queries, got {len(queries['mobile']['glean'])}"
     )
 
-    # Mobile should be empty
-    assert len(queries['mobile']['glean']) == 0, (
-        f"Expected 0 Mobile queries in testing mode, got {len(queries['mobile']['glean'])}"
+
+def test_get_queries_metric_filter_returns_matching_queries():
+    """Verify metric_filter limits queries to the specified metric."""
+    config = get_runtime_config()
+    queries = get_queries(
+        config['country_string'],
+        metric_filter={Metric.DAU},
     )
+
+    # Every non-empty source dict should only contain DAU
+    for platform, sources in queries.items():
+        for source, metrics in sources.items():
+            for metric_name in metrics:
+                assert metric_name == 'DAU', (
+                    f"Expected only DAU metric, got '{metric_name}' in {platform}/{source}"
+                )
+
+
+def test_get_queries_combined_filters():
+    """Verify data_source_filter + metric_filter narrows to intersection."""
+    config = get_runtime_config()
+    queries = get_queries(
+        config['country_string'],
+        data_source_filter={DataSource.GLEAN_DESKTOP},
+        metric_filter={Metric.DAU},
+    )
+
+    # Should have exactly 1 query: Desktop Glean DAU
+    assert len(queries['desktop']['glean']) == 1
+    assert 'DAU' in queries['desktop']['glean']
+    assert len(queries['desktop']['legacy']) == 0
+    assert len(queries['mobile']['glean']) == 0
 
 
 # ===== QuerySpec.build_query() TESTS =====
@@ -399,18 +425,15 @@ def test_build_query_contains_select_clause():
 
 
 def test_build_query_desktop_includes_windows_segments():
-    """Verify Desktop queries include win10, win11, winX columns.
+    """Verify Desktop queries include modern_windows, winX columns.
 
     Failure indicates Desktop segmentation broken.
     """
     spec = QUERY_SPECS[(Platform.DESKTOP, Metric.DAU, TelemetrySource.GLEAN)]
     query = spec.build_query("'US'")
 
-    assert 'win10' in query.lower(), (
-        "Expected win10 column in Desktop SQL"
-    )
-    assert 'win11' in query.lower(), (
-        "Expected win11 column in Desktop SQL"
+    assert 'modern_windows' in query.lower(), (
+        "Expected modern_windows column in Desktop SQL"
     )
     assert 'winx' in query.lower(), (
         "Expected winX column in Desktop SQL"
@@ -546,3 +569,109 @@ def test_get_availability_check_queries_no_duplicate_combinations():
             f"date_field={check.date_field}, where_clause={check.where_clause}"
         )
         seen_keys.add(key)
+
+
+# ===== ADDITIONAL_HOLIDAYS TESTS =====
+
+def test_additional_holidays_only_on_legacy_desktop():
+    """Verify ADDITIONAL_HOLIDAYS maps only legacy_desktop to [DesktopBugs].
+
+    Failure indicates holidays assigned to wrong data source or missing for legacy_desktop.
+    """
+    assert set(ADDITIONAL_HOLIDAYS.keys()) == {DataSource.LEGACY_DESKTOP}, (
+        f"Expected ADDITIONAL_HOLIDAYS only for LEGACY_DESKTOP, got: {set(ADDITIONAL_HOLIDAYS.keys())}"
+    )
+    assert ADDITIONAL_HOLIDAYS[DataSource.LEGACY_DESKTOP] == [DesktopBugs], (
+        f"Expected [DesktopBugs] for LEGACY_DESKTOP, got: {ADDITIONAL_HOLIDAYS[DataSource.LEGACY_DESKTOP]}"
+    )
+
+
+def test_additional_holidays_entries_are_holiday_base_subclasses():
+    """Verify all entries in ADDITIONAL_HOLIDAYS are holidays.HolidayBase subclasses.
+
+    Failure indicates invalid holiday class in the mapping.
+    """
+    for data_source, holiday_list in ADDITIONAL_HOLIDAYS.items():
+        assert isinstance(holiday_list, list), (
+            f"Expected list for {data_source}, got {type(holiday_list)}"
+        )
+        for holiday_cls in holiday_list:
+            assert isinstance(holiday_cls, type) and issubclass(holiday_cls, holidays.HolidayBase), (
+                f"Expected HolidayBase subclass for {data_source}, got {holiday_cls}"
+            )
+
+
+# ===== SHORT CODE TESTS =====
+
+def test_data_source_short_codes():
+    """Verify short_code for all DataSource enum members."""
+    assert DataSource.GLEAN_DESKTOP.short_code == "gd"
+    assert DataSource.LEGACY_DESKTOP.short_code == "ld"
+    assert DataSource.GLEAN_MOBILE.short_code == "gm"
+
+
+def test_metric_short_codes():
+    """Verify short_code for all Metric enum members."""
+    assert Metric.DAU.short_code == "D"
+    assert Metric.NEW_PROFILES.short_code == "NP"
+    assert Metric.EXISTING_ENGAGEMENT_DAU.short_code == "EED"
+    assert Metric.EXISTING_ENGAGEMENT_MAU.short_code == "EEM"
+
+
+def test_all_data_sources_have_short_code():
+    """Every DataSource member must have a short_code."""
+    for ds in DataSource:
+        assert isinstance(ds.short_code, str) and len(ds.short_code) > 0
+
+
+def test_all_metrics_have_short_code():
+    """Every Metric member must have a short_code."""
+    for m in Metric:
+        assert isinstance(m.short_code, str) and len(m.short_code) > 0
+
+
+# ===== build_filter_code TESTS =====
+
+def test_build_filter_code_single_source_single_metric():
+    """Single data source + single metric produces 'code-code' format."""
+    result = build_filter_code({DataSource.LEGACY_DESKTOP}, {Metric.DAU})
+    assert result == "ld-D"
+
+
+def test_build_filter_code_multiple_sources():
+    """Multiple data sources joined with '+', sorted alphabetically."""
+    result = build_filter_code({DataSource.GLEAN_DESKTOP, DataSource.GLEAN_MOBILE}, None)
+    assert result == "gd+gm"
+
+
+def test_build_filter_code_multiple_metrics():
+    """Multiple metrics joined with '+', sorted alphabetically."""
+    result = build_filter_code(None, {Metric.DAU, Metric.NEW_PROFILES})
+    assert result == "D+NP"
+
+
+def test_build_filter_code_sources_only():
+    """Only data source filter, no metric filter."""
+    result = build_filter_code({DataSource.GLEAN_MOBILE}, None)
+    assert result == "gm"
+
+
+def test_build_filter_code_metrics_only():
+    """Only metric filter, no data source filter."""
+    result = build_filter_code(None, {Metric.EXISTING_ENGAGEMENT_DAU})
+    assert result == "EED"
+
+
+def test_build_filter_code_no_filters():
+    """No filters returns empty string."""
+    result = build_filter_code(None, None)
+    assert result == ""
+
+
+def test_build_filter_code_all_sources_all_metrics():
+    """All sources and all metrics."""
+    all_sources = set(DataSource)
+    all_metrics = set(Metric)
+    result = build_filter_code(all_sources, all_metrics)
+    # Sources sorted: gd, gm, ld; Metrics sorted: D, EED, EEM, NP
+    assert result == "gd+gm+ld-D+EED+EEM+NP"

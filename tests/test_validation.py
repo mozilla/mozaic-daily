@@ -64,7 +64,7 @@ def valid_output_dataframe(mock_runtime_config):
     data = []
     # Use countries from mock runtime config to match validation expectations
     countries = list(mock_runtime_config['validation_countries'])
-    os_values = ['win10', 'win11', 'winX', 'other', 'ALL']
+    os_values = ['modern_windows', 'winX', 'other', 'ALL']
 
     # Training data
     for date in training_dates:
@@ -396,7 +396,7 @@ def test_check_row_counts_valid(
     expected_app_names = {'desktop'}
     expected_data_sources = {'glean_desktop'}
     expected_date_keys = [('desktop', 'DAU', 'glean')]
-    expected_os_values = {'win10', 'win11', 'winX', 'other', 'ALL'}
+    expected_os_values = {'modern_windows', 'winX', 'other', 'ALL'}
 
     # Should not raise
     _check_row_counts(
@@ -428,7 +428,7 @@ def test_check_row_counts_missing_training_days(
     expected_app_names = {'desktop'}
     expected_data_sources = {'glean_desktop'}
     expected_date_keys = [('desktop', 'DAU', 'glean')]
-    expected_os_values = {'win10', 'win11', 'winX', 'other', 'ALL'}
+    expected_os_values = {'modern_windows', 'winX', 'other', 'ALL'}
 
     with pytest.raises(ValueError, match="Training target days missing"):
         _check_row_counts(
@@ -460,7 +460,7 @@ def test_check_row_counts_missing_forecast_days(
     expected_app_names = {'desktop'}
     expected_data_sources = {'glean_desktop'}
     expected_date_keys = [('desktop', 'DAU', 'glean')]
-    expected_os_values = {'win10', 'win11', 'winX', 'other', 'ALL'}
+    expected_os_values = {'modern_windows', 'winX', 'other', 'ALL'}
 
     with pytest.raises(ValueError, match="Forecast target days missing"):
         _check_row_counts(
@@ -491,7 +491,7 @@ def test_check_row_counts_missing_app_name(
     expected_app_names = {'desktop', 'firefox_ios'}  # firefox_ios not in data
     expected_data_sources = {'glean_desktop'}
     expected_date_keys = [('desktop', 'DAU', 'glean')]
-    expected_os_values = {'win10', 'win11', 'winX', 'other', 'ALL'}
+    expected_os_values = {'modern_windows', 'winX', 'other', 'ALL'}
 
     with pytest.raises(ValueError, match="Missing app name"):
         _check_row_counts(
@@ -522,7 +522,7 @@ def test_check_row_counts_extra_segment(
     expected_app_names = {'desktop'}
     expected_data_sources = {'glean_desktop'}
     expected_date_keys = [('desktop', 'DAU', 'glean')]
-    expected_os_values = {'win10', 'win11'}  # Missing winX, other, ALL
+    expected_os_values = {'modern_windows'}  # Missing winX, other, ALL
 
     with pytest.raises(ValueError, match="Extra segment"):
         _check_row_counts(
@@ -601,14 +601,16 @@ def test_validate_duplicate_rows_has_duplicates(valid_output_dataframe):
 @patch('mozaic_daily.validation.get_runtime_config')
 @patch('mozaic_daily.validation.get_training_date_index')
 @patch('mozaic_daily.validation.get_prediction_date_index')
-def test_validate_output_dataframe_testing_mode(
+def test_validate_output_dataframe_filtered_mode(
     mock_prediction_index,
     mock_training_index,
     mock_get_config,
     mock_runtime_config,
     valid_output_dataframe
 ):
-    """Test full validation with valid testing mode DataFrame."""
+    """Test full validation with valid filtered mode DataFrame."""
+    from mozaic_daily.queries import DataSource, Metric
+
     mock_get_config.return_value = mock_runtime_config
 
     # Mock training and forecast date indices
@@ -623,7 +625,11 @@ def test_validate_output_dataframe_testing_mode(
     mock_prediction_index.return_value = pd.DatetimeIndex(forecast_dates)
 
     # Should not raise
-    validate_output_dataframe(valid_output_dataframe, testing_mode=True)
+    validate_output_dataframe(
+        valid_output_dataframe,
+        data_source_filter={DataSource.GLEAN_DESKTOP},
+        metric_filter={Metric.DAU},
+    )
 
 
 @patch('mozaic_daily.validation.get_runtime_config')
@@ -641,9 +647,11 @@ def test_validate_output_dataframe_production_mode(
 ):
     """Test full validation with BigQuery schema check.
 
-    Note: This test uses testing_mode=True internally because the fixture
+    Note: This test uses filtered mode internally because the fixture
     only generates Desktop data, not full production data with mobile.
     """
+    from mozaic_daily.queries import DataSource, Metric
+
     mock_get_config.return_value = mock_runtime_config
 
     # Mock training and forecast date indices
@@ -660,8 +668,12 @@ def test_validate_output_dataframe_production_mode(
     # Mock BigQuery schema
     mock_get_bq_fields.return_value = mock_bigquery_schema
 
-    # Use testing_mode=True since we only have Desktop data in fixture
-    validate_output_dataframe(valid_output_dataframe, testing_mode=True)
+    # Use filtered mode since we only have Desktop data in fixture
+    validate_output_dataframe(
+        valid_output_dataframe,
+        data_source_filter={DataSource.GLEAN_DESKTOP},
+        metric_filter={Metric.DAU},
+    )
 
 
 @patch('mozaic_daily.validation.get_runtime_config')
@@ -677,8 +689,13 @@ def test_validate_output_dataframe_invalid_raises_error(mock_get_config, mock_ru
         # Missing other required columns
     })
 
+    from mozaic_daily.queries import DataSource, Metric
     with pytest.raises((ValueError, KeyError)):
-        validate_output_dataframe(df, testing_mode=True)
+        validate_output_dataframe(
+            df,
+            data_source_filter={DataSource.GLEAN_DESKTOP},
+            metric_filter={Metric.DAU},
+        )
 
 
 @patch('mozaic_daily.validation.get_runtime_config')
@@ -707,6 +724,12 @@ def test_validate_output_dataframe_passes_forecast_start_date_to_config(
     mock_training_index.side_effect = mock_training_func
     mock_prediction_index.return_value = pd.DatetimeIndex(forecast_dates)
 
-    validate_output_dataframe(valid_output_dataframe, testing_mode=True, forecast_start_date='2024-02-01')
+    from mozaic_daily.queries import DataSource, Metric
+    validate_output_dataframe(
+        valid_output_dataframe,
+        data_source_filter={DataSource.GLEAN_DESKTOP},
+        metric_filter={Metric.DAU},
+        forecast_start_date='2024-02-01',
+    )
 
     mock_get_config.assert_called_once_with(forecast_start_date_override='2024-02-01')

@@ -15,17 +15,17 @@ Usage:
     python -m mozaic_daily.main
 """
 
-from typing import Optional
+from typing import Optional, Set
 import pandas as pd
 import os
-from .config import get_runtime_config, STATIC_CONFIG
+from .config import get_runtime_config, STATIC_CONFIG, build_filter_code
 from .data import get_queries, get_aggregate_data, check_training_data_availability
 from .forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs
 from .tables import (
     combine_tables, update_desktop_format, update_mobile_format,
     format_output_table
 )
-from .queries import Platform, DataSource
+from .queries import Platform, Metric, DataSource, ADDITIONAL_HOLIDAYS
 
 
 # =============================================================================
@@ -43,12 +43,21 @@ DATA_SOURCES_TO_PROCESS = [
 # HELPER FUNCTIONS
 # =============================================================================
 
-def print_testing_mode_banner():
-    """Print a loud banner indicating testing mode is active."""
+def print_filter_banner(
+    data_source_filter: Optional[Set[DataSource]],
+    metric_filter: Optional[Set[Metric]]
+):
+    """Print a banner showing active filters."""
     width = 60
     char = '='
     print('\n' + char * width)
-    print('TESTING MODE ENABLED - Desktop Glean only')
+    print('FILTERED MODE ENABLED')
+    if data_source_filter is not None:
+        sources = ', '.join(sorted(ds.value for ds in data_source_filter))
+        print(f'  Data sources: {sources}')
+    if metric_filter is not None:
+        metrics = ', '.join(sorted(m.value for m in metric_filter))
+        print(f'  Metrics: {metrics}')
     print(char * width + '\n')
 
 
@@ -66,10 +75,18 @@ def get_forecast_function(platform: Platform):
     return get_mobile_forecast_dfs
 
 
-def get_checkpoint_filename(is_testing: bool, forecast_start_date: str, output_dir: str = ".") -> str:
-    """Return appropriate checkpoint filename based on testing mode and output directory."""
-    if is_testing:
-        filename = STATIC_CONFIG['testing_mode_checkpoint_filename']
+def get_checkpoint_filename(
+    forecast_start_date: str,
+    output_dir: str = ".",
+    data_source_filter: Optional[Set[DataSource]] = None,
+    metric_filter: Optional[Set[Metric]] = None,
+) -> str:
+    """Return appropriate checkpoint filename based on filters and output directory."""
+    filter_code = build_filter_code(data_source_filter, metric_filter)
+    if filter_code:
+        filename = STATIC_CONFIG['forecast_checkpoint_filename_filtered_template'].format(
+            date=forecast_start_date, filter_code=filter_code
+        )
     else:
         filename = STATIC_CONFIG['forecast_checkpoint_filename_template'].format(date=forecast_start_date)
     return os.path.join(output_dir, filename)
@@ -86,14 +103,6 @@ def load_checkpoint_if_exists(filename: str) -> Optional[pd.DataFrame]:
 def save_checkpoint(df: pd.DataFrame, filename: str) -> None:
     """Save DataFrame to checkpoint file."""
     df.to_parquet(filename)
-
-
-def should_process_in_testing_mode(data_source: DataSource) -> bool:
-    """Return True if this data source should be processed in testing mode.
-
-    Testing mode only processes Desktop Glean to speed up iteration.
-    """
-    return data_source == DataSource.GLEAN_DESKTOP
 
 
 def process_data_source(
@@ -120,7 +129,11 @@ def process_data_source(
 
     # Generate forecasts
     forecast_func = get_forecast_function(platform)
-    forecast_dfs = forecast_func(source_data, forecast_start, forecast_end)
+    additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
+    forecast_dfs = forecast_func(
+        source_data, forecast_start, forecast_end,
+        additional_holidays=additional_holidays,
+    )
 
     # Combine and format
     df_combined = combine_tables(forecast_dfs)
@@ -133,31 +146,27 @@ def process_data_source(
 def generate_forecasts(
     datasets: dict,
     runtime_config: dict,
-    is_testing: bool
+    data_source_filter: Optional[Set[DataSource]] = None,
 ) -> pd.DataFrame:
     """Generate forecasts for all data sources and combine them.
 
     Args:
         datasets: Nested dict of data by platform/source/metric
         runtime_config: Runtime configuration with dates
-        is_testing: Whether testing mode is enabled
+        data_source_filter: If set, only process these data sources
 
     Returns:
         Combined DataFrame with all forecasts
     """
     all_dfs = []
 
-    # Calculate total sources for progress tracking
-    total_sources = len([ds for ds in DATA_SOURCES_TO_PROCESS
-                         if not is_testing or should_process_in_testing_mode(ds)])
-    source_num = 0
+    sources_to_process = [
+        ds for ds in DATA_SOURCES_TO_PROCESS
+        if data_source_filter is None or ds in data_source_filter
+    ]
+    total_sources = len(sources_to_process)
 
-    for data_source in DATA_SOURCES_TO_PROCESS:
-        # In testing mode, only process Desktop Glean
-        if is_testing and not should_process_in_testing_mode(data_source):
-            continue
-
-        source_num += 1
+    for source_num, data_source in enumerate(sources_to_process, start=1):
         print(f'\n[{source_num}/{total_sources}] Forecasting {data_source.display_name}')
 
         df = process_data_source(
@@ -188,7 +197,8 @@ def generate_forecasts(
 def main(
     project: Optional[str] = None,
     checkpoints: bool = False,
-    testing_mode: Optional[str] = None,
+    data_source_filter: Optional[Set[DataSource]] = None,
+    metric_filter: Optional[Set[Metric]] = None,
     forecast_start_date: Optional[str] = None,
     output_dir: Optional[str] = None
 ) -> pd.DataFrame:
@@ -197,7 +207,8 @@ def main(
     Args:
         project: GCP project ID for BigQuery (defaults to config value)
         checkpoints: Enable file-based checkpointing for faster iteration
-        testing_mode: String flag to enable testing mode (must match exact value)
+        data_source_filter: If set, only process these data sources (e.g., {DataSource.GLEAN_MOBILE})
+        metric_filter: If set, only process these metrics (e.g., {Metric.DAU})
         forecast_start_date: Override date (YYYY-MM-DD) for historical forecast runs.
             Simulates running the forecast on this date.
         output_dir: Directory to write checkpoint files to (defaults to current directory).
@@ -215,16 +226,18 @@ def main(
     if not project:
         project = STATIC_CONFIG['default_project']
 
-    # Enable testing only with exact string match (prevents accidents)
-    is_testing = (testing_mode == STATIC_CONFIG['testing_mode_enable_string'])
-    if is_testing:
-        print_testing_mode_banner()
+    is_filtered = data_source_filter is not None or metric_filter is not None
+    if is_filtered:
+        print_filter_banner(data_source_filter, metric_filter)
 
     print(f'Running forecast from {config["forecast_start_date"]} through {config["forecast_end_date"]}')
     print(f'Other config:\n{config}')
 
     # Set up checkpointing
-    checkpoint_filename = get_checkpoint_filename(is_testing, config['forecast_start_date'], resolved_output_dir)
+    checkpoint_filename = get_checkpoint_filename(
+        config['forecast_start_date'], resolved_output_dir,
+        data_source_filter=data_source_filter, metric_filter=metric_filter
+    )
 
     # Run pre-flight data availability check unless forecast checkpoint already exists.
     # Skipping when the checkpoint exists avoids unnecessary BQ calls during iteration.
@@ -234,7 +247,11 @@ def main(
 
     # Fetch data from BigQuery (with internal checkpointing)
     datasets = get_aggregate_data(
-        get_queries(config['country_string'], testing_mode=is_testing),
+        get_queries(
+            config['country_string'],
+            data_source_filter=data_source_filter,
+            metric_filter=metric_filter,
+        ),
         project,
         checkpoints=checkpoints,
         output_dir=resolved_output_dir
@@ -246,7 +263,7 @@ def main(
         df = load_checkpoint_if_exists(checkpoint_filename)
 
     if df is None:
-        df = generate_forecasts(datasets, config, is_testing)
+        df = generate_forecasts(datasets, config, data_source_filter=data_source_filter)
         if checkpoints:
             save_checkpoint(df, checkpoint_filename)
 

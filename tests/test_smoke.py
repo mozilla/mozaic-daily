@@ -65,7 +65,7 @@ def test_pipeline_completes_without_crashing(sample_checkpoint_files, mocker):
             start_date='2024-01-31',
             num_days=30,
             countries=['US', 'DE', 'FR', 'None'],
-            populations=['win10', 'win11', 'winX', 'None']
+            populations=['modern_windows', 'winX', 'None']
         )
 
         mock_mozaic_mobile = MagicMock()
@@ -136,7 +136,7 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
         mock_tileset = MagicMock()
         mocker.patch('mozaic_daily.forecast.mozaic.TileSet', return_value=mock_tileset)
 
-        def mock_populate(*args):
+        def mock_populate(*args, **kwargs):
             call_order.append('populate_tiles')
 
         mocker.patch('mozaic_daily.forecast.mozaic.populate_tiles', side_effect=mock_populate)

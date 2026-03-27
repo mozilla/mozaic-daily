@@ -33,6 +33,17 @@ from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List, Tuple, Optional, Dict, Any
 
+# Add src directory to path so we can import enum values for choices
+repo_root = Path(__file__).parent.parent
+src_path = repo_root / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+from mozaic_daily.queries import DataSource, Metric
+
+VALID_DATA_SOURCES = [ds.value for ds in DataSource]
+VALID_METRICS = [m.value for m in Metric]
+
 # Weekday name mapping (Monday=0, Sunday=6)
 WEEKDAY_MAP = {
     'monday': 0,
@@ -43,6 +54,34 @@ WEEKDAY_MAP = {
     'saturday': 5,
     'sunday': 6,
 }
+
+
+def add_filter_args(parser: argparse.ArgumentParser) -> None:
+    """Add --data-source and --metric filter arguments to a subparser."""
+    parser.add_argument(
+        '--data-source',
+        action='append',
+        choices=VALID_DATA_SOURCES,
+        metavar='SOURCE',
+        help=f'Filter to specific data source(s). Valid: {", ".join(VALID_DATA_SOURCES)}'
+    )
+    parser.add_argument(
+        '--metric',
+        action='append',
+        choices=VALID_METRICS,
+        metavar='METRIC',
+        help=f'Filter to specific metric(s). Valid: {", ".join(VALID_METRICS)}'
+    )
+
+
+def build_filter_args(args: argparse.Namespace) -> List[str]:
+    """Build Metaflow CLI args from parsed filter values."""
+    extra = []
+    if args.data_source:
+        extra += ["--data_sources", ",".join(args.data_source)]
+    if args.metric:
+        extra += ["--metrics", ",".join(args.metric)]
+    return extra
 
 
 def run_flow_subprocess(
@@ -99,30 +138,36 @@ def print_backfill_summary(total: int, succeeded: List[str], failed: List[str]) 
         print("\nAll backfills completed successfully!")
 
 
-def run_local() -> int:
+def run_local(extra_flow_args: Optional[List[str]] = None) -> int:
     """Run the flow locally with today's date.
 
     Sets METAFLOW_LOCAL_MODE=true to skip Kubernetes decorator.
+
+    Args:
+        extra_flow_args: Additional arguments to pass to the flow (e.g., filters)
 
     Returns:
         Exit code from subprocess
     """
     print("Running flow locally (without Kubernetes)...")
-    result = run_flow_subprocess([], local_mode=True)
+    result = run_flow_subprocess(extra_flow_args or [], local_mode=True)
     return result.returncode
 
 
-def run_remote() -> int:
+def run_remote(extra_flow_args: Optional[List[str]] = None) -> int:
     """Run the flow with Kubernetes enabled (non-local mode).
 
     Uses Kubernetes decorator for execution. Useful for testing
     the production execution path without deploying.
 
+    Args:
+        extra_flow_args: Additional arguments to pass to the flow (e.g., filters)
+
     Returns:
         Exit code from subprocess
     """
     print("Running flow with Kubernetes enabled...")
-    result = run_flow_subprocess([])
+    result = run_flow_subprocess(extra_flow_args or [])
     return result.returncode
 
 
@@ -354,7 +399,8 @@ def run_single_backfill(
     date: str,
     log_dir: Path,
     local_mode: bool = False,
-    tee_output: bool = False
+    tee_output: bool = False,
+    extra_flow_args: Optional[List[str]] = None,
 ) -> Tuple[str, bool, str]:
     """Run a single backfill for a specific date.
 
@@ -363,12 +409,13 @@ def run_single_backfill(
         log_dir: Directory to write log files
         local_mode: If True, run in local mode (no Kubernetes)
         tee_output: If True, stream output to terminal and log file simultaneously
+        extra_flow_args: Additional arguments to pass to the flow (e.g., filters)
 
     Returns:
         Tuple of (date, success, log_file_path)
     """
     log_file = get_log_file_path(log_dir, date)
-    extra_args = ["--forecast_start_date", date]
+    extra_args = ["--forecast_start_date", date] + (extra_flow_args or [])
 
     try:
         if tee_output:
@@ -440,6 +487,7 @@ def run_backfill(
     dry_run: bool = False,
     local_mode: bool = False,
     description: str = "",
+    extra_flow_args: Optional[List[str]] = None,
 ) -> int:
     """Run backfill for a list of dates with optional parallelism.
 
@@ -449,6 +497,7 @@ def run_backfill(
         dry_run: If True, print plan and exit without running
         local_mode: If True, run in local mode (no Kubernetes)
         description: Source description for dry-run header (e.g., "from failures.txt")
+        extra_flow_args: Additional arguments to pass to the flow (e.g., filters)
 
     Returns:
         Exit code (0 if all succeeded, 1 if any failed)
@@ -462,6 +511,8 @@ def run_backfill(
         print("=" * 60)
         if description:
             print(f"Source: {description}")
+        if extra_flow_args:
+            print(f"Extra flow args: {' '.join(extra_flow_args)}")
         print(f"Execution mode: {'local' if local_mode else 'remote'}")
         print(f"Parallel workers: {parallel}")
         print(f"Total dates to process: {total_dates}")
@@ -490,7 +541,7 @@ def run_backfill(
         with ProcessPoolExecutor(max_workers=parallel) as executor:
             # Submit all jobs
             future_to_date = {
-                executor.submit(run_single_backfill, date, log_dir, local_mode): date
+                executor.submit(run_single_backfill, date, log_dir, local_mode, False, extra_flow_args): date
                 for date in dates
             }
 
@@ -512,7 +563,10 @@ def run_backfill(
         is_single_date = len(dates) == 1
         for i, date in enumerate(dates, 1):
             print(f"[{i}/{total_dates}] Processing {date}...")
-            date_result, success, log_file = run_single_backfill(date, log_dir, local_mode, tee_output=is_single_date)
+            date_result, success, log_file = run_single_backfill(
+                date, log_dir, local_mode, tee_output=is_single_date,
+                extra_flow_args=extra_flow_args,
+            )
 
             if success:
                 succeeded.append(date_result)
@@ -574,10 +628,12 @@ Examples:
     subparsers = parser.add_subparsers(dest="mode", required=True, help="Execution mode")
 
     # Local mode
-    subparsers.add_parser("local", help="Run flow locally without Kubernetes")
+    local_parser = subparsers.add_parser("local", help="Run flow locally without Kubernetes")
+    add_filter_args(local_parser)
 
     # Remote mode
-    subparsers.add_parser("remote", help="Run flow with Kubernetes enabled")
+    remote_parser = subparsers.add_parser("remote", help="Run flow with Kubernetes enabled")
+    add_filter_args(remote_parser)
 
     # Deploy mode
     subparsers.add_parser("deploy", help="Deploy/update scheduled job")
@@ -625,14 +681,18 @@ Examples:
         action="store_true",
         help="Run in local mode without Kubernetes (default: remote)"
     )
+    add_filter_args(backfill_parser)
 
     args = parser.parse_args()
 
+    # Build filter args for modes that support them
+    extra_flow_args = build_filter_args(args) if hasattr(args, 'data_source') else []
+
     # Execute based on mode
     if args.mode == "local":
-        exit_code = run_local()
+        exit_code = run_local(extra_flow_args)
     elif args.mode == "remote":
-        exit_code = run_remote()
+        exit_code = run_remote(extra_flow_args)
     elif args.mode == "deploy":
         exit_code = run_deploy()
     elif args.mode == "backfill":
@@ -700,6 +760,7 @@ Examples:
             dry_run=args.dry_run,
             local_mode=args.local,
             description=description,
+            extra_flow_args=extra_flow_args,
         )
     else:
         print(f"Unknown mode: {args.mode}")

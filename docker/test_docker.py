@@ -9,6 +9,7 @@ sys.path.insert(0, '/src')
 # Import from mozaic_daily package
 from mozaic_daily import main
 from mozaic_daily.validation import validate_output_dataframe
+from mozaic_daily.queries import DataSource, Metric
 
 def test_docker_image():
     """Run main function and validate output."""
@@ -20,11 +21,21 @@ def test_docker_image():
         print("\n[1/3] Running main forecast function...")
         print("Note: This requires BigQuery credentials or checkpoint files")
 
-        df = main(project="moz-fx-data-bq-data-science", testing_mode='ENABLE_TESTING_MODE')
+        data_source_filter = {DataSource.GLEAN_DESKTOP}
+        metric_filter = {Metric.DAU}
+        df = main(
+            project="moz-fx-data-bq-data-science",
+            data_source_filter=data_source_filter,
+            metric_filter=metric_filter,
+        )
         print(f"✓ Forecast generated: {len(df)} rows")
 
         print("\n[2/3] Running validation...")
-        validate_output_dataframe(df, testing_mode=True)
+        validate_output_dataframe(
+            df,
+            data_source_filter=data_source_filter,
+            metric_filter=metric_filter,
+        )
         print("✓ Validation passed")
 
         print("\n[3/3] Sample output:")

@@ -62,15 +62,13 @@ The following packages are installed via the virtual environment. The exact vers
 | pyarrow | (latest) | Parquet file support (checkpointing) |
 | pytest | (latest) | Test runner |
 
-### Mozaic Package (Internal Fork)
+### Mozaic Package
 
-The Mozaic package is installed from a Mozilla-internal fork on GitHub:
+The Mozaic package is installed from the canonical Mozilla repo on GitHub:
 
 ```
-git+https://github.com/brendanwells-moz/mozaic-forecasting@getters_branch
+git+https://github.com/mozilla/mozaic-forecasting@april-metaparameter-updates
 ```
-
-This requires read access to the `brendanwells-moz` GitHub organization.
 
 ### Docker Image (Production)
 

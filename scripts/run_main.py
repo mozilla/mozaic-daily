@@ -9,11 +9,22 @@ Usage:
     # Normal mode (all platforms/metrics)
     python scripts/run_main.py
 
-    # Testing mode (desktop/DAU only)
+    # Testing mode (desktop glean/DAU only, convenience alias)
     python scripts/run_main.py --testing
 
+    # Filter to specific data source(s) (repeat flag for multiple)
+    python scripts/run_main.py --data-sources glean_mobile
+    python scripts/run_main.py --data-sources glean_desktop --data-sources legacy_desktop
+
+    # Filter to specific metric(s) (repeat flag for multiple)
+    python scripts/run_main.py --metrics DAU
+    python scripts/run_main.py --metrics DAU --metrics "New Profiles"
+
+    # Combine filters (intersection, both flags repeatable)
+    python scripts/run_main.py --data-sources glean_mobile --metrics DAU
+
     # Historical forecast
-    python scripts/run_main.py \
+    python scripts/run_main.py \\
       --forecast-start-date 2024-06-15
 
     # Write checkpoints to a specific directory
@@ -31,7 +42,10 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from mozaic_daily import main
-from mozaic_daily.config import STATIC_CONFIG
+from mozaic_daily.queries import DataSource, Metric
+
+VALID_DATA_SOURCES = [ds.value for ds in DataSource]
+VALID_METRICS = [m.value for m in Metric]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -41,7 +55,21 @@ if __name__ == '__main__':
     parser.add_argument(
         '--testing',
         action='store_true',
-        help='Run in testing mode (desktop/DAU only)'
+        help='Convenience alias: filter to glean_desktop/DAU only'
+    )
+    parser.add_argument(
+        '--data-sources',
+        action='append',
+        choices=VALID_DATA_SOURCES,
+        metavar='SOURCE',
+        help=f'Filter to specific data source(s). Valid: {", ".join(VALID_DATA_SOURCES)}'
+    )
+    parser.add_argument(
+        '--metrics',
+        action='append',
+        choices=VALID_METRICS,
+        metavar='METRIC',
+        help=f'Filter to specific metric(s). Valid: {", ".join(VALID_METRICS)}'
     )
     parser.add_argument(
         '--forecast-start-date',
@@ -61,14 +89,25 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    testing_mode = STATIC_CONFIG['testing_mode_enable_string'] if args.testing else None
+    # Validate that --testing is not combined with explicit filters
+    if args.testing and (args.data_sources or args.metrics):
+        parser.error('--testing cannot be combined with --data-sources or --metrics')
+
+    # Build filter sets
+    if args.testing:
+        data_source_filter = {DataSource.GLEAN_DESKTOP}
+        metric_filter = {Metric.DAU}
+    else:
+        data_source_filter = {DataSource(v) for v in args.data_sources} if args.data_sources else None
+        metric_filter = {Metric(v) for v in args.metrics} if args.metrics else None
 
     # Disable checkpoints if flag is set
     use_checkpoints = not args.no_checkpoints
 
     main(
         checkpoints=use_checkpoints,
-        testing_mode=testing_mode,
+        data_source_filter=data_source_filter,
+        metric_filter=metric_filter,
         forecast_start_date=args.forecast_start_date,
         output_dir=args.output_dir
     )

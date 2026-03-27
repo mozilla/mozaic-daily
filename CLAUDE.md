@@ -54,7 +54,7 @@ pip install -r docker/requirements.outerbounds.txt
 
 # The Mozaic package is installed from a specific branch
 # (already in .venv if cloned, but to reinstall):
-pip install -e 'git+https://github.com/brendanwells-moz/mozaic-forecasting#egg=mozaic'
+pip install -e 'git+https://github.com/mozilla/mozaic-forecasting@april-metaparameter-updates#egg=mozaic'
 
 # Deactivate when done
 deactivate
@@ -112,6 +112,15 @@ source .venv/bin/activate
 
 # Run the main forecasting pipeline locally with checkpoints
 python scripts/run_main.py
+
+# Testing mode (desktop glean/DAU only, quick iteration)
+python scripts/run_main.py --testing
+
+# Filter to specific data sources and/or metrics
+python scripts/run_main.py --data-sources glean_mobile
+python scripts/run_main.py --data-sources glean_desktop --data-sources legacy_desktop
+python scripts/run_main.py --metrics DAU
+python scripts/run_main.py --data-sources glean_mobile --metrics DAU
 
 # Write checkpoint files to a specific directory (avoids conflicts between parallel runs)
 python scripts/run_main.py --output-dir /tmp/my-run
@@ -216,6 +225,15 @@ python scripts/run_flow.py backfill --dates-file failures.txt --dry-run
 
 # Backfill from file with parallel workers
 python scripts/run_flow.py backfill --dates-file failures.txt --parallel 4
+
+# Backfill filtered to a single data source and metric (validation is skipped)
+python scripts/run_flow.py backfill 2024-06-15 --data-source legacy_desktop --metric DAU
+
+# Remote run with filter
+python scripts/run_flow.py remote --data-source glean_mobile --metric DAU
+
+# Multiple filters (repeatable flags, same as run_main.py)
+python scripts/run_flow.py backfill 2024-06-15 --data-source glean_desktop --data-source legacy_desktop
 ```
 
 #### Backfill Configuration
@@ -229,6 +247,8 @@ The backfill mode supports several advanced features for large-scale historical 
 - `--dry-run` — Print execution plan (dates, weekdays, mode) without running backfill. Works with both date-range and `--dates-file` modes
 - `--resume` — Skip dates from previous runs based on state file. Only for date-range mode
 - `--local` — Run in local mode without Kubernetes (default: remote with Kubernetes)
+- `--data-source SOURCE` — Filter to specific data source(s). Can be specified multiple times. Valid: glean_desktop, legacy_desktop, glean_mobile. Also available on `local` and `remote` modes. Validation is skipped for filtered runs
+- `--metric METRIC` — Filter to specific metric(s). Can be specified multiple times. Valid: DAU, New Profiles, Existing Engagement DAU, Existing Engagement MAU. Also available on `local` and `remote` modes. Validation is skipped for filtered runs
 
 **State Files:**
 Backfill runs create state files in `logs/backfill_state_{start}_{end}[_{weekday}].json` that track:
@@ -267,7 +287,7 @@ The state file path is deterministic based on start date, end date, and weekdays
 
 1. **Data Collection** (`mozaic_daily.data:get_aggregate_data`)
    - Queries BigQuery for Desktop and Mobile metrics: DAU, New Profiles, Existing Engagement DAU/MAU
-   - Desktop segmentation: country, Windows version (win10/win11/winX)
+   - Desktop segmentation: country, Windows version (modern_windows/winX)
    - Mobile segmentation: country, app (fenix_android, firefox_ios, focus_android, focus_ios)
    - Supports checkpointing to parquet files for faster iteration
 
@@ -332,7 +352,7 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 ## Important Notes
 
 ### Mozaic Package
-- Installed from a fork: `github.com/brendanwells-moz/mozaic-forecasting`
+- Installed from the canonical repo: `github.com/mozilla/mozaic-forecasting`
 - Git commit hash is captured during Docker build and stored in `/mozaic_commit.txt`
 - Hash is retrieved via `get_git_commit_hash()` and added to forecast output as `mozaic_hash` column
 
@@ -357,7 +377,7 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 
 ### Validation Requirements
 - All string columns have strict format requirements (ISO timestamps, SHA1 hashes, JSON segments)
-- Segment JSON must contain an `"os"` key with values from: win10, win11, winX, other, ALL, or null
+- Segment JSON must contain an `"os"` key with values from: modern_windows, winX, other, ALL, or null
 - Training data must span from metric-specific start dates through `training_end_date`
 - Forecast data must span from `forecast_start_date` through `forecast_end_date`
 - No duplicate rows allowed (on non-metric columns)

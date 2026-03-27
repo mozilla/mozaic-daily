@@ -25,7 +25,7 @@ def generate_desktop_raw_data(
     Schema inferred from QuerySpec.build_query() for Desktop in queries.py:
     - x: date column
     - country: string (country code or 'ROW')
-    - win10, win11, winX: boolean flags
+    - modern_windows, winX: boolean flags
     - y: integer metric value
 
     🔒 SECURITY: Uses FAKE data only - no real telemetry.
@@ -37,28 +37,25 @@ def generate_desktop_raw_data(
     data = []
 
     # Hardcoded metric values for deterministic tests
-    # Pattern: win10=1000, win11=1050, winX=950
+    # Pattern: modern_windows=1000, winX=950
     metric_values = {
-        'win10': 1000,
-        'win11': 1050,
+        'modern_windows': 1000,
         'winX': 950,
     }
 
     for i, date in enumerate(dates):
         for country in countries:
             # Create rows for each Windows version
-            for win10, win11, winX, os_type in [
-                (True, False, False, 'win10'),   # Windows 10
-                (False, True, False, 'win11'),   # Windows 11
-                (False, False, True, 'winX'),    # Other Windows
+            for modern_windows, winX, os_type in [
+                (True, False, 'modern_windows'),   # Windows 10/11
+                (False, True, 'winX'),              # Other Windows
             ]:
                 # Add small daily variation: base_value + day_index
                 value = metric_values[os_type] + i
                 data.append({
                     'x': date,
                     'country': country,
-                    'win10': win10,
-                    'win11': win11,
+                    'modern_windows': modern_windows,
                     'winX': winX,
                     'y': value
                 })
@@ -141,7 +138,7 @@ def generate_forecast_data(
     if countries is None:
         countries = ['US', 'DE']
     if populations is None:
-        populations = ['win10', 'win11']
+        populations = ['modern_windows']
 
     dates = pd.date_range(start_date, periods=num_days, freq='D')
     data = []
@@ -260,7 +257,7 @@ def sample_forecast_dataframes():
             start_date='2024-02-01',
             num_days=30,
             countries=['US', 'DE', 'None'],
-            populations=['win10', 'win11', 'None']
+            populations=['modern_windows', 'None']
         )
 
     return result

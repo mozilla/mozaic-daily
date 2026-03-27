@@ -13,7 +13,8 @@ Functions:
 - get_mobile_forecast_dfs(): Mobile-specific wrapper
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List, Type
+import holidays
 import pandas as pd
 import warnings
 from collections import defaultdict
@@ -56,6 +57,7 @@ def get_forecast_dfs(
     forecast_start_date: str,
     forecast_end_date: str,
     quantile: float = None,
+    additional_holidays: List[Type[holidays.HolidayBase]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """Generate forecasts using Mozaic.
 
@@ -65,6 +67,8 @@ def get_forecast_dfs(
         forecast_start_date: Start date for forecast period
         forecast_end_date: End date for forecast period
         quantile: Quantile for point forecast (default: 0.5 from FORECAST_CONFIG)
+        additional_holidays: Custom holiday calendars passed to populate_tiles
+            (default: empty list)
 
     Returns:
         Dict of metric -> DataFrame with forecast results
@@ -79,6 +83,8 @@ def get_forecast_dfs(
 
     if quantile is None:
         quantile = FORECAST_CONFIG['quantile']
+    if additional_holidays is None:
+        additional_holidays = []
 
     # Check data health before forecasting
     _check_data_health(datasets)
@@ -99,6 +105,7 @@ def get_forecast_dfs(
                 forecast_model,
                 forecast_start_date,
                 forecast_end_date,
+                additional_holidays=additional_holidays,
             )
         except Exception as e:
             print(f'\nERROR: Mozaic populate_tiles failed')
@@ -148,6 +155,7 @@ def get_desktop_forecast_dfs(
     forecast_start_date: str,
     forecast_end_date: str,
     quantile: float = None,
+    additional_holidays: List[Type[holidays.HolidayBase]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """Generate Desktop forecasts using Mozaic.
 
@@ -156,6 +164,7 @@ def get_desktop_forecast_dfs(
         forecast_start_date: Start date for forecast period
         forecast_end_date: End date for forecast period
         quantile: Quantile for point forecast (default: 0.5)
+        additional_holidays: Custom holiday calendars passed to populate_tiles
 
     Returns:
         Dict of metric -> DataFrame with forecast results
@@ -166,6 +175,7 @@ def get_desktop_forecast_dfs(
         forecast_start_date,
         forecast_end_date,
         quantile=quantile,
+        additional_holidays=additional_holidays,
     )
 
 
@@ -174,6 +184,7 @@ def get_mobile_forecast_dfs(
     forecast_start_date: str,
     forecast_end_date: str,
     quantile: float = None,
+    additional_holidays: List[Type[holidays.HolidayBase]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """Generate Mobile forecasts using Mozaic.
 
@@ -182,6 +193,7 @@ def get_mobile_forecast_dfs(
         forecast_start_date: Start date for forecast period
         forecast_end_date: End date for forecast period
         quantile: Quantile for point forecast (default: 0.5)
+        additional_holidays: Custom holiday calendars passed to populate_tiles
 
     Returns:
         Dict of metric -> DataFrame with forecast results
@@ -192,4 +204,5 @@ def get_mobile_forecast_dfs(
         forecast_start_date,
         forecast_end_date,
         quantile=quantile,
+        additional_holidays=additional_holidays,
     )

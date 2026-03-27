@@ -20,7 +20,7 @@ import pandas as pd
 import json
 from datetime import datetime
 from functools import reduce
-from typing import Dict, Optional
+from typing import Dict, Optional, Set
 import re
 
 from google.cloud import bigquery
@@ -28,7 +28,10 @@ from google.cloud import bigquery
 from .config import (
     get_runtime_config, STATIC_CONFIG, get_prediction_date_index
 )
-from .queries import get_date_keys, get_training_date_index, DataSource
+from .queries import (
+    QUERY_SPECS, get_date_keys, get_training_date_index,
+    DataSource, Metric, Platform,
+)
 
 # Allowed value constants
 
@@ -44,7 +47,7 @@ DATA_SOURCES = set([
 ])
 
 OS_VALUES = set([
-    'win10', 'win11', 'winX', 'other', 'ALL', None
+    'modern_windows', 'winX', 'other', 'ALL', None
 ])
 
 SHA1_RE = re.compile(r"^[0-9a-fA-F]{40}$")
@@ -370,28 +373,86 @@ def _validate_duplicate_rows(df: pd.DataFrame) -> None:
             """
         )
 
+# Expectation derivation
+
+# Maps from DataSource to the set of app_names that source produces
+_APP_NAMES_BY_DATA_SOURCE = {
+    DataSource.GLEAN_DESKTOP: {'desktop'},
+    DataSource.LEGACY_DESKTOP: {'desktop'},
+    DataSource.GLEAN_MOBILE: {
+        'firefox_ios', 'focus_ios', 'fenix_android', 'focus_android', 'ALL MOBILE',
+    },
+}
+
+# Maps from Platform to the set of OS segment values
+_OS_VALUES_BY_PLATFORM = {
+    Platform.DESKTOP: {'modern_windows', 'winX', 'other', 'ALL'},
+    Platform.MOBILE: {None},
+}
+
+
+def _derive_expectations(
+    data_source_filter: Optional[Set[DataSource]],
+    metric_filter: Optional[Set[Metric]],
+):
+    """Derive expected app_names, data_sources, date_keys, and os_values from filters.
+
+    When a filter is None, all values for that dimension are included.
+    """
+    # Determine which specs match the filters
+    matching_specs = []
+    for spec in QUERY_SPECS.values():
+        if data_source_filter is not None and spec.data_source not in data_source_filter:
+            continue
+        if metric_filter is not None and spec.metric not in metric_filter:
+            continue
+        matching_specs.append(spec)
+
+    # Derive expected values from matching specs
+    matched_data_sources = {spec.data_source for spec in matching_specs}
+    matched_platforms = {spec.data_source.platform for spec in matching_specs}
+
+    expected_data_sources = {ds.value for ds in matched_data_sources}
+    expected_date_keys = list({
+        (spec.platform.value, spec.metric.value, spec.telemetry_source.value)
+        for spec in matching_specs
+    })
+
+    expected_app_names = set()
+    for ds in matched_data_sources:
+        expected_app_names |= _APP_NAMES_BY_DATA_SOURCE[ds]
+
+    expected_os_values = set()
+    for platform in matched_platforms:
+        expected_os_values |= _OS_VALUES_BY_PLATFORM[platform]
+
+    return expected_app_names, expected_data_sources, expected_date_keys, expected_os_values
+
+
 # Validation entrypoint
 def validate_output_dataframe(
     df: pd.DataFrame,
-    testing_mode: bool = False,
+    data_source_filter: Optional[Set[DataSource]] = None,
+    metric_filter: Optional[Set[Metric]] = None,
     forecast_start_date: Optional[str] = None,
 ):
     constants = get_runtime_config(forecast_start_date_override=forecast_start_date)
 
-    # Define expectations based on mode
-    if testing_mode:
-        expected_app_names = {'desktop'}
-        expected_data_sources = {'glean_desktop'}  # Testing mode uses only Desktop Glean
-        expected_date_keys = [("desktop", "DAU", "glean")]  # Only desktop/DAU/glean combo
-        expected_os_values = {'win10', 'win11', 'winX', 'other', 'ALL'}  # Desktop OS only
+    is_filtered = data_source_filter is not None or metric_filter is not None
+
+    if is_filtered:
+        (expected_app_names, expected_data_sources,
+         expected_date_keys, expected_os_values) = _derive_expectations(
+            data_source_filter, metric_filter
+        )
     else:
         expected_app_names = APP_NAMES
-        expected_data_sources = DATA_SOURCES  # All data sources (Glean_Desktop, Legacy_Desktop, Glean_Mobile)
-        expected_date_keys = get_date_keys()  # All (platform, metric, source) 3-tuples
-        expected_os_values = OS_VALUES  # All OS values including None for mobile
+        expected_data_sources = DATA_SOURCES
+        expected_date_keys = get_date_keys()
+        expected_os_values = OS_VALUES
 
-    # Skip BigQuery schema validation in testing mode (won't be uploaded)
-    if not testing_mode:
+    # Skip BigQuery schema validation in filtered mode (won't be uploaded)
+    if not is_filtered:
         bq_fields = _get_bigquery_fields(STATIC_CONFIG['default_project'], STATIC_CONFIG['default_table'])
         _check_column_presence(df, bq_fields)
         _check_column_type(df, bq_fields)
@@ -400,7 +461,7 @@ def validate_output_dataframe(
     _check_row_counts(
         df, expected_app_names, expected_data_sources,
         expected_date_keys, expected_os_values, constants,
-        skip_country_check=testing_mode
+        skip_country_check=is_filtered
     )
     _validate_null_values(df, expected_date_keys, constants['training_end_date'])
     _validate_duplicate_rows(df)

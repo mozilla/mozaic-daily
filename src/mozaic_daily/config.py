@@ -12,7 +12,7 @@ This module defines:
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Set
 import subprocess
 import re
 from pathlib import Path
@@ -25,9 +25,30 @@ STATIC_CONFIG = {
     'default_table': 'moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2',
     'forecast_checkpoint_filename_template': 'mozaic_daily_forecast.{date}.parquet',
     'raw_checkpoint_filename_template': 'mozaic_parts.raw.{source}.{platform}.{metric}.parquet',
-    'testing_mode_enable_string': 'ENABLE_TESTING_MODE',
-    'testing_mode_checkpoint_filename': 'mozaic_parts.forecast.TESTING.parquet',
+    'forecast_checkpoint_filename_filtered_template': 'mozaic_daily_forecast.{date}.{filter_code}.parquet',
 }
+
+def build_filter_code(
+    data_source_filter: Optional[Set] = None,
+    metric_filter: Optional[Set] = None,
+) -> str:
+    """Build a short code string from active filters for use in checkpoint filenames.
+
+    Joins data source codes with '+', metric codes with '+', and separates the
+    two categories with '-'. Omits a category if not filtered.
+
+    Examples:
+        build_filter_code({DataSource.LEGACY_DESKTOP}, {Metric.DAU}) -> "ld-D"
+        build_filter_code({DataSource.GLEAN_DESKTOP, DataSource.GLEAN_MOBILE}, None) -> "gd+gm"
+        build_filter_code(None, {Metric.DAU, Metric.NEW_PROFILES}) -> "D+NP"
+    """
+    parts = []
+    if data_source_filter:
+        parts.append("+".join(sorted(ds.short_code for ds in data_source_filter)))
+    if metric_filter:
+        parts.append("+".join(sorted(m.short_code for m in metric_filter)))
+    return "-".join(parts)
+
 
 # Forecast configuration
 FORECAST_CONFIG = {
@@ -75,11 +96,11 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
     top_DAU_markets = set(
         ["US", "BR", "CA", "MX", "AR", "IN", "ID", "JP", "IR", "CN", "DE", "FR", "PL", "RU", "IT"]
     )
-    top_google_markets = set(
-        ["US", "DE", "FR", "GB", "PL", "CA", "CH", "IT", "AU", "NL", "ES", "JP", "AT"]
-    )
-    nonmonetized_google = set(["RU", "UA", "TR", "BY", "KZ", "CN"])
-    config['countries'] = top_DAU_markets | top_google_markets | nonmonetized_google
+    # top_google_markets = set(
+    #     ["US", "DE", "FR", "GB", "PL", "CA", "CH", "IT", "AU", "NL", "ES", "JP", "AT"]
+    # )
+    # nonmonetized_google = set(["RU", "UA", "TR", "BY", "KZ", "CN"])
+    config['countries'] = top_DAU_markets
     config['country_string'] = ", ".join(f"'{i}'" for i in sorted(config['countries']))
     config['validation_countries'] = config['countries'] | set(['ALL', 'ROW'])
 

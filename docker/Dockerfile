@@ -17,7 +17,7 @@ RUN python -m pip wheel --no-cache-dir --wheel-dir /wheel \
       --no-binary prophet prophet
 
 RUN git clone https://github.com/mozilla/mozaic-forecasting /src && \
-    cd /src && git checkout ca1d5e7daa30c01cde189302f352eef1c265658a && \
+    cd /src && git checkout 4c3eff55290881923d9ce1b2da20c275c1b70472 && \
     git rev-parse HEAD > /wheel/mozaic_commit.txt && \
     pip wheel --no-deps /src --wheel-dir /wheel
 

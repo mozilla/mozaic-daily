@@ -250,13 +250,13 @@ class TestResume:
         }
         run_flow.save_backfill_state(state_file, state)
 
-        # Run backfill with resume
+        # Run backfill with resume — pass pre-filtered date list
+        # (resume filtering is done in main() before calling run_backfill)
+        dates = ["2024-06-03"]  # Only the date not in completed_dates
         with patch("run_flow.Path", return_value=tmp_path):
             exit_code = run_flow.run_backfill(
-                "2024-06-01",
-                "2024-06-03",
+                dates,
                 parallel=1,
-                resume=True,
                 local_mode=True,
             )
 
@@ -269,13 +269,11 @@ class TestResume:
         """Test that resume with no prior state runs all dates."""
         mock_backfill.return_value = ("2024-06-01", True, "log.txt")
 
-        # Run backfill with resume but no existing state
+        # Run backfill with no prior state — all dates passed through
         with patch("run_flow.Path", return_value=tmp_path):
             exit_code = run_flow.run_backfill(
-                "2024-06-01",
-                "2024-06-01",
+                ["2024-06-01"],
                 parallel=1,
-                resume=True,
                 local_mode=True,
             )
 
@@ -288,9 +286,9 @@ class TestDryRun:
 
     def test_dry_run_prints_without_running(self, capsys):
         """Test that dry run prints dates without running backfill."""
+        dates = ["2024-06-01", "2024-06-02", "2024-06-03"]
         exit_code = run_flow.run_backfill(
-            "2024-06-01",
-            "2024-06-03",
+            dates,
             parallel=1,
             dry_run=True,
             local_mode=False,
@@ -306,11 +304,14 @@ class TestDryRun:
 
     def test_dry_run_respects_weekday_filter(self, capsys):
         """Test that dry run respects weekday filtering."""
+        # Pre-filter to only Monday (weekday filtering is done in main() before run_backfill)
+        dates = run_flow.filter_dates_by_weekday(
+            run_flow.generate_date_range("2025-07-01", "2025-07-07"),
+            ["monday"],
+        )
         exit_code = run_flow.run_backfill(
-            "2025-07-01",
-            "2025-07-07",
+            dates,
             parallel=1,
-            weekdays=["monday"],
             dry_run=True,
             local_mode=False,
         )
