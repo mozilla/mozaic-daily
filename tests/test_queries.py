@@ -675,3 +675,20 @@ def test_build_filter_code_all_sources_all_metrics():
     result = build_filter_code(all_sources, all_metrics)
     # Sources sorted: gd, gm, ld; Metrics sorted: D, EED, EEM, NP
     assert result == "gd+gm+ld-D+EED+EEM+NP"
+
+
+# =============================================================================
+# IRAN EXCLUSION TESTS
+# =============================================================================
+
+def test_build_query_excludes_iran():
+    """All generated queries must contain country != 'IR' to prevent Iran data
+    from entering the ROW bucket via the IF(country IN (...)) SQL logic."""
+    from mozaic_daily.config import get_runtime_config
+    config = get_runtime_config()
+    for spec in QUERY_SPECS.values():
+        sql = spec.build_query(config['country_string'])
+        assert "country != 'IR'" in sql, (
+            f"Query for {spec.data_source.display_name} {spec.metric.value} "
+            f"missing Iran exclusion clause"
+        )

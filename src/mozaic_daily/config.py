@@ -93,8 +93,10 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
     config['training_end_date'] = (forecast_start_dt - timedelta(days=1)).strftime("%Y-%m-%d")
 
     # Markets
+    # IR (Iran) excluded due to internet shutdown since ~2026-02-28.
+    # Without telemetry, Iran data is missing/zero and corrupts world forecast.
     top_DAU_markets = set(
-        ["US", "BR", "CA", "MX", "AR", "IN", "ID", "JP", "IR", "CN", "DE", "FR", "PL", "RU", "IT"]
+        ["US", "BR", "CA", "MX", "AR", "IN", "ID", "JP", "CN", "DE", "FR", "PL", "RU", "IT"]
     )
     # top_google_markets = set(
     #     ["US", "DE", "FR", "GB", "PL", "CA", "CH", "IT", "AU", "NL", "ES", "JP", "AT"]

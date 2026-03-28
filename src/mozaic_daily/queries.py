@@ -216,7 +216,7 @@ class QuerySpec:
         Returns:
             Complete SQL query string ready for BigQuery execution
         """
-        where_clause = f'{self.where_clause} AND {self.date_constraints.to_sql_clause()}'
+        where_clause = f"{self.where_clause} AND {self.date_constraints.to_sql_clause()} AND country != 'IR'"
 
         if self.platform == Platform.DESKTOP:
             segment_columns = _build_desktop_segment_columns(self.segment_column)

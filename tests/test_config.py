@@ -70,3 +70,10 @@ def test_runtime_config_override_preserves_countries():
     # Countries should be identical
     assert config_default['countries'] == config_override['countries']
     assert config_default['country_string'] == config_override['country_string']
+
+
+def test_iran_not_in_countries():
+    """Verify IR is excluded from country configuration due to internet shutdown."""
+    config = get_runtime_config()
+    assert 'IR' not in config['countries'], "IR should be excluded from top_DAU_markets"
+    assert "'IR'" not in config['country_string'], "IR should not appear in country_string"

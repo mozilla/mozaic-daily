@@ -349,6 +349,14 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 - Tracks Mozaic version via `/mozaic_commit.txt` file in container
 - Uses `@card` decorators for Metaflow UI visualization
 
+## Iran Internet Shutdown Workaround
+
+Iran's internet has been shut down since approximately 2026-02-28. Since Iran (IR) is one of the top DAU markets, its missing/zero telemetry corrupts the world-level forecast.
+
+### This Branch: `world-without-iran`
+- IR removed from `top_DAU_markets` in `config.py`
+- `AND country != 'IR'` added to `build_query()` in `queries.py` to prevent Iran from folding into the ROW bucket
+
 ## Important Notes
 
 ### Mozaic Package
