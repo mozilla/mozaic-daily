@@ -349,6 +349,25 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 - Tracks Mozaic version via `/mozaic_commit.txt` file in container
 - Uses `@card` decorators for Metaflow UI visualization
 
+## Iran Internet Shutdown Workaround
+
+Iran's internet has been shut down since approximately 2026-02-28. Since Iran (IR) is one of the top 15 DAU markets, its missing/zero telemetry corrupts the world-level forecast. Three branches implement alternative forecasts:
+
+### Branch: `iran-synthetic-generation`
+- `scripts/generate_iran_synthetic.py` generates a complete Iran-only forecast and saves it as `data/iran_synthetic/iran_synthetic.parquet`
+- `src/mozaic_daily/iran_utils.py` provides `population_to_segment_bools()` for reverse-mapping mozaic population strings to boolean segment columns
+- The synthetic data includes holiday effects so downstream detrending works correctly
+- Run: `python scripts/generate_iran_synthetic.py [--project PROJECT]`
+
+### Branch: `world-with-fake-iran`
+- Splices synthetic Iran data (from the parquet above) into real training datasets
+- `splice_iran_synthetic_data()` in `data.py` replaces real Iran data from 2026-02-27 onward with synthetic values
+- Requires `data/iran_synthetic/iran_synthetic.parquet` to exist (run the generation script first)
+
+### Branch: `world-without-iran`
+- Removes Iran entirely from all data and aggregation
+- IR removed from `top_DAU_markets` in `config.py` and excluded via `AND country != 'IR'` in `build_query()`
+
 ## Important Notes
 
 ### Mozaic Package
