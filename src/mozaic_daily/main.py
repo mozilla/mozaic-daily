@@ -19,7 +19,10 @@ from typing import Optional, Set
 import pandas as pd
 import os
 from .config import get_runtime_config, STATIC_CONFIG, build_filter_code
-from .data import get_queries, get_aggregate_data, check_training_data_availability
+from .data import (
+    get_queries, get_aggregate_data, check_training_data_availability,
+    splice_iran_synthetic_data, IRAN_SHUTDOWN_DATE, SYNTHETIC_PARQUET_PATH,
+)
 from .forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs
 from .tables import (
     combine_tables, update_desktop_format, update_mobile_format,
@@ -255,6 +258,15 @@ def main(
         project,
         checkpoints=checkpoints,
         output_dir=resolved_output_dir
+    )
+
+    # Splice synthetic Iran data into real datasets to replace
+    # missing/zero telemetry from Iran internet shutdown (~2026-02-28)
+    datasets = splice_iran_synthetic_data(
+        datasets,
+        synthetic_parquet_path=SYNTHETIC_PARQUET_PATH,
+        shutdown_date=IRAN_SHUTDOWN_DATE,
+        training_end_date=config['training_end_date'],
     )
 
     # Load checkpoint OR generate forecasts
