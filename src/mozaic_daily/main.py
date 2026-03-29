@@ -266,7 +266,6 @@ def main(
         datasets,
         synthetic_parquet_path=SYNTHETIC_PARQUET_PATH,
         shutdown_date=IRAN_SHUTDOWN_DATE,
-        training_end_date=config['training_end_date'],
     )
 
     # Load checkpoint OR generate forecasts
