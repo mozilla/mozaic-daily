@@ -13,6 +13,7 @@ Functions:
 - get_mobile_forecast_dfs(): Mobile-specific wrapper
 """
 
+from dataclasses import dataclass
 from typing import Dict, Any, List, Type
 import holidays
 import pandas as pd
@@ -21,6 +22,13 @@ from collections import defaultdict
 import mozaic
 from mozaic.models import desktop_forecast_model, mobile_forecast_model
 from mozaic import Mozaic
+
+
+@dataclass
+class ForecastResult:
+    """Holds the outputs of a Mozaic forecast run."""
+    dfs: Dict[str, pd.DataFrame]
+    mozaics: Dict[str, Mozaic]
 
 
 # Do the forecasting
@@ -58,7 +66,7 @@ def get_forecast_dfs(
     forecast_end_date: str,
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
-) -> Dict[str, pd.DataFrame]:
+) -> ForecastResult:
     """Generate forecasts using Mozaic.
 
     Args:
@@ -71,12 +79,12 @@ def get_forecast_dfs(
             (default: empty list)
 
     Returns:
-        Dict of metric -> DataFrame with forecast results
+        ForecastResult with dfs (metric -> DataFrame) and mozaics (metric -> Mozaic)
 
     Example - Iterating over quantiles:
         # Compare forecasts at different quantiles
         for q in [0.25, 0.5, 0.75]:
-            dfs = get_desktop_forecast_dfs(datasets, start, end, quantile=q)
+            result = get_desktop_forecast_dfs(datasets, start, end, quantile=q)
             # Analyze sensitivity to quantile choice
     """
     from .config import FORECAST_CONFIG
@@ -147,7 +155,7 @@ def get_forecast_dfs(
         print(f'  [{i}/{len(mozaics)}] {metric}')
         dfs[metric] = moz.to_granular_forecast_df(quantile=quantile)
 
-    return dfs
+    return ForecastResult(dfs=dfs, mozaics=mozaics)
 
 
 def get_desktop_forecast_dfs(
@@ -156,7 +164,7 @@ def get_desktop_forecast_dfs(
     forecast_end_date: str,
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
-) -> Dict[str, pd.DataFrame]:
+) -> ForecastResult:
     """Generate Desktop forecasts using Mozaic.
 
     Args:
@@ -167,7 +175,7 @@ def get_desktop_forecast_dfs(
         additional_holidays: Custom holiday calendars passed to populate_tiles
 
     Returns:
-        Dict of metric -> DataFrame with forecast results
+        ForecastResult with dfs and mozaics
     """
     return get_forecast_dfs(
         metric_data,
@@ -185,7 +193,7 @@ def get_mobile_forecast_dfs(
     forecast_end_date: str,
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
-) -> Dict[str, pd.DataFrame]:
+) -> ForecastResult:
     """Generate Mobile forecasts using Mozaic.
 
     Args:
@@ -196,7 +204,7 @@ def get_mobile_forecast_dfs(
         additional_holidays: Custom holiday calendars passed to populate_tiles
 
     Returns:
-        Dict of metric -> DataFrame with forecast results
+        ForecastResult with dfs and mozaics
     """
     return get_forecast_dfs(
         metric_data,
