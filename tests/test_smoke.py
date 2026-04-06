@@ -37,6 +37,19 @@ def _patch_availability_check(mocker):
     )
 
 
+def _patch_save_mozaic_objects(mocker):
+    """Patch save_mozaic_objects in the main module.
+
+    Smoke tests use MagicMock Mozaic objects which are not picklable.
+    This suppresses the save so tests can exercise the pipeline without
+    needing real Mozaic instances on disk.
+    """
+    return mocker.patch.object(
+        sys.modules['mozaic_daily.main'],
+        'save_mozaic_objects'
+    )
+
+
 # Mark all tests in this file as smoke tests
 pytestmark = pytest.mark.smoke
 
@@ -101,6 +114,7 @@ def test_pipeline_completes_without_crashing(sample_checkpoint_files, mocker):
         }
         mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
         _patch_availability_check(mocker)
+        _patch_save_mozaic_objects(mocker)
 
         # Run pipeline - should complete without exceptions
         df = main(project='test-project', checkpoints=True)
@@ -163,6 +177,7 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
         }
         mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
         _patch_availability_check(mocker)
+        _patch_save_mozaic_objects(mocker)
 
         # Run pipeline
         df = main(project='test-project', checkpoints=True)
@@ -234,6 +249,7 @@ def test_checkpoint_system_works(tmp_path, mocker):
             sys.modules['mozaic_daily.main'], 'get_runtime_config', return_value=mock_runtime_config
         )
         _patch_availability_check(mocker)
+        _patch_save_mozaic_objects(mocker)
 
         # First run: create checkpoints
         df1 = main(project='test-project', checkpoints=True)
@@ -307,6 +323,7 @@ def test_desktop_and_mobile_processed_separately(sample_checkpoint_files, mocker
         }
         mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
         _patch_availability_check(mocker)
+        _patch_save_mozaic_objects(mocker)
 
         # Run pipeline
         df = main(project='test-project', checkpoints=True)

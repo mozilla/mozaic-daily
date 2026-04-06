@@ -18,6 +18,7 @@ Usage:
 from typing import Optional, Set
 import pandas as pd
 import os
+from joblib.externals import cloudpickle
 from .config import get_runtime_config, STATIC_CONFIG, build_filter_code
 from .data import get_queries, get_aggregate_data, check_training_data_availability
 from .forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs
@@ -75,6 +76,23 @@ def get_forecast_function(platform: Platform):
     return get_mobile_forecast_dfs
 
 
+def get_mozaic_objects_filename(
+    forecast_start_date: str,
+    data_source: DataSource,
+    output_dir: str = ".",
+) -> str:
+    """Return the path for saving mozaic objects for a given data source run."""
+    filename = f'mozaic_objects.{data_source.value}.{forecast_start_date}.pkl'
+    return os.path.join(output_dir, filename)
+
+
+def save_mozaic_objects(mozaics: dict, filename: str) -> None:
+    """Pickle the mozaics dict (metric -> Mozaic) to disk."""
+    with open(filename, 'wb') as f:
+        cloudpickle.dump(mozaics, f)
+    print(f'Saved mozaic objects to {filename}')
+
+
 def get_checkpoint_filename(
     forecast_start_date: str,
     output_dir: str = ".",
@@ -120,7 +138,7 @@ def process_data_source(
         forecast_end: End date for forecast period
 
     Returns:
-        DataFrame with forecasts for this data source, properly formatted
+        Tuple of (DataFrame with forecasts, dict of metric -> fitted Mozaic objects)
     """
     # Get platform-specific data and functions
     platform = data_source.platform
@@ -130,23 +148,25 @@ def process_data_source(
     # Generate forecasts
     forecast_func = get_forecast_function(platform)
     additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
-    forecast_dfs = forecast_func(
+    forecast_result = forecast_func(
         source_data, forecast_start, forecast_end,
         additional_holidays=additional_holidays,
     )
 
     # Combine and format
-    df_combined = combine_tables(forecast_dfs)
+    df_combined = combine_tables(forecast_result.dfs)
     format_func = get_format_function(platform)
     format_func(df_combined, data_source=data_source.value)
 
-    return df_combined
+    return df_combined, forecast_result.mozaics
 
 
 def generate_forecasts(
     datasets: dict,
     runtime_config: dict,
     data_source_filter: Optional[Set[DataSource]] = None,
+    checkpoints: bool = False,
+    output_dir: str = ".",
 ) -> pd.DataFrame:
     """Generate forecasts for all data sources and combine them.
 
@@ -154,6 +174,8 @@ def generate_forecasts(
         datasets: Nested dict of data by platform/source/metric
         runtime_config: Runtime configuration with dates
         data_source_filter: If set, only process these data sources
+        checkpoints: If True, save fitted Mozaic objects to disk alongside other checkpoints
+        output_dir: Directory for checkpoint files
 
     Returns:
         Combined DataFrame with all forecasts
@@ -169,13 +191,19 @@ def generate_forecasts(
     for source_num, data_source in enumerate(sources_to_process, start=1):
         print(f'\n[{source_num}/{total_sources}] Forecasting {data_source.display_name}')
 
-        df = process_data_source(
+        df, mozaics = process_data_source(
             data_source,
             datasets,
             runtime_config['forecast_start_date'],
             runtime_config['forecast_end_date']
         )
         all_dfs.append(df)
+
+        if checkpoints:
+            mozaic_filename = get_mozaic_objects_filename(
+                runtime_config['forecast_start_date'], data_source, output_dir
+            )
+            save_mozaic_objects(mozaics, mozaic_filename)
 
     print('\n\nDone with forecasts')
 
@@ -263,7 +291,12 @@ def main(
         df = load_checkpoint_if_exists(checkpoint_filename)
 
     if df is None:
-        df = generate_forecasts(datasets, config, data_source_filter=data_source_filter)
+        df = generate_forecasts(
+            datasets, config,
+            data_source_filter=data_source_filter,
+            checkpoints=checkpoints,
+            output_dir=resolved_output_dir,
+        )
         if checkpoints:
             save_checkpoint(df, checkpoint_filename)
 
