@@ -18,7 +18,7 @@ from enum import Enum
 
 import holidays
 import pandas as pd
-from mozaic.holiday_smart import DesktopBugs
+from mozaic.holiday_smart import DesktopBugs, MobileEvents
 
 
 # =============================================================================
@@ -469,6 +469,7 @@ QUERY_SPECS: Dict[QueryKey, QuerySpec] = {
 # every metric in that source's forecast run.
 ADDITIONAL_HOLIDAYS: Dict[DataSource, List[Type[holidays.HolidayBase]]] = {
     DataSource.LEGACY_DESKTOP: [DesktopBugs],
+    DataSource.GLEAN_MOBILE: [MobileEvents],
 }
 
 
