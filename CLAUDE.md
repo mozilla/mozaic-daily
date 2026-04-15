@@ -98,6 +98,8 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `run_validation.py` - Validate the checkpoint forecast file
 - `check_logs.py` - Check backfill log files for successes, failures, and ambiguous results
 - `test_local_docker.sh` - Test Docker image builds locally
+- `generate_iran_synthetic.py` - Generate ALL-level synthetic Iran data (historical + forecast) from BigQuery
+- `add_iran_to_forecast.py` - Add synthetic Iran DAU values to a no-Iran forecast output via summation
 
 The `docker/` directory contains Docker management scripts:
 - `build_and_push.sh` - Build and push Docker images for local (arm64) or remote (amd64)
@@ -121,6 +123,9 @@ python scripts/run_main.py --data-sources glean_mobile
 python scripts/run_main.py --data-sources glean_desktop --data-sources legacy_desktop
 python scripts/run_main.py --metrics DAU
 python scripts/run_main.py --data-sources glean_mobile --metrics DAU
+
+# Clean run: ignore existing checkpoints, re-query and re-forecast (still saves new checkpoints)
+python scripts/run_main.py --clean
 
 # Write checkpoint files to a specific directory (avoids conflicts between parallel runs)
 python scripts/run_main.py --output-dir /tmp/my-run
@@ -353,9 +358,12 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 
 Iran's internet has been shut down since approximately 2026-02-28. Since Iran (IR) is one of the top DAU markets, its missing/zero telemetry corrupts the world-level forecast.
 
-### This Branch: `world-without-iran`
-- IR removed from `top_DAU_markets` in `config.py`
-- `AND country != 'IR'` added to `build_query()` in `queries.py` to prevent Iran from folding into the ROW bucket
+### This Branch: `no-iran-plus-iran-model`
+- Base: `world-without-iran` (IR excluded from queries and country lists)
+- Adds a "plus-Iran" workflow: `world_total = forecast(world-iran) + forecast(iran)`
+- `generate_iran_synthetic.py` runs mozaic for Iran alone and saves ALL-level totals (historical + forecast)
+- `add_iran_to_forecast.py` adds Iran values to a no-Iran forecast output via simple summation
+- Currently supports legacy_desktop and glean_mobile for DAU only
 
 ## Important Notes
 

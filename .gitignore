@@ -19,7 +19,15 @@ htmlcov/
 # Project-specific
 data-tmp/
 *.parquet
+*.pkl
 logs/
+
+# Data directories (archived to GCS)
+data/
+data-official/
+data-mozaic/
+april-by-hand/
+remote-logs/
 
 # Build artifacts
 src/mozaic_daily.egg-info/
