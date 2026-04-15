@@ -225,6 +225,7 @@ def generate_forecasts(
 def main(
     project: Optional[str] = None,
     checkpoints: bool = False,
+    clean: bool = False,
     data_source_filter: Optional[Set[DataSource]] = None,
     metric_filter: Optional[Set[Metric]] = None,
     forecast_start_date: Optional[str] = None,
@@ -235,6 +236,8 @@ def main(
     Args:
         project: GCP project ID for BigQuery (defaults to config value)
         checkpoints: Enable file-based checkpointing for faster iteration
+        clean: Ignore existing checkpoints (re-query and re-forecast) but still
+            save new ones. Useful when iterating on model changes.
         data_source_filter: If set, only process these data sources (e.g., {DataSource.GLEAN_MOBILE})
         metric_filter: If set, only process these metrics (e.g., {Metric.DAU})
         forecast_start_date: Override date (YYYY-MM-DD) for historical forecast runs.
@@ -269,7 +272,8 @@ def main(
 
     # Run pre-flight data availability check unless forecast checkpoint already exists.
     # Skipping when the checkpoint exists avoids unnecessary BQ calls during iteration.
-    forecast_checkpoint_exists = checkpoints and os.path.exists(checkpoint_filename)
+    load_checkpoints = checkpoints and not clean
+    forecast_checkpoint_exists = load_checkpoints and os.path.exists(checkpoint_filename)
     if not forecast_checkpoint_exists:
         check_training_data_availability(project, config['training_end_date'])
 
@@ -282,12 +286,13 @@ def main(
         ),
         project,
         checkpoints=checkpoints,
+        clean=clean,
         output_dir=resolved_output_dir
     )
 
     # Load checkpoint OR generate forecasts
     df = None
-    if checkpoints:
+    if load_checkpoints:
         df = load_checkpoint_if_exists(checkpoint_filename)
 
     if df is None:
@@ -297,8 +302,7 @@ def main(
             checkpoints=checkpoints,
             output_dir=resolved_output_dir,
         )
-        if checkpoints:
-            save_checkpoint(df, checkpoint_filename)
+        save_checkpoint(df, checkpoint_filename)
 
     # Return result
     return df

@@ -27,6 +27,9 @@ Usage:
     python scripts/run_main.py \\
       --forecast-start-date 2024-06-15
 
+    # Clean run (ignore existing checkpoints, re-query and re-forecast)
+    python scripts/run_main.py --clean
+
     # Write checkpoints to a specific directory
     python scripts/run_main.py --output-dir /tmp/my-run
 """
@@ -77,9 +80,9 @@ if __name__ == '__main__':
         help='Override forecast start date (YYYY-MM-DD) for historical runs'
     )
     parser.add_argument(
-        '--no-checkpoints',
+        '--clean',
         action='store_true',
-        help='Disable checkpoint loading (required for local batch historical processing)'
+        help='Ignore existing checkpoints but still save new ones (clean run)'
     )
     parser.add_argument(
         '--output-dir',
@@ -101,11 +104,9 @@ if __name__ == '__main__':
         data_source_filter = {DataSource(v) for v in args.data_sources} if args.data_sources else None
         metric_filter = {Metric(v) for v in args.metrics} if args.metrics else None
 
-    # Disable checkpoints if flag is set
-    use_checkpoints = not args.no_checkpoints
-
     main(
-        checkpoints=use_checkpoints,
+        checkpoints=True,
+        clean=args.clean,
         data_source_filter=data_source_filter,
         metric_filter=metric_filter,
         forecast_start_date=args.forecast_start_date,

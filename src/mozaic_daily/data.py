@@ -135,6 +135,7 @@ def get_aggregate_data(
     queries: Dict[str, Dict[str, Dict[str, Tuple[str, QuerySpec]]]],
     project: str,
     checkpoints: Optional[bool] = False,
+    clean: bool = False,
     output_dir: Optional[str] = None,
 ) -> Dict[str, Dict[str, Dict[str, pd.DataFrame]]]:
     """Fetch all metrics from BigQuery with checkpoint support.
@@ -143,6 +144,7 @@ def get_aggregate_data(
         queries: Nested dict from get_queries() with structure {platform: {source: {metric: (sql, spec)}}}
         project: BigQuery project ID
         checkpoints: If True, save/load from parquet files
+        clean: If True, ignore existing checkpoints but still save new ones
         output_dir: Directory for checkpoint files (defaults to current directory)
 
     Returns:
@@ -173,7 +175,7 @@ def get_aggregate_data(
                     filename_template.format(source=source, platform=platform, metric=metric)
                 )
                 df = None
-                if checkpoints and os.path.exists(checkpoint_filename):
+                if checkpoints and not clean and os.path.exists(checkpoint_filename):
                     print(f'[{query_num}/{total_queries}] {spec.data_source.display_name} {metric} exists, loading')
                     df = pd.read_parquet(checkpoint_filename)
                 else:
