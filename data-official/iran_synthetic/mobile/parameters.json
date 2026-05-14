@@ -1,0 +1,13 @@
+{
+  "forecast_start": "2026-04-01",
+  "mobile": {
+    "prophet_changepoint_prior_scale": 0.02,
+    "prophet_changepoint_range": 0.82,
+    "prophet_seasonality_prior_scale": 0.1,
+    "prophet_recent_weeks": 13,
+    "holiday_threshold": -0.032,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_effect_floor": -0.6
+  }
+}
