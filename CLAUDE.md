@@ -85,9 +85,12 @@ src/mozaic_daily/
 from mozaic_daily import main
 from mozaic_daily.config import get_runtime_config, STATIC_CONFIG, FORECAST_CONFIG
 from mozaic_daily.data import get_queries, get_aggregate_data
-from mozaic_daily.forecast import get_desktop_forecast_dfs
+from mozaic_daily.forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs, ForecastResult
 from mozaic_daily.tables import format_output_table
 from mozaic_daily.validation import validate_output_dataframe
+
+# Configurable model parameters (from mozaic package):
+from mozaic.models import ModelConfig, DesktopModelConfig, MobileModelConfig, make_desktop_model, make_mobile_model
 ```
 
 ### Scripts
@@ -97,6 +100,8 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `run_main.py` - Run the main forecasting pipeline with checkpoints (local development)
 - `run_validation.py` - Validate the checkpoint forecast file
 - `check_logs.py` - Check backfill log files for successes, failures, and ambiguous results
+- `export_forecast_csv.py` - Export a forecast parquet checkpoint to CSV
+- `run_comparison_forecasts.py` - Run multiple forecast variants side-by-side for comparison
 - `test_local_docker.sh` - Test Docker image builds locally
 - `generate_iran_synthetic.py` - Generate ALL-level synthetic Iran data (historical + forecast) from BigQuery
 - `add_iran_to_forecast.py` - Add synthetic Iran DAU values to a no-Iran forecast output via summation
@@ -300,7 +305,9 @@ The state file path is deterministic based on start date, end date, and weekdays
    - Uses the Mozaic package (`mozaic.TileSet`, `mozaic.Mozaic`)
    - Creates tiles via `mozaic.populate_tiles()` for each metric/country/population segment
    - Curates mozaics via `mozaic.utils.curate_mozaics()` to aggregate tiles
-   - Applies platform-specific models: `desktop_forecast_model`, `mobile_forecast_model`
+   - Applies platform-specific models via `make_desktop_model(config)` / `make_mobile_model(config)` factory functions
+   - Accepts an optional `config` argument (`DesktopModelConfig` or `MobileModelConfig`) to override Prophet and holiday-detrending parameters
+   - Returns a `ForecastResult(dfs, mozaics, config)` dataclass
 
 3. **Table Formatting** (`mozaic_daily.tables:format_output_table`)
    - Combines Desktop and Mobile forecasts
@@ -358,14 +365,41 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 
 Iran's internet has been shut down since approximately 2026-02-28. Since Iran (IR) is one of the top DAU markets, its missing/zero telemetry corrupts the world-level forecast.
 
-### This Branch: `no-iran-plus-iran-model`
-- Base: `world-without-iran` (IR excluded from queries and country lists)
-- Adds a "plus-Iran" workflow: `world_total = forecast(world-iran) + forecast(iran)`
-- `generate_iran_synthetic.py` runs mozaic for Iran alone and saves ALL-level totals (historical + forecast)
-- `add_iran_to_forecast.py` adds Iran values to a no-Iran forecast output via simple summation
-- Currently supports legacy_desktop and glean_mobile for DAU only
+### This Branch: `june-forecast`
+- Base: `no-iran-plus-iran-model` (IR excluded from queries; synthetic Iran added back via summation)
+- Adds support for configurable `ModelConfig` parameters (see "Configurable Model Parameters" above)
+- Uses `make_desktop_model(config)` / `make_mobile_model(config)` factory functions instead of bare model callables when a config is provided
+- `run_comparison_forecasts.py` can run multiple configs side-by-side to evaluate parameter sensitivity
 
 ## Important Notes
+
+### Configurable Model Parameters
+
+Forecast behavior is controlled via `ModelConfig` dataclasses in `mozaic.models`. Pass a config to `get_desktop_forecast_dfs` or `get_mobile_forecast_dfs`; omitting it uses hardcoded defaults.
+
+```python
+from mozaic.models import DesktopModelConfig, MobileModelConfig
+
+# Override specific parameters (all have sensible defaults)
+config = DesktopModelConfig(
+    prophet_changepoint_prior_scale=0.10,  # default: 0.15983 — lower = smoother trend
+    prophet_recent_weeks=8,                # default: 13 — window for conditional seasonality
+    holiday_threshold=-0.025,              # default: -0.032 — holiday detection sensitivity
+    holiday_max_radius=4,                  # default: 5 — days around holiday to adjust
+    holiday_min_radius=2,                  # default: 3 — min meaningful day difference
+    holiday_effect_floor=-0.5,             # default: -0.6 — max allowed holiday reduction
+)
+
+result = get_desktop_forecast_dfs(metric_data, start, end, config=config)
+result.config  # config is stored on the ForecastResult
+```
+
+**Parameter destinations:**
+- `prophet_changepoint_prior_scale`, `prophet_recent_weeks` → Prophet model (via factory function closure)
+- `holiday_threshold`, `holiday_max_radius`, `holiday_min_radius` → forwarded to `mozaic.populate_tiles()`
+- `holiday_effect_floor` → forwarded to `mozaic.utils.curate_mozaics()`
+
+**Serialization:** `config.to_dict()` returns a plain dict; `config.to_slug()` returns a compact label like `cps0.10_thresh025_recent8_clip0.5` suitable for file naming in comparison runs.
 
 ### Mozaic Package
 - Installed from the canonical repo: `github.com/mozilla/mozaic-forecasting`

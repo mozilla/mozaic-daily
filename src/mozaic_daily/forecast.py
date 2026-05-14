@@ -20,7 +20,15 @@ import pandas as pd
 import warnings
 from collections import defaultdict
 import mozaic
-from mozaic.models import desktop_forecast_model, mobile_forecast_model
+from mozaic.models import (
+    desktop_forecast_model,
+    mobile_forecast_model,
+    ModelConfig,
+    DesktopModelConfig,
+    MobileModelConfig,
+    make_desktop_model,
+    make_mobile_model,
+)
 from mozaic import Mozaic
 
 
@@ -29,6 +37,7 @@ class ForecastResult:
     """Holds the outputs of a Mozaic forecast run."""
     dfs: Dict[str, pd.DataFrame]
     mozaics: Dict[str, Mozaic]
+    config: ModelConfig = None
 
 
 # Do the forecasting
@@ -66,6 +75,7 @@ def get_forecast_dfs(
     forecast_end_date: str,
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
+    config: ModelConfig = None,
 ) -> ForecastResult:
     """Generate forecasts using Mozaic.
 
@@ -107,6 +117,11 @@ def get_forecast_dfs(
             message=".*divide by zero.*|.*overflow.*|.*invalid value.*"
         )
         try:
+            tile_kwargs = {}
+            if config is not None:
+                tile_kwargs['holiday_threshold'] = config.holiday_threshold
+                tile_kwargs['holiday_max_radius'] = config.holiday_max_radius
+                tile_kwargs['holiday_min_radius'] = config.holiday_min_radius
             mozaic.populate_tiles(
                 datasets,
                 tileset,
@@ -114,6 +129,7 @@ def get_forecast_dfs(
                 forecast_start_date,
                 forecast_end_date,
                 additional_holidays=additional_holidays,
+                **tile_kwargs,
             )
         except Exception as e:
             print(f'\nERROR: Mozaic populate_tiles failed')
@@ -135,6 +151,9 @@ def get_forecast_dfs(
         )
 
         try:
+            mozaic_kwargs = {}
+            if config is not None:
+                mozaic_kwargs['holiday_effect_floor'] = config.holiday_effect_floor
             mozaic.utils.curate_mozaics(
                 datasets,
                 tileset,
@@ -142,6 +161,7 @@ def get_forecast_dfs(
                 mozaics,
                 country_mozaics,
                 population_mozaics,
+                **mozaic_kwargs,
             )
         except Exception as e:
             print(f'\nERROR: Mozaic curate_mozaics failed')
@@ -155,7 +175,7 @@ def get_forecast_dfs(
         print(f'  [{i}/{len(mozaics)}] {metric}')
         dfs[metric] = moz.to_granular_forecast_df(quantile=quantile)
 
-    return ForecastResult(dfs=dfs, mozaics=mozaics)
+    return ForecastResult(dfs=dfs, mozaics=mozaics, config=config)
 
 
 def get_desktop_forecast_dfs(
@@ -164,6 +184,7 @@ def get_desktop_forecast_dfs(
     forecast_end_date: str,
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
+    config: DesktopModelConfig = None,
 ) -> ForecastResult:
     """Generate Desktop forecasts using Mozaic.
 
@@ -173,17 +194,20 @@ def get_desktop_forecast_dfs(
         forecast_end_date: End date for forecast period
         quantile: Quantile for point forecast (default: 0.5)
         additional_holidays: Custom holiday calendars passed to populate_tiles
+        config: DesktopModelConfig with prophet/holiday params (default: None uses hardcoded defaults)
 
     Returns:
         ForecastResult with dfs and mozaics
     """
+    model = make_desktop_model(config) if config is not None else desktop_forecast_model
     return get_forecast_dfs(
         metric_data,
-        desktop_forecast_model,
+        model,
         forecast_start_date,
         forecast_end_date,
         quantile=quantile,
         additional_holidays=additional_holidays,
+        config=config,
     )
 
 
@@ -193,6 +217,7 @@ def get_mobile_forecast_dfs(
     forecast_end_date: str,
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
+    config: MobileModelConfig = None,
 ) -> ForecastResult:
     """Generate Mobile forecasts using Mozaic.
 
@@ -202,15 +227,18 @@ def get_mobile_forecast_dfs(
         forecast_end_date: End date for forecast period
         quantile: Quantile for point forecast (default: 0.5)
         additional_holidays: Custom holiday calendars passed to populate_tiles
+        config: MobileModelConfig with prophet/holiday params (default: None uses hardcoded defaults)
 
     Returns:
         ForecastResult with dfs and mozaics
     """
+    model = make_mobile_model(config) if config is not None else mobile_forecast_model
     return get_forecast_dfs(
         metric_data,
-        mobile_forecast_model,
+        model,
         forecast_start_date,
         forecast_end_date,
         quantile=quantile,
         additional_holidays=additional_holidays,
+        config=config,
     )
