@@ -53,21 +53,36 @@ Check whether this month uses the same model parameters as the last official run
 
 ---
 
-## Decision: Headwinds
+## Decision: Adjustments
 
-Check whether this month reuses existing headwind values.
+Check whether this month's adjustment components carry over from last month.
 
-**"Use existing headwinds?"**
+**"Carry over last month's adjustments?"**
 
-→ **YES** — Load `DATA_DIR` from the previous month (e.g. `data-official/2026-04/headwinds.json`). Proceed to **Decision: Iran Synthetic**.
+→ **YES** — Copy `data-official/<PREV-MM>/adjustments/` to `data-official/<YYYY-MM>/adjustments/`. Show the user the file list for confirmation. Proceed to **Decision: Iran Synthetic**.
 
-→ **NO** — Show the user last month's `headwinds.json` as a suggested starting point.
+→ **NO** — Show the user last month's `adjustments/` file list and contents as a starting point.
 
-  **"Use last month's headwinds as a base?"**
+  **"Use last month's as a base?"**
 
-  → **YES** — Copy to `data-official/<YYYY-MM>/headwinds.json`. Ask the user to edit values as needed. Proceed once confirmed.
+  → **YES** — Copy the directory. Ask the user to edit individual files as needed. Proceed once confirmed.
 
-  → **NO** — Create a blank `data-official/<YYYY-MM>/headwinds.json` and **EXIT**. Resume when populated.
+  → **NO** — Create `data-official/<YYYY-MM>/adjustments/` and **EXIT**. Resume when populated.
+
+Each file in `adjustments/` is a single named component. Supported types:
+
+- `linear_ramp` — scales linearly from 0 at `start_date` to full value at `anchor_date`:
+  ```json
+  {"type": "linear_ramp", "start_date": "YYYY-MM-DD", "anchor_date": "YYYY-MM-DD", "desktop_dau": -1497870, "mobile_dau": -27162}
+  ```
+- `step` — constant delta from `start_date` (optional `end_date`):
+  ```json
+  {"type": "step", "start_date": "YYYY-MM-DD", "desktop_dau": 80000, "mobile_dau": 15000}
+  ```
+- `daily_series` — explicit per-date DAU delta (for marketing model outputs):
+  ```json
+  {"type": "daily_series", "series": {"YYYY-MM-DD": {"desktop_dau": 80000, "mobile_dau": 15000}, ...}}
+  ```
 
 ---
 
@@ -261,7 +276,7 @@ with open("<DEST_MOBILE>/parameters.json", "w") as f:
     json.dump(mobile, f, indent=2)
 ```
 
-Also write `data-official/<YYYY-MM>/headwinds.json` if it doesn't already exist (from the headwinds decision above).
+Confirm `data-official/<YYYY-MM>/adjustments/` exists and has at least one component file (from the adjustments decision above).
 
 Confirm `forecast-parameters/<DATE>.md` exists and is complete.
 
@@ -299,10 +314,10 @@ Update the `setup` cell:
 - `DESKTOP_PLUS_IRAN_PATH`→ `<DEST_DESKTOP>/mozaic_daily_forecast.<DATE>.ld-D.plus_iran.parquet`
 - `FORECAST_START`        → forecast start date
 - `BQ_START`              → 28 days before `DISPLAY_START`
-- `HEADWINDS`             → load from `data-official/<YYYY-MM>/headwinds.json`
+- `ADJUSTMENTS_DIR`       → `"data-official/<YYYY-MM>/adjustments"`
 - `csv_path`              → `"data-official/<YYYY-MM>/<MONTH>_composite_forecast_28ma.csv"`
 
-Do not change `HEADWIND_ANCHOR`, `DISPLAY_END`, or `MEASUREMENT_DATE` unless the user asks.
+Do not change `DISPLAY_END` or `MEASUREMENT_DATE` unless the user asks.
 
 ---
 
@@ -329,5 +344,4 @@ Report the Dec 15 values to the user for review before calling the task done.
 
 ## Follow-up items
 
-- **Bootstrap Iran parameters** — `data-official/iran_synthetic/parameters.json` and `data-official/iran_synthetic/mobile/parameters.json` do not exist yet. Create them manually (one-time) by running `generate_iran_synthetic.py` with no config args (uses defaults), or by writing the JSON directly from the known April parameters. Until this exists, the Iran decision tree above will always trigger a regeneration.
 - **GCP parquet storage** — parquet files are archived to GCS but the process for doing so (gsutil path, bucket name, sync cadence) is not yet documented in this skill. Investigate and add a "Step 7 — Archive to GCS" section once the workflow is understood.
