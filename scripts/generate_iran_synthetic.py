@@ -22,6 +22,7 @@ Output:
 """
 
 import argparse
+import json
 import os
 import sys
 import time
@@ -46,6 +47,7 @@ from mozaic_daily.queries import (
     Platform,
     QUERY_SPECS,
 )
+from mozaic.models import DesktopModelConfig, MobileModelConfig
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -168,12 +170,25 @@ def query_iran_data(
 def generate_forecasts(
     datasets: Dict[str, Dict[str, Dict[str, pd.DataFrame]]],
     data_sources: set,
+    desktop_config: Optional[DesktopModelConfig] = None,
+    mobile_config: Optional[MobileModelConfig] = None,
 ) -> Dict[DataSource, Dict[str, pd.DataFrame]]:
     """Run mozaic forecasts for each data source.
+
+    Args:
+        datasets: Nested dict of data by platform/source/metric.
+        data_sources: Set of DataSource enums to forecast.
+        desktop_config: ModelConfig for desktop forecasts. None uses package defaults.
+        mobile_config: ModelConfig for mobile forecasts. None uses package defaults.
 
     Returns:
         Dict mapping ``DataSource`` to forecast result dfs ``{metric: DataFrame}``.
     """
+    configs = {
+        Platform.DESKTOP: desktop_config,
+        Platform.MOBILE: mobile_config,
+    }
+
     forecasts: Dict[DataSource, Dict[str, pd.DataFrame]] = {}
 
     sources_to_process = [
@@ -192,12 +207,14 @@ def generate_forecasts(
 
         forecast_fn = FORECAST_FN_BY_PLATFORM[data_source.platform]
         additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
+        config = configs[data_source.platform]
 
         result = forecast_fn(
             metric_data,
             FORECAST_START,
             FORECAST_END,
             additional_holidays=additional_holidays,
+            config=config,
         )
         forecasts[data_source] = result.dfs
 
@@ -287,6 +304,28 @@ def parse_args():
         default=None,
         help="Filter to specific metrics (default: all)",
     )
+    parser.add_argument(
+        "--desktop-config",
+        type=json.loads,
+        default=None,
+        metavar="JSON",
+        help=(
+            "DesktopModelConfig overrides as a JSON string. "
+            "Example: '{\"prophet_changepoint_prior_scale\": 0.15983, \"prophet_recent_weeks\": 13}'. "
+            "Unspecified fields use package defaults."
+        ),
+    )
+    parser.add_argument(
+        "--mobile-config",
+        type=json.loads,
+        default=None,
+        metavar="JSON",
+        help=(
+            "MobileModelConfig overrides as a JSON string. "
+            "Example: '{\"prophet_changepoint_prior_scale\": 0.02, \"prophet_recent_weeks\": 13}'. "
+            "Unspecified fields use package defaults."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -304,7 +343,11 @@ def main():
     else:
         metrics = ALL_METRICS
 
+    desktop_config = DesktopModelConfig(**(args.desktop_config or {}))
+    mobile_config = MobileModelConfig(**(args.mobile_config or {}))
+
     output_path = os.path.join(args.output_dir, OUTPUT_FILENAME)
+    params_path = os.path.join(args.output_dir, "parameters.json")
 
     print(f"Generating ALL-level synthetic Iran data")
     print(f"  Forecast period: {FORECAST_START} to {FORECAST_END}")
@@ -312,6 +355,8 @@ def main():
     print(f"  Metrics: {', '.join(m.value for m in metrics)}")
     print(f"  Output: {output_path}")
     print(f"  BQ project: {args.project}")
+    print(f"  Desktop config: {desktop_config.to_dict()}")
+    print(f"  Mobile config: {mobile_config.to_dict()}")
 
     overall_start = time.time()
 
@@ -325,7 +370,7 @@ def main():
     print(f"\n{'='*60}")
     print("Step 2: Running mozaic forecasts")
     print(f"{'='*60}")
-    forecasts = generate_forecasts(datasets, data_sources)
+    forecasts = generate_forecasts(datasets, data_sources, desktop_config, mobile_config)
 
     # Step 3: Extract ALL-level totals
     print(f"\n{'='*60}")
@@ -333,10 +378,20 @@ def main():
     print(f"{'='*60}")
     combined = build_output_dataframe(forecasts)
 
-    # Step 4: Save
+    # Step 4: Save parquet and parameters
     os.makedirs(args.output_dir, exist_ok=True)
     combined.to_parquet(output_path, index=False)
     print(f"\nSaved to {output_path}")
+
+    params = {
+        "forecast_start": FORECAST_START,
+        "forecast_end": FORECAST_END,
+        "desktop": desktop_config.to_dict(),
+        "mobile": mobile_config.to_dict(),
+    }
+    with open(params_path, "w") as f:
+        json.dump(params, f, indent=2)
+    print(f"Parameters saved to {params_path}")
 
     elapsed = time.time() - overall_start
     print(f"Total elapsed: {elapsed / 60:.1f} minutes")

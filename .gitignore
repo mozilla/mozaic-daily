@@ -20,11 +20,13 @@ htmlcov/
 data-tmp/
 *.parquet
 *.pkl
+*.csv
 logs/
 
-# Data directories (archived to GCS)
+# Data directories (large files archived to GCS — see follow-up in monthly-forecast-update.md)
+# data-official/ is NOT fully ignored: *.json and *.md parameter files are committed,
+# data files (*.parquet, *.pkl, *.csv) are caught by the global rules above.
 data/
-data-official/
 data-mozaic/
 april-by-hand/
 remote-logs/
