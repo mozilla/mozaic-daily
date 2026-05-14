@@ -121,9 +121,11 @@ Compute each platform's slug using the `ModelConfig.to_slug()` format:
 cps{changepoint_prior_scale}_thresh{int(abs(holiday_threshold)*1000)}_recent{prophet_recent_weeks}_clip{abs(holiday_effect_floor)}
 ```
 
-Examples with April defaults:
-- Desktop → `cps0.15983_thresh32_recent13_clip0.6`
+Examples with current defaults (desktop threshold=-0.05, mobile threshold=-0.032):
+- Desktop → `cps0.15983_thresh50_recent13_clip0.6`
 - Mobile → `cps0.02_thresh32_recent13_clip0.6`
+
+Note: the April 2026 desktop output directory was named `thresh32` but actually used threshold=-0.05 (thresh50). The slug formula is authoritative; don't copy the April directory name.
 
 Set destination paths:
 ```
@@ -286,10 +288,12 @@ Confirm `forecast-parameters/<DATE>.md` exists and is complete.
 
 ```bash
 python scripts/add_iran_to_forecast.py \
-  --input "$DEST_DESKTOP/mozaic_daily_forecast.<DATE>.ld-D.parquet"
+  --input "$DEST_DESKTOP/mozaic_daily_forecast.<DATE>.ld-D.parquet" \
+  --synthetic data-official/iran_synthetic/iran_synthetic.parquet
 
 python scripts/add_iran_to_forecast.py \
-  --input "$DEST_MOBILE/mozaic_daily_forecast.<DATE>.gm-D.parquet"
+  --input "$DEST_MOBILE/mozaic_daily_forecast.<DATE>.gm-D.parquet" \
+  --synthetic data-official/iran_synthetic/mobile/iran_synthetic.parquet
 ```
 
 Each script writes a `.plus_iran.parquet` alongside the input. **Verify:** confirm all four parquet files exist in their respective destination folders before continuing.
@@ -308,16 +312,26 @@ Do not overwrite the previous month's notebook.
 
 Update the `setup` cell:
 
-- `MOBILE_NO_IRAN_PATH`   → `<DEST_MOBILE>/mozaic_daily_forecast.<DATE>.gm-D.parquet`
-- `MOBILE_PLUS_IRAN_PATH` → `<DEST_MOBILE>/mozaic_daily_forecast.<DATE>.gm-D.plus_iran.parquet`
-- `DESKTOP_NO_IRAN_PATH`  → `<DEST_DESKTOP>/mozaic_daily_forecast.<DATE>.ld-D.parquet`
-- `DESKTOP_PLUS_IRAN_PATH`→ `<DEST_DESKTOP>/mozaic_daily_forecast.<DATE>.ld-D.plus_iran.parquet`
-- `FORECAST_START`        → forecast start date
-- `BQ_START`              → 28 days before `DISPLAY_START`
-- `ADJUSTMENTS_DIR`       → `"data-official/<YYYY-MM>/adjustments"`
-- `csv_path`              → `"data-official/<YYYY-MM>/<MONTH>_composite_forecast_28ma.csv"`
+- `MOBILE_NO_IRAN_PATH`        → `<DEST_MOBILE>/mozaic_daily_forecast.<DATE>.gm-D.parquet`
+- `MOBILE_PLUS_IRAN_PATH`      → `<DEST_MOBILE>/mozaic_daily_forecast.<DATE>.gm-D.plus_iran.parquet`
+- `DESKTOP_NO_IRAN_PATH`       → `<DEST_DESKTOP>/mozaic_daily_forecast.<DATE>.ld-D.parquet`
+- `DESKTOP_PLUS_IRAN_PATH`     → `<DEST_DESKTOP>/mozaic_daily_forecast.<DATE>.ld-D.plus_iran.parquet`
+- `PREV_FORECAST_DESKTOP_PLUS_IRAN_PATH` → the N-1 forecast's `ld-D.plus_iran.parquet`
+- `PREV_FORECAST_DESKTOP_NO_IRAN_PATH`   → the N-1 forecast's `ld-D.parquet`
+- `PREV_FORECAST_MOBILE_PLUS_IRAN_PATH`  → the N-1 forecast's `gm-D.plus_iran.parquet`
+- `PREV_FORECAST_MOBILE_NO_IRAN_PATH`    → the N-1 forecast's `gm-D.parquet`
+
+  The `compute-series` cell applies the **current** `net_adjustments` to the prior forecast series as well, so all four lines reflect the same headwinds. This isolates the change in the underlying model, not the headwind effect.
+- `FORECAST_START`             → forecast start date
+- `BQ_START`                   → 28 days before `DISPLAY_START`
+- `ADJUSTMENTS_DIR`            → `"data-official/<YYYY-MM>/adjustments"`
+- `csv_path`                   → `"data-official/<YYYY-MM>/<MONTH>_composite_forecast_28ma.csv"`
 
 Do not change `DISPLAY_END` or `MEASUREMENT_DATE` unless the user asks.
+
+**When copying from a notebook older than June 2026**, verify two additional things:
+- The `setup` cell calls `os.chdir(subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True).stdout.strip())` near the bottom. If it doesn't, add it — without this, nbconvert fails to resolve relative paths when the notebook lives in a subdirectory.
+- The `country-summary` cell uses `TABLE_START = COMPARE_START` and `TABLE_END = COMPARE_END` (set by `country-data`), not hardcoded dates. If it has hardcoded dates, update them.
 
 ---
 
@@ -339,6 +353,29 @@ Report the Dec 15 values to the user for review before calling the task done.
 - If a run fails mid-way, raw BigQuery data is checkpointed in `tmp/run_desktop_<DATE>/` or `tmp/run_mobile_<DATE>/`. Re-running the script resumes from checkpoints.
 - Run scripts in `tmp/` are single-use and not committed.
 - `parameters.json` files in each output folder and `forecast-parameters/<DATE>.md` are the durable record — these are committed (parquet files are not).
+
+### Pre-flight: verify GCP credentials before starting Steps 1–2
+
+```bash
+gcloud auth application-default print-access-token > /dev/null && echo "GCP credentials OK"
+```
+
+If this fails, run `gcloud auth application-default login` before proceeding. Catching an expired token here avoids a failed 20-minute run.
+
+### Notebook CWD
+
+`nbconvert` executes notebooks in the notebook's own directory. Since the composite notebook lives in `data-official/<YYYY-MM>/`, all `data-official/...` relative paths break unless the `setup` cell calls `os.chdir` to anchor at the git root. The June 2026 notebook and later already include this; earlier notebooks do not (see Step 5 verification note).
+
+### `apply_net_adjustment` reindex requirement
+
+The `helpers` cell builds `net_adjustments` from the desktop date index. Mobile has a shorter date range, so applying a desktop-indexed adjustment series to mobile with a boolean mask raises `IndexError: Boolean index has wrong length`. The fix — `.reindex(result.index, fill_value=0.0)` in `apply_net_adjustment` — is present in the June 2026 notebook and later. If copying from an April 2026 or earlier notebook, verify this line is there.
+
+### Upgrading `forecast-parameters/<DATE>.md` to a provenance record
+
+The file created during this run is a lightweight parameter spec. After the forecast is delivered and accepted, optionally upgrade it to a full provenance record (matching the style of `forecast-parameters/2026-04-01.md`) by adding:
+- The four official output file paths (no-iran and plus-iran parquets for desktop and mobile)
+- MD5 hashes of those files: `md5 <file>` on macOS
+- Any pkl-verified parameter values that differ from what the slug implies (see April 2026 note on `thresh32` vs actual `-0.05` threshold)
 
 ---
 
