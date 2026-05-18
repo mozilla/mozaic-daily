@@ -1,0 +1,24 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "h",
+      "name": "headwinds",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/adjustments/headwind.json",
+      "spec_sha1": "e4764ffd6e0431ca65b2c4024072bc236c8f9eaf"
+    }
+  ],
+  "artifact_sha1": "94c130d288f345ac491d3a468778a9b5f08a3452",
+  "data_source": "desktop+mobile composite (world DAU 28-day MA)",
+  "forecast_start_date": "2026-05-13",
+  "model_config": null,
+  "mozaic_daily_commit": "0b9dec82b5285638e104b44fd1d3b5260688c6cc",
+  "parent_files": [
+    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.ld-D.raw.parquet",
+    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.ld-D.raw.plus_iran.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.gm-D.raw.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.gm-D.raw.plus_iran.parquet"
+  ],
+  "produced_at": "2026-05-18T02:35:21.628304+00:00Z",
+  "produced_by": "scripts/regenerate_composites.py",
+  "provenance": "regenerated"
+}

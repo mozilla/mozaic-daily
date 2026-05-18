@@ -105,6 +105,9 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `test_local_docker.sh` - Test Docker image builds locally
 - `generate_iran_synthetic.py` - Generate ALL-level synthetic Iran data (historical + forecast) from BigQuery
 - `add_iran_to_forecast.py` - Add synthetic Iran DAU values to a no-Iran forecast output via summation
+- `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
+- `migrate_forecast_names.py` - Rename forecast artifacts to the `.raw.` / `.adj-h.` marker convention and write sidecar metas
+- `regenerate_composites.py` - Reproduce composite CSVs from raw parquets via `mozaic_daily.adjustments`; diffs against on-disk
 
 The `docker/` directory contains Docker management scripts:
 - `build_and_push.sh` - Build and push Docker images for local (arm64) or remote (amd64)
@@ -360,6 +363,43 @@ The `MozaicDailyFlow` class in `mozaic_daily_flow.py`:
 - Uses Kubernetes decorator with custom Docker image (16GB memory, 1 CPU)
 - Tracks Mozaic version via `/mozaic_commit.txt` file in container
 - Uses `@card` decorators for Metaflow UI visualization
+
+## Forecast Artifact Naming Convention
+
+Every forecast artifact (parquet, CSV) under `data-official/` and at the repo root carries an **explicit state marker** in its filename so adjustment state is never ambiguous:
+
+- `.raw.` — direct model output, no adjustments applied
+- `.adj-{codes}.` — one or more adjustments applied; codes are sorted alphabetically and concatenated
+
+Adjustment codes are registered in `data-official/adjustment_codes.yaml`. Current codes:
+
+| Code | Name | Description |
+|------|------|-------------|
+| `h`  | headwinds | Linear ramp anchored at a target date; spec lives in `data-official/{YYYY-MM}/adjustments/headwind.json` |
+
+Combined with existing markers, filenames look like:
+
+```
+mozaic_daily_forecast.2026-05-13.ld-D.raw.parquet               # raw model output
+mozaic_daily_forecast.2026-05-13.ld-D.raw.plus_iran.parquet     # raw + synthetic Iran composition
+june_composite_forecast_28ma.adj-h.csv                          # headwinds applied
+```
+
+**Every artifact has a sidecar `<name>.meta.json`** with full provenance: model config, list of `adjustments_applied` (with code + spec_file + spec_sha1), parent files, mozaic-daily commit hash. The sidecar is the source of truth for adjustment state; the filename marker is required to match it.
+
+**Always load through `mozaic_daily.adjustments.load_forecast(path)`** — it validates filename ↔ meta consistency and refuses to load anything missing a sidecar or state marker. Direct `pd.read_parquet()` bypasses this safety net.
+
+```python
+from mozaic_daily.adjustments import load_forecast
+df, meta = load_forecast("data-official/2026-06/.../mozaic_daily_forecast.2026-05-13.ld-D.raw.parquet")
+df, meta = load_forecast(path, require_state=["h"])  # raises if filename codes != ["h"]
+```
+
+**Producing a new artifact**: whenever you write a forecast parquet or CSV, you must (1) insert the state marker into the filename via `insert_state_marker(path, codes)` and (2) write a sidecar via `write_meta(path, ..., adjustments_applied=build_adjustments_applied_list(...))`. The composite-CSV regenerator (`scripts/regenerate_composites.py`) is the canonical example.
+
+**Auditing on-disk files**: `scripts/verify_forecast_states.py` reproduces composite CSVs from raw parquets and writes `tmp/inventory.csv` with verified state per file. Run this whenever you suspect adjustment state drift.
+
+**Adding a new adjustment type**: add the one-letter code to `data-official/adjustment_codes.yaml`, register its applier in `src/mozaic_daily/adjustments.py`, and extend `tests/test_adjustments.py`. See the existing `h` (headwinds) implementation as the template.
 
 ## Iran Internet Shutdown Workaround
 

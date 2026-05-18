@@ -1,0 +1,19 @@
+{
+  "adjustments_applied": [],
+  "artifact_sha1": "6fdf61b426ffe7ed059ce2eed0f4c16e00b11f37",
+  "data_source": "legacy_desktop",
+  "forecast_start_date": "2026-05-13",
+  "model_config": {
+    "changepoint_prior_scale": 0.15983,
+    "forecast_start_date": "2026-05-13",
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.05,
+    "prophet_recent_weeks": 13
+  },
+  "mozaic_daily_commit": "0b9dec82b5285638e104b44fd1d3b5260688c6cc",
+  "produced_at": "2026-05-18T02:30:05.524595+00:00Z",
+  "produced_by": "reconstructed by scripts/migrate_forecast_names.py \u2014 original producer: scripts/run_main.py for parquets, {april,june}_composite_forecast.ipynb for composite CSVs",
+  "provenance": "reconstructed"
+}

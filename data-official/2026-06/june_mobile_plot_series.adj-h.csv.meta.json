@@ -1,0 +1,19 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "h",
+      "name": "headwinds",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/adjustments/headwind.json",
+      "spec_sha1": "e4764ffd6e0431ca65b2c4024072bc236c8f9eaf"
+    }
+  ],
+  "artifact_sha1": "b26760bc51f4286197e13642716c278b23fe993c",
+  "data_source": null,
+  "forecast_start_date": "unknown",
+  "model_config": null,
+  "mozaic_daily_commit": "0b9dec82b5285638e104b44fd1d3b5260688c6cc",
+  "parent_files_note": "Derived from the 4 raw parquets in data-official/{date}/{desktop,mobile}_*/ \u2014 see verify_forecast_states.py for the reproduction recipe.",
+  "produced_at": "2026-05-18T02:30:05.753592+00:00Z",
+  "produced_by": "reconstructed by scripts/migrate_forecast_names.py \u2014 original producer: scripts/run_main.py for parquets, {april,june}_composite_forecast.ipynb for composite CSVs",
+  "provenance": "reconstructed"
+}
