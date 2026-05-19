@@ -1,0 +1,18 @@
+{
+  "adjustments_applied": [],
+  "artifact_sha1": "458822e9f9ac4bb08ccdb53b9c82d29c4a39fc9f",
+  "data_source": "legacy_desktop",
+  "forecast_start_date": "2026-05-17",
+  "model_config": {
+    "changepoint_prior_scale": 0.15983,
+    "forecast_start_date": "2026-05-17",
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.05,
+    "prophet_recent_weeks": 13
+  },
+  "mozaic_daily_commit": "90dccc3c9a2d01204d859c6ea679c4b5809f91e2",
+  "produced_at": "2026-05-19T00:25:44.427172+00:00Z",
+  "produced_by": "tmp/run_desktop_2026-05-17.py"
+}

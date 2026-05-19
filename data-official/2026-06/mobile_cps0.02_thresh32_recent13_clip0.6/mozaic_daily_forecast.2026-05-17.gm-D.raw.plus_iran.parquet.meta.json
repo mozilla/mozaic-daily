@@ -1,0 +1,21 @@
+{
+  "adjustments_applied": [],
+  "artifact_sha1": "778f1daaa12f425b83587cc66d977fa6057f0fae",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-05-17",
+  "iran_synthetic_source": "data-official/iran_synthetic/mobile/iran_synthetic.parquet",
+  "model_config": {
+    "changepoint_prior_scale": 0.02,
+    "forecast_start_date": "2026-05-17",
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.032,
+    "prophet_recent_weeks": 13
+  },
+  "mozaic_daily_commit": "90dccc3c9a2d01204d859c6ea679c4b5809f91e2",
+  "parent_file": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.gm-D.raw.parquet",
+  "parent_file_sha1": "507e75087a07de27e63bb437e22cae3017f0e64b",
+  "produced_at": "2026-05-19T00:25:44.502305+00:00Z",
+  "produced_by": "scripts/add_iran_to_forecast.py"
+}

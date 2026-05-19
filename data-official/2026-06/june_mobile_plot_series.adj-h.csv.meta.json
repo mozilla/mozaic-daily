@@ -3,17 +3,19 @@
     {
       "code": "h",
       "name": "headwinds",
-      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/adjustments/headwind.json",
+      "spec_file": "data-official/2026-06/adjustments/headwind.json",
       "spec_sha1": "e4764ffd6e0431ca65b2c4024072bc236c8f9eaf"
     }
   ],
-  "artifact_sha1": "b26760bc51f4286197e13642716c278b23fe993c",
-  "data_source": null,
-  "forecast_start_date": "unknown",
+  "artifact_sha1": "091ba4c22712867e2b9ffc98bf7d48e1e2587665",
+  "data_source": "glean_mobile (world DAU 28-day MA, plot series)",
+  "forecast_start_date": "2026-05-17",
   "model_config": null,
-  "mozaic_daily_commit": "0b9dec82b5285638e104b44fd1d3b5260688c6cc",
-  "parent_files_note": "Derived from the 4 raw parquets in data-official/{date}/{desktop,mobile}_*/ \u2014 see verify_forecast_states.py for the reproduction recipe.",
-  "produced_at": "2026-05-18T02:30:05.753592+00:00Z",
-  "produced_by": "reconstructed by scripts/migrate_forecast_names.py \u2014 original producer: scripts/run_main.py for parquets, {april,june}_composite_forecast.ipynb for composite CSVs",
-  "provenance": "reconstructed"
+  "mozaic_daily_commit": "90dccc3c9a2d01204d859c6ea679c4b5809f91e2",
+  "parent_files": [
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.gm-D.raw.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.gm-D.raw.plus_iran.parquet"
+  ],
+  "produced_at": "2026-05-19T00:32:29.048848+00:00Z",
+  "produced_by": "data-official/2026-06/june_composite_forecast.ipynb (export-mobile-plot-csv cell)"
 }

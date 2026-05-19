@@ -1,0 +1,18 @@
+{
+  "adjustments_applied": [],
+  "artifact_sha1": "507e75087a07de27e63bb437e22cae3017f0e64b",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-05-17",
+  "model_config": {
+    "changepoint_prior_scale": 0.02,
+    "forecast_start_date": "2026-05-17",
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.032,
+    "prophet_recent_weeks": 13
+  },
+  "mozaic_daily_commit": "90dccc3c9a2d01204d859c6ea679c4b5809f91e2",
+  "produced_at": "2026-05-19T00:25:44.473018+00:00Z",
+  "produced_by": "tmp/run_mobile_2026-05-17.py"
+}
