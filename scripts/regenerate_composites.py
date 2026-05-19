@@ -85,6 +85,20 @@ CONFIGS = [
         "adjustments_dir": "data-official/2026-06/adjustments",
         "composite_csv_template": "data-official/2026-06/june_composite_forecast_28ma.csv",
     },
+    {
+        # June refresh with marketing-lift (`m`) baked into the mobile parent.
+        # Desktop parent stays raw (marketing-lift is mobile-only). Composite
+        # will end up `.adj-hm.csv` because parent codes ['m'] are union'd
+        # with composite-applied ['h'].
+        "label": "june_with_marketing",
+        "forecast_start": "2026-05-17",
+        "desktop_no_iran": "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.ld-D.raw.parquet",
+        "desktop_plus_iran": "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.ld-D.raw.plus_iran.parquet",
+        "mobile_no_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.adj-m.parquet",
+        "mobile_plus_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.adj-m.plus_iran.parquet",
+        "adjustments_dir": "data-official/2026-06/adjustments",
+        "composite_csv_template": "data-official/2026-06/june_with_marketing_composite_forecast_28ma.csv",
+    },
 ]
 
 
@@ -232,7 +246,8 @@ def regenerate(cfg: dict, diff_only: bool) -> None:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--diff-only", action="store_true", help="Just diff; don't overwrite")
-    parser.add_argument("--label", choices=["april", "june", "all"], default="all")
+    valid_labels = [cfg["label"] for cfg in CONFIGS] + ["all"]
+    parser.add_argument("--label", choices=valid_labels, default="all")
     args = parser.parse_args()
 
     for cfg in CONFIGS:

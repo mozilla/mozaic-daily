@@ -1,0 +1,30 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "h",
+      "name": "headwinds",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/adjustments/headwind.json",
+      "spec_sha1": "e4764ffd6e0431ca65b2c4024072bc236c8f9eaf"
+    },
+    {
+      "code": "m",
+      "name": "marketing_lift",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/marketing/marketing.json",
+      "spec_sha1": "d96688da8746de4c1988a7c2a5759077222571f7"
+    }
+  ],
+  "artifact_sha1": "f3351f057f4de05077830c0024202e509ac88c2c",
+  "data_source": "desktop+mobile composite (world DAU 28-day MA)",
+  "forecast_start_date": "2026-05-17",
+  "model_config": null,
+  "mozaic_daily_commit": "474133222703612621698ea8b16248c96e78338d",
+  "parent_files": [
+    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.ld-D.raw.parquet",
+    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.ld-D.raw.plus_iran.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.adj-m.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.adj-m.plus_iran.parquet"
+  ],
+  "produced_at": "2026-05-19T07:37:45.542067+00:00Z",
+  "produced_by": "scripts/regenerate_composites.py",
+  "provenance": "regenerated"
+}
