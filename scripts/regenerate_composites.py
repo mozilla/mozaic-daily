@@ -1,13 +1,19 @@
-"""Regenerate composite forecast CSVs from verified raw parquets via the new adjustments module.
+"""Regenerate composite forecast CSVs from verified raw / adjusted parquets.
 
 For each forecast month (April, June 2026), this script:
 
-1. Loads the four raw parquets (desktop/mobile × no-iran/plus-iran) via ``load_forecast()``,
-   which validates state markers and sidecar meta.
+1. Loads the four parent parquets (desktop/mobile × no-iran/plus-iran) via
+   ``load_forecast()``. Parents may carry per-tile adjustment codes (e.g.
+   ``m`` for marketing-lift baked into the mobile parquet itself).
 2. Aggregates world-level daily DAU, computes 28-day MA.
-3. Loads adjustment specs from ``data-official/{date}/adjustments/`` and applies them.
-4. Writes the resulting composite CSV as ``..._28ma.adj-h.csv`` with sidecar meta.
-5. Diffs the regenerated CSV against the on-disk original to confirm bit-equivalence.
+3. Loads adjustment specs from ``data-official/{date}/adjustments/`` and applies
+   them composite-style (currently: ``h`` headwinds).
+4. Unions the parents' per-tile codes with the composite-applied codes to
+   derive the canonical state marker for the output CSV filename.
+5. Writes the resulting composite CSV as ``..._28ma.adj-{codes}.csv`` with a
+   sidecar meta listing every contributing adjustment.
+6. Diffs the regenerated CSV against the on-disk original to confirm
+   bit-equivalence.
 
 Run:
     source .venv/bin/activate
@@ -28,9 +34,13 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from mozaic_daily.adjustments import (  # noqa: E402
     apply_net_adjustment_to_series,
     build_adjustments_applied_list,
+    canonical_codes,
+    insert_state_marker,
     load_adjustments_from_dir,
     load_code_registry,
     load_forecast,
+    parse_state_from_path,
+    state_marker,
     write_meta,
 )
 
@@ -61,7 +71,9 @@ CONFIGS = [
         "mobile_no_iran": "data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.raw.parquet",
         "mobile_plus_iran": "data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.raw.plus_iran.parquet",
         "adjustments_dir": "data-official/2026-04/adjustments",
-        "composite_csv": "april_composite_forecast_28ma.adj-h.csv",
+        # Template path: marker-free; insert_state_marker(template, final_codes)
+        # picks the canonical .adj-{codes}.csv filename for this run.
+        "composite_csv_template": "april_composite_forecast_28ma.csv",
     },
     {
         "label": "june",
@@ -71,20 +83,44 @@ CONFIGS = [
         "mobile_no_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.gm-D.raw.parquet",
         "mobile_plus_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.gm-D.raw.plus_iran.parquet",
         "adjustments_dir": "data-official/2026-06/adjustments",
-        "composite_csv": "data-official/2026-06/june_composite_forecast_28ma.adj-h.csv",
+        "composite_csv_template": "data-official/2026-06/june_composite_forecast_28ma.csv",
     },
 ]
+
+
+def _find_marketing_spec_for_forecast_start(forecast_start: str) -> Path | None:
+    """Locate the marketing.json spec whose applies_to_forecast_start matches.
+
+    Mirrors ``mozaic_daily.main._find_marketing_spec_for_forecast`` so this
+    script stays self-contained.
+    """
+    import json
+    candidates = sorted(
+        (REPO_ROOT / "data-official").glob("*/marketing/marketing.json")
+    )
+    for candidate in candidates:
+        spec = json.loads(candidate.read_text())
+        if spec.get("applies_to_forecast_start") == forecast_start:
+            return candidate
+    return None
 
 
 def regenerate(cfg: dict, diff_only: bool) -> None:
     print(f"\n=== {cfg['label']} (forecast_start={cfg['forecast_start']}) ===")
     fc_start = pd.Timestamp(cfg["forecast_start"])
 
-    # All four parquets must validate as state=raw via load_forecast (state guard)
-    desktop_no_iran_df, _ = load_forecast(cfg["desktop_no_iran"], require_state=[])
-    desktop_plus_iran_df, _ = load_forecast(cfg["desktop_plus_iran"], require_state=[])
-    mobile_no_iran_df, _ = load_forecast(cfg["mobile_no_iran"], require_state=[])
-    mobile_plus_iran_df, _ = load_forecast(cfg["mobile_plus_iran"], require_state=[])
+    # Parent parquets: per-tile codes (e.g. m) are already baked in — load_forecast
+    # validates state markers, but we don't require a particular state.
+    parent_paths = [cfg["desktop_no_iran"], cfg["desktop_plus_iran"],
+                    cfg["mobile_no_iran"], cfg["mobile_plus_iran"]]
+    parent_codes = set()
+    for path in parent_paths:
+        parent_codes.update(parse_state_from_path(path))
+
+    desktop_no_iran_df, _ = load_forecast(cfg["desktop_no_iran"])
+    desktop_plus_iran_df, _ = load_forecast(cfg["desktop_plus_iran"])
+    mobile_no_iran_df, _ = load_forecast(cfg["mobile_no_iran"])
+    mobile_plus_iran_df, _ = load_forecast(cfg["mobile_plus_iran"])
 
     desktop_no_iran_ma = to_28ma(world_daily(desktop_no_iran_df, **DESKTOP_FILTER))
     desktop_plus_iran_ma = to_28ma(world_daily(desktop_plus_iran_df, **DESKTOP_FILTER))
@@ -106,36 +142,71 @@ def regenerate(cfg: dict, diff_only: bool) -> None:
         "mobile_28ma_no_iran": adj(mobile_no_iran_ma, "mobile").reindex(export_dates).values,
     })
 
-    # Diff against on-disk original
-    on_disk = pd.read_csv(cfg["composite_csv"], parse_dates=["date"])
-    aligned = on_disk.set_index("date").reindex(composite["date"]).reset_index()
-    max_abs = 0.0
-    max_rel = 0.0
-    for col in ["desktop_28ma_with_iran", "desktop_28ma_no_iran", "mobile_28ma_with_iran", "mobile_28ma_no_iran"]:
-        diff = (composite[col].values - aligned[col].values)
-        max_abs = max(max_abs, abs(diff).max())
-        rel = abs(diff) / abs(aligned[col].values)
-        max_rel = max(max_rel, rel.max())
-    print(f"  Diff vs on-disk: max_abs={max_abs:.6g}, max_rel={max_rel:.2e}")
-    if max_rel < 1e-6:
-        print("  MATCH — module reproduces existing composite bit-exact (float precision)")
+    # The composite carries every adjustment applied to its parents plus
+    # whatever this script applies composite-style (currently: h).
+    composite_applied_codes = ["h"]
+    final_codes = sorted(parent_codes | set(composite_applied_codes))
+    expected_marker = state_marker(final_codes)
+    print(f"  Parent codes: {sorted(parent_codes) or '[]'}; "
+          f"composite-applied: {composite_applied_codes}; "
+          f"final state: {expected_marker}")
+
+    # Compute output CSV path with the canonical state marker. The template is
+    # marker-free; insert_state_marker picks the canonical filename.
+    template_path = REPO_ROOT / cfg["composite_csv_template"]
+    out_path = insert_state_marker(template_path, final_codes)
+
+    # Diff against on-disk original at the canonical path (or, if the canonical
+    # doesn't exist yet, fall back to any sibling .adj-*. file — useful when
+    # adding a new code for the first time).
+    diff_target = out_path
+    if not diff_target.exists():
+        # Look for any sibling composite that we can sanity-check against.
+        siblings = sorted(template_path.parent.glob(template_path.stem + ".adj-*.csv"))
+        diff_target = siblings[0] if siblings else None
+    if diff_target is None or not diff_target.exists():
+        print(f"  No on-disk composite to diff against; will create fresh at {out_path.name}")
+        max_abs = float("nan")
+        max_rel = float("nan")
     else:
-        print("  DIFFER — investigate before overwriting")
+        on_disk = pd.read_csv(diff_target, parse_dates=["date"])
+        aligned = on_disk.set_index("date").reindex(composite["date"]).reset_index()
+        max_abs = 0.0
+        max_rel = 0.0
+        for col in ["desktop_28ma_with_iran", "desktop_28ma_no_iran", "mobile_28ma_with_iran", "mobile_28ma_no_iran"]:
+            diff = (composite[col].values - aligned[col].values)
+            max_abs = max(max_abs, abs(diff).max())
+            rel = abs(diff) / abs(aligned[col].values)
+            max_rel = max(max_rel, rel.max())
+        print(f"  Diff vs {diff_target.name}: max_abs={max_abs:.6g}, max_rel={max_rel:.2e}")
+        if max_rel < 1e-6:
+            print("  MATCH — module reproduces existing composite bit-exact (float precision)")
+        else:
+            print("  DIFFER — investigate before overwriting")
 
     if diff_only:
         return
 
     # Overwrite the on-disk CSV with the regenerated one (will be identical at float precision)
-    out_path = REPO_ROOT / cfg["composite_csv"]
     composite.to_csv(out_path, index=False)
     print(f"  Wrote {len(composite)} rows to {out_path}")
 
-    # Refresh sidecar meta: now real provenance (produced by this script), not reconstructed
+    # Sidecar meta with every contributing adjustment code
     registry = load_code_registry()
-    spec_path = REPO_ROOT / cfg["adjustments_dir"] / "headwind.json"
+    code_to_spec_file: dict[str, Path] = {}
+    if "h" in final_codes:
+        code_to_spec_file["h"] = REPO_ROOT / cfg["adjustments_dir"] / "headwind.json"
+    if "m" in final_codes:
+        marketing_spec = _find_marketing_spec_for_forecast_start(cfg["forecast_start"])
+        if marketing_spec is None:
+            raise FileNotFoundError(
+                f"final_codes includes 'm' but no marketing.json spec matches "
+                f"applies_to_forecast_start={cfg['forecast_start']}"
+            )
+        code_to_spec_file["m"] = marketing_spec
     adjustments_applied = build_adjustments_applied_list(
-        codes=["h"],
-        code_to_spec_file={"h": spec_path},
+        codes=final_codes,
+        code_to_spec_file=code_to_spec_file,
         registry=registry,
     )
     write_meta(
