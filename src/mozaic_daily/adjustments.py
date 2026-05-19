@@ -505,8 +505,7 @@ def add_marketing_lift_to_forecast(
     population column is still ``population`` with values like
     ``fenix_android`` and ``ALL``, not yet ``app_name``).
 
-    Row patterns and add-values (only rows with ``source == 'forecast'`` are
-    touched):
+    Row patterns and add-values:
 
     +-----------------------------------------+---------------------------+
     | row pattern                             | add to ``metric_column``  |
@@ -524,6 +523,21 @@ def add_marketing_lift_to_forecast(
     | other (non-Fenix populations)           | unchanged                 |
     +-----------------------------------------+---------------------------+
 
+    The add-back applies to **every** row (training AND forecast), restoring
+    the lift we subtracted from post-campaign-launch training rows. The lift
+    series is zero pre-launch and absent (filled with zero) outside its
+    coverage, so rows in those date ranges are unchanged.
+
+    Restoring training rows is essential for downstream consumers that
+    compute rolling statistics across the training→forecast boundary
+    (e.g. a 28-day moving average): without it, the MA at the boundary
+    would average lift-subtracted training values with lift-added forecast
+    values and look artificially depressed.
+
+    ``forecast_start`` is accepted for parity with the other applier
+    signatures and used only for logging/diagnostics; row gating is by
+    lift value, not by date.
+
     Returns a copy; never mutates ``forecast_df``.
     """
     result = forecast_df.copy()
@@ -531,12 +545,6 @@ def add_marketing_lift_to_forecast(
         return result
 
     target_dates = pd.to_datetime(result["target_date"]).dt.normalize()
-    in_forecast_period = (target_dates >= pd.Timestamp(forecast_start).normalize()) & (
-        result["source"] == "forecast"
-    )
-    if not in_forecast_period.any():
-        return result
-
     lift_at_row = target_dates.map(daily_lift_series).fillna(0.0)
 
     country_share_at_row = result["country"].map(country_shares).fillna(0.0)
@@ -548,7 +556,7 @@ def add_marketing_lift_to_forecast(
     is_eligible_population = is_fenix_population | is_all_population
 
     add_value = lift_at_row * effective_share
-    apply_mask = in_forecast_period & is_eligible_population
+    apply_mask = is_eligible_population & (add_value != 0)
     result.loc[apply_mask, metric_column] = (
         result.loc[apply_mask, metric_column].astype("float64") + add_value.loc[apply_mask]
     )

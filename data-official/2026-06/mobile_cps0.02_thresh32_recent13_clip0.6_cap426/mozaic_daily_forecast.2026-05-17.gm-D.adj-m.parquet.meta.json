@@ -7,11 +7,11 @@
       "spec_sha1": "d96688da8746de4c1988a7c2a5759077222571f7"
     }
   ],
-  "artifact_sha1": "7e839d83a5358bc792d691e18cbbc75b683b868c",
+  "artifact_sha1": "071bc23139d4ae62971ea80b6573ca379a27e9db",
   "data_source": "glean_mobile",
   "forecast_start_date": "2026-05-17",
   "model_config": null,
-  "mozaic_daily_commit": "474133222703612621698ea8b16248c96e78338d",
-  "produced_at": "2026-05-19T07:35:08.775509+00:00Z",
+  "mozaic_daily_commit": "b1fc8d90c6ea016ca97fc9cb842b49be471e1b5a",
+  "produced_at": "2026-05-19T15:59:39.783625+00:00Z",
   "produced_by": "scripts/run_main.py + tmp/promote_marketing_lift_forecast.py"
 }

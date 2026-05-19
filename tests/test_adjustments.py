@@ -729,7 +729,8 @@ def test_addback_world_fenix_row_gets_full_lift(country_shares, lift_series):
     assert np.allclose(delta.values, 10_000.0)
 
 
-def test_addback_only_forecast_rows(country_shares, lift_series):
+def test_addback_pre_launch_rows_unchanged(country_shares, lift_series):
+    """Pre-campaign rows have lift == 0, so they should be byte-equal."""
     fdf = _make_forecast_fixture()
     out = add_marketing_lift_to_forecast(
         fdf,
@@ -737,11 +738,37 @@ def test_addback_only_forecast_rows(country_shares, lift_series):
         country_shares=country_shares,
         forecast_start=FORECAST_START,
     )
-    training_mask = out["source"] == "actual"
+    pre_launch_mask = pd.to_datetime(out["target_date"]) < CAMPAIGN_LAUNCH
+    assert pre_launch_mask.any(), "fixture should include pre-launch rows"
     pd.testing.assert_series_equal(
-        fdf.loc[training_mask, "DAU"].reset_index(drop=True),
-        out.loc[training_mask, "DAU"].reset_index(drop=True),
+        fdf.loc[pre_launch_mask, "DAU"].reset_index(drop=True),
+        out.loc[pre_launch_mask, "DAU"].reset_index(drop=True),
     )
+
+
+def test_addback_post_launch_training_rows_get_lift(country_shares, lift_series):
+    """Training rows after the campaign launch must also get the lift added back.
+
+    This is what makes the training→forecast transition coherent for any
+    downstream rolling statistic (e.g. 28d MA).
+    """
+    fdf = _make_forecast_fixture()
+    out = add_marketing_lift_to_forecast(
+        fdf,
+        daily_lift_series=lift_series,
+        country_shares=country_shares,
+        forecast_start=FORECAST_START,
+    )
+    # World ALL training rows post-campaign-launch should gain the full daily lift
+    mask = (
+        (out["country"] == "ALL")
+        & (out["population"] == "ALL")
+        & (out["source"] == "actual")
+        & (pd.to_datetime(out["target_date"]) >= CAMPAIGN_LAUNCH)
+    )
+    assert mask.any(), "fixture should include post-launch training rows"
+    delta = (out.loc[mask, "DAU"] - fdf.loc[mask, "DAU"])
+    assert np.allclose(delta.values, 10_000.0)
 
 
 def test_addback_non_fenix_populations_untouched(country_shares, lift_series):

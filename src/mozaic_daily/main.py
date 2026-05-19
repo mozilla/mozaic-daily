@@ -253,7 +253,10 @@ def process_data_source(
     # Combine
     df_combined = combine_tables(forecast_result.dfs)
 
-    # Marketing-lift add-back (before format_func so the population column still exists)
+    # Marketing-lift add-back (before format_func so the population column still exists).
+    # Operates on every row where the lift series has a non-zero value — that
+    # includes the post-campaign-launch training rows we subtracted from, so the
+    # training→forecast transition stays coherent for downstream rolling stats.
     if marketing_context is not None and Metric.DAU.value in df_combined.columns:
         df_combined = add_marketing_lift_to_forecast(
             df_combined,
@@ -263,8 +266,10 @@ def process_data_source(
             metric_column=Metric.DAU.value,
             app_population_value=marketing_context["spec"]["allocation"]["app_flag_column"],
         )
-        n_forecast_rows = (df_combined["source"] == "forecast").sum()
-        print(f'Marketing-lift: added back to {n_forecast_rows} forecast rows')
+        n_total = len(df_combined)
+        n_forecast = (df_combined["source"] == "forecast").sum()
+        print(f'Marketing-lift: added back across {n_total} rows '
+              f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
 
     # Format
     format_func = get_format_function(platform)
