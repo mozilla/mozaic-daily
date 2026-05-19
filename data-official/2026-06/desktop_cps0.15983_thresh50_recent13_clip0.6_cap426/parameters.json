@@ -1,0 +1,12 @@
+{
+  "platform": "legacy_desktop",
+  "forecast_start_date": "2026-05-17",
+  "prophet_recent_weeks": 13,
+  "changepoint_prior_scale": 0.15983,
+  "holiday_threshold": -0.032,
+  "holiday_max_radius": 5,
+  "holiday_min_radius": 3,
+  "holiday_effect_floor": -0.6,
+  "mozaic_cap_window_days": 426,
+  "notes": "main.py invokes the bare desktop_forecast_model with config=None, so populate_tiles uses its package default holiday_threshold=-0.032. The previous June parameters.json mis-documented this as -0.05 (carried over from older notes); corrected here. mozaic_cap_window_days=426 reflects the tail(366)->tail(426) fix in mozaic-forecasting-official to address the rolling-cap ratchet artifact."
+}

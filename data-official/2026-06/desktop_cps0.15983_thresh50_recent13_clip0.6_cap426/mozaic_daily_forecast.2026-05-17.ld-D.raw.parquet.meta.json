@@ -1,0 +1,20 @@
+{
+  "adjustments_applied": [],
+  "artifact_sha1": "07ceb2e07ffde1b710ceda2dbf920ed9143fd924",
+  "data_source": "legacy_desktop",
+  "forecast_start_date": "2026-05-17",
+  "model_config": {
+    "changepoint_prior_scale": 0.15983,
+    "forecast_start_date": "2026-05-17",
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.05,
+    "platform": "legacy_desktop",
+    "prophet_recent_weeks": 13
+  },
+  "mozaic_daily_commit": "a7fa2fa1170740bd1e3116ae4e7405e6ff7d6d4e",
+  "note": "Baseline cap-426 rerun. mozaic-forecasting-official tail(N) widened from 366 to 426 in models.py (5 sites) to put April's cap-defining day back inside the rolling window. See memory project-june-branch-state.",
+  "produced_at": "2026-05-19T05:39:25.648550+00:00Z",
+  "produced_by": "scripts/run_main.py (mozaic-forecasting-official @ configurable-model-params + tail(366)->tail(426) cap fix, uncommitted) + tmp/finalize_cap426.py for state-marker rename"
+}

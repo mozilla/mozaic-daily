@@ -7,17 +7,18 @@
       "spec_sha1": "e4764ffd6e0431ca65b2c4024072bc236c8f9eaf"
     }
   ],
-  "artifact_sha1": "1a6671996beb1bbc1386b8c977ce0fe9fd018673",
+  "artifact_sha1": "d9552345dd678e723c825b3dc93f57d25985d873",
   "data_source": "desktop+mobile composite (world DAU 28-day MA)",
   "forecast_start_date": "2026-05-17",
   "model_config": null,
-  "mozaic_daily_commit": "90dccc3c9a2d01204d859c6ea679c4b5809f91e2",
+  "mozaic_daily_commit": "a7fa2fa1170740bd1e3116ae4e7405e6ff7d6d4e",
+  "note": "Regenerated 2026-05-18 after cap-426 fix in mozaic-forecasting-official (tail(366)->tail(426)).",
   "parent_files": [
-    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.ld-D.raw.parquet",
-    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.ld-D.raw.plus_iran.parquet",
-    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.gm-D.raw.parquet",
-    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-17.gm-D.raw.plus_iran.parquet"
+    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.ld-D.raw.parquet",
+    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.ld-D.raw.plus_iran.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.raw.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.raw.plus_iran.parquet"
   ],
-  "produced_at": "2026-05-19T00:32:29.026368+00:00Z",
+  "produced_at": "2026-05-19T05:45:53.959669+00:00Z",
   "produced_by": "data-official/2026-06/june_composite_forecast.ipynb (export-csv cell)"
 }
