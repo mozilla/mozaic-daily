@@ -29,6 +29,20 @@ from .queries import (
 )
 
 
+def _to_dataframe_kwargs() -> dict:
+    """Return kwargs for ``bigquery.QueryJob.to_dataframe()``.
+
+    Honors ``MOZAIC_DAILY_DISABLE_BQSTORAGE=1`` by passing
+    ``create_bqstorage_client=False`` so the result is fetched over the REST API
+    instead of gRPC. The opt-in flag lets contributors work around environments
+    where gRPC cannot reach ``bigquerystorage.googleapis.com`` (e.g. SOCKS5
+    proxies, which gRPC doesn't support). Default behavior is unchanged.
+    """
+    if os.environ.get("MOZAIC_DAILY_DISABLE_BQSTORAGE") == "1":
+        return {"create_bqstorage_client": False}
+    return {}
+
+
 def check_training_data_availability(project: str, training_end_date: str) -> None:
     """Verify that all BigQuery tables have data through training_end_date.
 
@@ -55,8 +69,9 @@ def check_training_data_availability(project: str, training_end_date: str) -> No
 
     print(f"Pre-flight check: verifying training data is available through {training_end_date}...")
 
+    to_df_kwargs = _to_dataframe_kwargs()
     for check in checks:
-        result = client.query(check.sql).to_dataframe()
+        result = client.query(check.sql).to_dataframe(**to_df_kwargs)
         max_date_raw = result['max_date'].iloc[0]
 
         if pd.isna(max_date_raw):
@@ -181,7 +196,7 @@ def get_aggregate_data(
                 else:
                     print(f"[{query_num}/{total_queries}] Querying {spec.data_source.display_name} {metric}")
                     print(query)
-                    df = bigquery.Client(project).query(query).to_dataframe()
+                    df = bigquery.Client(project).query(query).to_dataframe(**_to_dataframe_kwargs())
 
                     # Check for empty results
                     if df.empty:
