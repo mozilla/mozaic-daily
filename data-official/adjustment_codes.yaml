@@ -7,7 +7,11 @@
 #
 # Adding a new adjustment:
 #   1. Add a one-letter code below with name + description + spec_glob.
-#   2. Register its applier in src/mozaic_daily/adjustments.py via @register_applier.
+#   2. Add applier functions to src/mozaic_daily/adjustments.py. Two applier
+#      styles exist: post-forecast composite-Series mutators (e.g. `h`,
+#      headwinds) and pre+post mozaic per-tile DataFrame mutators (e.g. `m`,
+#      marketing_lift). Place new appliers under a clearly-labeled section in
+#      adjustments.py.
 #   3. Update tests/test_adjustments.py to cover the new code.
 #
 # Codes must be single lowercase letters, unique. The combined .adj- portion of
@@ -23,3 +27,13 @@ codes:
       competitive shifts, regulatory changes). Per-month spec lives in
       data-official/{YYYY-MM}/adjustments/headwind.json.
     spec_glob: "data-official/*/adjustments/headwind.json"
+  m:
+    name: marketing_lift
+    description: >
+      Marketing-attributable DAU lift. Subtracted from Fenix Android training
+      data before mozaic forecasting (so Prophet learns the no-marketing
+      dynamic), then added back to the per-country forecast output (so the
+      final answer reflects "campaign continues at modeled levels"). Per-month
+      spec lives in data-official/{YYYY-MM}/marketing/marketing.json with a
+      sidecar daily lift parquet from the marketing_lift_model notebooks.
+    spec_glob: "data-official/*/marketing/marketing.json"

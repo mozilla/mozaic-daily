@@ -1,0 +1,60 @@
+{
+  "model_name": "fenix_marketing_lift_v1",
+  "description": "Daily marketing-attributable DAU lift for the Fenix Android campaign launched 2026-04-06. Historical portion is (Fenix NP \u229b retention) scaled to match (actuals \u2212 April mozaic forecast) at the ex-Iran ALL-MOBILE rollup. Forward portion is piecewise linear with a slope break at SLOPE_BREAK reducing the slope to SLOPE_REDUCTION_FACTOR \u00d7 initial.",
+  "created_at_utc": "2026-05-19T06:13:24.472026+00:00",
+  "mozaic_daily_git_hash": "6e13c2db8bc465fe140514b363286425e3e07f03",
+  "coverage": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-12-31",
+    "campaign_launch": "2026-04-06",
+    "last_historical": "2026-05-16",
+    "slope_break": "2026-07-01",
+    "forecast_end": "2026-12-31"
+  },
+  "retention_curve": {
+    "a": 0.8602777983808394,
+    "tau_fast": 0.6160230276224806,
+    "tau_slow": 19.446696806840745,
+    "integrated_retention_user_days": 3.2470862260270557,
+    "source_fit_file": "/Users/brendanwells/work/mozaic-daily/.claude/worktrees/marketing-lift/marketing_lift_model/data/retention_fit.json"
+  },
+  "historical_scaling": {
+    "scale_factor": 1.0642827704133635,
+    "fenix_lift_28d_ma_post_mean": 162506.95305312553,
+    "gap_28d_ma_post_mean": 172953.35020681485,
+    "compare_window_n_days": 34,
+    "easter_mask_dates": [
+      "2026-04-03",
+      "2026-04-04",
+      "2026-04-05",
+      "2026-04-06",
+      "2026-04-07",
+      "2026-04-16",
+      "2026-04-17",
+      "2026-04-18",
+      "2026-04-19",
+      "2026-04-20"
+    ]
+  },
+  "forward_projection": {
+    "anchor_slope_dau_per_day": 11344.34520378646,
+    "post_break_slope_dau_per_day": 3781.4484012621533,
+    "slope_reduction_factor": 0.3333333333333333,
+    "slope_window_days": 14,
+    "pin_value_at_last_historical_dau": 579474.4606941972
+  },
+  "source_data": {
+    "april_forecast_parquet": "/Users/brendanwells/work/mozaic-daily/data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.raw.parquet",
+    "june_forecast_parquet": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.raw.parquet",
+    "rollup_filter": "data_source='glean_mobile', country='ALL', app_name='ALL MOBILE', segment='{}'; underlying signal is Fenix Android release-channel, ex-IR, ex-fa locale."
+  },
+  "source_notebooks": [
+    "01_signal_extraction.ipynb",
+    "02_retention_fit.ipynb",
+    "03_forecast_projection.ipynb"
+  ],
+  "export_columns": {
+    "marketing_lift_daily": "Daily DAU lift attributable to the campaign. Subtract from mobile actuals before mozaic forecasting; add back to the forecast post-hoc.",
+    "marketing_lift_ma": "28-day trailing moving average of marketing_lift_daily, for diagnostics. NaN for the first 14 days of the series."
+  }
+}

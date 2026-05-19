@@ -26,6 +26,9 @@ logs/
 # Data directories (large files archived to GCS — see follow-up in monthly-forecast-update.md)
 # data-official/ is NOT fully ignored: *.json and *.md parameter files are committed,
 # data files (*.parquet, *.pkl, *.csv) are caught by the global rules above.
+# Marketing-lift model inputs (small, configuration-like) ARE tracked under
+# data-official/{YYYY-MM}/marketing/ so the pipeline can apply the `m` adjustment.
+!data-official/*/marketing/*.parquet
 data/
 data-mozaic/
 april-by-hand/
