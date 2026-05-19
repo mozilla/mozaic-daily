@@ -6,6 +6,7 @@ Unit and integration tests for `mozaic_daily`. Mirrors the package structure: on
 
 | File | Tests |
 |---|---|
+| `test_adjustments.py` | Filename markers, sidecar meta round-trip, composite adjustment math (`linear_ramp`, `step`, `daily_series`), per-tile marketing-lift applier (spec validation, country shares, subtract from training, add-back to forecast) |
 | `test_validation.py` | All validation rules: schema, string formats, row counts, nulls, duplicates |
 | `test_forecasting.py` | `get_forecast_dfs`, `get_desktop_forecast_dfs`, `get_mobile_forecast_dfs` |
 | `test_config.py` | `get_runtime_config`, date logic, `DateConstraints` |

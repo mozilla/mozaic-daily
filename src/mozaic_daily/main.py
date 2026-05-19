@@ -16,9 +16,19 @@ Usage:
 """
 
 from typing import Optional, Set
+import glob
+import json
 import pandas as pd
+from pathlib import Path
 import os
 from joblib.externals import cloudpickle
+from .adjustments import (
+    add_marketing_lift_to_forecast,
+    compute_fenix_country_shares,
+    load_marketing_lift_series,
+    load_marketing_spec,
+    subtract_marketing_lift_from_training,
+)
 from .config import get_runtime_config, STATIC_CONFIG, build_filter_code
 from .data import get_queries, get_aggregate_data, check_training_data_availability
 from .forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs
@@ -123,11 +133,81 @@ def save_checkpoint(df: pd.DataFrame, filename: str) -> None:
     df.to_parquet(filename)
 
 
+def _find_marketing_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
+    """Locate the marketing.json spec whose applies_to_forecast_start matches.
+
+    Globs ``data-official/*/marketing/marketing.json`` (relative to repo root) and
+    returns the spec whose ``applies_to_forecast_start`` equals
+    ``forecast_start_date``. Returns ``None`` if no spec matches — this is the
+    "no marketing-lift adjustment for this forecast cycle" path and is not an
+    error.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    candidates = sorted(
+        glob.glob(str(repo_root / "data-official" / "*" / "marketing" / "marketing.json"))
+    )
+    matches = []
+    for candidate in candidates:
+        with open(candidate) as f:
+            spec = json.load(f)
+        if spec.get("applies_to_forecast_start") == forecast_start_date:
+            matches.append(Path(candidate))
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise ValueError(
+            f"Multiple marketing.json specs claim applies_to_forecast_start="
+            f"{forecast_start_date!r}: {[str(m) for m in matches]}"
+        )
+    return matches[0]
+
+
+def _apply_marketing_lift_pre_mozaic(
+    source_data: dict,
+    spec_path: Path,
+    training_end_date: str,
+) -> tuple[dict, dict]:
+    """Subtract marketing-lift from the DAU training data before mozaic runs.
+
+    Returns ``(modified_source_data, marketing_context)`` where
+    ``marketing_context`` carries ``{daily_lift_series, country_shares, spec}``
+    so the symmetric add-back can use byte-identical inputs.
+    """
+    spec = load_marketing_spec(spec_path)
+    daily_lift_series = load_marketing_lift_series(spec, spec_path.parent)
+    metric_key = Metric.DAU.value
+    training_df = source_data[metric_key]
+    country_shares = compute_fenix_country_shares(
+        training_df,
+        training_end_date=pd.Timestamp(training_end_date),
+        window_days=spec["allocation"]["window_days"],
+        app_flag_column=spec["allocation"]["app_flag_column"],
+    )
+    print(
+        f'Marketing-lift: subtracting from {metric_key} training data '
+        f'({len(country_shares)} countries, {(training_df[spec["allocation"]["app_flag_column"]] == True).sum()} fenix rows)'  # noqa: E712
+    )
+    modified_source_data = dict(source_data)
+    modified_source_data[metric_key] = subtract_marketing_lift_from_training(
+        training_df,
+        daily_lift_series=daily_lift_series,
+        country_shares=country_shares,
+        app_flag_column=spec["allocation"]["app_flag_column"],
+    )
+    return modified_source_data, {
+        "daily_lift_series": daily_lift_series,
+        "country_shares": country_shares,
+        "spec": spec,
+    }
+
+
 def process_data_source(
     data_source: DataSource,
     datasets: dict,
     forecast_start: str,
-    forecast_end: str
+    forecast_end: str,
+    training_end_date: Optional[str] = None,
+    marketing_spec_path: Optional[Path] = None,
 ) -> pd.DataFrame:
     """Process a single data source through the forecast pipeline.
 
@@ -136,6 +216,12 @@ def process_data_source(
         datasets: Nested dict of data by platform/source/metric
         forecast_start: Start date for forecast period
         forecast_end: End date for forecast period
+        training_end_date: Last date of training data (used by the marketing-lift
+            allocation key window). Required when ``marketing_spec_path`` is set.
+        marketing_spec_path: If set and ``data_source == GLEAN_MOBILE``, applies
+            the marketing-lift `m` adjustment: subtracts lift from the DAU
+            training rows before mozaic and adds it back to the per-tile
+            forecast after mozaic. No-op for other data sources.
 
     Returns:
         Tuple of (DataFrame with forecasts, dict of metric -> fitted Mozaic objects)
@@ -145,6 +231,17 @@ def process_data_source(
     source = data_source.telemetry_source
     source_data = datasets[platform.value][source.value]
 
+    marketing_context = None
+    if marketing_spec_path is not None and data_source == DataSource.GLEAN_MOBILE \
+            and Metric.DAU.value in source_data:
+        if training_end_date is None:
+            raise ValueError(
+                "training_end_date is required when marketing_spec_path is set"
+            )
+        source_data, marketing_context = _apply_marketing_lift_pre_mozaic(
+            source_data, marketing_spec_path, training_end_date
+        )
+
     # Generate forecasts
     forecast_func = get_forecast_function(platform)
     additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
@@ -153,8 +250,23 @@ def process_data_source(
         additional_holidays=additional_holidays,
     )
 
-    # Combine and format
+    # Combine
     df_combined = combine_tables(forecast_result.dfs)
+
+    # Marketing-lift add-back (before format_func so the population column still exists)
+    if marketing_context is not None and Metric.DAU.value in df_combined.columns:
+        df_combined = add_marketing_lift_to_forecast(
+            df_combined,
+            daily_lift_series=marketing_context["daily_lift_series"],
+            country_shares=marketing_context["country_shares"],
+            forecast_start=pd.Timestamp(forecast_start),
+            metric_column=Metric.DAU.value,
+            app_population_value=marketing_context["spec"]["allocation"]["app_flag_column"],
+        )
+        n_forecast_rows = (df_combined["source"] == "forecast").sum()
+        print(f'Marketing-lift: added back to {n_forecast_rows} forecast rows')
+
+    # Format
     format_func = get_format_function(platform)
     format_func(df_combined, data_source=data_source.value)
 
@@ -167,6 +279,7 @@ def generate_forecasts(
     data_source_filter: Optional[Set[DataSource]] = None,
     checkpoints: bool = False,
     output_dir: str = ".",
+    marketing_spec_path: Optional[Path] = None,
 ) -> pd.DataFrame:
     """Generate forecasts for all data sources and combine them.
 
@@ -176,6 +289,9 @@ def generate_forecasts(
         data_source_filter: If set, only process these data sources
         checkpoints: If True, save fitted Mozaic objects to disk alongside other checkpoints
         output_dir: Directory for checkpoint files
+        marketing_spec_path: If set, the marketing-lift `m` adjustment is applied
+            to glean_mobile DAU (subtract pre-mozaic, add back post-mozaic).
+            Other data sources are unaffected.
 
     Returns:
         Combined DataFrame with all forecasts
@@ -195,7 +311,9 @@ def generate_forecasts(
             data_source,
             datasets,
             runtime_config['forecast_start_date'],
-            runtime_config['forecast_end_date']
+            runtime_config['forecast_end_date'],
+            training_end_date=runtime_config['training_end_date'],
+            marketing_spec_path=marketing_spec_path,
         )
         all_dfs.append(df)
 
@@ -229,7 +347,8 @@ def main(
     data_source_filter: Optional[Set[DataSource]] = None,
     metric_filter: Optional[Set[Metric]] = None,
     forecast_start_date: Optional[str] = None,
-    output_dir: Optional[str] = None
+    output_dir: Optional[str] = None,
+    marketing_lift: bool = True,
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
 
@@ -244,6 +363,10 @@ def main(
             Simulates running the forecast on this date.
         output_dir: Directory to write checkpoint files to (defaults to current directory).
             Created automatically if it doesn't exist.
+        marketing_lift: If True (default), look for a marketing-lift spec
+            matching this forecast cycle's start date and apply the `m`
+            adjustment to glean_mobile DAU. If False, force the adjustment off
+            even if a matching spec exists.
 
     Returns:
         DataFrame with forecasts
@@ -296,11 +419,24 @@ def main(
         df = load_checkpoint_if_exists(checkpoint_filename)
 
     if df is None:
+        marketing_spec_path = (
+            _find_marketing_spec_for_forecast(config['forecast_start_date'])
+            if marketing_lift else None
+        )
+        if marketing_lift and marketing_spec_path is None:
+            print(
+                f'Marketing-lift: no spec found for forecast_start='
+                f'{config["forecast_start_date"]}; adjustment disabled for this cycle.'
+            )
+        elif marketing_spec_path is not None:
+            print(f'Marketing-lift: using spec {marketing_spec_path}')
+
         df = generate_forecasts(
             datasets, config,
             data_source_filter=data_source_filter,
             checkpoints=checkpoints,
             output_dir=resolved_output_dir,
+            marketing_spec_path=marketing_spec_path,
         )
         save_checkpoint(df, checkpoint_filename)
 

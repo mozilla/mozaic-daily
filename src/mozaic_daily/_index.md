@@ -12,7 +12,7 @@ Core forecasting package for Mozilla Firefox metrics. Each module has a single r
 | `forecast.py` | `get_forecast_dfs()`, `get_desktop_forecast_dfs()`, `get_mobile_forecast_dfs()`; `ForecastResult` dataclass; `ModelConfig`/`DesktopModelConfig`/`MobileModelConfig` usage | Data fetching, output formatting |
 | `tables.py` | `format_output_table()` — combines Desktop/Mobile, creates ALL rows, renames columns, sets data_source values | BigQuery upload, validation |
 | `validation.py` | `validate_output_dataframe()` — schema, format, row counts, nulls, duplicates | Data fetching, formatting |
-| `adjustments.py` | Adjustment-state filename markers (`.raw.` / `.adj-{codes}.`), sidecar `.meta.json` write/read, `load_forecast()` state-validating loader, applier functions (`apply_net_adjustment_to_series`, `render_adjustment`, `load_adjustments_from_dir`) | Forecast generation, BigQuery I/O |
+| `adjustments.py` | Adjustment-state filename markers (`.raw.` / `.adj-{codes}.`), sidecar `.meta.json` write/read, `load_forecast()` state-validating loader, **composite appliers** (`apply_net_adjustment_to_series`, `render_adjustment`, `load_adjustments_from_dir` — e.g. `h` headwinds), **per-tile appliers** (`load_marketing_spec`, `load_marketing_lift_series`, `compute_fenix_country_shares`, `subtract_marketing_lift_from_training`, `add_marketing_lift_to_forecast` — e.g. `m` marketing-lift) | Forecast generation, BigQuery I/O |
 | `main.py` | Pipeline entry point; ties together fetch → forecast → format → validate; `save_mozaic_objects()` | Individual step logic |
 | `__init__.py` | Public surface: `main`, `validate_output_dataframe`, `get_git_commit_hash` | |
 
@@ -23,7 +23,9 @@ Core forecasting package for Mozilla Firefox metrics. Each module has a single r
 - **New output column**: `tables.py` (`format_output_table`) and `validation.py` (schema check)
 - **New validation rule**: `validation.py` alongside existing checks; add a test to `tests/test_validation.py`
 - **New pipeline step**: `main.py`, with heavy logic in its own module
-- **New adjustment type** (e.g., tailwinds, regulatory shifts): register a one-letter code in `data-official/adjustment_codes.yaml`, add the applier to `adjustments.py`, extend `tests/test_adjustments.py`. The filename marker is derived automatically via `state_marker()`.
+- **New adjustment type** (e.g., tailwinds, regulatory shifts): register a one-letter code in `data-official/adjustment_codes.yaml`, add the applier to `adjustments.py`, extend `tests/test_adjustments.py`. The filename marker is derived automatically via `state_marker()`. Two applier styles exist:
+  - **Composite post-forecast** — mutates a 28d-MA `Series` after mozaic is done. Cheap to add. Use for adjustments whose effect is well-described at the world rollup level (e.g. `h` headwinds).
+  - **Per-tile bidirectional** — subtracts from training rows before mozaic, adds back after. Use when the adjustment should actually shift the *model's view of recent history* so it doesn't extrapolate the adjustment forward implicitly (e.g. `m` marketing-lift, which would otherwise be baked into Prophet's trend). Requires care: dtype preservation on `y`, idempotency sentinel on `attrs`, and matching row patterns in the post-mozaic forecast. The `m` implementation is the reference.
 
 ## Key data flow
 

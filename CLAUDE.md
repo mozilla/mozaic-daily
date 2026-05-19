@@ -138,6 +138,9 @@ python scripts/run_main.py --clean
 # Write checkpoint files to a specific directory (avoids conflicts between parallel runs)
 python scripts/run_main.py --output-dir /tmp/my-run
 
+# Disable the marketing-lift `m` adjustment (default: applied when a matching spec exists)
+python scripts/run_main.py --data-sources glean_mobile --metrics DAU --no-marketing-lift
+
 # Run validation on checkpointed forecast data (defaults to yesterday's date)
 python scripts/run_validation.py
 
@@ -375,7 +378,8 @@ Adjustment codes are registered in `data-official/adjustment_codes.yaml`. Curren
 
 | Code | Name | Description |
 |------|------|-------------|
-| `h`  | headwinds | Linear ramp anchored at a target date; spec lives in `data-official/{YYYY-MM}/adjustments/headwind.json` |
+| `h`  | headwinds | Linear ramp anchored at a target date; spec lives in `data-official/{YYYY-MM}/adjustments/headwind.json`. Composite-style applier (post-forecast Series mutation). |
+| `m`  | marketing_lift | Daily DAU lift from the Fenix Android paid campaign launched 2026-04-06; spec + parquet live in `data-official/{YYYY-MM}/marketing/`. Per-tile bidirectional applier: subtracts lift from Fenix training rows before mozaic so Prophet learns the no-marketing dynamic, then adds the lift back to the per-tile forecast. Only applies to `glean_mobile` DAU. |
 
 Combined with existing markers, filenames look like:
 
@@ -383,6 +387,8 @@ Combined with existing markers, filenames look like:
 mozaic_daily_forecast.2026-05-13.ld-D.raw.parquet               # raw model output
 mozaic_daily_forecast.2026-05-13.ld-D.raw.plus_iran.parquet     # raw + synthetic Iran composition
 june_composite_forecast_28ma.adj-h.csv                          # headwinds applied
+mozaic_daily_forecast.2026-05-17.gm-D.adj-m.parquet             # marketing-lift applied (mobile)
+june_composite_forecast_28ma.adj-hm.csv                         # headwinds + marketing-lift
 ```
 
 **Every artifact has a sidecar `<name>.meta.json`** with full provenance: model config, list of `adjustments_applied` (with code + spec_file + spec_sha1), parent files, mozaic-daily commit hash. The sidecar is the source of truth for adjustment state; the filename marker is required to match it.
@@ -399,7 +405,11 @@ df, meta = load_forecast(path, require_state=["h"])  # raises if filename codes 
 
 **Auditing on-disk files**: `scripts/verify_forecast_states.py` reproduces composite CSVs from raw parquets and writes `tmp/inventory.csv` with verified state per file. Run this whenever you suspect adjustment state drift.
 
-**Adding a new adjustment type**: add the one-letter code to `data-official/adjustment_codes.yaml`, register its applier in `src/mozaic_daily/adjustments.py`, and extend `tests/test_adjustments.py`. See the existing `h` (headwinds) implementation as the template.
+**Adding a new adjustment type**: add the one-letter code to `data-official/adjustment_codes.yaml`, register its applier in `src/mozaic_daily/adjustments.py`, and extend `tests/test_adjustments.py`. Two applier styles exist:
+- *Composite post-forecast* (mutates a 28d-MA Series after mozaic — cheap, low-impact). Reference: `h` (headwinds).
+- *Per-tile bidirectional* (subtracts from training before mozaic, adds back after — required when the adjustment should shift the *model's view of recent history* so it doesn't extrapolate the adjustment forward implicitly). Reference: `m` (marketing-lift).
+
+**Disabling marketing-lift for a one-off run**: `python scripts/run_main.py --no-marketing-lift ...`. Default behavior is to apply `m` whenever `data-official/{YYYY-MM}/marketing/marketing.json` has `applies_to_forecast_start == forecast_start_date`.
 
 ## Iran Internet Shutdown Workaround
 

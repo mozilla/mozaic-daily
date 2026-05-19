@@ -26,6 +26,15 @@ data-official/
     june_composite_forecast_28ma.adj-h.csv.meta.json
     june_mobile_plot_series.adj-h.csv                          # headwind-applied plot data
     june_composite_forecast.ipynb                              # producer notebook
+    marketing/                                                 # marketing-lift adjustment (`m`)
+      marketing.json                                           # spec consumed by the pipeline
+      marketing_lift_model.<date>.parquet                      # daily lift series
+      marketing_lift_model.<date>.meta.json                    # sidecar with model provenance
+      README.md
+    mobile_<config-slug>/
+      mozaic_daily_forecast.<date>.gm-D.adj-m.parquet          # marketing-lift applied
+      ...
+    june_composite_forecast_28ma.adj-hm.csv                    # headwinds + marketing-lift
 ```
 
 ## Naming convention (load-bearing files only)
@@ -41,6 +50,8 @@ Combined with the Iran composition marker:
 forecast.2026-05-13.ld-D.raw.parquet               # raw, no-Iran
 forecast.2026-05-13.ld-D.raw.plus_iran.parquet     # raw, Iran added back
 forecast.2026-05-13.ld-D.adj-h.plus_iran.parquet   # headwinds applied, Iran added
+forecast.2026-05-17.gm-D.adj-m.parquet             # marketing-lift applied
+forecast.2026-05-17.gm-D.adj-hm.parquet            # headwinds + marketing-lift
 ```
 
 **Scratch files** under `comparisons/` and `param_scan_results/` are not held to this convention — they are all raw model output by directory convention. The scripts that produce them do not apply adjustments.

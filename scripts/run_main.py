@@ -90,6 +90,17 @@ if __name__ == '__main__':
         default=None,
         help='Directory to write checkpoint files to (default: current directory)'
     )
+    parser.add_argument(
+        '--no-marketing-lift',
+        dest='marketing_lift',
+        action='store_false',
+        default=True,
+        help=(
+            'Disable the marketing-lift (`m`) adjustment for this run, even if a '
+            'matching spec exists in data-official/{YYYY-MM}/marketing/. Default '
+            'is to apply the adjustment when a spec matches forecast_start_date.'
+        )
+    )
     args = parser.parse_args()
 
     # Validate that --testing is not combined with explicit filters
@@ -110,5 +121,6 @@ if __name__ == '__main__':
         data_source_filter=data_source_filter,
         metric_filter=metric_filter,
         forecast_start_date=args.forecast_start_date,
-        output_dir=args.output_dir
+        output_dir=args.output_dir,
+        marketing_lift=args.marketing_lift,
     )
