@@ -290,9 +290,14 @@ def main():
         "produced by scripts/run_comparison_forecasts.py — never applies headwinds",
     )
     tag_scratch_dir(
-        "param_scan_results/**/*",
+        "research/param-scans/results/**/*",
         inventory,
         "produced by scripts/run_param_scan.py — never applies headwinds",
+    )
+    tag_scratch_dir(
+        "research/param-scans/pinned/**/*",
+        inventory,
+        "produced by scripts/run_pinned_scan.py — never applies headwinds",
     )
 
     out_path = REPO_ROOT / args.out

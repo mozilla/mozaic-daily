@@ -18,7 +18,7 @@ Single config (defaults reproduce the June 2026 baseline):
     python scripts/run_param_scan.py \\
         --forecast-start-date 2026-05-13 \\
         --raw-cache-dir data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6 \\
-        --results-dir param_scan_results
+        --results-dir research/param-scans/results
 
 Override one or more knobs:
 
@@ -262,8 +262,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--results-dir",
         type=Path,
-        default=REPO_ROOT / "param_scan_results",
-        help="Root directory for all scan runs (default: param_scan_results/).",
+        default=REPO_ROOT / "research/param-scans/results",
+        help="Root directory for all scan runs (default: research/param-scans/results/).",
     )
     parser.add_argument(
         "--dry-run",

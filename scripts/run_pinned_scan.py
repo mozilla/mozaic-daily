@@ -47,7 +47,7 @@ Usage
         --holiday-threshold -0.05 \\
         --changepoint-prior-scale 0.13
 
-Outputs land in ``param_scan_results_pinned/<slug>/`` (separate dir from the unpinned scan
+Outputs land in ``research/param-scans/pinned/<slug>/`` (separate dir from the unpinned scan
 so the two sets don't get mixed up).
 """
 from __future__ import annotations
@@ -371,7 +371,7 @@ def parse_args() -> argparse.Namespace:
                    default=REPO_ROOT / "data-official/2026-04/desktop_cps0.15983_thresh050_recent13_clip0.6/mozaic_objects.legacy_desktop.2026-04-01.pkl",
                    help="April per-tile-changepoints pkl")
     p.add_argument("--results-dir", type=Path,
-                   default=REPO_ROOT / "param_scan_results_pinned")
+                   default=REPO_ROOT / "research/param-scans/pinned")
     p.add_argument("--changepoint-prior-scale", type=float, default=None)
     p.add_argument("--recent-weeks", type=int, default=None)
     p.add_argument("--holiday-threshold", type=float, default=None)
