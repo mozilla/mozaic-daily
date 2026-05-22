@@ -9,7 +9,7 @@
     "holiday_effect_floor": -0.6,
     "holiday_max_radius": 5,
     "holiday_min_radius": 3,
-    "holiday_threshold": -0.05,
+    "holiday_threshold": -0.032,
     "platform": "legacy_desktop",
     "prophet_recent_weeks": 13
   },

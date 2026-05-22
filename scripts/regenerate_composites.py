@@ -66,8 +66,8 @@ CONFIGS = [
     {
         "label": "april",
         "forecast_start": "2026-04-01",
-        "desktop_no_iran": "data-official/2026-04/desktop_cps0.15983_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.ld-D.raw.parquet",
-        "desktop_plus_iran": "data-official/2026-04/desktop_cps0.15983_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.ld-D.raw.plus_iran.parquet",
+        "desktop_no_iran": "data-official/2026-04/desktop_cps0.15983_thresh050_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.ld-D.raw.parquet",
+        "desktop_plus_iran": "data-official/2026-04/desktop_cps0.15983_thresh050_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.ld-D.raw.plus_iran.parquet",
         "mobile_no_iran": "data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.raw.parquet",
         "mobile_plus_iran": "data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.raw.plus_iran.parquet",
         "adjustments_dir": "data-official/2026-04/adjustments",
@@ -77,11 +77,11 @@ CONFIGS = [
     },
     {
         "label": "june",
-        "forecast_start": "2026-05-13",
-        "desktop_no_iran": "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.ld-D.raw.parquet",
-        "desktop_plus_iran": "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.ld-D.raw.plus_iran.parquet",
-        "mobile_no_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.gm-D.raw.parquet",
-        "mobile_plus_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-05-13.gm-D.raw.plus_iran.parquet",
+        "forecast_start": "2026-05-21",
+        "desktop_no_iran": "data-official/2026-06/desktop_cps0.15983_thresh050_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-21.ld-D.raw.parquet",
+        "desktop_plus_iran": "data-official/2026-06/desktop_cps0.15983_thresh050_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-21.ld-D.raw.plus_iran.parquet",
+        "mobile_no_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-21.gm-D.raw.parquet",
+        "mobile_plus_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-21.gm-D.raw.plus_iran.parquet",
         "adjustments_dir": "data-official/2026-06/adjustments",
         "composite_csv_template": "data-official/2026-06/june_composite_forecast_28ma.csv",
     },
@@ -98,6 +98,20 @@ CONFIGS = [
         "mobile_plus_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.adj-m.plus_iran.parquet",
         "adjustments_dir": "data-official/2026-06/adjustments",
         "composite_csv_template": "data-official/2026-06/june_with_marketing_composite_forecast_28ma.csv",
+    },
+    {
+        # June refresh, threshold-matched to April (holiday_threshold=-0.05) with
+        # headwind anchor reduced to -1,403,000 to align Dec-15 28dMA with April.
+        # Marketing-lift (`m`) is still baked into the mobile parent, so the final
+        # composite is `.adj-hm.csv`.
+        "label": "june_thresh_aligned",
+        "forecast_start": "2026-05-17",
+        "desktop_no_iran": "data-official/2026-06/desktop_cps0.15983_thresh050_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.ld-D.raw.parquet",
+        "desktop_plus_iran": "data-official/2026-06/desktop_cps0.15983_thresh050_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.ld-D.raw.plus_iran.parquet",
+        "mobile_no_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.adj-m.parquet",
+        "mobile_plus_iran": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.adj-m.plus_iran.parquet",
+        "adjustments_dir": "data-official/2026-06/adjustments",
+        "composite_csv_template": "data-official/2026-06/june_thresh_aligned_composite_forecast_28ma.csv",
     },
 ]
 

@@ -1,0 +1,12 @@
+{
+  "platform": "legacy_desktop",
+  "forecast_start_date": "2026-05-17",
+  "prophet_recent_weeks": 13,
+  "changepoint_prior_scale": 0.15983,
+  "holiday_threshold": -0.05,
+  "holiday_max_radius": 5,
+  "holiday_min_radius": 3,
+  "holiday_effect_floor": -0.6,
+  "mozaic_cap_window_days": 426,
+  "notes": "Threshold-matched variant of the June 2026 desktop forecast. Uses holiday_threshold=-0.05 to match April's package-default-at-the-time (mozaic-forecasting@april-metaparameter-updates), replacing the -0.032 default from mozaic-forecasting-official used in the original cap426 run. Generated via scripts/run_param_scan.py --holiday-threshold -0.05 with the cap426 raw-cache, then promoted from param_scan_results/ to this directory."
+}

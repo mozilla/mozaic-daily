@@ -72,8 +72,8 @@ DATASETS = [
     {
         "label": "2026-04",
         "forecast_start": "2026-04-01",
-        "desktop_no_iran": "data-official/2026-04/desktop_cps0.15983_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.ld-D.parquet",
-        "desktop_plus_iran": "data-official/2026-04/desktop_cps0.15983_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.ld-D.plus_iran.parquet",
+        "desktop_no_iran": "data-official/2026-04/desktop_cps0.15983_thresh050_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.ld-D.parquet",
+        "desktop_plus_iran": "data-official/2026-04/desktop_cps0.15983_thresh050_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.ld-D.plus_iran.parquet",
         "mobile_no_iran": "data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.parquet",
         "mobile_plus_iran": "data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.plus_iran.parquet",
         "adjustments_dir": "data-official/2026-04/adjustments",

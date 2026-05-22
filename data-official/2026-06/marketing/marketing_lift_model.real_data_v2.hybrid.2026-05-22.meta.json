@@ -1,0 +1,49 @@
+{
+  "model_name": "fenix_marketing_lift_hybrid_v2",
+  "description": "v2 hybrid marketing-lift series anchored at training_end=2026-05-20. Historical period (2026-04-06 \u2192 training_end): empirical Fenix Android gap (actuals from 2026-05-21 no-marketing-lift run \u2212 April mktg-off forecast). Future period (training_end+1 \u2192 2026-12-31): anchored at gap_at_training_end + v2 CSV growth from training_end.",
+  "created_at_utc": "2026-05-22T19:32:33.952991+00:00",
+  "mozaic_daily_git_hash": "1eb775fd7e6f0d7eb5d78d6c4459655042b031ba",
+  "coverage": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-12-31",
+    "campaign_launch": "2026-04-06",
+    "training_end": "2026-05-20",
+    "forecast_end": "2026-12-31"
+  },
+  "methodology": {
+    "framing": "hybrid: empirical-actuals for historical period, CSV-anchored projection for future",
+    "historical_rule": "lift(d) = fenix_gap_daily(d) for d in [CAMPAIGN_LAUNCH, training_end]; 0 pre-campaign",
+    "future_rule": "lift(d) = gap_at_training_end + (csv_daily_paid(d) \u2212 csv_daily_paid(training_end)) for d > training_end",
+    "gap_scope": "country='ALL', app_name='fenix_android'",
+    "csv_version": "v2 (2026-05-20) \u2014 cohort-based decomposition"
+  },
+  "source_data": {
+    "source_csv": "/Users/brendanwells/work/mozaic-daily/.claude/worktrees/marketing-real-data/marketing_real_data_model/data/paid_dau_weekly_forecast.v2_model.20260520.csv",
+    "source_csv_sha1": "caa21c51c79537d850f6e2c35d98ff176587f4f3",
+    "april_forecast": "/Users/brendanwells/work/mozaic-daily/data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.raw.parquet",
+    "june_forecast": "/Users/brendanwells/work/mozaic-daily/tmp/no_mktg_2026-05-21/mozaic_daily_forecast.2026-05-21.gm-D.parquet",
+    "v1_hybrid_predecessor": "/Users/brendanwells/work/mozaic-daily/.claude/worktrees/marketing-real-data/marketing_real_data_model/data/marketing_lift_model.hybrid.2026-05-19.parquet"
+  },
+  "validation": {
+    "a_n_compare_days": 0,
+    "a_residual_mean": NaN,
+    "a_residual_std": NaN,
+    "a_residual_rmse": NaN,
+    "c_n_counterfactual_days": 0,
+    "c_residual_mean": NaN,
+    "c_residual_std": NaN,
+    "c_residual_min": NaN,
+    "c_residual_max": NaN
+  },
+  "caveats": [
+    "Historical lift = raw daily fenix_gap_daily \u2014 carries DOW noise and non-marketing April-forecast errors.",
+    "Future lift uses v2 CSV. v2 has a peak-then-decline shape (peak ~early-July), so the year-end magnitude is materially lower than v1's hybrid.",
+    "Pre-campaign (< 2026-04-06) = 0 by convention."
+  ],
+  "source_notebooks": [
+    "02_v2_forecast_projection.ipynb",
+    "03_v2_exploration.ipynb",
+    "04_v2_hybrid_lift.ipynb"
+  ],
+  "artifact_sha1": "a0e808119d9d60054b0799c6346fa32381638870"
+}

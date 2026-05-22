@@ -96,7 +96,18 @@ def _make_process_data_source_with_config(desktop_config: DesktopModelConfig):
     the filter ever lets it through) falls back to package defaults.
     """
 
-    def patched(data_source: DataSource, datasets, forecast_start, forecast_end):
+    def patched(
+        data_source: DataSource,
+        datasets,
+        forecast_start,
+        forecast_end,
+        training_end_date=None,
+        marketing_spec_path=None,
+    ):
+        # marketing_spec_path / training_end_date are part of the real main.py
+        # signature for the marketing-lift `m` adjustment. We only scan
+        # legacy_desktop (no marketing lift applies), so we accept and ignore
+        # them rather than re-implementing that path.
         platform = data_source.platform
         source = data_source.telemetry_source
         source_data = datasets[platform.value][source.value]

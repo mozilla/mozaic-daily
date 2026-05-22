@@ -1,0 +1,60 @@
+{
+  "model_name": "fenix_marketing_lift_hybrid_v1",
+  "description": "Hybrid marketing-lift series. Historical period (2026-04-06 \u2192 2026-05-19): lift = empirical Fenix Android gap (June actuals \u2212 April mktg-off forecast). Future period (2026-05-20 \u2192 2026-12-31): lift anchored at empirical level on training_end, growing per the marketing-team CSV's pattern from there. No interpolation slope-calculation; no anchor choice required.",
+  "created_at_utc": "2026-05-19T23:51:44.286883+00:00",
+  "mozaic_daily_git_hash": "1eb775fd7e6f0d7eb5d78d6c4459655042b031ba",
+  "coverage": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-12-31",
+    "campaign_launch": "2026-04-06",
+    "training_end": "2026-05-16",
+    "forecast_end": "2026-12-31"
+  },
+  "methodology": {
+    "framing": "hybrid: empirical-actuals for historical period, CSV-anchored projection for future",
+    "historical_rule": "lift(d) = fenix_gap_daily(d) for d in [CAMPAIGN_LAUNCH, training_end]; 0 pre-campaign",
+    "future_rule": "lift(d) = gap_at_training_end + (csv_daily_paid(d) \u2212 csv_daily_paid(training_end)) for d > training_end",
+    "gap_scope": "country='ALL', app_name='fenix_android' (Fenix-only since campaign is Fenix-only)",
+    "no_smoothing": "raw daily gap used as historical lift; future portion uses linearly-interpolated CSV"
+  },
+  "source_data": {
+    "source_csv": "data/paid_dau_weekly_forecast.20260519.csv",
+    "source_csv_sha1": "82dfb8e7d2221587505d704e3214caa2ca535878",
+    "april_forecast": "/Users/brendanwells/work/mozaic-daily/data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.raw.parquet",
+    "june_forecast": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.raw.parquet",
+    "upstream_query_reference": "STMO 118452 (DS team \u2014 reference only)",
+    "upstream_dashboard_url": "https://sql.telemetry.mozilla.org/queries/118452/source",
+    "upstream_team_attribution": {
+      "csv_source": "marketing team",
+      "stmo_118452": "DS team",
+      "geo_testing_tables": "WRONG \u2014 flagged by user 2026-05-19, do not use"
+    }
+  },
+  "validation": {
+    "a_n_compare_days": 34,
+    "a_residual_mean": -6427.332034227684,
+    "a_residual_std": 5843.375662920201,
+    "a_residual_rmse": 8628.520751508757,
+    "a_note": "expected small but not exactly zero; 28d MA at boundary mixes historical (gap) with future (CSV-anchored) values",
+    "c_n_counterfactual_days": 105,
+    "c_residual_mean": 3252.4109519417975,
+    "c_residual_std": 5176.257644278732,
+    "c_residual_min": -1.862645149230957e-09,
+    "c_residual_max": 12196.54106978327
+  },
+  "caveats": [
+    "Historical lift = raw daily fenix_gap_daily. This carries the day-to-day noise of (actuals \u2212 april_forecast), including DOW effects and any non-marketing April-forecast errors. The applier consumes daily values; the noise propagates.",
+    "Future lift = anchored CSV-derived projection. Carries the same channel-filter / ex-Iran assumptions noted in questions_for_marketing_analyst.md.",
+    "Pre-campaign (< 2026-04-06) is set to 0 by convention. Any pre-campaign actuals-vs-april drift is treated as non-marketing.",
+    "All three Paid-DAU definitions described in 01_signal_extraction.ipynb apply here too \u2014 the CSV is the source of truth for forward projection; STMO 118452 is reference only; geo_testing tables are wrong."
+  ],
+  "source_notebooks": [
+    "01_signal_extraction.ipynb",
+    "04_hybrid_lift.ipynb"
+  ],
+  "export_columns": {
+    "marketing_lift_daily": "Daily Fenix Android marketing-attributable lift. 0 pre-campaign. Historical: raw daily (actuals \u2212 april mktg-off forecast). Future: anchored CSV-derived projection.",
+    "marketing_lift_ma": "28-day trailing moving average of marketing_lift_daily. NaN for first 13 days. Diagnostic only; not consumed by the m applier."
+  },
+  "artifact_sha1": "a20bbb69f544475170c5c040b4433135116a02a5"
+}

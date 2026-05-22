@@ -18,10 +18,20 @@ htmlcov/
 
 # Project-specific
 data-tmp/
+tmp/
 *.parquet
 *.pkl
 *.csv
 logs/
+
+# Worktrees live under .claude/worktrees/; each has its own git state and should not be tracked by the parent
+.claude/worktrees/
+
+# Param-scan outputs — regenerable via `scripts/run_param_scan.py` / `scripts/run_pinned_scan.py`
+param_scan_results/
+param_scan_results_pinned/
+research/param-scans/results/
+research/param-scans/pinned/
 
 # Data directories (large files archived to GCS — see follow-up in monthly-forecast-update.md)
 # data-official/ is NOT fully ignored: *.json and *.md parameter files are committed,

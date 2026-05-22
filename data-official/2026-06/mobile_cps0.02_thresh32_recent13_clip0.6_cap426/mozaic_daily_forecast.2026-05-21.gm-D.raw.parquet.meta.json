@@ -1,0 +1,20 @@
+{
+  "adjustments_applied": [],
+  "artifact_sha1": "eb3c0e02e70d8f1dd17a557240e325d270f03f89",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-05-21",
+  "model_config": {
+    "changepoint_prior_scale": 0.02,
+    "forecast_start_date": "2026-05-21",
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.032,
+    "platform": "glean_mobile",
+    "prophet_recent_weeks": 13
+  },
+  "mozaic_daily_commit": "1eb775fd7e6f0d7eb5d78d6c4459655042b031ba",
+  "note": "No-marketing-lift baseline run at forecast_start=2026-05-21. Produced by scripts/run_main.py --data-sources glean_mobile --metrics DAU --no-marketing-lift --clean --output-dir tmp/no_mktg_2026-05-21, then promoted to data-official via tmp/promote_no_mktg_2026-05-21.py.",
+  "produced_at": "2026-05-22T19:32:28.423949Z",
+  "produced_by": "scripts/run_main.py + tmp/promote_no_mktg_2026-05-21.py for state-marker rename"
+}

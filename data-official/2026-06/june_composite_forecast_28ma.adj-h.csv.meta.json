@@ -3,22 +3,22 @@
     {
       "code": "h",
       "name": "headwinds",
-      "spec_file": "data-official/2026-06/adjustments/headwind.json",
-      "spec_sha1": "e4764ffd6e0431ca65b2c4024072bc236c8f9eaf"
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/adjustments/headwind.json",
+      "spec_sha1": "253bdff458d4734407092bddbc1c973f1c64b4b4"
     }
   ],
-  "artifact_sha1": "d9552345dd678e723c825b3dc93f57d25985d873",
+  "artifact_sha1": "dfd7ccf792c2abbee20c726aef3dbc57bdcf4d5d",
   "data_source": "desktop+mobile composite (world DAU 28-day MA)",
-  "forecast_start_date": "2026-05-17",
+  "forecast_start_date": "2026-05-21",
   "model_config": null,
-  "mozaic_daily_commit": "a7fa2fa1170740bd1e3116ae4e7405e6ff7d6d4e",
-  "note": "Regenerated 2026-05-18 after cap-426 fix in mozaic-forecasting-official (tail(366)->tail(426)).",
+  "mozaic_daily_commit": "1eb775fd7e6f0d7eb5d78d6c4459655042b031ba",
   "parent_files": [
-    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.ld-D.raw.parquet",
-    "data-official/2026-06/desktop_cps0.15983_thresh50_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.ld-D.raw.plus_iran.parquet",
-    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.raw.parquet",
-    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-17.gm-D.raw.plus_iran.parquet"
+    "data-official/2026-06/desktop_cps0.15983_thresh050_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-21.ld-D.raw.parquet",
+    "data-official/2026-06/desktop_cps0.15983_thresh050_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-21.ld-D.raw.plus_iran.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-21.gm-D.raw.parquet",
+    "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-21.gm-D.raw.plus_iran.parquet"
   ],
-  "produced_at": "2026-05-19T05:45:53.959669+00:00Z",
-  "produced_by": "data-official/2026-06/june_composite_forecast.ipynb (export-csv cell)"
+  "produced_at": "2026-05-22T20:08:24.016204+00:00Z",
+  "produced_by": "scripts/regenerate_composites.py",
+  "provenance": "regenerated"
 }
