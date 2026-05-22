@@ -22,7 +22,8 @@ tmp/
 *.parquet
 *.pkl
 *.csv
-logs/
+logs/*
+!logs/_index.md
 
 # Worktrees live under .claude/worktrees/; each has its own git state and should not be tracked by the parent
 .claude/worktrees/
