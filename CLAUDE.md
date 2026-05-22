@@ -78,6 +78,15 @@ src/mozaic_daily/
 └── main.py           # Main entry point
 ```
 
+### Where new files go: the hybrid rule
+
+Analysis and supporting work splits along two axes:
+
+- **Month-scoped artifact** (the composite producer notebook, a sanity check tied to one month's data, that month's adjusted CSV) → `data-official/{YYYY-MM}/`. The directory already holds the production parquets, sidecar `.meta.json` files, adjustment specs, and parameters.json — keep the producer + diagnostic notebooks alongside them.
+- **Cross-month or topic-anchored work** (mechanism diagnostics, model exploration, validation against actuals over time, version-spanning approaches) → `research/{topic}/`. Topics so far: `iran/`, `marketing-lift/`, `april-vs-june-mechanism/`, `param-scans/`, `headwinds/`, `csv-vs-actuals/`.
+
+Each directory has an `_index.md` describing what's in it, what isn't, and where new code goes. Follow that convention when creating a new dir.
+
 ### Importing Modules
 
 ```python
