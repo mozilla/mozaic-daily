@@ -14,10 +14,20 @@ Data is organized by platform -> source -> metric:
 Functions:
 - get_queries(): Build SQL queries for all platform/metric/source combinations
 - get_aggregate_data(): Fetch all Desktop and Mobile metrics from BigQuery
+- query_to_dataframe(): Run a single query with periodic heartbeats so a
+  stalled gRPC download becomes visible instead of hanging silently. All
+  BigQuery downloads in this module (and scripts/generate_iran_synthetic.py)
+  route through this helper. See CLAUDE.md "BQ download appears to hang" for
+  how to read the heartbeat output.
+- check_training_data_availability(): Pre-flight check that all source tables
+  have data through training_end_date
 """
 
+import concurrent.futures
 import datetime
 import os
+import sys
+import time
 from typing import Dict, Optional, Set, Tuple
 
 import pandas as pd
@@ -26,6 +36,15 @@ from .config import STATIC_CONFIG
 from .queries import (
     QUERY_SPECS, Platform, Metric, TelemetrySource, DataSource, QuerySpec,
     get_availability_check_queries,
+)
+
+
+HEARTBEAT_TAG = "[BQ-WATCHDOG]"
+DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 30.0
+HEARTBEAT_JITTER_BUFFER_SECONDS = 5.0
+HEARTBEAT_HINT = (
+    "If stalled: check bigquerystorage host allowlist, "
+    "ADC creds, or set MOZAIC_DAILY_DISABLE_BQSTORAGE=1."
 )
 
 
@@ -41,6 +60,59 @@ def _to_dataframe_kwargs() -> dict:
     if os.environ.get("MOZAIC_DAILY_DISABLE_BQSTORAGE") == "1":
         return {"create_bqstorage_client": False}
     return {}
+
+
+def _emit(line: str) -> None:
+    sys.stdout.write(line + "\n")
+    sys.stdout.flush()
+
+
+def query_to_dataframe(
+    client: bigquery.Client,
+    sql: str,
+    label: str,
+    heartbeat_interval: float = DEFAULT_HEARTBEAT_INTERVAL_SECONDS,
+) -> pd.DataFrame:
+    """Run ``client.query(sql).to_dataframe(...)`` with periodic heartbeats.
+
+    Submits the download to a worker thread and prints a tagged stdout line
+    every ``heartbeat_interval`` seconds while the result is still pending. The
+    first heartbeat carries a one-line diagnostic hint; subsequent heartbeats
+    are terse. A final ``done`` line records total elapsed seconds.
+
+    The heartbeat exists so a stalled download (e.g. blocked
+    ``bigquerystorage.googleapis.com`` gRPC stream, expired ADC creds) becomes
+    visible to a calling agent or human reader instead of hanging silently.
+    There is intentionally no hard timeout — per-query budgets are unknown.
+
+    Each heartbeat line ends with ``Next ≤<interval+jitter>s``; a watcher
+    that doesn't see another ``[BQ-WATCHDOG]`` line within that bound knows
+    the Python process itself is stuck, not the BQ download.
+    """
+    next_bound = int(heartbeat_interval + HEARTBEAT_JITTER_BUFFER_SECONDS)
+    start = time.monotonic()
+
+    def _run() -> pd.DataFrame:
+        return client.query(sql).to_dataframe(**_to_dataframe_kwargs())
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(_run)
+        heartbeat_count = 0
+        while True:
+            try:
+                result = future.result(timeout=heartbeat_interval)
+                break
+            except concurrent.futures.TimeoutError:
+                heartbeat_count += 1
+                elapsed = int(time.monotonic() - start)
+                line = f"{HEARTBEAT_TAG} '{label}' {elapsed}s. Next ≤{next_bound}s."
+                if heartbeat_count == 1:
+                    line += " " + HEARTBEAT_HINT
+                _emit(line)
+
+    elapsed = int(time.monotonic() - start)
+    _emit(f"{HEARTBEAT_TAG} '{label}' done {elapsed}s.")
+    return result
 
 
 def check_training_data_availability(project: str, training_end_date: str) -> None:
@@ -69,9 +141,8 @@ def check_training_data_availability(project: str, training_end_date: str) -> No
 
     print(f"Pre-flight check: verifying training data is available through {training_end_date}...")
 
-    to_df_kwargs = _to_dataframe_kwargs()
     for check in checks:
-        result = client.query(check.sql).to_dataframe(**to_df_kwargs)
+        result = query_to_dataframe(client, check.sql, label=f"preflight {check.table}")
         max_date_raw = result['max_date'].iloc[0]
 
         if pd.isna(max_date_raw):
@@ -196,7 +267,11 @@ def get_aggregate_data(
                 else:
                     print(f"[{query_num}/{total_queries}] Querying {spec.data_source.display_name} {metric}")
                     print(query)
-                    df = bigquery.Client(project).query(query).to_dataframe(**_to_dataframe_kwargs())
+                    df = query_to_dataframe(
+                        bigquery.Client(project),
+                        query,
+                        label=f"{spec.data_source.display_name} {metric}",
+                    )
 
                     # Check for empty results
                     if df.empty:

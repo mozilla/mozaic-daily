@@ -8,7 +8,7 @@ Core forecasting package for Mozilla Firefox metrics. Each module has a single r
 |---|---|---|
 | `config.py` | `STATIC_CONFIG`, `FORECAST_CONFIG`, `get_runtime_config()`, `DateConstraints`, country lists, date index generation, git hash retrieval | SQL query logic, BigQuery I/O |
 | `queries.py` | `QuerySpec` dataclass with `DateConstraints`; `QUERY_SPECS` dict; `build_query()` SQL generation | BigQuery execution, data caching |
-| `data.py` | BigQuery data fetching, pre-flight availability checks, checkpoint read/write, `get_aggregate_data()` | Forecasting, table formatting |
+| `data.py` | BigQuery data fetching, pre-flight availability checks, checkpoint read/write, `get_aggregate_data()`, `query_to_dataframe()` (heartbeat-instrumented single-query wrapper — see CLAUDE.md "BQ download appears to hang") | Forecasting, table formatting |
 | `forecast.py` | `get_forecast_dfs()`, `get_desktop_forecast_dfs()`, `get_mobile_forecast_dfs()`; `ForecastResult` dataclass; `ModelConfig`/`DesktopModelConfig`/`MobileModelConfig` usage | Data fetching, output formatting |
 | `tables.py` | `format_output_table()` — combines Desktop/Mobile, creates ALL rows, renames columns, sets data_source values | BigQuery upload, validation |
 | `validation.py` | `validate_output_dataframe()` — schema, format, row counts, nulls, duplicates | Data fetching, formatting |

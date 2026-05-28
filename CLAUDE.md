@@ -537,6 +537,23 @@ If you see errors like `RuntimeError: Error during optimization!` when forecasti
    Forecast period: 2024-02-01 to 2025-12-31
    ```
 
+**BQ download appears to hang**
+
+Every BQ download routes through `query_to_dataframe()` in `src/mozaic_daily/data.py`, which runs the download in a worker thread and prints a tagged heartbeat to stdout every 30s while the result is pending. Three line forms:
+
+- First heartbeat (carries the diagnostic hint, fires only after 30s):
+  `[BQ-WATCHDOG] '<label>' 30s. Next ≤35s. If stalled: check bigquerystorage host allowlist, ADC creds, or set MOZAIC_DAILY_DISABLE_BQSTORAGE=1.`
+- Subsequent heartbeats (terse): `[BQ-WATCHDOG] '<label>' 60s. Next ≤35s.`
+- Completion: `[BQ-WATCHDOG] '<label>' done 62s.`
+
+How to read the log:
+- *No heartbeat line at all → done line*: healthy fast query (under 30s).
+- *Heartbeats at cadence → done line*: healthy slow query.
+- *Heartbeats keep appearing, no `done` line*: BQ download is stalled. Causes named in the first heartbeat — most often `bigquerystorage.googleapis.com` blocked by the Bash sandbox, or expired ADC creds. Workaround: `MOZAIC_DAILY_DISABLE_BQSTORAGE=1` forces REST instead of gRPC streaming.
+- *Heartbeat then silence past the predicted `Next ≤Ns` bound*: the Python process itself is stuck, not the BQ download. Inspect/kill the process.
+
+The watchdog deliberately does NOT enforce a timeout — query budgets are unknown — so a stall doesn't auto-kill the run; it just becomes visible.
+
 **Data Quality Errors**
 
 The pipeline includes automated checks to catch data quality issues early:

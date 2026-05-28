@@ -11,7 +11,16 @@ import pandas as pd
 import os
 from unittest.mock import MagicMock
 
-from mozaic_daily.data import get_aggregate_data, get_queries, check_training_data_availability
+import re
+import time
+
+from mozaic_daily.data import (
+    HEARTBEAT_TAG,
+    check_training_data_availability,
+    get_aggregate_data,
+    get_queries,
+    query_to_dataframe,
+)
 from tests.conftest import generate_desktop_raw_data, generate_mobile_raw_data
 
 
@@ -412,3 +421,83 @@ def test_check_training_data_availability_error_includes_table_name(mocker):
     assert 'moz-fx-data-shared-prod' in error_message, (
         f"Expected BigQuery project name in error message: {error_message}"
     )
+
+
+# ===== HEARTBEAT WATCHDOG =====
+
+def _make_mock_bq_client(to_dataframe_side_effect):
+    """Build a mock bigquery.Client whose query().to_dataframe() runs the given callable."""
+    mock_client = MagicMock()
+    mock_query_job = MagicMock()
+    mock_query_job.to_dataframe.side_effect = to_dataframe_side_effect
+    mock_client.query.return_value = mock_query_job
+    return mock_client
+
+
+def test_query_to_dataframe_returns_result_and_prints_done_line(capsys):
+    """Fast query: returns the DataFrame unchanged and emits exactly one 'done' line.
+
+    Catches: a regression that drops the result, breaks the final-line format, or
+    omits the heartbeat tag (which a watching agent uses to detect liveness).
+    """
+    expected_df = pd.DataFrame({"x": [1, 2, 3]})
+    client = _make_mock_bq_client(lambda **_: expected_df)
+
+    result = query_to_dataframe(client, "SELECT 1", label="fast-query", heartbeat_interval=5.0)
+
+    assert result is expected_df
+    captured = capsys.readouterr().out
+    assert f"{HEARTBEAT_TAG} 'fast-query' done" in captured
+    # No heartbeat ticks for a fast query
+    assert "Next ≤" not in captured
+
+
+def test_query_to_dataframe_emits_heartbeats_with_hint_then_terse_then_done(capsys):
+    """Slow query: emits first heartbeat with diagnostic hint, then terse ticks, then done.
+
+    Catches: regressions to the heartbeat format, the 'first tick carries the hint'
+    rule, or the 'Next ≤Ns' predictive bound that watchers rely on for liveness.
+    """
+    interval = 0.1
+
+    def slow_download(**_):
+        time.sleep(interval * 3.5)
+        return pd.DataFrame({"x": [1]})
+
+    client = _make_mock_bq_client(slow_download)
+
+    query_to_dataframe(client, "SELECT 1", label="slow-query", heartbeat_interval=interval)
+
+    captured = capsys.readouterr().out
+    heartbeat_lines = [
+        line for line in captured.splitlines()
+        if line.startswith(HEARTBEAT_TAG) and "Next ≤" in line
+    ]
+    done_lines = [
+        line for line in captured.splitlines()
+        if line.startswith(HEARTBEAT_TAG) and " done " in line
+    ]
+
+    assert len(heartbeat_lines) >= 2, (
+        f"Expected at least 2 heartbeat ticks for a slow query, got {len(heartbeat_lines)}:\n{captured}"
+    )
+    assert len(done_lines) == 1, (
+        f"Expected exactly one 'done' line, got {len(done_lines)}:\n{captured}"
+    )
+
+    # First heartbeat carries the diagnostic hint; subsequent heartbeats are terse.
+    first_heartbeat = heartbeat_lines[0]
+    assert "MOZAIC_DAILY_DISABLE_BQSTORAGE" in first_heartbeat, (
+        f"First heartbeat must include the diagnostic hint:\n{first_heartbeat}"
+    )
+    for line in heartbeat_lines[1:]:
+        assert "MOZAIC_DAILY_DISABLE_BQSTORAGE" not in line, (
+            f"Only the first heartbeat should carry the diagnostic hint; this one does too:\n{line}"
+        )
+
+    # Every heartbeat states the upper bound for the next message (liveness contract).
+    next_bound_pattern = re.compile(r"Next ≤\d+s\.")
+    for line in heartbeat_lines:
+        assert next_bound_pattern.search(line), (
+            f"Heartbeat missing 'Next ≤Ns.' upper bound:\n{line}"
+        )

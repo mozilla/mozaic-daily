@@ -39,6 +39,7 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from mozaic_daily.config import STATIC_CONFIG
+from mozaic_daily.data import query_to_dataframe
 from mozaic_daily.forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs
 from mozaic_daily.queries import (
     ADDITIONAL_HOLIDAYS,
@@ -151,7 +152,7 @@ def query_iran_data(
         # Strip it here since this script specifically needs Iran data.
         sql = sql.replace("AND country != 'IR'", "")
         client = bigquery.Client(project)
-        df = client.query(sql).to_dataframe()
+        df = query_to_dataframe(client, sql, label=f"iran {spec.data_source.display_name} {metric}")
         elapsed = time.time() - start
         print(f"  -> {len(df)} rows in {elapsed:.1f}s")
 
