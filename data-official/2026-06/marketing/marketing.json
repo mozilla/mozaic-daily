@@ -1,7 +1,7 @@
 {
   "type": "marketing_lift",
   "platform": "mobile",
-  "data_file": "marketing_lift_model.2026-05-16.parquet",
+  "data_file": "marketing_lift_model.real_data_v2.hybrid.2026-05-22.parquet",
   "value_column": "marketing_lift_daily",
   "allocation": {
     "app_flag_column": "fenix_android",
@@ -11,7 +11,7 @@
   "scope": {
     "exclude_countries": ["IR"]
   },
-  "model_meta_file": "marketing_lift_model.2026-05-16.meta.json",
-  "applies_to_forecast_start": "2026-05-17",
+  "model_meta_file": "marketing_lift_model.real_data_v2.hybrid.2026-05-22.meta.json",
+  "applies_to_forecast_start": "2026-05-26",
   "notes": "Daily DAU lift attributable to the Fenix Android paid acquisition campaign launched 2026-04-06. Allocation key is the per-country share of Fenix Android DAU in a trailing 28-day window ending at training_end_date, frozen for the full forecast horizon (stationary-country-mix is a v1 assumption). Subtraction targets training rows where fenix_android == True. Add-back targets per-country Fenix Android forecast rows and per-country/world ALL-app rollup rows."
 }

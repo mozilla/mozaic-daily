@@ -8,7 +8,8 @@ One markdown file per forecast cycle, capturing the exact parameters used and a 
 |---|---|
 | `2026-04-01.md` | April 2026 forecast (forecast_start 2026-04-01) |
 | `2026-05-13.md` | May 13 refresh |
-| `2026-05-17.md` | May 17 refresh (current pinned) |
+| `2026-05-17.md` | May 17 refresh |
+| `2026-05-26.md` | May 26 "best for now" canonical handoff (current pinned) |
 
 ## Format
 

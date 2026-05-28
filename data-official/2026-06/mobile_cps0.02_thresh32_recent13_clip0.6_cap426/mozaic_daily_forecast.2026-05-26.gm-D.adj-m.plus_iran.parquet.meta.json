@@ -1,0 +1,20 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "m",
+      "name": "marketing_lift",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/marketing/marketing.json",
+      "spec_sha1": "ca88079d995ba84002eb93e0b58cfa873c47a2cf"
+    }
+  ],
+  "artifact_sha1": "963a61c68d3e267c0c43180c63e30400e1350d32",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-05-26",
+  "iran_synthetic_source": "data-official/iran_synthetic/iran_synthetic.parquet",
+  "model_config": null,
+  "mozaic_daily_commit": "93d4a4a7e258e7dbab0e0bd02b794bd0502c1c56",
+  "parent_file": "data-official/2026-06/mobile_cps0.02_thresh32_recent13_clip0.6_cap426/mozaic_daily_forecast.2026-05-26.gm-D.adj-m.parquet",
+  "parent_file_sha1": "29ebdf07ef0fb33f6b842d8a9b86a0edde5cfaaf",
+  "produced_at": "2026-05-28T00:18:54.755411+00:00Z",
+  "produced_by": "scripts/add_iran_to_forecast.py + tmp/write_plus_iran_meta_2026-05-26.py"
+}

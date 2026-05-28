@@ -381,4 +381,4 @@ The file created during this run is a lightweight parameter spec. After the fore
 
 ## Follow-up items
 
-- **GCP parquet storage** — parquet files are archived to GCS but the process for doing so (gsutil path, bucket name, sync cadence) is not yet documented in this skill. Investigate and add a "Step 7 — Archive to GCS" section once the workflow is understood.
+- **End-of-cycle GCS archive** (button down for storage) — large per-cycle artifacts (pkl, parquet, zip) are gitignored and live on GCS at `gs://moz-data-science-brwells-bucket/mozaic-daily-archive/{cycle-slug}/data-official/`. See CLAUDE.md "GCS archive" section in repo root for the exact commands. Cadence: push at the end of each forecast cycle once leadership review is done; before pushing, `gsutil ls -r` the target prefix to skip files that haven't changed. Requires `gcloud auth login` (not just ADC).

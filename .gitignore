@@ -22,6 +22,7 @@ tmp/
 *.parquet
 *.pkl
 *.csv
+*.zip
 logs/*
 !logs/_index.md
 
@@ -40,6 +41,12 @@ research/param-scans/pinned/
 # Marketing-lift model inputs (small, configuration-like) ARE tracked under
 # data-official/{YYYY-MM}/marketing/ so the pipeline can apply the `m` adjustment.
 !data-official/*/marketing/*.parquet
+# Public-facing canonical exports: small (<100KB), referenced by the README
+# next to them, regenerable via export_canonical_curves.py. Tracked so
+# downstream consumers don't need to run the export script.
+!data-official/*/june_canonical_curves.csv
+!data-official/*/april_composite_forecast_28ma.adj-h.csv
+!data-official/*/stakeholder_scenarios_*.zip
 data/
 data-mozaic/
 april-by-hand/

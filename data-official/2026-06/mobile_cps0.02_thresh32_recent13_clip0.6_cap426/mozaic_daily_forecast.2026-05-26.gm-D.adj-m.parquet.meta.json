@@ -1,0 +1,17 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "m",
+      "name": "marketing_lift",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/marketing/marketing.json",
+      "spec_sha1": "ca88079d995ba84002eb93e0b58cfa873c47a2cf"
+    }
+  ],
+  "artifact_sha1": "29ebdf07ef0fb33f6b842d8a9b86a0edde5cfaaf",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-05-26",
+  "model_config": null,
+  "mozaic_daily_commit": "93d4a4a7e258e7dbab0e0bd02b794bd0502c1c56",
+  "produced_at": "2026-05-28T00:18:46.815124+00:00Z",
+  "produced_by": "scripts/run_main.py + tmp/promote_canonical_v2026-05-27.py"
+}

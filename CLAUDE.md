@@ -484,6 +484,40 @@ result.config  # config is stored on the ForecastResult
 - Production project (in flow): `moz-fx-mfouterbounds-prod-f98d`
 - Output table: `moz-fx-data-shared-prod.forecasts_derived.mart_mozaic_daily_forecast_v2`
 
+### GCS archive
+
+Large per-cycle artifacts (`.pkl` mozaic objects, `.parquet` forecasts and raw caches, `.zip` cycle bundles) are gitignored. The canonical archive lives at:
+
+```
+gs://moz-data-science-brwells-bucket/mozaic-daily-archive/
+├── april-2026/data-official/    # April 2026 forecast cycle
+└── june-2026/data-official/     # June 2026 forecast cycle
+```
+
+Project: `moz-fx-data-bq-data-science`. Each cycle prefix mirrors `data-official/{YYYY-MM}/` under it, with a `README.md` at the cycle root explaining what's archived.
+
+**When to push:** at the end of each forecast cycle ("button down for storage"), upload everything under that month's `data-official/{YYYY-MM}/` directory. For mid-cycle additions, do an incremental upload.
+
+**How to push** (single-process — do NOT use `gsutil -m`, see "gsutil on macOS" in `~/.claude/CLAUDE.md`):
+
+```bash
+# Whole cycle:
+gsutil cp -r data-official/2026-06 \
+  gs://moz-data-science-brwells-bucket/mozaic-daily-archive/june-2026/data-official/
+
+# Individual subdir (incremental):
+gsutil cp -r data-official/2026-04/desktop_cps0.15983_thresh050_recent13_clip0.6 \
+  gs://moz-data-science-brwells-bucket/mozaic-daily-archive/april-2026/data-official/
+
+# Resume / sync (skip already-uploaded files). MUST set parallel_process_count=1
+# even though there's no `-m` flag — `gsutil rsync` defaults to multi-process,
+# which hits the macOS Python crash bug. See memory feedback-gsutil-rsync-multiprocessing.
+gsutil -o "GSUtil:parallel_process_count=1" rsync -r data-official/2026-06 \
+  gs://moz-data-science-brwells-bucket/mozaic-daily-archive/june-2026/data-official/2026-06
+```
+
+**What's tracked vs archived:** `.json` (sidecar metas, adjustment specs, parameters), `.md`, `.py`, `.ipynb` all live in git. The small public-facing canonical CSVs (`{month}_canonical_curves.csv`, `april_composite_forecast_28ma.adj-h.csv`) have explicit `!` gitignore exceptions and are also tracked. Everything else under `data-official/{YYYY-MM}/` — pkl, parquet, larger CSVs, zip bundles — goes to GCS only.
+
 ### Validation Requirements
 - All string columns have strict format requirements (ISO timestamps, SHA1 hashes, JSON segments)
 - Segment JSON must contain an `"os"` key with values from: modern_windows, winX, other, ALL, or null
