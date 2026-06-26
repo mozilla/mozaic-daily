@@ -43,7 +43,10 @@ research/param-scans/pinned/
 !data-official/*/marketing/*.parquet
 # Public-facing canonical exports: small (<100KB), referenced by the README
 # next to them, regenerable via export_canonical_curves.py. Tracked so
-# downstream consumers don't need to run the export script.
+# downstream consumers don't need to run the export script. The csv/ folder
+# holds the ALL-level canonical curves plus one no-headwind CSV per country.
+!data-official/*/csv/june_canonical_curves.csv
+!data-official/*/csv/per_country/*.no-headwinds.csv
 !data-official/*/june_canonical_curves.csv
 !data-official/*/april_composite_forecast_28ma.adj-h.csv
 !data-official/*/stakeholder_scenarios_*.zip
@@ -64,3 +67,14 @@ dist/
 docker/Dockerfile.bak
 docker/Dockerfile.plus1
 test_files/
+
+# Scratch downloads (Looker replicas, ad-hoc exports) — not durable project work
+tmp_downloads/
+
+# Handoff staging dirs: the unzipped contents are a build artifact duplicating
+# the tracked csv/ source + the (gitignored, GCS-archived) handoff zip. Keep
+# only handoff/_index.md, which documents what the zip contains.
+data-official/*/handoff/*_handoff/
+
+# Editor/backup copies of notebooks
+*.copy.ipynb
