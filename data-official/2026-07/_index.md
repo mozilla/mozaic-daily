@@ -10,6 +10,11 @@ the forecast has not yet been run.
   telemetry opt-out via deletion requests, desktop/mobile marketing, usage-experiment
   DAU movement), its modeling approach, the data needed, status, and the open questions
   for the user. **Start here.**
+- **`iran_gap_holiday_mozaic_handoff.md`** — feature-request handoff to the
+  `mozaic-forecasting` package: add a training-exclusion ("gap holiday") so the Iran
+  internet-shutdown window is masked out of fitting instead of corrupting the trend.
+  (Companion handoff for the telemetry opt-out investigation lives outside this repo at
+  `~/work/experiments/telemetry-optout-dau-impact/HANDOFF.md`.)
 
 ## What's not here yet (added during the run, per monthly-forecast-update skill)
 

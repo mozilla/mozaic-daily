@@ -1,6 +1,14 @@
 # `data-official/iran_synthetic/` — synthetic Iran DAU
 
-Iran has been offline since ~2026-02-28. This directory holds the synthetic ALL-level Iran DAU values that get summed into no-Iran forecasts to produce world-level numbers.
+> **Status: RETIRED for forecasting as of July 2026 (kept for reference, not deleted).**
+> Iran's internet has returned. Starting with the July 2026 cycle, IR goes back into
+> native queries and the multi-month shutdown gap is masked via a mozaic-forecasting
+> **training-exclusion ("gap holiday")** rather than excluded-and-modeled-back. See
+> `data-official/2026-07/iran_gap_holiday_mozaic_handoff.md` and `2026-07/TODO_factors.md` §0.
+> The synthetic add-back workflow below (Feb–June 2026) is superseded for this purpose.
+> Recovery-curve modeling in `research/iran/` may still be referenced.
+
+Iran was offline ~2026-02-28 through mid-2026. This directory holds the synthetic ALL-level Iran DAU values that, during that window, got summed into no-Iran forecasts to produce world-level numbers.
 
 ## Files
 
