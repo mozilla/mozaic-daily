@@ -41,9 +41,10 @@ MozillaOnline is migrating onto Firefox desktop. **Brad has reportedly built a m
 
 - **Geography:** >90% of the migration is **China (CN)**; the remainder is spread across other countries, **potentially VPN users**. So the overlay can't be applied to CN alone — it needs a small distributed tail across other markets. Confirm how Brad's model splits this.
 - **Validation expectation (user):** our migration ramp was **deliberately conservative** — slower than what actuals already show — so the forecast will sit *below* realized data and we **do not expect them to match**. That's by design; don't treat the gap as a modeling error.
+- **Placeholder model:** while waiting for Brad's official model, build a stand-in so the pipeline runs end-to-end and the official model is a drop-in swap. Handoff written: `data-official/2026-07/mozillaonline/PLACEHOLDER_MODEL_HANDOFF.md` (point a fresh Claude at it).
 - [ ] Locate + ingest Brad's model; confirm its geo split and ramp shape.
-- [ ] Decide adjustment style — per-tile bidirectional (like `m`) since it should shift the model's view of recent history.
-- [ ] Register a new one-letter adjustment code in `data-official/adjustment_codes.yaml` (e.g. `o` for mozillaonline) + applier in `src/mozaic_daily/adjustments.py` + test.
+- [ ] Decide adjustment style — per-tile bidirectional (like `m`) since it should shift the model's view of recent history. Desktop allocates by **fixed country shares** (not an app flag); within a country split across `modern_windows`/`winX`/other OS rows proportional to DAU.
+- [ ] Register a new one-letter adjustment code `o` in `data-official/adjustment_codes.yaml` + applier in `src/mozaic_daily/adjustments.py` + test (Part B of the handoff).
 
 ### D3. Windows 10 migration headwinds — `TODO`
 Existing `adj-h` headwind models Win10→Win11 attrition. **Revisit the anchor magnitude** based on observed Win10 performance.
