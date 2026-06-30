@@ -1,0 +1,20 @@
+{
+  "glean_desktop": {
+    "DAU": 1.0,
+    "Existing Engagement DAU": 1.0,
+    "Existing Engagement MAU": 1.0,
+    "New Profiles": 1.0
+  },
+  "legacy_desktop": {
+    "DAU": 1.0,
+    "Existing Engagement DAU": 1.0,
+    "Existing Engagement MAU": 1.0,
+    "New Profiles": 1.0
+  },
+  "glean_mobile": {
+    "DAU": 1.0,
+    "Existing Engagement DAU": 1.0,
+    "Existing Engagement MAU": 1.0,
+    "New Profiles": 1.0
+  }
+}

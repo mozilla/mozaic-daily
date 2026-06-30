@@ -11,27 +11,30 @@ Status legend: `TODO` · `INVESTIGATING` · `MODELING` · `BLOCKED(reason)` · `
 
 ---
 
-## 0. Iran treatment — DECIDED: native data + gap holiday; retire synthetic machinery
+## 0. Iran treatment — DONE: native data + counterfactual *fill* over the gap
 
-Iran's internet was shut down ~2026-02-28; Feb–June ran the **no-Iran + synthetic-Iran-add-back** workflow (IR excluded from queries, modeled separately, summed back). **Iran has now returned.**
+Iran's internet was shut down; Feb–June ran the **no-Iran + synthetic-Iran-add-back** workflow (IR excluded from queries, modeled separately, summed back). **Iran has now returned and fully recovered** to pre-shutdown levels (recovery 2026-05-26).
 
-**Decision (user, 2026-06-26):** Return IR to native queries and handle the shutdown hole with a **mozaic-forecasting "holiday"** (training-exclusion mask over the gap) so Prophet doesn't read the zero-period as real signal. Real recovered Iran data then drives the forecast. **Retire / archive the synthetic add-back machinery** for this use case.
+**Decision (user, 2026-06-30):** Return IR to native queries and **fill the shutdown hole with a synthetic counterfactual** — "what Iran would have been with no shutdown" — fed to mozaic as ordinary training data. (An earlier 2026-06-26 note proposed a NaN-mask "gap holiday"; that was **not** the user's intent and is retired — see the handoff banner.) **Retire / archive the synthetic add-back machinery** for this use case.
 
-Mechanism (from mozaic source review): mozaic does holidays via custom detrending + proportional effects, *not* Prophet-native holidays. It already has an `IranHolidays` class with blackout ranges and a "blackout"→-1.0 forecast rule — but those are for *predicting* dips, and the detrend radius (≤5 days) is far too narrow to absorb a multi-month gap. The right primitive is a **training-exclusion (NaN-mask) over the contiguous shutdown range** so Prophet interpolates across it. That capability does not exist upstream yet → handoff to mozaic-forecasting (see deliverable below).
+**Mechanism (built):** propagate the mozaic model forward (train on clean pre-shutdown IR, FORECAST_START=2026-02-28, July params), harvest the **per-population** IR forecast, then **re-seasonalize** to restore the real weekday→weekend amplitude Prophet damps (peak/trough was ~46% of real). The package ingests the fill via "Approach A" (replace IR gap rows before `populate_tiles()`).
 
-Sub-items:
-- [ ] **Determine the exact gap window** from data: shutdown start `~2026-02-28` → the date IR DAU resumes non-zero/normal. Needs a quick BQ pull of IR daily DAU (desktop + mobile).
-- [ ] **Write the mozaic-forecasting handoff** proposing the training-exclusion feature (`excluded_date_ranges` threaded `detrend()` → `Tile` → `populate_tiles()`/`ModelConfig`). Align with any in-flight upstream PR (see `~/work/holiday-corrected/MOZAIC_UPSTREAM_PR.md`).
-- [ ] **Archive the synthetic-Iran use case**: document `data-official/iran_synthetic/`, `scripts/generate_iran_synthetic.py`, `scripts/add_iran_to_forecast.py`, and `research/iran/` as retired-for-this-purpose (keep on disk + GCS; mark in `_index.md` that the gap-holiday path supersedes it). Don't delete — recovery-curve modeling may still be referenced.
-- [ ] Decide whether the **return ramp** needs modeling or real data carries it (likely the latter once the gap is masked).
-- [ ] Keep desktop and mobile Iran treatment **consistent**.
+**Exact gap window (BQ-confirmed):** shutdown cliff **2026-03-01** (last real day Feb 28), full restoration **2026-05-26** (last bad day May 25), both platforms same days. Fill window 2026-02-28 → 2026-05-25 (DAU/NP/EED); **MAU 2026-02-28 → 2026-06-21** (rolling-28 stays contaminated ~28d past recovery).
+
+Status:
+- [x] Exact gap window from BQ (desktop + mobile).
+- [x] Producer + artifacts + spec: `scripts/generate_iran_fill.py`; `data-official/2026-07/iran_fill/` (`FILL_FORMAT_SPEC.md` is the package contract); tests `tests/test_iran_fill.py`.
+- [x] Handoff rewritten for the fill-ingestion ask: `iran_gap_holiday_mozaic_handoff.md`.
+- [ ] **Package-side ingestion** (Approach A) — Brendan to write in `mozaic-forecasting` against the spec.
+- [ ] **Archive the synthetic-Iran use case** (`data-official/iran_synthetic/`, `scripts/generate_iran_synthetic.py`, `scripts/add_iran_to_forecast.py`, `research/iran/`) as retired-for-this-purpose (keep on disk + GCS).
+- Return ramp: real recovered data carries it; no separate modeling needed. Desktop + mobile treated consistently (one window, both platforms).
 
 ---
 
 ## Desktop
 
-### D1. Iran return + gap holiday — `TODO`
-See §0. Desktop-specific: the gap holiday must cover the IR shutdown window in the legacy_desktop training series.
+### D1. Iran return + counterfactual fill — `DONE (fill produced; package ingestion pending)`
+See §0. Desktop fills produced for **both** `legacy_desktop` and `glean_desktop` (the mart carries both), all 4 metrics, per-population.
 
 ### D2. MozillaOnline → Firefox desktop migration overlay — `TODO` (model exists)
 MozillaOnline is migrating onto Firefox desktop. **Brad has reportedly built a migration model — Brendan is locating it** (use it rather than building from scratch). Model as an **overlay**, same bidirectional pattern as the marketing-lift `m` adjustment:
@@ -72,8 +75,8 @@ Reported DAU movement from a usage experiment.
 
 ## Mobile
 
-### M1. Iran return — `TODO`
-See §0 (DECIDED: native + gap holiday). Mobile applies the same `excluded_date_ranges` shutdown mask over the glean_mobile IR window. Pull the mobile recovery date separately — it may differ from desktop's.
+### M1. Iran return — `DONE (fill produced; package ingestion pending)`
+See §0. `glean_mobile` fill produced, all 4 metrics, per-population. Mobile recovery date matches desktop's (2026-05-26). Note: mobile's real weekly cycle is genuinely near-flat, so re-seasonalization barely changes mobile (correctly matching reality); mobile recovered slightly *above* pre-shutdown level (+36% DAU at the seam) — left unscaled per the go/no-go.
 
 ### M2. Marketing ramp-up — `TODO`
 Mobile marketing has ramped up beyond the June Fenix Android campaign.

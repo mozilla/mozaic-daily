@@ -1,69 +1,50 @@
-# Handoff to `mozilla/mozaic-forecasting` — training-exclusion ("gap holiday") for internet shutdowns
+# Handoff to `mozilla/mozaic-forecasting` — ingest an Iran counterfactual *fill* for the shutdown gap
 
-**From:** Brendan Wells (Firefox DAU forecasting) · **Date:** 2026-06-26
-**Context repo:** `mozaic-daily` branch `july-forecast` · **Related:** `~/work/holiday-corrected/FUTURE_WORK.md` (Data-coverage section documents the same Iran gap)
+**From:** Brendan Wells (Firefox DAU forecasting) · **Updated:** 2026-06-30
+**Context repo:** `mozaic-daily` branch `july-forecast`
 
-## The ask
+> **⚠️ Supersedes the earlier "training-exclusion / gap-holiday (NaN-mask)" proposal.**
+> An earlier draft of this handoff proposed masking the shutdown window out of training so Prophet
+> would *interpolate* across it. **That approach was not adopted.** Instead we **fill** the gap with
+> a synthetic counterfactual ("what Iran would have been with no shutdown") and feed it to mozaic as
+> ordinary training data. The filename is kept for history; the content below is the live plan.
+> (Why fill, not mask: a fill gives an explicit, inspectable, seasonally-correct series — including
+> Nowruz — and needs no Prophet-interpolation behavior over an 86-day hole.)
 
-Add a **training-exclusion mechanism** to mozaic that masks a *contiguous, multi-week-to-multi-month* date range out of the historical series before detrending + Prophet fitting, so the model **interpolates across the gap** instead of fitting trend/seasonality/changepoints to it.
+## The situation
 
-Concrete trigger: **Iran's internet shutdown (~2026-02-28 → recovery in mid-2026).** Iran DAU collapsed from ~700k to ~1–40k for several months, then recovered. We are returning IR to native queries for the July forecast. If we feed the raw series (cliff down → flat-near-zero → cliff back up) into mozaic, Prophet places spurious changepoints and the world-level reconciliation is corrupted. We want to tell mozaic "ignore this window — it is a known artifact, not signal."
+Iran's internet shutdown collapsed native IR telemetry to near-zero from **2026-03-01 → 2026-05-25**
+(~86 days); it fully recovered **2026-05-26** to pre-shutdown levels. For July, IR returns to native
+queries. Fed raw, the hole corrupts Prophet (spurious changepoints/trend, broken reconciliation).
 
-## Why the existing mechanisms don't cover this
+mozaic already declares this window: `IranHolidays` marks **2026-02-28 → 2026-05-25** as
+`"Internet Shutdown"` (`holiday_smart.py:322-327`). That excludes the window from holiday-effect
+fitting but does **not** supply values and its detrend radius can't bridge 86 days — so a fill is
+still needed.
 
-I reviewed the package (`holiday_smart.py`, `tile.py`, `core.py`, `utils.py`, `models.py`). There are three adjacent features, none of which fits:
+## What mozaic-daily produces (done)
 
-1. **`detrend()` holiday smoothing** (`holiday_smart.py:493`) — kinematic, radius-bounded (`max_radius` ≤ ~5 days). It smooths *short dips around recurring holidays*. A months-long gap is orders of magnitude wider than the radius; it won't be touched.
-2. **`IranHolidays` blackout ranges + the "blackout"→`-1.0` rule** (`core.py:313-322`) — this *forces the forecast to ~zero* on blackout dates. That's for **predicting** a known-future outage, the opposite of what we need. We want the historical gap *ignored* so recovered data drives the forecast upward, not pinned to zero.
-3. **`DesktopBugs` one-time events** (e.g. the Oct 2025 "Legacy Telemetry Drop") — closest in spirit ("interpolate over a known artifact"), but it's a fixed enumerated calendar of single-incident markers, not a general range-exclusion primitive, and it flows through the same radius-bounded detrend path.
+A **counterfactual fill** built by propagating the mozaic model forward (train on clean pre-shutdown
+IR, forecast the gap), harvested per-tile, then re-seasonalized to restore the real weekday→weekend
+amplitude Prophet damps. Artifacts + the consumption contract:
 
-So a months-long mid-series gap is genuinely new capability.
+- `data-official/2026-07/iran_fill/iran_fill.{glean_desktop,legacy_desktop,glean_mobile}.parquet`
+- **`data-official/2026-07/iran_fill/FILL_FORMAT_SPEC.md`** — the schema/contract (read this).
+- Producer: `mozaic-daily/scripts/generate_iran_fill.py`.
 
-⚠️ **Likely interaction with the warmup-clamp bug you just fixed** (SHA `e97413b9`, "leading-near-zero warmup lock-in"). That fix trims *leading* near-zero rows. A shutdown gap is the same pathology **mid-series**: during the near-zero stretch the kinematic clamp's rolling reference statistics collapse toward 0 and can lock in (positive-feedback). Whatever exclusion mechanism you add should also prevent the gap from poisoning the clamp's reference stats — i.e. the masked rows must be removed from the kinematic loop's history, not just NaN'd at the end.
+## The ask for `mozaic-forecasting` (Approach A — pre-process the input dataframe)
 
-## Proposed design (least-invasive)
+No new mozaic *modeling* feature is required. The package just needs to **substitute the fill for the
+real IR gap rows before `populate_tiles()`**. Per (data_source, metric) dataset, with IR no longer
+excluded from the query:
 
-Thread an optional `excluded_date_ranges` parameter through the call chain, defaulting to `None` so existing behavior is byte-identical:
+1. Drop real IR rows whose date is inside that metric's fill window (DAU/NP/EED: 2026-02-28 →
+   2026-05-25; **MAU: 2026-02-28 → 2026-06-21**, extended because rolling-28 MAU stays contaminated
+   ~28d past recovery).
+2. Append the matching fill rows from `iran_fill.<data_source>.parquet` (filtered to the metric).
+   The fill carries the same columns (`x, country, <segment booleans>, y`) — a column-aligned concat.
+3. Leave non-IR rows and out-of-window IR rows untouched.
 
-```
-ModelConfig.excluded_date_ranges        # Optional[List[Tuple[str, str]]] = None
-  → populate_tiles(..., excluded_date_ranges=None)
-    → Tile(excluded_date_ranges=...)
-      → Tile._detrend_holidays()
-        → detrend(..., excluded_date_ranges=...)
-```
-
-In `detrend()` (`holiday_smart.py:493`), before the kinematic loop:
-
-```python
-if excluded_date_ranges:
-    for start_str, end_str in excluded_date_ranges:
-        mask = (df["submission_date"] >= pd.to_datetime(start_str)) & \
-               (df["submission_date"] <= pd.to_datetime(end_str))
-        df.loc[mask, "y"] = np.nan        # drop from training; Prophet sees a gap
-    # IMPORTANT: exclude these rows from the rolling reference stats the
-    # kinematic clamp uses, so the gap can't lock x_bar/v_bar/a_bar to ~0
-    # (same failure class as the leading-warmup bug fixed in e97413b9).
-```
-
-Prophet already tolerates NaN `y` (mozaic converts detrended zeros back to NaN before `m.fit()` — `tile.py:67`), so a masked gap becomes ordinary missing data that Prophet interpolates across via trend + seasonality.
-
-### Acceptance criteria
-- [ ] `excluded_date_ranges=None` → outputs identical to current (regression-locked).
-- [ ] With a synthetic series containing a 90-day mid-series near-zero gap + a recovery: with the range excluded, Prophet places **no changepoint inside the gap**, and the post-gap forecast tracks the recovered level (not the depressed gap level).
-- [ ] Masked rows do **not** corrupt the kinematic clamp reference stats (guard against the warmup-class lock-in).
-- [ ] Works at country *and* reconciled/aggregate level (the World mozaic should inherit the exclusion since the masked country contributes NaN, not zero, into the sum).
-- [ ] Optional: a documented convenience — extend `IranHolidays` (or a new incident registry) so the Iran 2026 shutdown range is shipped as a named default, but the general `excluded_date_ranges` param is the load-bearing feature.
-
-## What we need on our side (not blocking the PR)
-- Exact gap window from BQ: IR daily DAU desktop + mobile, find shutdown start (~2026-02-28) and the recovery date where DAU returns to a stable level. We'll pass that as `excluded_date_ranges=[("2026-02-28", "<recovery>")]`.
-
-## Pointers for the implementer
-| Component | File:line | Role |
-|---|---|---|
-| Detrend (insertion point) | `holiday_smart.py:493-598` | add `excluded_date_ranges`; mask + protect clamp stats |
-| Tile construction | `tile.py:11-129` | new field + pass-through to `detrend()` |
-| Pipeline params | `utils.py:34-92` (`populate_tiles`) | new kwarg |
-| Config | `models.py:12-40` (`ModelConfig`) | new field |
-| Blackout/-1.0 rule (do NOT reuse) | `core.py:313-322` | shows why "blackout holiday" is the wrong tool here |
-| Warmup fix to mirror | mozaic SHA `e97413b9` | same clamp-lock-in pathology, mid-series |
+See `FILL_FORMAT_SPEC.md` for exact columns, dtypes, populations, fill windows, and the
+`ALL == sum(populations)` semantics. The delivered `y` already carries realistic weekly amplitude;
+no further processing needed on the package side.
