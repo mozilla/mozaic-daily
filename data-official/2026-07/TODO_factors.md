@@ -25,7 +25,15 @@ Status:
 - [x] Exact gap window from BQ (desktop + mobile).
 - [x] Producer + artifacts + spec: `scripts/generate_iran_fill.py`; `data-official/2026-07/iran_fill/` (`FILL_FORMAT_SPEC.md` is the package contract); tests `tests/test_iran_fill.py`.
 - [x] Handoff rewritten for the fill-ingestion ask: `iran_gap_holiday_mozaic_handoff.md`.
-- [ ] **Package-side ingestion** (Approach A) — Brendan to write in `mozaic-forecasting` against the spec.
+- [x] **Package-side ingestion** — the fill now ships **inside the mozaic package**
+  (`mozaic/fills/iran_2026/*.parquet`, branch `configurable-model-params`) and is **auto-applied** by
+  `populate_tiles(data_source=...)`. (Not the splice-from-mozaic-daily route the earlier handoff drafted.)
+- [x] **mozaic-daily wiring**: removed the `country != 'IR'` SQL exclusion, added `IR` back to
+  `top_DAU_markets` (so it surfaces natively, not folded into ROW), and threaded `data_source` through
+  `forecast.py` → `populate_tiles`. Tests: `tests/test_iran_fill_integration.py` +
+  `test_queries.py::test_build_query_includes_iran_natively`. Note left for the package agent:
+  `~/work/mozaic-forecasting-official/NOTE_TO_MOZAIC_PKG_from_daily.md` (the surface-IR-as-a-market trap +
+  a package-side opt-out request, since `--no-iran-fill` can't be honored consumer-side).
 - [ ] **Archive the synthetic-Iran use case** (`data-official/iran_synthetic/`, `scripts/generate_iran_synthetic.py`, `scripts/add_iran_to_forecast.py`, `research/iran/`) as retired-for-this-purpose (keep on disk + GCS).
 - Return ramp: real recovered data carries it; no separate modeling needed. Desktop + mobile treated consistently (one window, both platforms).
 
@@ -33,8 +41,11 @@ Status:
 
 ## Desktop
 
-### D1. Iran return + counterfactual fill — `DONE (fill produced; package ingestion pending)`
-See §0. Desktop fills produced for **both** `legacy_desktop` and `glean_desktop` (the mart carries both), all 4 metrics, per-population.
+### D1. Iran return + counterfactual fill — `DONE (built-in + wired)`
+See §0. Desktop fills for **both** `legacy_desktop` and `glean_desktop` ship in the mozaic package and
+auto-apply; mozaic-daily passes `data_source` so the right desktop fill is selected (the two share a
+schema). Pending: a real-data forecast run to confirm IR `actuals` show the crater and IR/World forecast
+is smooth (blocked momentarily on a `gcloud auth application-default login` refresh).
 
 ### D2. MozillaOnline → Firefox desktop migration overlay — `TODO` (model exists)
 MozillaOnline is migrating onto Firefox desktop. **Brad has reportedly built a migration model — Brendan is locating it** (use it rather than building from scratch). Model as an **overlay**, same bidirectional pattern as the marketing-lift `m` adjustment:
@@ -75,8 +86,12 @@ Reported DAU movement from a usage experiment.
 
 ## Mobile
 
-### M1. Iran return — `DONE (fill produced; package ingestion pending)`
-See §0. `glean_mobile` fill produced, all 4 metrics, per-population. Mobile recovery date matches desktop's (2026-05-26). Note: mobile's real weekly cycle is genuinely near-flat, so re-seasonalization barely changes mobile (correctly matching reality); mobile recovered slightly *above* pre-shutdown level (+36% DAU at the seam) — left unscaled per the go/no-go.
+### M1. Iran return — `DONE (built-in + wired)`
+See §0. `glean_mobile` fill ships in the package and auto-applies (mobile schema is unambiguous, but we
+pass `data_source` anyway for determinism). All 4 metrics, per-population. Mobile recovery date matches
+desktop's (2026-05-26); mobile's real weekly cycle is near-flat (re-seasonalization barely changes it,
+correctly matching reality); mobile recovered slightly *above* pre-shutdown (+36% DAU at the seam) — left
+unscaled per the go/no-go.
 
 ### M2. Marketing ramp-up — `TODO`
 Mobile marketing has ramped up beyond the June Fenix Android campaign.

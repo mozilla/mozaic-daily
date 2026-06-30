@@ -681,14 +681,20 @@ def test_build_filter_code_all_sources_all_metrics():
 # IRAN EXCLUSION TESTS
 # =============================================================================
 
-def test_build_query_excludes_iran():
-    """All generated queries must contain country != 'IR' to prevent Iran data
-    from entering the ROW bucket via the IF(country IN (...)) SQL logic."""
+def test_build_query_includes_iran_natively():
+    """IR is queried natively again (no `country != 'IR'` exclusion) and is a listed market, so
+    build_query surfaces it as its own 'IR' country rather than folding it into ROW. The 2026
+    internet-shutdown gap is corrected by mozaic's built-in counterfactual fill, not by dropping IR.
+    Regression guard against silently re-excluding Iran."""
     from mozaic_daily.config import get_runtime_config
     config = get_runtime_config()
+    assert "IR" in config['countries'], "IR must be a listed market or it folds into ROW"
     for spec in QUERY_SPECS.values():
         sql = spec.build_query(config['country_string'])
-        assert "country != 'IR'" in sql, (
+        assert "country != 'IR'" not in sql, (
+            f"Query for {spec.data_source.display_name} {spec.metric.value} still excludes Iran"
+        )
+        assert "'IR'" in sql, (
             f"Query for {spec.data_source.display_name} {spec.metric.value} "
-            f"missing Iran exclusion clause"
+            f"missing IR from the country IN (...) list"
         )

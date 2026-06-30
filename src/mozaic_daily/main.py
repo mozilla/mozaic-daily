@@ -231,6 +231,16 @@ def process_data_source(
     source = data_source.telemetry_source
     source_data = datasets[platform.value][source.value]
 
+    # Normalize the date column to datetime64. BigQuery DATE columns arrive as the `dbdate`
+    # extension dtype; mozaic's built-in gap fill (Iran 2026) carries datetime64 dates. mozaic
+    # normalizes x in its pivot as of commit 97c971c, so this is now defensive (and guards against
+    # an older mozaic where a dbdate-vs-datetime64 mismatch silently NaN-ed every tile's fit series).
+    source_data = {
+        metric: (df.assign(x=pd.to_datetime(df["x"]))
+                 if isinstance(df, pd.DataFrame) and "x" in df.columns else df)
+        for metric, df in source_data.items()
+    }
+
     marketing_context = None
     if marketing_spec_path is not None and data_source == DataSource.GLEAN_MOBILE \
             and Metric.DAU.value in source_data:
@@ -248,6 +258,7 @@ def process_data_source(
     forecast_result = forecast_func(
         source_data, forecast_start, forecast_end,
         additional_holidays=additional_holidays,
+        data_source=data_source.value,
     )
 
     # Combine

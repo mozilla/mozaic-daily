@@ -76,6 +76,7 @@ def get_forecast_dfs(
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
     config: ModelConfig = None,
+    data_source: str = None,
 ) -> ForecastResult:
     """Generate forecasts using Mozaic.
 
@@ -87,6 +88,8 @@ def get_forecast_dfs(
         quantile: Quantile for point forecast (default: 0.5 from FORECAST_CONFIG)
         additional_holidays: Custom holiday calendars passed to populate_tiles
             (default: empty list)
+        data_source: Source identifier (e.g. "legacy_desktop") forwarded to populate_tiles so it
+            selects the matching built-in gap fill (e.g. Iran 2026 shutdown). None = no fill selection.
 
     Returns:
         ForecastResult with dfs (metric -> DataFrame) and mozaics (metric -> Mozaic)
@@ -129,6 +132,7 @@ def get_forecast_dfs(
                 forecast_start_date,
                 forecast_end_date,
                 additional_holidays=additional_holidays,
+                data_source=data_source,
                 **tile_kwargs,
             )
         except Exception as e:
@@ -185,6 +189,7 @@ def get_desktop_forecast_dfs(
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
     config: DesktopModelConfig = None,
+    data_source: str = None,
 ) -> ForecastResult:
     """Generate Desktop forecasts using Mozaic.
 
@@ -195,6 +200,9 @@ def get_desktop_forecast_dfs(
         quantile: Quantile for point forecast (default: 0.5)
         additional_holidays: Custom holiday calendars passed to populate_tiles
         config: DesktopModelConfig with prophet/holiday params (default: None uses hardcoded defaults)
+        data_source: Source identifier ("glean_desktop"/"legacy_desktop") forwarded to
+            populate_tiles so it selects the matching built-in gap fill (the two desktop sources
+            share a schema, so this disambiguates them). None skips desktop fills.
 
     Returns:
         ForecastResult with dfs and mozaics
@@ -208,6 +216,7 @@ def get_desktop_forecast_dfs(
         quantile=quantile,
         additional_holidays=additional_holidays,
         config=config,
+        data_source=data_source,
     )
 
 
@@ -218,6 +227,7 @@ def get_mobile_forecast_dfs(
     quantile: float = None,
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
     config: MobileModelConfig = None,
+    data_source: str = None,
 ) -> ForecastResult:
     """Generate Mobile forecasts using Mozaic.
 
@@ -228,6 +238,8 @@ def get_mobile_forecast_dfs(
         quantile: Quantile for point forecast (default: 0.5)
         additional_holidays: Custom holiday calendars passed to populate_tiles
         config: MobileModelConfig with prophet/holiday params (default: None uses hardcoded defaults)
+        data_source: Source identifier ("glean_mobile") forwarded to populate_tiles so it selects
+            the matching built-in gap fill. None lets the package auto-resolve when unambiguous.
 
     Returns:
         ForecastResult with dfs and mozaics
@@ -241,4 +253,5 @@ def get_mobile_forecast_dfs(
         quantile=quantile,
         additional_holidays=additional_holidays,
         config=config,
+        data_source=data_source,
     )

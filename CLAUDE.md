@@ -420,15 +420,33 @@ df, meta = load_forecast(path, require_state=["h"])  # raises if filename codes 
 
 **Disabling marketing-lift for a one-off run**: `python scripts/run_main.py --no-marketing-lift ...`. Default behavior is to apply `m` whenever `data-official/{YYYY-MM}/marketing/marketing.json` has `applies_to_forecast_start == forecast_start_date`.
 
-## Iran Internet Shutdown Workaround
+## Iran Internet Shutdown — counterfactual gap fill (current approach)
 
-Iran's internet has been shut down since approximately 2026-02-28. Since Iran (IR) is one of the top DAU markets, its missing/zero telemetry corrupts the world-level forecast.
+Iran's internet shutdown drove native Firefox telemetry to ~zero from **2026-03-01 → 2026-05-25**
+(fully recovered 2026-05-26). Iran (IR) is a top DAU market, so the 86-day crater would corrupt
+Prophet (spurious changepoints/trend, broken reconciliation) if fed raw.
 
-### This Branch: `june-forecast`
-- Base: `no-iran-plus-iran-model` (IR excluded from queries; synthetic Iran added back via summation)
-- Adds support for configurable `ModelConfig` parameters (see "Configurable Model Parameters" above)
-- Uses `make_desktop_model(config)` / `make_mobile_model(config)` factory functions instead of bare model callables when a config is provided
-- `run_comparison_forecasts.py` can run multiple configs side-by-side to evaluate parameter sensitivity
+**Current treatment (July 2026+):** IR is queried **natively** and the gap is corrected by a
+**counterfactual fill** that mozaic applies automatically — the model trains on the synthetic
+"what Iran would have been with no shutdown" series while `actuals` stay real telemetry.
+
+- IR is back in the market list (`config.py` `top_DAU_markets`) so `build_query` surfaces it as its
+  own `'IR'` country (not folded into `ROW`); the `country != 'IR'` SQL exclusion is removed.
+- The fill ships **inside the mozaic package** (`mozaic/fills/iran_2026/<data_source>.parquet`) and
+  is auto-applied by `populate_tiles` when `data_source` is passed. `process_data_source` forwards
+  `data_source=data_source.value` through the platform wrappers (`forecast.py`) into `populate_tiles`.
+- The producer for the fill is `scripts/generate_iran_fill.py` (build output under
+  `data-official/2026-07/iran_fill/`); on regeneration, copy the per-source parquets into the mozaic
+  package. See `data-official/2026-07/iran_fill/FILL_FORMAT_SPEC.md`.
+
+**Retired:** the prior `no-Iran-queries + synthetic-Iran-add-back-by-summation` workflow
+(`scripts/generate_iran_synthetic.py`, `add_iran_to_forecast.py`) and the never-adopted NaN-mask
+"gap holiday." The standalone 150k-cap recovery model is obsolete (Iran fully recovered).
+
+### Configurable model parameters
+- `ModelConfig` params are supported (see "Configurable Model Parameters" above); `make_desktop_model(config)`
+  / `make_mobile_model(config)` are used when a config is provided.
+- `run_comparison_forecasts.py` runs multiple configs side-by-side for parameter sensitivity.
 
 ## Important Notes
 

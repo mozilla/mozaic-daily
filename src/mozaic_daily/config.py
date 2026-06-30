@@ -93,10 +93,13 @@ def get_runtime_config(forecast_start_date_override: Optional[str] = None) -> Di
     config['training_end_date'] = (forecast_start_dt - timedelta(days=1)).strftime("%Y-%m-%d")
 
     # Markets
-    # IR (Iran) excluded due to internet shutdown since ~2026-02-28.
-    # Without telemetry, Iran data is missing/zero and corrupts world forecast.
+    # IR (Iran) is queried natively again. Its 2026-02-28→05-25 internet-shutdown gap is corrected
+    # by mozaic's built-in counterfactual fill (auto-applied in populate_tiles when data_source is
+    # passed), which trains on the counterfactual while keeping real actuals. IR must appear in this
+    # list so build_query surfaces it as its own market rather than folding it into 'ROW' — otherwise
+    # there are no country=='IR' rows for the fill to replace.
     top_DAU_markets = set(
-        ["US", "BR", "CA", "MX", "AR", "IN", "ID", "JP", "CN", "DE", "FR", "PL", "RU", "IT"]
+        ["US", "BR", "CA", "MX", "AR", "IN", "ID", "JP", "CN", "DE", "FR", "PL", "RU", "IT", "IR"]
     )
     # top_google_markets = set(
     #     ["US", "DE", "FR", "GB", "PL", "CA", "CH", "IT", "AU", "NL", "ES", "JP", "AT"]
