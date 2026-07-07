@@ -113,6 +113,18 @@ if __name__ == '__main__':
             'forecast_start_date.'
         )
     )
+    parser.add_argument(
+        '--no-mozillaonline',
+        dest='mozillaonline',
+        action='store_false',
+        default=True,
+        help=(
+            'Disable the MozillaOnline (`o`) desktop migration overlay for this '
+            'run, even if a matching spec exists in '
+            'data-official/{YYYY-MM}/mozillaonline/. Default is to apply it to '
+            'legacy_desktop DAU when a spec matches forecast_start_date.'
+        )
+    )
     args = parser.parse_args()
 
     # Validate that --testing is not combined with explicit filters
@@ -136,4 +148,5 @@ if __name__ == '__main__':
         output_dir=args.output_dir,
         marketing_lift=args.marketing_lift,
         launch_on_login=args.launch_on_login,
+        mozillaonline=args.mozillaonline,
     )

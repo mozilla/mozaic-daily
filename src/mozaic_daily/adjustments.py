@@ -346,13 +346,14 @@ def build_adjustments_applied_list(
 # Consumers (thin wrappers / callers, defined below or in main.py):
 #   ``m`` marketing_lift   — mobile, flag_column ``fenix_android``
 #   ``l`` launch_on_login  — desktop, flag_column ``modern_windows``
-#   ``o`` mozillaonline     — desktop (planned; reuse these + fixed shares)
+#   ``o`` mozillaonline     — desktop, flag_column ``modern_windows``, fixed shares
 #
 # The same ``country_shares`` Series is used for both halves so the subtraction
 # and add-back are byte-symmetric per (date, country, segment) tile. Shares are
 # either computed from a trailing DAU window (``compute_country_shares``, e.g.
-# ``m``/``l``) or supplied fixed from a spec (e.g. ``o``); the appliers don't
-# care which. A v1 assumption is a stationary country mix frozen for the horizon.
+# ``m``/``l``) or supplied fixed from a spec (``fixed_country_shares_from_spec``,
+# e.g. ``o``); the appliers don't care which. A v1 assumption is a stationary
+# country mix frozen for the horizon.
 #
 # Column conventions:
 # - Training DataFrame: ``x`` (date), ``country`` (str), boolean segment columns
@@ -505,6 +506,47 @@ def compute_fenix_country_shares(
     )
     shares.name = "fenix_country_share"
     return shares
+
+
+def fixed_country_shares_from_spec(
+    spec: dict,
+    present_countries: Iterable[str],
+) -> pd.Series:
+    """Build renormalized fixed country shares from a desktop-overlay spec.
+
+    For overlays whose geo footprint is a *fixed* allocation rather than a
+    data-derived trailing-DAU share (e.g. MozillaOnline ``o``, ~93% China):
+    reads ``spec["allocation"]["shares"]``, drops any
+    ``spec["scope"]["exclude_countries"]`` (e.g. IR), restricts to the countries
+    actually present in the training frame, then **renormalizes to sum 1.0**.
+
+    Renormalization keeps the subtract⇄add-back symmetric: the ALL-country
+    add-back is the full daily lift, so the per-country subtraction must also sum
+    to the full daily lift over the countries that exist as tiles. This mirrors
+    the sum-to-1 guarantee that :func:`compute_country_shares` provides for the
+    trailing-DAU appliers. Countries named in the spec but absent from training
+    (e.g. a market folded into ``ROW``) have their share redistributed
+    proportionally across the present countries.
+
+    Returned Series is indexed by country code and sums to 1.0.
+    """
+    raw_shares = spec["allocation"]["shares"]
+    excluded = set(spec.get("scope", {}).get("exclude_countries", []))
+    present = set(present_countries)
+    kept = {
+        country: float(share)
+        for country, share in raw_shares.items()
+        if country not in excluded and country in present
+    }
+    total = sum(kept.values())
+    if total <= 0:
+        raise ValueError(
+            f"No overlay geo shares remain after excluding {sorted(excluded)} and "
+            f"restricting to {len(present)} training countries; cannot allocate."
+        )
+    shares = pd.Series({country: share / total for country, share in kept.items()})
+    shares.name = "country_share"
+    return shares.sort_index()
 
 
 def subtract_lift_from_training(

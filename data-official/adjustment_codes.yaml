@@ -51,3 +51,22 @@ codes:
       data-official/{YYYY-MM}/launch_on_login/lol.json with a sidecar daily
       curve parquet from ~/work/launch-on-login/build_lol_tailwind.py.
     spec_glob: "data-official/*/launch_on_login/lol.json"
+  o:
+    name: mozillaonline_migration
+    description: >
+      MozillaOnline -> canonical Firefox desktop migration tailwind. MozillaOnline
+      (Mozilla's China distribution partner) is migrating its desktop users onto
+      mainline Firefox; migrating users flip from app_name='Firefox Desktop
+      MozillaOnline' to app_name='Firefox Desktop' (the canonical KPI), so they
+      newly count -- an additive tailwind, >92% China. Applied bidirectionally
+      like launch_on_login `l` on legacy_desktop DAU: the migration DAU is
+      subtracted from modern_windows training rows before mozaic (allocated by
+      FIXED geo shares from the spec, IR excluded, renormalized over
+      training-present countries), then added back to the per-country + ALL
+      forecast rows. modern_windows-only by measurement (older-Windows users are
+      pinned on Firefox too old to receive the migrating build). Spec type is the
+      generic `desktop_overlay`; per-month spec lives in
+      data-official/{YYYY-MM}/mozillaonline/mozillaonline.json with a sidecar daily
+      migration parquet (Brad Ochocki Szasz's official model, ingested via
+      build_official_series.py).
+    spec_glob: "data-official/*/mozillaonline/mozillaonline.json"

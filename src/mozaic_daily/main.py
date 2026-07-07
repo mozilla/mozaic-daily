@@ -27,6 +27,7 @@ from .adjustments import (
     add_marketing_lift_to_forecast,
     compute_country_shares,
     compute_fenix_country_shares,
+    fixed_country_shares_from_spec,
     load_lift_series,
     load_marketing_lift_series,
     load_marketing_spec,
@@ -278,6 +279,77 @@ def _apply_launch_on_login_pre_mozaic(
     }
 
 
+def _find_mozillaonline_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
+    """Locate the mozillaonline/mozillaonline.json spec whose applies_to_forecast_start matches.
+
+    Mirrors ``_find_launch_on_login_spec_for_forecast`` for the desktop MozillaOnline
+    migration overlay (code ``o``). Returns ``None`` if no spec matches — the "no
+    MozillaOnline overlay for this cycle" path, which is not an error.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    candidates = sorted(
+        glob.glob(str(repo_root / "data-official" / "*" / "mozillaonline" / "mozillaonline.json"))
+    )
+    matches = []
+    for candidate in candidates:
+        with open(candidate) as f:
+            spec = json.load(f)
+        if spec.get("applies_to_forecast_start") == forecast_start_date:
+            matches.append(Path(candidate))
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise ValueError(
+            f"Multiple mozillaonline/mozillaonline.json specs claim applies_to_forecast_start="
+            f"{forecast_start_date!r}: {[str(m) for m in matches]}"
+        )
+    return matches[0]
+
+
+def _apply_mozillaonline_pre_mozaic(
+    source_data: dict,
+    spec_path: Path,
+    training_end_date: str,
+) -> tuple[dict, dict]:
+    """Subtract the MozillaOnline migration from DAU training before mozaic runs.
+
+    Structurally identical to ``_apply_launch_on_login_pre_mozaic`` but the country
+    shares are FIXED (from the spec's geo allocation, IR excluded, renormalized over
+    training-present countries) rather than computed from a trailing DAU window,
+    because MozillaOnline is a China-distribution product with a fixed geo footprint.
+    Allocation keys off the boolean ``modern_windows`` segment column (the migration
+    both originates from and lands in modern_windows — see the spec's os_scope).
+
+    Returns ``(modified_source_data, mozillaonline_context)`` where the context
+    carries ``{daily_lift_series, country_shares, spec}`` so the symmetric add-back
+    uses byte-identical inputs.
+    """
+    spec = load_overlay_spec(spec_path)
+    daily_lift_series = load_lift_series(spec, spec_path.parent)
+    flag_column = spec["allocation"]["flag_column"]
+    metric_key = Metric.DAU.value
+    training_df = source_data[metric_key]
+    present_countries = training_df.loc[training_df[flag_column] == True, "country"].unique()  # noqa: E712
+    country_shares = fixed_country_shares_from_spec(spec, present_countries)
+    print(
+        f'MozillaOnline: subtracting from {metric_key} training data '
+        f'({len(country_shares)} countries, {(training_df[flag_column] == True).sum()} {flag_column} rows)'  # noqa: E712
+    )
+    modified_source_data = dict(source_data)
+    modified_source_data[metric_key] = subtract_lift_from_training(
+        training_df,
+        daily_lift_series=daily_lift_series,
+        country_shares=country_shares,
+        flag_column=flag_column,
+        sentinel_attr="mozillaonline_subtracted",
+    )
+    return modified_source_data, {
+        "daily_lift_series": daily_lift_series,
+        "country_shares": country_shares,
+        "spec": spec,
+    }
+
+
 def process_data_source(
     data_source: DataSource,
     datasets: dict,
@@ -286,6 +358,7 @@ def process_data_source(
     training_end_date: Optional[str] = None,
     marketing_spec_path: Optional[Path] = None,
     lol_spec_path: Optional[Path] = None,
+    mozillaonline_spec_path: Optional[Path] = None,
 ) -> pd.DataFrame:
     """Process a single data source through the forecast pipeline.
 
@@ -305,6 +378,12 @@ def process_data_source(
             launch-on-login `l` desktop overlay: subtracts the measured LOL rise
             from the modern_windows DAU training rows before mozaic and adds the
             capped curve back to the per-tile forecast after mozaic. No-op for
+            other data sources.
+        mozillaonline_spec_path: If set and ``data_source == LEGACY_DESKTOP``,
+            applies the MozillaOnline `o` desktop overlay: subtracts the migration
+            DAU from the modern_windows DAU training rows before mozaic (allocated
+            by fixed geo shares) and adds it back to the per-tile forecast after
+            mozaic. Stacks with `l` (distinct idempotency sentinel). No-op for
             other data sources.
 
     Returns:
@@ -345,6 +424,17 @@ def process_data_source(
             )
         source_data, lol_context = _apply_launch_on_login_pre_mozaic(
             source_data, lol_spec_path, training_end_date
+        )
+
+    mozillaonline_context = None
+    if mozillaonline_spec_path is not None and data_source == DataSource.LEGACY_DESKTOP \
+            and Metric.DAU.value in source_data:
+        if training_end_date is None:
+            raise ValueError(
+                "training_end_date is required when mozillaonline_spec_path is set"
+            )
+        source_data, mozillaonline_context = _apply_mozillaonline_pre_mozaic(
+            source_data, mozillaonline_spec_path, training_end_date
         )
 
     # Generate forecasts
@@ -392,6 +482,21 @@ def process_data_source(
         print(f'Launch-on-login: added back across {n_total} rows '
               f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
 
+    # MozillaOnline add-back (same timing/rationale as the overlays above).
+    if mozillaonline_context is not None and Metric.DAU.value in df_combined.columns:
+        df_combined = add_lift_to_forecast(
+            df_combined,
+            daily_lift_series=mozillaonline_context["daily_lift_series"],
+            country_shares=mozillaonline_context["country_shares"],
+            forecast_start=pd.Timestamp(forecast_start),
+            metric_column=Metric.DAU.value,
+            population_value=mozillaonline_context["spec"]["allocation"]["flag_column"],
+        )
+        n_total = len(df_combined)
+        n_forecast = (df_combined["source"] == "forecast").sum()
+        print(f'MozillaOnline: added back across {n_total} rows '
+              f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
+
     # Format
     format_func = get_format_function(platform)
     format_func(df_combined, data_source=data_source.value)
@@ -407,6 +512,7 @@ def generate_forecasts(
     output_dir: str = ".",
     marketing_spec_path: Optional[Path] = None,
     lol_spec_path: Optional[Path] = None,
+    mozillaonline_spec_path: Optional[Path] = None,
 ) -> pd.DataFrame:
     """Generate forecasts for all data sources and combine them.
 
@@ -422,6 +528,9 @@ def generate_forecasts(
         lol_spec_path: If set, the launch-on-login `l` desktop overlay is applied
             to legacy_desktop DAU (subtract pre-mozaic, add back post-mozaic).
             Other data sources are unaffected.
+        mozillaonline_spec_path: If set, the MozillaOnline `o` desktop overlay is
+            applied to legacy_desktop DAU (subtract pre-mozaic, add back
+            post-mozaic). Stacks with `l`. Other data sources are unaffected.
 
     Returns:
         Combined DataFrame with all forecasts
@@ -445,6 +554,7 @@ def generate_forecasts(
             training_end_date=runtime_config['training_end_date'],
             marketing_spec_path=marketing_spec_path,
             lol_spec_path=lol_spec_path,
+            mozillaonline_spec_path=mozillaonline_spec_path,
         )
         all_dfs.append(df)
 
@@ -481,6 +591,7 @@ def main(
     output_dir: Optional[str] = None,
     marketing_lift: bool = True,
     launch_on_login: bool = True,
+    mozillaonline: bool = True,
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
 
@@ -503,6 +614,10 @@ def main(
             matching this forecast cycle's start date and apply the `l`
             desktop overlay to legacy_desktop DAU. If False, force it off even
             if a matching spec exists.
+        mozillaonline: If True (default), look for a MozillaOnline spec matching
+            this forecast cycle's start date and apply the `o` desktop overlay to
+            legacy_desktop DAU. If False, force it off even if a matching spec
+            exists.
 
     Returns:
         DataFrame with forecasts
@@ -579,6 +694,18 @@ def main(
         elif lol_spec_path is not None:
             print(f'Launch-on-login: using spec {lol_spec_path}')
 
+        mozillaonline_spec_path = (
+            _find_mozillaonline_spec_for_forecast(config['forecast_start_date'])
+            if mozillaonline else None
+        )
+        if mozillaonline and mozillaonline_spec_path is None:
+            print(
+                f'MozillaOnline: no spec found for forecast_start='
+                f'{config["forecast_start_date"]}; overlay disabled for this cycle.'
+            )
+        elif mozillaonline_spec_path is not None:
+            print(f'MozillaOnline: using spec {mozillaonline_spec_path}')
+
         df = generate_forecasts(
             datasets, config,
             data_source_filter=data_source_filter,
@@ -586,6 +713,7 @@ def main(
             output_dir=resolved_output_dir,
             marketing_spec_path=marketing_spec_path,
             lol_spec_path=lol_spec_path,
+            mozillaonline_spec_path=mozillaonline_spec_path,
         )
         save_checkpoint(df, checkpoint_filename)
 

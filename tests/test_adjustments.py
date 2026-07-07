@@ -7,6 +7,7 @@ per-tile marketing-lift applier (subtract from training / add back to
 forecast).
 """
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ from mozaic_daily.adjustments import (
     canonical_codes,
     compute_country_shares,
     compute_fenix_country_shares,
+    fixed_country_shares_from_spec,
     insert_state_marker,
     load_adjustments_from_dir,
     load_code_registry,
@@ -1127,3 +1129,185 @@ def test_build_adjustments_applied_includes_lol(tmp_path):
     applied = build_adjustments_applied_list(["l"], {"l": spec})
     assert applied[0]["code"] == "l"
     assert applied[0]["name"] == "launch_on_login"
+
+
+# --- MozillaOnline overlay applier (code `o`) ------------------------------
+#
+# `o` reuses the SAME generic desktop-overlay appliers as `l` (modern_windows
+# segment) but with FIXED geo shares from the spec rather than trailing-DAU
+# shares. These tests exercise fixed_country_shares_from_spec + confirm `o`
+# stacks with `l` on the same modern_windows training frame via a distinct
+# idempotency sentinel.
+
+# Stand-in migration start inside the desktop fixture's date range (real spec
+# starts 2026-06-02; using 2026-05-08 here keeps the subtract/add tests non-vacuous
+# against the 2026-03-15..2026-05-13 training fixture).
+MOZONLINE_START = pd.Timestamp("2026-05-08")
+
+
+def _mozonline_spec(shares, exclude=("IR",)):
+    """Minimal desktop-overlay spec dict carrying a fixed geo allocation."""
+    return {
+        "allocation": {"key": "fixed_country_shares", "shares": dict(shares)},
+        "scope": {"exclude_countries": list(exclude)},
+    }
+
+
+def _make_mozonline_lift_series(daily=10_000.0):
+    """Flat migration curve from MOZONLINE_START (stand-in for Brad's model)."""
+    idx = pd.date_range("2026-02-01", "2026-12-31", freq="D")
+    values = np.where(idx >= MOZONLINE_START, daily, 0.0)
+    return pd.Series(values, index=idx, name="migration_dau_daily")
+
+
+# --- fixed_country_shares_from_spec ----------------------------------------
+
+def test_fixed_shares_excludes_and_renormalizes():
+    spec = _mozonline_spec({"CN": 0.9277, "US": 0.0152, "IR": 0.02}, exclude=("IR",))
+    shares = fixed_country_shares_from_spec(spec, present_countries=["CN", "US", "DE"])
+    # IR excluded by scope; DE absent from spec shares -> dropped.
+    assert "IR" not in shares.index
+    assert set(shares.index) == {"CN", "US"}
+    # Renormalized over the two kept countries.
+    assert abs(shares.sum() - 1.0) < 1e-12
+    assert shares.loc["CN"] == pytest.approx(0.9277 / (0.9277 + 0.0152))
+    assert shares.loc["CN"] > shares.loc["US"]
+
+
+def test_fixed_shares_cn_dominant_full_footprint():
+    spec = _mozonline_spec(
+        {"CN": 0.9277, "HK": 0.0225, "US": 0.0152, "JP": 0.0098, "ROW": 0.0103},
+        exclude=(),
+    )
+    shares = fixed_country_shares_from_spec(
+        spec, present_countries=["CN", "HK", "US", "JP", "ROW"]
+    )
+    assert abs(shares.sum() - 1.0) < 1e-12
+    assert shares.loc["CN"] == pytest.approx(0.9277 / 0.9855, rel=1e-6)  # ~0.941
+    assert shares.loc["CN"] > 0.9
+
+
+def test_fixed_shares_raises_when_no_country_present():
+    spec = _mozonline_spec({"CN": 0.9277, "IR": 0.05}, exclude=("IR",))
+    with pytest.raises(ValueError, match="No overlay geo shares remain"):
+        fixed_country_shares_from_spec(spec, present_countries=["US", "DE", "BR"])
+
+
+# --- subtract/add with fixed shares on modern_windows ----------------------
+
+@pytest.fixture
+def mozonline_lift_series():
+    return _make_mozonline_lift_series()
+
+
+@pytest.fixture
+def mozonline_fixed_shares():
+    # Fixed footprint over the desktop fixture's countries (US/DE/BR); sum==1.
+    spec = _mozonline_spec({"US": 0.7, "DE": 0.2, "BR": 0.1, "IR": 0.5}, exclude=("IR",))
+    return fixed_country_shares_from_spec(spec, present_countries=TEST_COUNTRIES)
+
+
+def test_o_subtract_world_invariant_fixed_shares(
+    desktop_training_df, mozonline_lift_series, mozonline_fixed_shares
+):
+    """Per-date sum of modern_windows subtractions == daily migration lift."""
+    out = subtract_lift_from_training(
+        desktop_training_df, daily_lift_series=mozonline_lift_series,
+        country_shares=mozonline_fixed_shares, flag_column="modern_windows",
+        sentinel_attr="mozillaonline_subtracted",
+    )
+    mw_in = desktop_training_df[desktop_training_df["modern_windows"] == True]  # noqa: E712
+    mw_out = out[out["modern_windows"] == True]  # noqa: E712
+    delta = mw_in["y"].astype("int64").to_numpy() - mw_out["y"].astype("int64").to_numpy()
+    per_date = (pd.DataFrame({"x": mw_in["x"].values, "d": delta}).groupby("x")["d"].sum())
+    per_date.index = pd.DatetimeIndex(per_date.index).normalize()
+    for date, d in per_date.items():
+        assert d == (pytest.approx(10_000, abs=2) if date >= MOZONLINE_START else 0)
+
+
+def test_o_addback_world_and_per_country(mozonline_lift_series, mozonline_fixed_shares):
+    fdf = _make_desktop_forecast_fixture()
+    out = add_lift_to_forecast(
+        fdf, daily_lift_series=mozonline_lift_series, country_shares=mozonline_fixed_shares,
+        forecast_start=FORECAST_START, population_value="modern_windows",
+    )
+    # World ALL/ALL forecast rows get the full daily lift.
+    world = (out["country"] == "ALL") & (out["population"] == "ALL") & (out["source"] == "forecast")
+    assert np.allclose((out.loc[world, "DAU"] - fdf.loc[world, "DAU"]).values, 10_000.0)
+    # Per-country modern_windows rows get lift * fixed share.
+    for country in TEST_COUNTRIES:
+        mask = ((out["country"] == country) & (out["population"] == "modern_windows")
+                & (out["source"] == "forecast"))
+        delta = out.loc[mask, "DAU"] - fdf.loc[mask, "DAU"]
+        assert delta.values == pytest.approx(10_000 * mozonline_fixed_shares.loc[country])
+
+
+def test_o_stacks_with_l_distinct_sentinel(
+    desktop_training_df, lol_lift_series, mozonline_lift_series, mw_country_shares
+):
+    """`l` then `o` subtract from the same modern_windows frame; effects sum."""
+    after_l = subtract_lift_from_training(
+        desktop_training_df, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        flag_column="modern_windows", sentinel_attr="launch_on_login_subtracted",
+    )
+    after_o = subtract_lift_from_training(
+        after_l, daily_lift_series=mozonline_lift_series, country_shares=mw_country_shares,
+        flag_column="modern_windows", sentinel_attr="mozillaonline_subtracted",
+    )
+    # Both sentinels present; no double-subtract error was raised.
+    assert after_o.attrs["launch_on_login_subtracted"] is True
+    assert after_o.attrs["mozillaonline_subtracted"] is True
+    # On a date after both overlays start (>= 2026-05-08), modern_windows total
+    # subtracted = 15k (l) + 10k (o) = 25k.
+    late = pd.Timestamp("2026-05-11")
+    mw_in = desktop_training_df[(desktop_training_df["modern_windows"] == True)  # noqa: E712
+                                & (pd.to_datetime(desktop_training_df["x"]) == late)]
+    mw_out = after_o[(after_o["modern_windows"] == True)  # noqa: E712
+                     & (pd.to_datetime(after_o["x"]) == late)]
+    total_delta = (mw_in["y"].astype("int64").to_numpy().sum()
+                   - mw_out["y"].astype("int64").to_numpy().sum())
+    assert total_delta == pytest.approx(25_000, abs=2)
+    # winX/other rows are untouched by either overlay.
+    non_mw_in = desktop_training_df[desktop_training_df["modern_windows"] == False]  # noqa: E712
+    non_mw_out = after_o[after_o["modern_windows"] == False]  # noqa: E712
+    pd.testing.assert_series_equal(
+        non_mw_in["y"].reset_index(drop=True), non_mw_out["y"].reset_index(drop=True)
+    )
+
+
+# --- Registry + filename round-trips for `o` -------------------------------
+
+def test_o_code_in_registry():
+    registry = load_code_registry()
+    assert "o" in registry
+    assert registry["o"]["name"] == "mozillaonline_migration"
+
+
+def test_o_code_canonical_and_marker():
+    assert canonical_codes(["o", "l", "m"]) == "lmo"
+    assert state_marker(["o", "l", "m"]) == "adj-lmo"
+    assert state_marker(["o", "l", "m", "h"]) == "adj-hlmo"
+
+
+def test_parse_state_from_path_adj_lmo():
+    assert parse_state_from_path("foo.2026-06-29.gm+ld-D.adj-lmo.parquet") == ["l", "m", "o"]
+
+
+def test_build_adjustments_applied_includes_mozillaonline(tmp_path):
+    spec = tmp_path / "mozillaonline.json"
+    spec.write_text(json.dumps({"type": "desktop_overlay"}))
+    applied = build_adjustments_applied_list(["o"], {"o": spec})
+    assert applied[0]["code"] == "o"
+    assert applied[0]["name"] == "mozillaonline_migration"
+
+
+def test_real_mozillaonline_spec_loads_as_overlay():
+    """The committed July spec must load via the generic overlay loader."""
+    repo_root = Path(__file__).resolve().parents[1]
+    spec_path = repo_root / "data-official" / "2026-07" / "mozillaonline" / "mozillaonline.json"
+    spec = load_overlay_spec(spec_path)
+    assert spec["type"] == "desktop_overlay"
+    assert spec["allocation"]["flag_column"] == "modern_windows"
+    assert spec["value_column"] == "migration_dau_daily"
+    assert spec["applies_to_forecast_start"] == "2026-06-29"
+    assert spec["scope"]["exclude_countries"] == ["IR"]
