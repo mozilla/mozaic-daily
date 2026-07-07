@@ -45,14 +45,19 @@ Outputs
 -------
 ``<results-dir>/<slug>/``
     parameters.json
-    mozaic_parts.raw.legacy.desktop.DAU.parquet              (symlinked from raw-cache-dir)
-    mozaic_daily_forecast.<date>.ld-D.raw.parquet            (the forecast itself)
-    mozaic_daily_forecast.<date>.ld-D.raw.parquet.meta.json  (sidecar provenance)
+    mozaic_parts.raw.legacy.desktop.DAU.parquet               (symlinked from raw-cache-dir)
+    mozaic_daily_forecast.<date>.ld-D.adj-lo.parquet          (the forecast itself)
+    mozaic_daily_forecast.<date>.ld-D.adj-lo.parquet.meta.json (sidecar provenance)
     mozaic_objects.legacy_desktop.<date>.pkl
 
-The forecast parquet carries the ``.raw.`` state marker required by
-``mozaic_daily.adjustments.load_forecast``. Outputs are direct model output —
-no adjustments have been applied.
+The desktop launch-on-login (`l`) and MozillaOnline (`o`) overlays are applied
+when their specs match the forecast start date (bidirectional: subtract from
+modern_windows training pre-mozaic, add back post-mozaic), so scanned configs are
+directly comparable to the canonical adj-lo desktop. The output parquet carries
+the corresponding ``.adj-{codes}.`` state marker (``.raw.`` if no overlay matched)
+required by ``mozaic_daily.adjustments.load_forecast``. The Win10 headwind (`h`)
+is NOT applied here — it is a display-layer adjustment added in the canonical
+notebook, so it stays out of the per-config scan.
 """
 
 from __future__ import annotations
@@ -72,10 +77,21 @@ if str(SRC_PATH) not in sys.path:
 
 import importlib  # noqa: E402
 
+import pandas as pd  # noqa: E402
+
 from mozaic.models import DesktopModelConfig  # noqa: E402
 run_main_module = importlib.import_module("mozaic_daily.main")  # noqa: E402
-from mozaic_daily.adjustments import insert_state_marker, write_meta  # noqa: E402
+from mozaic_daily.adjustments import (  # noqa: E402
+    add_lift_to_forecast,
+    build_adjustments_applied_list,
+    insert_state_marker,
+    write_meta,
+)
 from mozaic_daily.main import (  # noqa: E402
+    _apply_launch_on_login_pre_mozaic,
+    _apply_mozillaonline_pre_mozaic,
+    _find_launch_on_login_spec_for_forecast,
+    _find_mozillaonline_spec_for_forecast,
     combine_tables,
     get_format_function,
     process_data_source as _original_process_data_source,
@@ -103,15 +119,37 @@ def _make_process_data_source_with_config(desktop_config: DesktopModelConfig):
         forecast_end,
         training_end_date=None,
         marketing_spec_path=None,
+        lol_spec_path=None,
+        mozillaonline_spec_path=None,
     ):
-        # marketing_spec_path / training_end_date are part of the real main.py
-        # signature for the marketing-lift `m` adjustment. We only scan
-        # legacy_desktop (no marketing lift applies), so we accept and ignore
-        # them rather than re-implementing that path.
+        # Mirrors mozaic_daily.main.process_data_source but injects the scanned
+        # DesktopModelConfig into the desktop forecast. The launch-on-login (`l`)
+        # and MozillaOnline (`o`) desktop overlays ARE applied (bidirectional:
+        # subtract from modern_windows training pre-mozaic, add back post-mozaic)
+        # so each scanned config is comparable to the canonical adj-lo desktop.
+        # marketing_spec_path is accepted for signature parity (mobile-only; a
+        # desktop scan never triggers it).
         platform = data_source.platform
         source = data_source.telemetry_source
         source_data = datasets[platform.value][source.value]
+        # Normalize x to datetime64 (matches main.process_data_source).
+        source_data = {
+            metric: (df.assign(x=pd.to_datetime(df["x"]))
+                     if isinstance(df, pd.DataFrame) and "x" in df.columns else df)
+            for metric, df in source_data.items()
+        }
         additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
+
+        lol_context = None
+        if lol_spec_path is not None and data_source == DataSource.LEGACY_DESKTOP \
+                and Metric.DAU.value in source_data:
+            source_data, lol_context = _apply_launch_on_login_pre_mozaic(
+                source_data, lol_spec_path, training_end_date)
+        mozillaonline_context = None
+        if mozillaonline_spec_path is not None and data_source == DataSource.LEGACY_DESKTOP \
+                and Metric.DAU.value in source_data:
+            source_data, mozillaonline_context = _apply_mozillaonline_pre_mozaic(
+                source_data, mozillaonline_spec_path, training_end_date)
 
         if platform == Platform.DESKTOP:
             forecast_result = get_desktop_forecast_dfs(
@@ -119,6 +157,7 @@ def _make_process_data_source_with_config(desktop_config: DesktopModelConfig):
                 forecast_start,
                 forecast_end,
                 additional_holidays=additional_holidays,
+                data_source=data_source.value,
                 config=desktop_config,
             )
         else:
@@ -129,9 +168,20 @@ def _make_process_data_source_with_config(desktop_config: DesktopModelConfig):
                 forecast_start,
                 forecast_end,
                 additional_holidays=additional_holidays,
+                data_source=data_source.value,
             )
 
         df_combined = combine_tables(forecast_result.dfs)
+        for context in (lol_context, mozillaonline_context):
+            if context is not None and Metric.DAU.value in df_combined.columns:
+                df_combined = add_lift_to_forecast(
+                    df_combined,
+                    daily_lift_series=context["daily_lift_series"],
+                    country_shares=context["country_shares"],
+                    forecast_start=pd.Timestamp(forecast_start),
+                    metric_column=Metric.DAU.value,
+                    population_value=context["spec"]["allocation"]["flag_column"],
+                )
         format_func = get_format_function(platform)
         format_func(df_combined, data_source=data_source.value)
         return df_combined, forecast_result.mozaics
@@ -180,18 +230,22 @@ def symlink_raw_cache(raw_cache_dir: Path, slug_dir: Path) -> list[Path]:
 # State marker + sidecar meta
 # ---------------------------------------------------------------------------
 
-def stamp_raw_marker_and_meta(
+def stamp_marker_and_meta(
     slug_dir: Path,
     forecast_start_date: str,
     config: DesktopModelConfig,
+    applied_codes: list[str],
+    code_to_spec_file: dict[str, Path],
 ) -> Path:
-    """Rename the unmarked forecast parquet to ``.raw.`` and write its sidecar.
+    """Rename the unmarked forecast parquet to its state marker and write the sidecar.
 
     ``main()`` writes ``mozaic_daily_forecast.<date>.ld-D.parquet`` (no state
-    marker, no meta) — that file is illegal under the new naming convention.
-    This function renames it in-place to add the ``.raw.`` marker and writes
-    a sidecar ``.meta.json`` so the result is loadable via
-    ``mozaic_daily.adjustments.load_forecast``.
+    marker, no meta) — illegal under the naming convention. This renames it to
+    ``.adj-{codes}.`` (or ``.raw.`` if no overlay applied) and writes a sidecar
+    ``.meta.json`` so the result is loadable via
+    ``mozaic_daily.adjustments.load_forecast``. ``applied_codes`` are the desktop
+    overlays that were applied this run (``l``/``o`` when their specs matched the
+    forecast start date).
 
     Returns the path to the renamed parquet.
     """
@@ -200,15 +254,19 @@ def stamp_raw_marker_and_meta(
         raise FileNotFoundError(
             f"Expected forecast parquet not found after main(): {unmarked}"
         )
-    target = insert_state_marker(unmarked, [])  # raw → ".raw." inserted
+    target = insert_state_marker(unmarked, applied_codes)
     unmarked.rename(target)
+    adjustments_applied = (
+        build_adjustments_applied_list(applied_codes, code_to_spec_file)
+        if applied_codes else []
+    )
     write_meta(
         target,
         forecast_start_date=forecast_start_date,
         data_source="legacy_desktop",
         produced_by="scripts/run_param_scan.py",
         model_config=config.to_dict(),
-        adjustments_applied=[],
+        adjustments_applied=adjustments_applied,
     )
     return target
 
@@ -337,7 +395,22 @@ def main_cli() -> None:
         print("\n[dry-run] Skipping actual forecast.")
         return
 
-    # Patch process_data_source to inject our config.
+    # Determine which desktop overlays apply for this forecast start (l / o).
+    # main() applies them by default when their spec matches; we mirror that here
+    # to stamp the output marker + meta correctly.
+    applied_codes: list[str] = []
+    code_to_spec_file: dict[str, Path] = {}
+    lol_spec = _find_launch_on_login_spec_for_forecast(args.forecast_start_date)
+    if lol_spec is not None:
+        applied_codes.append("l")
+        code_to_spec_file["l"] = lol_spec
+    mo_spec = _find_mozillaonline_spec_for_forecast(args.forecast_start_date)
+    if mo_spec is not None:
+        applied_codes.append("o")
+        code_to_spec_file["o"] = mo_spec
+    print(f"Desktop overlays applied this scan: {applied_codes or 'none (raw)'}")
+
+    # Patch process_data_source to inject our config (overlays applied within).
     run_main_module.process_data_source = _make_process_data_source_with_config(config)
     try:
         run_main_module.main(
@@ -350,9 +423,10 @@ def main_cli() -> None:
     finally:
         run_main_module.process_data_source = _original_process_data_source
 
-    raw_path = stamp_raw_marker_and_meta(slug_dir, args.forecast_start_date, config)
-    print(f"Renamed forecast to: {raw_path}")
-    print(f"Wrote sidecar meta:  {raw_path}.meta.json")
+    out_path = stamp_marker_and_meta(
+        slug_dir, args.forecast_start_date, config, applied_codes, code_to_spec_file)
+    print(f"Renamed forecast to: {out_path}")
+    print(f"Wrote sidecar meta:  {out_path}.meta.json")
 
     print(f"\nDone. Results in: {slug_dir}")
 
