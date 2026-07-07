@@ -1,0 +1,10 @@
+{
+  "type": "daily_step_ma",
+  "start_date": "2026-06-02",
+  "ma_window": 28,
+  "desktop_dau": 500000,
+  "mobile_dau": 0,
+  "delivered_in": "June 2026 cycle (forecast_start 2026-05-26)",
+  "dec15_28ma_effect": {"desktop": 500000, "mobile": 0},
+  "notes": "June-DELIVERED MozillaOnline desktop migration tailwind: a flat +500,000 desktop daily-DAU step from 2026-06-02 (China distribution-partner onboarding). In 28d-MA space a daily step ramps over 28 days then holds at +500K, so at 2026-12-15 the 28d-MA contribution is +500,000. Desktop-ONLY (the delivered mobile forecast carried no MO). This is what the delivered June forecast added on top of the headwind'd June canonical: KPI 'CURRENT forecast' desktop Dec-15 28d-MA = 48,334,362 = canonical 47,834,362 + 500,000. Reproduced exactly as the 28d rolling mean of the step (matches data-official/2026-06/update_scenarios/build_augmented_csv.py 'desktop_mozillaonline_plus_iran'). The July 2026 cycle REPLACED this flat placeholder estimate with the measured bidirectional `o` overlay (+531K net at Dec-15); this artifact is retained only so the July canonical notebook's PRIOR (June) comparison line reproduces the delivered June curve rather than the MO-less reconstruction."
+}
