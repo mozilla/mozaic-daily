@@ -1,4 +1,16 @@
-# MozillaOnline migration overlay (`o`) — PLACEHOLDER
+# MozillaOnline migration overlay (`o`)
+
+> **STATUS (2026-07-07): WIRED with Brad's OFFICIAL model.** The `o` overlay is implemented
+> (bidirectional, `legacy_desktop` DAU, `modern_windows` segment, fixed geo shares) and folded into
+> the canonical `…adj-lmo.parquet`. The **active** artifact is
+> `mozillaonline_migration_model.official.2026-06-29.parquet` (from `source_data/mozilla_online_forecast_jul.csv`
+> via `build_official_series.py`; Dec-15 28d-MA ~567K). OS scope is **modern_windows-only by
+> measurement** (winX users are pinned on Firefox too old to receive the migrating build). The
+> placeholder described below (~673K Dec-15) is **retired** but kept for provenance. See `_index.md`.
+
+---
+
+*The following describes the retired data-grounded PLACEHOLDER (superseded by Brad's official model).*
 
 Data-grounded placeholder model of the **MozillaOnline → canonical Firefox desktop
 migration** tailwind, for the July 2026 forecast. Drop-in swap for Brad Ochocki

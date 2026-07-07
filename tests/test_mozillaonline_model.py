@@ -1,8 +1,12 @@
-"""Contract tests for the PLACEHOLDER MozillaOnline migration model artifact.
+"""Contract tests for the active MozillaOnline migration model artifact.
 
-These guard the *output contract* the `o` adjustment applier (and any swap of
-Brad's official model) will depend on. They exercise the on-disk artifacts
-produced by ``data-official/2026-07/mozillaonline/build_placeholder_model.py``.
+These guard the *output contract* the `o` adjustment applier depends on, run
+against whatever artifact ``mozillaonline.json`` currently points at. As of
+2026-07-07 that is Brad's OFFICIAL model
+(``mozillaonline_migration_model.official.2026-06-29.parquet``, built by
+``build_official_series.py`` from ``source_data/mozilla_online_forecast_jul.csv``);
+it superseded the retired data-grounded placeholder. The same contract held for
+the placeholder, so a future swap only needs to keep the parquet shape.
 
 Each assertion catches a realistic regression in the generator:
 - a broken/duplicated/unsorted date index would break the loader,
@@ -38,8 +42,10 @@ def model_df(spec):
 
 
 def test_spec_points_at_real_files(spec):
-    assert spec["type"] == "mozillaonline_migration"
+    # Reconciled to the generic desktop-overlay type (shared machinery with `l`).
+    assert spec["type"] == "desktop_overlay"
     assert spec["platform"] == "desktop"
+    assert spec["allocation"]["flag_column"] == "modern_windows"
     assert (MODEL_DIR / spec["data_file"]).exists()
     assert (MODEL_DIR / spec["model_meta_file"]).exists()
 
@@ -89,8 +95,11 @@ def test_geo_shares_sum_to_one_cn_dominant(spec):
     assert spec["scope"]["exclude_countries"] == ["IR"]
 
 
-def test_meta_flags_placeholder_and_swap(spec):
+def test_meta_official_and_provenance(spec):
+    """The active model is Brad's official one: placeholder flags false, source tracked."""
     meta = json.loads((MODEL_DIR / spec["model_meta_file"]).read_text())
-    assert meta["placeholder"] is True
-    assert spec["placeholder"] is True
-    assert "swap_instructions" in meta and meta["swap_instructions"]
+    assert meta["placeholder"] is False
+    assert spec["placeholder"] is False
+    # Official model is ingested from a tracked source export with a recorded hash.
+    assert meta["source_export_sha1"]
+    assert meta["telemetry_source"] == "legacy"

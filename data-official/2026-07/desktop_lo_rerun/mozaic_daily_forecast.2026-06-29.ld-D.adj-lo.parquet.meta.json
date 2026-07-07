@@ -1,0 +1,25 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "l",
+      "name": "launch_on_login",
+      "spec_file": "data-official/2026-07/launch_on_login/lol.json",
+      "spec_sha1": "5744a698d3e92759e5a0050b2ed15ff376dc1f4a"
+    },
+    {
+      "code": "o",
+      "name": "mozillaonline_migration",
+      "spec_file": "data-official/2026-07/mozillaonline/mozillaonline.json",
+      "spec_sha1": "eb0ae225fbe042399ee7e0505c5807faf601aeea"
+    }
+  ],
+  "artifact_sha1": "650df3a139a7607a1acd590626aac8fbff2cc6b5",
+  "data_source": "legacy_desktop",
+  "forecast_start_date": "2026-06-29",
+  "metric": "DAU",
+  "model_config": null,
+  "mozaic_daily_commit": "6cbacedf684ec3b4d5a89c43e8e916682c11004e",
+  "note": "Fresh legacy_desktop DAU re-run on the current mozaic package (native Iran counterfactual fill) with the l (launch-on-login) and o (MozillaOnline migration) desktop overlays applied bidirectionally. Desktop half of the July canonical adj-lmo combined parquet.",
+  "produced_at": "2026-07-07T21:02:18.251747+00:00Z",
+  "produced_by": "scripts/run_main.py --data-sources legacy_desktop --metrics DAU --forecast-start-date 2026-06-29"
+}

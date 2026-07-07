@@ -47,8 +47,10 @@ auto-apply; mozaic-daily passes `data_source` so the right desktop fill is selec
 schema). Pending: a real-data forecast run to confirm IR `actuals` show the crater and IR/World forecast
 is smooth (blocked momentarily on a `gcloud auth application-default login` refresh).
 
-### D2. MozillaOnline → Firefox desktop migration overlay — `TODO` (model exists)
-MozillaOnline is migrating onto Firefox desktop. **Brad has reportedly built a migration model — Brendan is locating it** (use it rather than building from scratch). Model as an **overlay**, same bidirectional pattern as the marketing-lift `m` adjustment:
+### D2. MozillaOnline → Firefox desktop migration overlay — `DONE (code o, wired + folded into canonical)`
+**Done 2026-07-07.** Brad's official model was ingested (`mozillaonline/source_data/mozilla_online_forecast_jul.csv`, Dec-15 28d-MA ~567K, near his ~560K target), superseding the ~673K placeholder. Wired as bidirectional overlay code `o` on legacy_desktop DAU (subtract from `modern_windows` training pre-mozaic, add back post-mozaic), reusing the generic `l` appliers with **fixed geo shares** (`fixed_country_shares_from_spec`, CN ~93%, IR excluded, renormalized over training-present countries). **OS scope is modern_windows-only, data-justified:** pre-transition measurement showed the source is 92% recent-Firefox within modern_windows while older-Windows (winX) users are 99% pinned on Firefox too old to receive the migrating build — so they don't migrate. Folded into the canonical desktop re-run together with `l` (see D6) → `…adj-lmo.parquet`. Net Dec-15 desktop effect of `l`+`o` combined ≈ +565K pre-headwind (see `mozillaonline/plots/` for the `o`-alone three-curve isolation). Spec: `mozillaonline/mozillaonline.json`; CLI toggle `--no-mozillaonline`. Original plan below.
+
+MozillaOnline is migrating onto Firefox desktop. Model as an **overlay**, same bidirectional pattern as the marketing-lift `m` adjustment:
 1. Take Brad's migration curve (migrated DAU over time).
 2. Subtract it from training rows before mozaic so Prophet learns the pre-migration dynamic.
 3. Add it back to the per-tile forecast.
@@ -56,9 +58,9 @@ MozillaOnline is migrating onto Firefox desktop. **Brad has reportedly built a m
 - **Geography:** >90% of the migration is **China (CN)**; the remainder is spread across other countries, **potentially VPN users**. So the overlay can't be applied to CN alone — it needs a small distributed tail across other markets. Confirm how Brad's model splits this.
 - **Validation expectation (user):** our migration ramp was **deliberately conservative** — slower than what actuals already show — so the forecast will sit *below* realized data and we **do not expect them to match**. That's by design; don't treat the gap as a modeling error.
 - **Placeholder model:** while waiting for Brad's official model, build a stand-in so the pipeline runs end-to-end and the official model is a drop-in swap. Handoff written: `data-official/2026-07/mozillaonline/PLACEHOLDER_MODEL_HANDOFF.md` (point a fresh Claude at it).
-- [ ] Locate + ingest Brad's model; confirm its geo split and ramp shape.
-- [ ] Decide adjustment style — per-tile bidirectional (like `m`) since it should shift the model's view of recent history. Desktop allocates by **fixed country shares** (not an app flag); within a country split across `modern_windows`/`winX`/other OS rows proportional to DAU.
-- [ ] Register a new one-letter adjustment code `o` in `data-official/adjustment_codes.yaml` + applier in `src/mozaic_daily/adjustments.py` + test (Part B of the handoff).
+- [x] Locate + ingest Brad's model; confirm its geo split and ramp shape. *(official CSV ingested; geo split carried from the placeholder's validated baseline, CN 92.77%.)*
+- [x] Decide adjustment style — per-tile bidirectional (like `m`). Desktop allocates by **fixed country shares**; **OS scope resolved to modern_windows-only by measurement** (not proportional-across-OS: winX users can't receive the migrating build).
+- [x] Register adjustment code `o` in `data-official/adjustment_codes.yaml` + applier reuse in `src/mozaic_daily/adjustments.py` (`fixed_country_shares_from_spec`) + 14 tests in `tests/test_adjustments.py`.
 
 > **UPDATE 2026-07-06:** The bidirectional desktop-overlay machinery now **exists and is tested** —
 > built for launch-on-login `l` (see D6). `o` reuses the same generic appliers
@@ -97,7 +99,7 @@ rollout 2026-05-08; permanent). Analysis in `~/work/launch-on-login/`.
       Spec: `launch_on_login/lol.json`. Verified net Dec-15 effect **+102K** (add-back 125K minus the
       ~23K Prophet already extrapolated from raw — no double-count). Conservatism vs the ~220K
       convolution model ≈ 96K (see `launch_on_login/plots/`).
-- [ ] Fold into the canonical desktop parquet — do this **once** together with MozillaOnline `o`
+- [x] Fold into the canonical desktop parquet — done **once** together with MozillaOnline `o` (2026-07-07): fresh legacy_desktop DAU re-run with both overlays → `…adj-lmo.parquet` via `regenerate_canonical_forecast.py`.
       (re-run legacy_desktop DAU with both overlays; see `mozillaonline/WIRING_HANDOFF.md`).
 
 ---
