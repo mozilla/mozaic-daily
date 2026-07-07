@@ -94,6 +94,30 @@ ROUND2_PROBES = [
     ("combo__thr017_cps08983_cpr55", {THR: -0.017, CPS: 0.08983, CPR: 0.55}),
 ]
 
+# --- Round 3: push cps/cpr into their low (KPI-raising) ranges, finely map the jumpy
+# threshold, and add aggressive cps+cpr combos. Same re-anchored data (2026-07-06); NEW points
+# only (no center — reuse round 2's). The round-3 notebook reads round2 ∪ round3 so the single-knob
+# scan curves are complete. Goal: find the realistic param-only ceiling for the top-3 levers. ---
+ROUND3_PROBES = [
+    ("cps__0.07", {CPS: 0.07}),
+    ("cps__0.05", {CPS: 0.05}),
+    ("cps__0.03", {CPS: 0.03}),
+    ("cps__0.02", {CPS: 0.02}),
+    ("cpr__0.50", {CPR: 0.50}),
+    ("cpr__0.45", {CPR: 0.45}),
+    ("cpr__0.40", {CPR: 0.40}),
+    ("cpr__0.35", {CPR: 0.35}),
+    ("thresh__m027", {THR: -0.027}),
+    ("thresh__m024", {THR: -0.024}),
+    ("thresh__m019", {THR: -0.019}),
+    ("thresh__m012", {THR: -0.012}),
+    ("thresh__m007", {THR: -0.007}),
+    ("combo__cps05_cpr45", {CPS: 0.05, CPR: 0.45}),
+    ("combo__cps03_cpr40", {CPS: 0.03, CPR: 0.40}),
+    ("combo__cps05_cpr45_thr017", {CPS: 0.05, CPR: 0.45, THR: -0.017}),
+    ("combo__cps05_cpr45_thr027", {CPS: 0.05, CPR: 0.45, THR: -0.027}),
+]
+
 
 def build_probes(round_num: int) -> list[tuple[str, dict]]:
     if round_num == 1:
@@ -104,6 +128,8 @@ def build_probes(round_num: int) -> list[tuple[str, dict]]:
         return probes
     if round_num == 2:
         return ROUND2_PROBES
+    if round_num == 3:
+        return ROUND3_PROBES
     raise ValueError(f"unknown round: {round_num}")
 
 
@@ -141,7 +167,7 @@ def run_probe(round_dir: Path, forecast_start: str, raw_cache_dir: Path | None,
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--round", type=int, default=2, choices=[1, 2])
+    parser.add_argument("--round", type=int, default=2, choices=[1, 2, 3])
     parser.add_argument("--forecast-start-date", default="2026-07-06")
     parser.add_argument("--raw-cache-dir", type=Path, default=None,
                         help="Dir with mozaic_parts.raw.legacy.desktop.DAU.parquet (skip BQ query).")
