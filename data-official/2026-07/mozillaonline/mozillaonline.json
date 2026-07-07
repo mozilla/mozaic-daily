@@ -1,0 +1,31 @@
+{
+  "type": "mozillaonline_migration",
+  "platform": "desktop",
+  "data_file": "mozillaonline_migration_model.placeholder.2026-06-25.parquet",
+  "value_column": "migration_dau_daily",
+  "allocation": {
+    "key": "fixed_country_shares",
+    "shares": {
+      "CN": 0.9277,
+      "HK": 0.0225,
+      "US": 0.0152,
+      "JP": 0.0098,
+      "SG": 0.0083,
+      "TW": 0.0041,
+      "DE": 0.0011,
+      "AU": 0.001,
+      "ROW": 0.0103
+    },
+    "within_country_os": "proportional_to_dau"
+  },
+  "scope": {
+    "exclude_countries": [
+      "IR"
+    ]
+  },
+  "model_meta_file": "mozillaonline_migration_model.placeholder.2026-06-25.meta.json",
+  "applies_to_forecast_start": "2026-06-25",
+  "telemetry_source": "legacy",
+  "placeholder": true,
+  "notes": "PLACEHOLDER MozillaOnline desktop migration overlay (data-grounded). Source population is telemetry app_name='Firefox Desktop MozillaOnline'; migration flips users to app_name='Firefox Desktop' (canonical KPI). >93% China; ~7% tail (likely VPN/diaspora). Two cohorts: release (Jun 2) \u226b ESR (Jun 16). Shape measured from the canonical-DAU rise (28d-MA), projected to a completion peak (~mid-July) then a churn decline. Magnitude is data-led and runs ABOVE Brad's ~560K-by-Dec-15 (actuals outpace his conservative ramp, by design). Subtract from desktop training rows by country share before mozaic, add back to per-country + ALL forecast rows. Swap for Brad's official model per meta.json swap_instructions."
+}

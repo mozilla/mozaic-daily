@@ -1,0 +1,19 @@
+{
+  "type": "marketing_lift",
+  "platform": "mobile",
+  "data_file": "marketing_lift_model.total.2026-06-29.parquet",
+  "value_column": "marketing_lift_daily",
+  "allocation": {
+    "app_flag_column": "fenix_android",
+    "key": "trailing_dau_share",
+    "window_days": 28
+  },
+  "scope": {
+    "exclude_countries": [
+      "IR"
+    ]
+  },
+  "model_meta_file": "marketing_lift_model.total.2026-06-29.meta.json",
+  "applies_to_forecast_start": "2026-06-29",
+  "notes": "July 2026 cycle. Daily DAU lift for the Fenix Android paid acquisition campaign, built June-anchored: L_july(d) = L_june(d) + (July CSV Total Paid DAU - June CSV Total Paid DAU), moving June's delivered lift plot only by the ~+139k change in the marketing-team year-end outlook. Allocation is the per-country share of Fenix Android DAU in a trailing 28-day window ending at training_end_date, frozen for the horizon. IR excluded (no paid spend there; Iran handled natively via the fill)."
+}

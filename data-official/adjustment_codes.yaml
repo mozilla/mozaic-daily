@@ -37,3 +37,17 @@ codes:
       spec lives in data-official/{YYYY-MM}/marketing/marketing.json with a
       sidecar daily lift parquet from the marketing_lift_model notebooks.
     spec_glob: "data-official/*/marketing/marketing.json"
+  l:
+    name: launch_on_login
+    description: >
+      Launch-on-login desktop DAU tailwind. Measured incremental DAU from the
+      launch-on-login feature (experiment long-term-holdback-2026-growth-desktop,
+      100% rollout 2026-05-08), landing in the modern_windows segment. Applied
+      bidirectionally like marketing_lift `m` but on legacy_desktop DAU: the
+      measured historical rise is subtracted from modern_windows training rows
+      before mozaic (so Prophet doesn't extrapolate a one-time step), then the
+      capped/flat curve is added back to the per-country forecast. Spec type is
+      the generic `desktop_overlay`; per-month spec lives in
+      data-official/{YYYY-MM}/launch_on_login/lol.json with a sidecar daily
+      curve parquet from ~/work/launch-on-login/build_lol_tailwind.py.
+    spec_glob: "data-official/*/launch_on_login/lol.json"

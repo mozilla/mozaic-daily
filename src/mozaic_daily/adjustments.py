@@ -334,29 +334,66 @@ def build_adjustments_applied_list(
     return out
 
 
-# --- Per-tile marketing-lift applier --------------------------------------
+# --- Per-tile bidirectional overlay appliers (generic) --------------------
 #
-# Code ``m``. Applied bidirectionally around the mobile mozaic run:
+# Shared machinery for per-tile bidirectional adjustments. Applied around a
+# mozaic run:
 #
-#   training_df = subtract_marketing_lift_from_training(training_df, ...)
+#   training_df = subtract_lift_from_training(training_df, flag_column=..., ...)
 #   forecast_df = mozaic(training_df)
-#   forecast_df = add_marketing_lift_to_forecast(forecast_df, ...)
+#   forecast_df = add_lift_to_forecast(forecast_df, population_value=..., ...)
+#
+# Consumers (thin wrappers / callers, defined below or in main.py):
+#   ``m`` marketing_lift   — mobile, flag_column ``fenix_android``
+#   ``l`` launch_on_login  — desktop, flag_column ``modern_windows``
+#   ``o`` mozillaonline     — desktop (planned; reuse these + fixed shares)
 #
 # The same ``country_shares`` Series is used for both halves so the subtraction
-# and add-back are byte-symmetric per (date, country, fenix_android) tile.
-# ``country_shares`` is a trailing-28d Fenix Android DAU share, computed once
-# from training data and frozen for the entire forecast horizon (stationary
-# country-mix is a v1 assumption — documented in
-# data-official/{YYYY-MM}/marketing/README.md).
+# and add-back are byte-symmetric per (date, country, segment) tile. Shares are
+# either computed from a trailing DAU window (``compute_country_shares``, e.g.
+# ``m``/``l``) or supplied fixed from a spec (e.g. ``o``); the appliers don't
+# care which. A v1 assumption is a stationary country mix frozen for the horizon.
 #
 # Column conventions:
-# - Training DataFrame: ``x`` (dbdate), ``country`` (str), one boolean column
-#   per app (``fenix_android``, ``firefox_ios``, ``focus_android``,
-#   ``focus_ios``), ``y`` (Int64). Exactly one app flag is True per row.
-# - Forecast DataFrame (after ``combine_tables``, before ``update_mobile_format``):
+# - Training DataFrame: ``x`` (date), ``country`` (str), boolean segment columns
+#   (mobile: ``fenix_android``…; desktop: ``modern_windows``/``winX``), ``y``
+#   (Int64). Rows are selected by ``flag_column == True``.
+# - Forecast DataFrame (after ``combine_tables``, before the platform format fn):
 #   ``target_date``, ``country`` (str, ``"ALL"`` for world rollup), ``population``
-#   (app name or ``"ALL"`` for all-apps rollup), ``source`` (``actual`` or
-#   ``forecast``), plus a metric column per metric (``DAU``, etc.).
+#   (segment name — app for mobile, OS for desktop — or ``"ALL"`` for the rollup),
+#   ``source`` (``actual``/``forecast``), plus a metric column per metric.
+
+
+def _load_lift_spec(
+    spec_path: str | Path,
+    *,
+    expected_type: str,
+    allocation_flag_key: str,
+) -> dict:
+    """Load and validate a bidirectional-overlay lift spec JSON.
+
+    Shared by ``load_marketing_spec`` (``marketing_lift`` / ``app_flag_column``)
+    and ``load_overlay_spec`` (``desktop_overlay`` / ``flag_column``). Raises
+    ``ValueError`` if the spec's ``type`` doesn't match so we never pick up a
+    different adjustment spec parked in the same directory.
+    """
+    spec_path = Path(spec_path)
+    with open(spec_path) as f:
+        spec = json.load(f)
+    if spec.get("type") != expected_type:
+        raise ValueError(
+            f"Spec at {spec_path} has type={spec.get('type')!r}; "
+            f"expected {expected_type!r}"
+        )
+    for required_key in ("data_file", "value_column", "allocation"):
+        if required_key not in spec:
+            raise ValueError(f"{expected_type} spec missing required key {required_key!r}")
+    for required_alloc in (allocation_flag_key, "key", "window_days"):
+        if required_alloc not in spec["allocation"]:
+            raise ValueError(
+                f"{expected_type} spec.allocation missing required key {required_alloc!r}"
+            )
+    return spec
 
 
 def load_marketing_spec(spec_path: str | Path) -> dict:
@@ -366,30 +403,30 @@ def load_marketing_spec(spec_path: str | Path) -> dict:
     we don't accidentally pick up a different adjustment spec parked in the
     same directory.
     """
-    spec_path = Path(spec_path)
-    with open(spec_path) as f:
-        spec = json.load(f)
-    if spec.get("type") != "marketing_lift":
-        raise ValueError(
-            f"Spec at {spec_path} has type={spec.get('type')!r}; "
-            f"expected 'marketing_lift'"
-        )
-    for required_key in ("data_file", "value_column", "allocation"):
-        if required_key not in spec:
-            raise ValueError(f"marketing_lift spec missing required key {required_key!r}")
-    for required_alloc in ("app_flag_column", "key", "window_days"):
-        if required_alloc not in spec["allocation"]:
-            raise ValueError(
-                f"marketing_lift spec.allocation missing required key {required_alloc!r}"
-            )
-    return spec
+    return _load_lift_spec(
+        spec_path, expected_type="marketing_lift", allocation_flag_key="app_flag_column"
+    )
 
 
-def load_marketing_lift_series(spec: dict, spec_dir: str | Path) -> pd.Series:
-    """Load the daily DAU lift series from the spec's ``data_file``.
+def load_overlay_spec(spec_path: str | Path) -> dict:
+    """Load a ``desktop_overlay`` spec JSON and validate its required fields.
+
+    Desktop overlays (e.g. launch-on-login ``l``, MozillaOnline ``o``) share the
+    marketing-lift bidirectional machinery but key allocation off a generic
+    ``allocation.flag_column`` (a boolean segment column such as
+    ``modern_windows``) rather than the mobile-specific ``app_flag_column``.
+    """
+    return _load_lift_spec(
+        spec_path, expected_type="desktop_overlay", allocation_flag_key="flag_column"
+    )
+
+
+def load_lift_series(spec: dict, spec_dir: str | Path) -> pd.Series:
+    """Load the daily DAU lift/overlay series from the spec's ``data_file``.
 
     Returns a Series indexed by ``DatetimeIndex`` (normalized to midnight), with
     the value column selected from the spec. Index must be unique and sorted.
+    Shared by the marketing-lift and desktop-overlay appliers.
     """
     spec_dir = Path(spec_dir)
     data_path = spec_dir / spec["data_file"]
@@ -403,9 +440,49 @@ def load_marketing_lift_series(spec: dict, spec_dir: str | Path) -> pd.Series:
     series = df[value_column]
     series.index = pd.DatetimeIndex(series.index).normalize()
     if not series.index.is_unique:
-        raise ValueError(f"Non-unique dates in marketing-lift series at {data_path}")
+        raise ValueError(f"Non-unique dates in lift series at {data_path}")
     series = series.sort_index()
     return series
+
+
+# Back-compat alias: the marketing series loader is fully generic.
+load_marketing_lift_series = load_lift_series
+
+
+def compute_country_shares(
+    dau_training: pd.DataFrame,
+    *,
+    training_end_date: pd.Timestamp,
+    window_days: int,
+    flag_column: str = "fenix_android",
+) -> pd.Series:
+    """Compute per-country share of a segment's DAU in a trailing window.
+
+    Sums ``y`` over the trailing ``window_days`` ending at ``training_end_date``
+    for rows where ``flag_column == True``, groups by ``country``, then
+    normalizes so the result sums to 1.0. The ``flag_column`` is a boolean
+    segment flag: ``fenix_android`` for mobile marketing-lift, ``modern_windows``
+    for the launch-on-login desktop overlay, etc.
+
+    Returned Series is indexed by country code. Countries with zero DAU in
+    the window are dropped.
+    """
+    end_date = pd.Timestamp(training_end_date).normalize()
+    start_date = end_date - pd.Timedelta(days=window_days - 1)
+    x_as_ts = pd.to_datetime(dau_training["x"])
+    in_window = (x_as_ts >= start_date) & (x_as_ts <= end_date)
+    flag_only = dau_training[flag_column] == True  # noqa: E712
+    sub = dau_training.loc[in_window & flag_only, ["country", "y"]]
+    totals = sub.groupby("country")["y"].sum().astype("float64")
+    totals = totals[totals > 0]
+    if totals.empty:
+        raise ValueError(
+            f"No {flag_column} DAU found in window "
+            f"{start_date.date()} → {end_date.date()}; cannot compute shares."
+        )
+    shares = totals / totals.sum()
+    shares.name = "country_share"
+    return shares
 
 
 def compute_fenix_country_shares(
@@ -415,31 +492,69 @@ def compute_fenix_country_shares(
     window_days: int,
     app_flag_column: str = "fenix_android",
 ) -> pd.Series:
-    """Compute per-country share of Fenix Android DAU in a trailing window.
+    """Fenix Android trailing-window country shares (marketing-lift ``m``).
 
-    Sums ``y`` over the trailing ``window_days`` ending at ``training_end_date``
-    for rows where ``app_flag_column == True``, groups by ``country``, then
-    normalizes so the result sums to 1.0.
-
-    Returned Series is indexed by country code. Countries with zero DAU in
-    the window are dropped.
+    Thin wrapper over :func:`compute_country_shares`; preserves the historical
+    ``fenix_country_share`` Series name.
     """
-    end_date = pd.Timestamp(training_end_date).normalize()
-    start_date = end_date - pd.Timedelta(days=window_days - 1)
-    x_as_ts = pd.to_datetime(mobile_dau_training["x"])
-    in_window = (x_as_ts >= start_date) & (x_as_ts <= end_date)
-    fenix_only = mobile_dau_training[app_flag_column] == True  # noqa: E712
-    sub = mobile_dau_training.loc[in_window & fenix_only, ["country", "y"]]
-    totals = sub.groupby("country")["y"].sum().astype("float64")
-    totals = totals[totals > 0]
-    if totals.empty:
-        raise ValueError(
-            f"No {app_flag_column} DAU found in window "
-            f"{start_date.date()} → {end_date.date()}; cannot compute shares."
-        )
-    shares = totals / totals.sum()
+    shares = compute_country_shares(
+        mobile_dau_training,
+        training_end_date=training_end_date,
+        window_days=window_days,
+        flag_column=app_flag_column,
+    )
     shares.name = "fenix_country_share"
     return shares
+
+
+def subtract_lift_from_training(
+    dau_training: pd.DataFrame,
+    *,
+    daily_lift_series: pd.Series,
+    country_shares: pd.Series,
+    flag_column: str = "fenix_android",
+    sentinel_attr: str = "lift_subtracted",
+) -> pd.DataFrame:
+    """Subtract adjustment-attributable DAU from a segment's training rows.
+
+    For each training row with ``flag_column == True``, subtracts
+    ``daily_lift_series[date] * country_shares[country]`` (rounded) from ``y``.
+    ``flag_column`` selects the segment: ``fenix_android`` (marketing-lift) or
+    ``modern_windows`` (launch-on-login desktop overlay).
+
+    - Rows outside the flagged segment are returned unchanged.
+    - Rows whose date is not in ``daily_lift_series`` contribute zero (the
+      series is expected to be pre-launch zero, so this is a no-op for early
+      training dates).
+    - Countries not in ``country_shares`` contribute zero (typically because
+      they had no DAU in the share-window — the lift attributed to them is zero
+      by construction).
+    - Sets ``df.attrs[sentinel_attr] = True`` as an idempotency sentinel;
+      re-applying with the same ``sentinel_attr`` raises ``RuntimeError``. Two
+      distinct overlays on the same DataFrame pass distinct ``sentinel_attr``.
+    - Returns a copy; never mutates ``dau_training``.
+    """
+    if dau_training.attrs.get(sentinel_attr):
+        raise RuntimeError(
+            f"subtract_lift_from_training called twice with sentinel "
+            f"{sentinel_attr!r} on the same DataFrame; this would "
+            f"double-subtract. Pass the original training data instead."
+        )
+    result = dau_training.copy()
+    result.attrs = dict(dau_training.attrs)
+    segment_mask = result[flag_column] == True  # noqa: E712
+    if not segment_mask.any():
+        result.attrs[sentinel_attr] = True
+        return result
+    date_index_for_join = pd.to_datetime(result.loc[segment_mask, "x"]).dt.normalize()
+    lift_at_row = date_index_for_join.map(daily_lift_series).fillna(0.0).to_numpy()
+    share_at_row = result.loc[segment_mask, "country"].map(country_shares).fillna(0.0).to_numpy()
+    to_subtract = np.round(lift_at_row * share_at_row).astype("int64")
+    new_y = result.loc[segment_mask, "y"].astype("Int64") - pd.array(to_subtract, dtype="Int64")
+    result.loc[segment_mask, "y"] = new_y
+    result["y"] = result["y"].astype("Int64")
+    result.attrs[sentinel_attr] = True
+    return result
 
 
 def subtract_marketing_lift_from_training(
@@ -449,94 +564,67 @@ def subtract_marketing_lift_from_training(
     country_shares: pd.Series,
     app_flag_column: str = "fenix_android",
 ) -> pd.DataFrame:
-    """Subtract marketing-attributable DAU from the Fenix Android training rows.
-
-    For each training row with ``app_flag_column == True``, subtracts
-    ``daily_lift_series[date] * country_shares[country]`` (rounded) from ``y``.
-
-    - Non-Fenix rows are returned unchanged.
-    - Rows whose date is not in ``daily_lift_series`` contribute zero (the
-      series is expected to be pre-launch zero, so this is a no-op for early
-      training dates).
-    - Countries not in ``country_shares`` contribute zero (typically because
-      they had no Fenix DAU in the share-window — the lift attributed to
-      them is zero by construction).
-    - Sets ``df.attrs['marketing_lift_subtracted'] = True`` as an idempotency
-      sentinel. Re-applying to the same DataFrame raises ``RuntimeError``.
-    - Returns a copy; never mutates ``mobile_dau_training``.
+    """Marketing-lift subtract (``m``). Thin wrapper over
+    :func:`subtract_lift_from_training` with the historical
+    ``marketing_lift_subtracted`` idempotency sentinel.
     """
-    if mobile_dau_training.attrs.get("marketing_lift_subtracted"):
-        raise RuntimeError(
-            "subtract_marketing_lift_from_training called twice on the same "
-            "DataFrame; this would double-subtract. Pass the original "
-            "training data instead."
-        )
-    result = mobile_dau_training.copy()
-    result.attrs = dict(mobile_dau_training.attrs)
-    fenix_mask = result[app_flag_column] == True  # noqa: E712
-    if not fenix_mask.any():
-        result.attrs["marketing_lift_subtracted"] = True
-        return result
-    date_index_for_join = pd.to_datetime(result.loc[fenix_mask, "x"]).dt.normalize()
-    lift_at_row = date_index_for_join.map(daily_lift_series).fillna(0.0).to_numpy()
-    share_at_row = result.loc[fenix_mask, "country"].map(country_shares).fillna(0.0).to_numpy()
-    to_subtract = np.round(lift_at_row * share_at_row).astype("int64")
-    new_y = result.loc[fenix_mask, "y"].astype("Int64") - pd.array(to_subtract, dtype="Int64")
-    result.loc[fenix_mask, "y"] = new_y
-    result["y"] = result["y"].astype("Int64")
-    result.attrs["marketing_lift_subtracted"] = True
-    return result
+    return subtract_lift_from_training(
+        mobile_dau_training,
+        daily_lift_series=daily_lift_series,
+        country_shares=country_shares,
+        flag_column=app_flag_column,
+        sentinel_attr="marketing_lift_subtracted",
+    )
 
 
-def add_marketing_lift_to_forecast(
+def add_lift_to_forecast(
     forecast_df: pd.DataFrame,
     *,
     daily_lift_series: pd.Series,
     country_shares: pd.Series,
     forecast_start: pd.Timestamp,
     metric_column: str = "DAU",
-    app_population_value: str = "fenix_android",
+    population_value: str = "fenix_android",
     all_population_value: str = "ALL",
     all_country_value: str = "ALL",
 ) -> pd.DataFrame:
-    """Add marketing-attributable DAU back into a per-tile mobile forecast.
+    """Add adjustment-attributable DAU back into a per-tile forecast.
 
-    Called *after* mozaic, *before* ``update_mobile_format`` (i.e. while the
-    population column is still ``population`` with values like
-    ``fenix_android`` and ``ALL``, not yet ``app_name``).
+    Called *after* mozaic, *before* the platform format function (i.e. while the
+    population column is still ``population`` with segment values like
+    ``fenix_android`` / ``modern_windows`` and ``ALL``). ``population_value`` is
+    the segment the overlay lands in: ``fenix_android`` (marketing-lift) or
+    ``modern_windows`` (launch-on-login desktop overlay).
 
-    Row patterns and add-values:
+    Row patterns and add-values (``S`` = ``population_value``):
 
     +-----------------------------------------+---------------------------+
     | row pattern                             | add to ``metric_column``  |
     +=========================================+===========================+
-    | country=X, population='fenix_android'   | daily_lift * shares[X]    |
-    | (X != 'ALL')                            |                           |
+    | country=X (!=ALL), population=S         | daily_lift * shares[X]    |
     +-----------------------------------------+---------------------------+
-    | country=X, population='ALL'             | daily_lift * shares[X]    |
-    | (X != 'ALL')                            |                           |
+    | country=X (!=ALL), population='ALL'     | daily_lift * shares[X]    |
     +-----------------------------------------+---------------------------+
-    | country='ALL', population='fenix_android'| daily_lift (full)        |
+    | country='ALL', population=S             | daily_lift (full)         |
     +-----------------------------------------+---------------------------+
     | country='ALL', population='ALL'         | daily_lift (full)         |
     +-----------------------------------------+---------------------------+
-    | other (non-Fenix populations)           | unchanged                 |
+    | other populations                       | unchanged                 |
     +-----------------------------------------+---------------------------+
 
     The add-back applies to **every** row (training AND forecast), restoring
-    the lift we subtracted from post-campaign-launch training rows. The lift
-    series is zero pre-launch and absent (filled with zero) outside its
-    coverage, so rows in those date ranges are unchanged.
+    the lift we subtracted from post-launch training rows. The lift series is
+    zero pre-launch and absent (filled with zero) outside its coverage, so rows
+    in those date ranges are unchanged.
 
-    Restoring training rows is essential for downstream consumers that
-    compute rolling statistics across the training→forecast boundary
-    (e.g. a 28-day moving average): without it, the MA at the boundary
-    would average lift-subtracted training values with lift-added forecast
-    values and look artificially depressed.
+    Restoring training rows is essential for downstream consumers that compute
+    rolling statistics across the training→forecast boundary (e.g. a 28-day
+    moving average): without it, the MA at the boundary would average
+    lift-subtracted training values with lift-added forecast values and look
+    artificially depressed.
 
-    ``forecast_start`` is accepted for parity with the other applier
-    signatures and used only for logging/diagnostics; row gating is by
-    lift value, not by date.
+    ``forecast_start`` is accepted for parity with the other applier signatures
+    and used only for logging/diagnostics; row gating is by lift value, not date.
 
     Returns a copy; never mutates ``forecast_df``.
     """
@@ -551,9 +639,9 @@ def add_marketing_lift_to_forecast(
     is_world_country = result["country"] == all_country_value
     effective_share = country_share_at_row.where(~is_world_country, 1.0)
 
-    is_fenix_population = result["population"] == app_population_value
+    is_segment_population = result["population"] == population_value
     is_all_population = result["population"] == all_population_value
-    is_eligible_population = is_fenix_population | is_all_population
+    is_eligible_population = is_segment_population | is_all_population
 
     add_value = lift_at_row * effective_share
     apply_mask = is_eligible_population & (add_value != 0)
@@ -561,4 +649,30 @@ def add_marketing_lift_to_forecast(
         result.loc[apply_mask, metric_column].astype("float64") + add_value.loc[apply_mask]
     )
     return result
+
+
+def add_marketing_lift_to_forecast(
+    forecast_df: pd.DataFrame,
+    *,
+    daily_lift_series: pd.Series,
+    country_shares: pd.Series,
+    forecast_start: pd.Timestamp,
+    metric_column: str = "DAU",
+    app_population_value: str = "fenix_android",
+    all_population_value: str = "ALL",
+    all_country_value: str = "ALL",
+) -> pd.DataFrame:
+    """Marketing-lift add-back (``m``). Thin wrapper over
+    :func:`add_lift_to_forecast` (``app_population_value`` → ``population_value``).
+    """
+    return add_lift_to_forecast(
+        forecast_df,
+        daily_lift_series=daily_lift_series,
+        country_shares=country_shares,
+        forecast_start=forecast_start,
+        metric_column=metric_column,
+        population_value=app_population_value,
+        all_population_value=all_population_value,
+        all_country_value=all_country_value,
+    )
 

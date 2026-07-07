@@ -60,6 +60,14 @@ MozillaOnline is migrating onto Firefox desktop. **Brad has reportedly built a m
 - [ ] Decide adjustment style — per-tile bidirectional (like `m`) since it should shift the model's view of recent history. Desktop allocates by **fixed country shares** (not an app flag); within a country split across `modern_windows`/`winX`/other OS rows proportional to DAU.
 - [ ] Register a new one-letter adjustment code `o` in `data-official/adjustment_codes.yaml` + applier in `src/mozaic_daily/adjustments.py` + test (Part B of the handoff).
 
+> **UPDATE 2026-07-06:** The bidirectional desktop-overlay machinery now **exists and is tested** —
+> built for launch-on-login `l` (see D6). `o` reuses the same generic appliers
+> (`subtract_lift_from_training` / `add_lift_to_forecast` / `load_overlay_spec`); fixed country
+> shares are just a `pd.Series` built from the spec and passed in — no new applier code for the
+> single-segment case. `mozillaonline/WIRING_HANDOFF.md` was rewritten with concrete step-by-step
+> reuse instructions. The one open modeling decision is segment scope (modern_windows-only ⇒
+> identical to `l`, vs all-OS ⇒ small multi-segment allocation).
+
 ### D3. Windows 10 migration headwinds — `TODO`
 Existing `adj-h` headwind models Win10→Win11 attrition. **Revisit the anchor magnitude** based on observed Win10 performance.
 - [ ] Pull recent Win10 vs modern_windows DAU trajectory; compare realized attrition vs the June headwind anchor (June desktop anchor `-1,408,000`; see `project_june_thresh_aligned_build` / `project_june_gap_resolution`).
@@ -76,11 +84,21 @@ Users turning telemetry off may be artificially depressing measured DAU. Set up 
 - [ ] Check the marketing/campaign calendar for any **desktop** efforts in the forecast window. (June's `m` was Fenix Android only.)
 - [ ] If none of note → record "no desktop marketing" explicitly and move on. If yes → model like `m`.
 
-### D6. Usage-experiment DAU movement — `INVESTIGATING`
-Reported DAU movement from a usage experiment.
-- [ ] Identify the experiment (slug, enrollment size, branches).
-- [ ] Determine **permanence**: does it ship to 100% (permanent lift, fold in) or end during the horizon (transient, exclude or model the rollback)? Only incorporate effects that persist across the forecast window.
-- [ ] Quantify the DAU delta attributable to the experiment vs noise.
+### D6. Launch-on-login (usage-experiment) DAU movement — `BUILT + WIRED (code l)`
+The reported usage-experiment DAU movement is **launch-on-login (LOL)** — Firefox launches at OS
+login for new modern-Windows installs (experiment `long-term-holdback-2026-growth-desktop`, 100%
+rollout 2026-05-08; permanent). Analysis in `~/work/launch-on-login/`.
+- [x] Experiment identified; effect is 100% modern_windows, measured vs holdback.
+- [x] Permanence: ships to 100% → permanent lift, folded in.
+- [x] Quantified: measured excess ~125K/day at the last clean date (2026-06-23), still rising
+      ~19K/wk; contamination begins 2026-06-24.
+- [x] **Modeled as bidirectional desktop overlay `l`** (subtract measured rise from legacy_desktop
+      modern_windows training, add capped curve back). Cap = **125K flat, deliberately conservative**.
+      Spec: `launch_on_login/lol.json`. Verified net Dec-15 effect **+102K** (add-back 125K minus the
+      ~23K Prophet already extrapolated from raw — no double-count). Conservatism vs the ~220K
+      convolution model ≈ 96K (see `launch_on_login/plots/`).
+- [ ] Fold into the canonical desktop parquet — do this **once** together with MozillaOnline `o`
+      (re-run legacy_desktop DAU with both overlays; see `mozillaonline/WIRING_HANDOFF.md`).
 
 ---
 
@@ -98,6 +116,14 @@ Mobile marketing has ramped up beyond the June Fenix Android campaign.
 - [ ] Refresh the marketing-lift model with current spend/lift data (source: STMO 118452 per `feedback_marketing_lift_data_source` — NOT the geo_testing tables).
 - [ ] Validate against the **Fenix Android gap**, not ALL MOBILE (iOS partially cancels — `project_fenix_gap_target`).
 - [ ] Produce a new `marketing_lift_model.*.parquet` + spec under `data-official/2026-07/marketing/`; point `marketing.json` `applies_to_forecast_start` at the July date.
+
+**Dec-15 target search (2026-07-06):** aim the mobile Dec-15 28d-MA at **June + 400k = 17,911,100**
+(June baseline 17,511,100, plus-Iran ALL-MOBILE) with marketing `m` + headwind `h` both applied.
+Center (June-copied params) = adj-m 17,825,124 / adj-hm 17,797,962 → net **+286,862**, so **~+113,138
+to climb**. Round-1 OAT sensitivity probe (6 knobs × ±δ) under `research/param-scans/mobile-july/`
+(`mobile_july_sensitivity.ipynb`, `round1_results.csv`); runner `scripts/run_mobile_param_scan.py`,
+orchestrator `scripts/mobile_grid_search.py`, scorer `scripts/mobile_sensitivity.py`
+(+`tests/test_mobile_sensitivity.py`). Iterative — round-2 knobs TBD from the slopes.
 
 ### M3. Mobile telemetry work — `HANDED OFF` (folded into D4)
 Mobile is in scope of the same telemetry-opt-out investigation (`~/work/experiments/telemetry-optout-dau-impact/HANDOFF.md` covers desktop + Android + iOS). Same timebox caveat.

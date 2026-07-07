@@ -1,0 +1,23 @@
+{
+  "model_name": "fenix_marketing_lift_june_anchored_total",
+  "description": "July 2026 marketing-lift, June-anchored, forward driven by July CSV 'Total Paid DAU'. Shared history = june_anchored through 2026-06-28; forward = L(training_end) + (csv(d) - csv(training_end)). One of a parallel pair (total vs cohort2026) built to isolate the Pre-2026-inclusion question to the forward slope.",
+  "created_at_utc": "2026-07-01T21:42:04.927207+00:00",
+  "mozaic_daily_git_hash": "4d11a3fcd77980bdb8c22d92b9e62bf0b160f51b",
+  "coverage": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-12-31",
+    "campaign_launch": "2026-04-06",
+    "training_end": "2026-06-28"
+  },
+  "methodology": {
+    "csv_column": "Total Paid DAU",
+    "anchor_at_training_end": 726490.143070074,
+    "base_parquet": "/Users/brendanwells/work/mozaic-daily/data-official/2026-07/marketing/marketing_lift_model.june_anchored.2026-06-29.parquet"
+  },
+  "key_values": {
+    "anchor_training_end": 726490.143070074,
+    "lift_year_end": 784476.285927217,
+    "forward_growth_to_eoy": 57986.14285714296
+  },
+  "artifact_sha1": "06ecd5925dafc3bb43b048d83c856c7e24145892"
+}

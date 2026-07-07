@@ -1,0 +1,15 @@
+{
+  "type": "desktop_overlay",
+  "platform": "desktop",
+  "data_file": "lol_tailwind.2026-06-29.parquet",
+  "value_column": "lol_lift_daily",
+  "allocation": {
+    "flag_column": "modern_windows",
+    "key": "trailing_dau_share",
+    "window_days": 28
+  },
+  "model_meta_file": "lol_tailwind.2026-06-29.model_meta.json",
+  "applies_to_forecast_start": "2026-06-29",
+  "applies_to_data_source": "legacy_desktop",
+  "notes": "July 2026 cycle. Launch-on-login (LOL) desktop DAU tailwind (adjustment code `l`). Bidirectional overlay on legacy_desktop DAU: the measured historical rise is subtracted from modern_windows training rows before mozaic (allocated across countries by trailing 28d modern_windows DAU share), then the capped curve is added back to the per-country forecast. Curve rises with the measured holdback-experiment excess (7d-MA) and is clamped flat at 125,000 DAU/day from 2026-06-19. Deliberately conservative: the measured effect had not plateaued (~125K/day and still rising ~19K/wk at the last clean date 2026-06-23; contamination begins 2026-06-24). Curve produced by ~/work/launch-on-login/build_lol_tailwind.py."
+}

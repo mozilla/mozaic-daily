@@ -1,0 +1,66 @@
+{
+  "model_name": "mozillaonline_migration_placeholder",
+  "placeholder": true,
+  "description": "Data-grounded placeholder for the MozillaOnline -> canonical Firefox desktop migration tailwind. Measured from app_name telemetry; conversion ramp fit to the observed canonical-DAU rise; rise -> peak -> churn decline.",
+  "created_at_utc": "2026-06-26T22:52:46.960731+00:00",
+  "mozaic_daily_git_hash": "50c25420d2cbcfecab298502727d5f4aa67beace",
+  "run_date": "2026-06-25",
+  "telemetry_source": "legacy",
+  "coverage": {
+    "start_date": "2026-01-01",
+    "end_date": "2027-12-31",
+    "cohort_starts": {
+      "release": "2026-06-02",
+      "esr": "2026-06-16"
+    }
+  },
+  "parameters": {
+    "SOURCE_BASELINE_TOTAL": 1052899,
+    "RELEASE_FRACTION": 0.904,
+    "RESIDUAL_FRACTION": 0.15,
+    "CHURN_ANNUAL": 0.45,
+    "fit_logistic_midpoint_days": 6.159809430667472,
+    "fit_logistic_steepness": 1.1094071535168473,
+    "fit_cutoff_date": "2026-06-20",
+    "convertible_supply_by_cohort": {
+      "release": 809048,
+      "esr": 85917
+    },
+    "geo_shares": {
+      "CN": 0.9277,
+      "HK": 0.0225,
+      "US": 0.0152,
+      "JP": 0.0098,
+      "SG": 0.0083,
+      "TW": 0.0041,
+      "DE": 0.0011,
+      "AU": 0.001,
+      "ROW": 0.0103
+    }
+  },
+  "methodology": {
+    "source_signal": "app_name='Firefox Desktop MozillaOnline' (the migrating build) vs app_name='Firefox Desktop' (canonical KPI). distribution_id is NOT used (distribution_id='MozillaOnline' is a tiny ~28K accounting tag).",
+    "overlay_definition": "Operative = canonical CN rise above no-migration baseline (28d-MA), grossed to all-country via 1/CN_share. Cross-checked against the MozillaOnline source drain (conservation).",
+    "shape": "two-cohort logistic conversion -> peak at ~mid-July -> exponential churn decline",
+    "peak_basis": "convertible source supply = SOURCE_BASELINE_TOTAL*(1-RESIDUAL_FRACTION)",
+    "churn_caveat": "CHURN_ANNUAL is the least data-grounded parameter (post-migration churn not yet observable). Default 0.45 = Brad's -45% YoY. The pre-June SOURCE decline was ~-81% YoY (partner wind-down), reported as an alt scenario."
+  },
+  "validation": {
+    "latest_date": "2026-06-24",
+    "blue_rise_latest": 595355.7556992691,
+    "orange_drain_latest": 470054.26244744397,
+    "conservation_gap_pct": 21.04649061545622,
+    "peak_total": 855640.4607410661,
+    "peak_date": "2026-07-20",
+    "dec15_total": 672558.9142975969,
+    "brad_dec15": 560000
+  },
+  "swap_instructions": "To replace with Brad's official model: drop the official daily-series parquet here with a 'migration_dau_daily' column on a 'target_date' DatetimeIndex; update mozillaonline.json 'data_file' + 'model_meta_file'; set 'placeholder': false; update 'allocation.shares' if the official model carries its own geo split. The applier contract (subtract-from-training / add-back-to-forecast, fixed country shares, within-country split proportional to OS-row DAU) is unchanged.",
+  "source_data": {
+    "cn_canonical_by_channel.csv": "3e8ec6bb5e5178eac26e5c155fea417ec6515654",
+    "cn_canonical_daily.csv": "61f2c50cda9ae9ac541d5dabc9c841a29d59825d",
+    "cn_mozonline_by_channel.csv": "83a825ada7deda2d702c14ff5159c46709b2bf31",
+    "mozonline_geo_windows.csv": "2de4cb2c37de3343970c20bc8a8667547dc5c571"
+  },
+  "artifact_sha1": "ae05f154259bb19b16a4cc4a4a1e163dd57953c8"
+}

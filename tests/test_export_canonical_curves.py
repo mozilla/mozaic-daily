@@ -189,6 +189,53 @@ def test_splice_is_smooth_across_day_27_to_28(seam_series):
     assert second_diff / level < 0.02  # locally smooth across 26 -> 27 -> 28 -> 29
 
 
+def test_continuous_splice_collapses_the_splice_corner(curved_seam_series):
+    """The continuous-splice correction (default True) matches BOTH level and slope at the splice,
+    so the CORNER (2nd-difference) across the day-(window-1) handoff collapses vs the uncorrected
+    cliff. Smoothness is a 2nd-difference property: the correction matches slope, so the 1st-diff
+    step is NOT zeroed (it equals the true local slope) — measuring the corner is the point. If
+    the correction is removed, on==off and the strict-inequality fails.
+    """
+    dates, values, _ = curved_seam_series
+    off = export.display_ma(dates, values, FORECAST_START, continuous_splice=False)
+    on = export.display_ma(dates, values, FORECAST_START, continuous_splice=True)
+
+    def splice_corner(ma):
+        d = SEAM_CLEAR
+        return abs((ma.loc[d + pd.Timedelta(days=1)] - ma.loc[d])
+                   - (ma.loc[d] - ma.loc[d - pd.Timedelta(days=1)]))
+
+    corner_off, corner_on = splice_corner(off), splice_corner(on)
+    assert corner_off > 1000            # the uncorrected seam genuinely corners (guard against a no-op fixture)
+    assert corner_on < corner_off / 5   # the C1 correction collapses the corner
+    # day-0 continuity with actuals is preserved (correction is 0 at the seam).
+    assert on.loc[FORECAST_START] == pytest.approx(off.loc[FORECAST_START])
+
+
+def test_slope_match_trades_corner_for_deviation(curved_seam_series):
+    """slope_match controls the corner<->deviation trade-off: matching more of the splice slope
+    shrinks the handoff corner but grows the max deviation from the uncorrected curve (overshoot).
+    Locks the parameter's dual effect and that it isn't ignored.
+    """
+    dates, values, _ = curved_seam_series
+    cliff = export.display_ma(dates, values, FORECAST_START, continuous_splice=False)
+
+    def splice_corner(ma):
+        d = SEAM_CLEAR
+        return abs((ma.loc[d + pd.Timedelta(days=1)] - ma.loc[d])
+                   - (ma.loc[d] - ma.loc[d - pd.Timedelta(days=1)]))
+
+    def corner_and_dev(sm):
+        ma = export.display_ma(dates, values, FORECAST_START, slope_match=sm)
+        return splice_corner(ma), (ma - cliff).abs().max()
+
+    c0, d0 = corner_and_dev(0.0)
+    c5, d5 = corner_and_dev(0.5)
+    c1, d1 = corner_and_dev(1.0)
+    assert c1 < c5 < c0        # more slope-matching -> smaller corner
+    assert d1 > d5 > d0        # more slope-matching -> larger deviation (overshoot)
+
+
 def test_curved_transition_beats_a_straight_line(curved_seam_series):
     """With a curved forecast trend, the variance-matched transition tracks the realized 28dMA
     better than a straight line between the transition endpoints — proving the refinement is

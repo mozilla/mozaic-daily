@@ -190,8 +190,23 @@ def reconstruct_matched_daily(pre, fc, forecast_start, window=28):
     return trend_fc * dow_act.reindex(fc.index.dayofweek).to_numpy()
 
 
-def display_ma(dates, values, forecast_start, window=28):
+def display_ma(dates, values, forecast_start, window=28, continuous_splice=True, slope_match=0.4):
     """28-day MA for display, with a variance-matched transition across the actuals->forecast seam.
+
+    ``continuous_splice`` (default True) applies a cubic correction across the transition that
+    matches the level and (a fraction of) the slope of the forecast-only MA at the day-(window-1)
+    handoff, so the variance-matched transition lands on it with a minimal corner, while keeping
+    the matched curvature. Set False to reproduce the pre-fix cliff; used only for before/after
+    comparison.
+
+    ``slope_match`` in [0, 1] (default 0.4) is the fraction of the splice slope residual the
+    correction matches. Matching the FULL slope (1.0) drives the handoff 2nd-difference to ~0 but
+    forces the correction to overshoot the level gap (larger deviation from the uncorrected
+    curve); 0.0 matches level only (smoothstep — leaves a visible slope kink). 0.4 removes the
+    kink (whole corner test under ~400 ppm on real curves — bounded by the transition's inherent
+    roughness, not the handoff) at the minimal deviation that clears that target. Only the
+    mobile-scale overshoot is sensitive to this; where the level gap dominates (e.g. desktop) the
+    deviation is set by the gap, not this fraction.
 
     The naive 28dMA over the concatenated actuals+forecast daily series blends raw
     actuals into the trailing window for the first ``window-1`` forecast days. When the
@@ -230,10 +245,42 @@ def display_ma(dates, values, forecast_start, window=28):
         matched = reconstruct_matched_daily(pre, fc, forecast_start, window)
         transition_ma = pd.concat([pre, matched]).sort_index().rolling(window).mean()
 
-        # Splice (HARD CONSTRAINT): day 28 onward (>= first_clean_date) is the clean
-        # forecast-only MA — byte-identical to the naive blend, so Dec-15 is exact. Days
-        # 1..27 use the variance-matched transition. The reconstructed dailies feed ONLY
-        # the days-1..27 window.
+        # Continuous splice: the variance-matched transition is anchored to the actuals MA at
+        # the seam, but on real data it can land slightly OFF the forecast-only MA at the
+        # day-(window-1) splice, leaving a step — a curvature "corner"/cliff at the handoff.
+        # Ramp an affine correction of that splice residual to zero across the transition: 0 at
+        # the seam (preserve continuity with the trailing actuals MA), full residual at the
+        # splice (land exactly on forecast_only_ma). This removes the corner while keeping the
+        # matched transition's curvature/weekly-amplitude cancellation intact.
+        transition_dates = pd.date_range(forecast_start, first_clean_date - pd.Timedelta(days=1), freq="D")
+        if continuous_splice:
+            # Match BOTH level and slope at the splice (C1 handoff) so the variance-matched
+            # transition meets the forecast-only MA with no corner. A cubic correction
+            # c(f) = a·f³ + b·f² over the transition (f: 0 at the seam → 1 at the splice) has
+            # c(0)=c'(0)=0 (preserve the actuals-side continuity) and is solved so the corrected
+            # transition meets forecast_only_ma in level (residual) AND slope at the splice —
+            # which removes the slope kink a level-only (affine) correction leaves behind. When
+            # the slope neighbours are unavailable (short series) r_slope=0, degrading to a
+            # smoothstep that still zeroes the level step.
+            span = window - 1
+            r_level = transition_ma.loc[first_clean_date] - forecast_only_ma.loc[first_clean_date]
+            prev_day = first_clean_date - pd.Timedelta(days=1)
+            next_day = first_clean_date + pd.Timedelta(days=1)
+            if prev_day in transition_ma.index and next_day in forecast_only_ma.index:
+                transition_slope = transition_ma.loc[first_clean_date] - transition_ma.loc[prev_day]
+                forecast_slope = forecast_only_ma.loc[next_day] - forecast_only_ma.loc[first_clean_date]
+                r_slope = slope_match * (transition_slope - forecast_slope)
+            else:
+                r_slope = 0.0
+            f = (transition_dates - forecast_start).days.to_numpy(dtype=float) / span
+            a = r_slope * span - 2 * r_level
+            b = 3 * r_level - r_slope * span
+            correction = a * f**3 + b * f**2
+            transition_ma.loc[transition_dates] = transition_ma.loc[transition_dates].to_numpy() - correction
+
+        # Splice (HARD CONSTRAINT): day (window-1) onward (>= first_clean_date) is the clean
+        # forecast-only MA — byte-identical to the naive blend, so Dec-15 is exact. The earlier
+        # transition days use the (now splice-continuous) variance-matched transition.
         result.loc[forecast_only_ma.index] = forecast_only_ma
         transition_mask = (result.index >= forecast_start) & (result.index < first_clean_date)
         result.loc[transition_mask] = transition_ma.reindex(result.index)[transition_mask]

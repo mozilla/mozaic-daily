@@ -1,0 +1,31 @@
+{
+  "model_name": "fenix_marketing_lift_june_anchored",
+  "description": "July 2026 marketing-lift series, June-anchored. L_july(d) = L_june(d) + (csv_jul_total(d) - csv_jun_total(d)), where csv_*_total is the marketing team's Total-Paid-DAU forecast interpolated to daily. Carries June's delivered lift plot forward, moved only by the +~139k change in the year-end marketing outlook between the 2026-05-20 (June) and 2026-06-29 (July) CSVs. No April baseline / empirical gap is used (those carried the Iran asymmetry). Pre-launch (< 2026-04-06) = 0.",
+  "created_at_utc": "2026-07-01T19:44:40.058676+00:00",
+  "mozaic_daily_git_hash": "4d11a3fcd77980bdb8c22d92b9e62bf0b160f51b",
+  "coverage": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-12-31",
+    "campaign_launch": "2026-04-06",
+    "training_end": "2026-06-28",
+    "forecast_end": "2026-12-31"
+  },
+  "methodology": {
+    "framing": "june-anchored: prior-cycle lift plot + change in marketing-team CSV outlook",
+    "rule": "L_july(d) = L_june(d) + (csv_jul_total(d) - csv_jun_total(d)); 0 pre-launch",
+    "reference_cycle": "June 2026 (marketing_lift_model.real_data_v2.hybrid.2026-05-22)"
+  },
+  "source_data": {
+    "july_csv": "/Users/brendanwells/work/mozaic-daily/data-official/2026-07/marketing/source_data/paid_dau_from_uac_campaigns.20260629.csv",
+    "july_csv_sha1": "2af256fd73738c53923cbee587b29a0f2bdb5838",
+    "june_csv": "/Users/brendanwells/Downloads/paid_dau_analysis_20260520 - weekly_dau_forecast.csv",
+    "june_lift_parquet": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/marketing/marketing_lift_model.real_data_v2.hybrid.2026-05-22.parquet"
+  },
+  "key_values": {
+    "june_lift_year_end": 645479.285927217,
+    "csv_delta_year_end": 138997.0,
+    "july_lift_year_end": 784476.285927217,
+    "july_lift_training_end": 726490.143070074
+  },
+  "artifact_sha1": "06ecd5925dafc3bb43b048d83c856c7e24145892"
+}

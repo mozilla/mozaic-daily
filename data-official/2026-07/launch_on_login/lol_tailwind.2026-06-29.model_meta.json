@@ -1,0 +1,26 @@
+{
+  "artifact_sha1": "03f21345268dfbdf7cb7b2df8203c35cc5c0ff86",
+  "cap_dau_daily": 125000,
+  "cap_space": "daily (flat forward; 28d-MA of flat daily = cap)",
+  "clean_window_last_date": "2026-06-23",
+  "conservatism_note": "Measured excess had not plateaued at the clean cutoff (~125K/day, still rising ~19K/wk; 7d-MA ~145K). Flat 125K cap is deliberately conservative.",
+  "contamination_onset": "2026-06-24",
+  "ff152_transient_excluded": [
+    "2026-06-17",
+    "2026-06-18"
+  ],
+  "first_date_at_cap": "2026-06-19",
+  "forecast_end": "2027-12-31",
+  "git_commit": null,
+  "measured_daily_excess_at_last_clean": 138375.6,
+  "model": "launch_on_login_tailwind",
+  "produced_by": "build_lol_tailwind.py",
+  "rollout_date": "2026-05-08",
+  "run_date": "2026-06-29",
+  "smooth_window_days": 7,
+  "source_files": {
+    "obs_dau.parquet": "c3b65e803eaed9e167ac334e68793ef1a553fb18",
+    "obs_enr.parquet": "4552a7828b0199f97bc994f9d68ee8f5216aed73"
+  },
+  "value_column": "lol_lift_daily"
+}

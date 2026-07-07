@@ -1,0 +1,15 @@
+{
+  "forecast_start_date": "2026-06-29",
+  "slug": "cps0.047_thresh032_recent13_cpr0.82_ncp25_clip0.6",
+  "config": {
+    "prophet_recent_weeks": 13,
+    "prophet_changepoint_range": 0.82,
+    "prophet_n_changepoints": 25,
+    "holiday_threshold": -0.032,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_effect_floor": -0.6,
+    "prophet_changepoint_prior_scale": 0.047
+  },
+  "marketing_spec": "/Users/brendanwells/work/mozaic-daily/data-official/2026-07/marketing/marketing.json"
+}

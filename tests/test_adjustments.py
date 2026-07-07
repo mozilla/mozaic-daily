@@ -13,23 +13,28 @@ import pandas as pd
 import pytest
 
 from mozaic_daily.adjustments import (
+    add_lift_to_forecast,
     add_marketing_lift_to_forecast,
     adjustment_spec_hash,
     apply_net_adjustment_to_series,
     build_adjustments_applied_list,
     canonical_codes,
+    compute_country_shares,
     compute_fenix_country_shares,
     insert_state_marker,
     load_adjustments_from_dir,
     load_code_registry,
     load_forecast,
+    load_lift_series,
     load_marketing_lift_series,
     load_marketing_spec,
+    load_overlay_spec,
     meta_path,
     parse_state_from_path,
     read_meta,
     render_adjustment,
     state_marker,
+    subtract_lift_from_training,
     subtract_marketing_lift_from_training,
     write_meta,
 )
@@ -815,3 +820,310 @@ def test_marketing_code_in_registry():
     registry = load_code_registry()
     assert "m" in registry
     assert registry["m"]["name"] == "marketing_lift"
+
+
+# --- Desktop overlay applier (launch-on-login, code `l`) -------------------
+#
+# Exercises the generalized bidirectional appliers on the DESKTOP training
+# schema: boolean `modern_windows` / `winX` segment columns (rows with both
+# False are the "other" segment). The launch-on-login overlay lands entirely in
+# modern_windows. MozillaOnline (`o`) will reuse the same generic functions.
+
+LOL_ROLLOUT = pd.Timestamp("2026-05-08")
+# modern_windows baselines chosen so shares are clean: 800k/150k/50k -> .80/.15/.05
+MW_BASELINE = {"US": 800_000, "DE": 150_000, "BR": 50_000}
+WINX_BASELINE = {"US": 120_000, "DE": 40_000, "BR": 10_000}
+OTHER_BASELINE = {"US": 300_000, "DE": 60_000, "BR": 20_000}  # mac/linux etc.
+
+
+def _make_desktop_training_fixture():
+    """Long-format desktop DAU training: one row per (date, country, segment).
+
+    Segment encoding mirrors production: modern_windows/winX booleans, with the
+    'other' segment being both False.
+    """
+    rows = []
+    for date in TEST_DATES:
+        for country in TEST_COUNTRIES:
+            for seg, baseline_map, mw, wx in [
+                ("modern_windows", MW_BASELINE, True, False),
+                ("winX", WINX_BASELINE, False, True),
+                ("other", OTHER_BASELINE, False, False),
+            ]:
+                rows.append({
+                    "x": date.date(),
+                    "country": country,
+                    "modern_windows": mw,
+                    "winX": wx,
+                    "y": baseline_map[country],
+                })
+    df = pd.DataFrame(rows)
+    df["y"] = df["y"].astype("Int64")
+    return df
+
+
+def _make_lol_lift_series():
+    """Flat 15_000/day LOL curve from rollout (stand-in for the capped curve)."""
+    idx = pd.date_range("2026-02-01", "2026-12-31", freq="D")
+    values = np.where(idx >= LOL_ROLLOUT, 15_000.0, 0.0)
+    return pd.Series(values, index=idx, name="lol_lift_daily")
+
+
+def _make_desktop_forecast_fixture():
+    """mozaic-style granular desktop forecast: population = OS segment or ALL."""
+    rows = []
+    train_dates = pd.date_range("2026-03-15", "2026-05-13", freq="D")
+    fcst_dates = pd.date_range("2026-05-14", "2026-06-15", freq="D")
+    populations = ["modern_windows", "winX", "other", "ALL"]
+    countries = TEST_COUNTRIES + ["ALL"]
+    for source, dates in [("actual", train_dates), ("forecast", fcst_dates)]:
+        for date in dates:
+            for country in countries:
+                for population in populations:
+                    rows.append({
+                        "target_date": date,
+                        "country": country,
+                        "population": population,
+                        "source": source,
+                        "DAU": 500_000.0,
+                    })
+    return pd.DataFrame(rows)
+
+
+@pytest.fixture
+def desktop_training_df():
+    return _make_desktop_training_fixture()
+
+
+@pytest.fixture
+def lol_lift_series():
+    return _make_lol_lift_series()
+
+
+@pytest.fixture
+def mw_country_shares(desktop_training_df):
+    return compute_country_shares(
+        desktop_training_df,
+        training_end_date=TRAINING_END,
+        window_days=28,
+        flag_column="modern_windows",
+    )
+
+
+# --- load_overlay_spec -----------------------------------------------------
+
+def test_load_overlay_spec_validates_type(tmp_path):
+    bad = tmp_path / "bad.json"
+    bad.write_text(json.dumps({"type": "marketing_lift"}))
+    with pytest.raises(ValueError, match="expected 'desktop_overlay'"):
+        load_overlay_spec(bad)
+
+
+def test_load_overlay_spec_requires_flag_column(tmp_path):
+    incomplete = tmp_path / "lol.json"
+    incomplete.write_text(json.dumps({
+        "type": "desktop_overlay", "data_file": "x.parquet", "value_column": "lol_lift_daily",
+        "allocation": {"key": "trailing_dau_share", "window_days": 28},
+    }))
+    with pytest.raises(ValueError, match="flag_column"):
+        load_overlay_spec(incomplete)
+
+
+def test_load_overlay_spec_round_trip(tmp_path):
+    good = {
+        "type": "desktop_overlay",
+        "data_file": "lol.parquet",
+        "value_column": "lol_lift_daily",
+        "allocation": {"flag_column": "modern_windows", "key": "trailing_dau_share", "window_days": 28},
+    }
+    path = tmp_path / "lol.json"
+    path.write_text(json.dumps(good))
+    spec = load_overlay_spec(path)
+    assert spec["allocation"]["flag_column"] == "modern_windows"
+
+
+def test_load_lift_series_generic(tmp_path):
+    series = _make_lol_lift_series()
+    series.to_frame("lol_lift_daily").rename_axis("target_date").to_parquet(tmp_path / "lol.parquet")
+    spec = {"data_file": "lol.parquet", "value_column": "lol_lift_daily"}
+    out = load_lift_series(spec, tmp_path)
+    assert out.loc[:"2026-05-07"].sum() == 0.0
+    assert out.loc["2026-05-08"] == 15_000.0
+
+
+# --- compute_country_shares (modern_windows) -------------------------------
+
+def test_mw_shares_sum_to_one(mw_country_shares):
+    assert abs(mw_country_shares.sum() - 1.0) < 1e-12
+
+
+def test_mw_shares_match_baseline_proportions(mw_country_shares):
+    assert mw_country_shares.loc["US"] == pytest.approx(0.80)
+    assert mw_country_shares.loc["DE"] == pytest.approx(0.15)
+    assert mw_country_shares.loc["BR"] == pytest.approx(0.05)
+
+
+def test_mw_shares_ignore_other_segments(desktop_training_df):
+    """winX/other DAU must not affect modern_windows shares."""
+    inflated = desktop_training_df.copy()
+    winx_mask = inflated["winX"] == True  # noqa: E712
+    inflated.loc[winx_mask, "y"] = inflated.loc[winx_mask, "y"].astype("Int64") + 9_000_000
+    shares_a = compute_country_shares(
+        desktop_training_df, training_end_date=TRAINING_END, window_days=28, flag_column="modern_windows"
+    )
+    shares_b = compute_country_shares(
+        inflated, training_end_date=TRAINING_END, window_days=28, flag_column="modern_windows"
+    )
+    pd.testing.assert_series_equal(shares_a, shares_b)
+
+
+# --- subtract_lift_from_training (modern_windows) --------------------------
+
+def test_lol_subtract_sets_custom_sentinel(desktop_training_df, lol_lift_series, mw_country_shares):
+    out = subtract_lift_from_training(
+        desktop_training_df, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        flag_column="modern_windows", sentinel_attr="launch_on_login_subtracted",
+    )
+    assert out.attrs["launch_on_login_subtracted"] is True
+    # A different overlay (different sentinel) can still subtract from the same frame.
+    assert not out.attrs.get("marketing_lift_subtracted")
+
+
+def test_lol_subtract_rejects_same_sentinel_twice(desktop_training_df, lol_lift_series, mw_country_shares):
+    out = subtract_lift_from_training(
+        desktop_training_df, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        flag_column="modern_windows", sentinel_attr="launch_on_login_subtracted",
+    )
+    with pytest.raises(RuntimeError, match="called twice"):
+        subtract_lift_from_training(
+            out, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+            flag_column="modern_windows", sentinel_attr="launch_on_login_subtracted",
+        )
+
+
+def test_lol_subtract_only_modifies_modern_windows(desktop_training_df, lol_lift_series, mw_country_shares):
+    out = subtract_lift_from_training(
+        desktop_training_df, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        flag_column="modern_windows", sentinel_attr="lol",
+    )
+    non_mw_in = desktop_training_df[desktop_training_df["modern_windows"] == False]  # noqa: E712
+    non_mw_out = out[out["modern_windows"] == False]  # noqa: E712
+    pd.testing.assert_series_equal(
+        non_mw_in["y"].reset_index(drop=True), non_mw_out["y"].reset_index(drop=True)
+    )
+
+
+def test_lol_subtract_world_invariant(desktop_training_df, lol_lift_series, mw_country_shares):
+    """Per-date sum of modern_windows subtractions == daily_lift[date]."""
+    out = subtract_lift_from_training(
+        desktop_training_df, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        flag_column="modern_windows", sentinel_attr="lol",
+    )
+    mw_in = desktop_training_df[desktop_training_df["modern_windows"] == True]  # noqa: E712
+    mw_out = out[out["modern_windows"] == True]  # noqa: E712
+    delta = mw_in["y"].astype("int64").to_numpy() - mw_out["y"].astype("int64").to_numpy()
+    per_date = (pd.DataFrame({"x": mw_in["x"].values, "d": delta})
+                .groupby("x")["d"].sum())
+    per_date.index = pd.DatetimeIndex(per_date.index).normalize()
+    for date, d in per_date.items():
+        assert d == (pytest.approx(15_000, abs=2) if date >= LOL_ROLLOUT else 0)
+
+
+def test_lol_subtract_does_not_mutate_input(desktop_training_df, lol_lift_series, mw_country_shares):
+    original_y = desktop_training_df["y"].copy()
+    _ = subtract_lift_from_training(
+        desktop_training_df, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        flag_column="modern_windows", sentinel_attr="lol",
+    )
+    pd.testing.assert_series_equal(desktop_training_df["y"], original_y)
+
+
+# --- add_lift_to_forecast (modern_windows) ---------------------------------
+
+def test_lol_addback_world_row_full_lift(mw_country_shares, lol_lift_series):
+    fdf = _make_desktop_forecast_fixture()
+    out = add_lift_to_forecast(
+        fdf, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        forecast_start=FORECAST_START, population_value="modern_windows",
+    )
+    mask = (out["country"] == "ALL") & (out["population"] == "ALL") & (out["source"] == "forecast")
+    delta = out.loc[mask, "DAU"] - fdf.loc[mask, "DAU"]
+    assert np.allclose(delta.values, 15_000.0)
+
+
+def test_lol_addback_per_country_uses_shares(mw_country_shares, lol_lift_series):
+    fdf = _make_desktop_forecast_fixture()
+    out = add_lift_to_forecast(
+        fdf, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        forecast_start=FORECAST_START, population_value="modern_windows",
+    )
+    for country in TEST_COUNTRIES:
+        mask = ((out["country"] == country) & (out["population"] == "modern_windows")
+                & (out["source"] == "forecast"))
+        delta = out.loc[mask, "DAU"] - fdf.loc[mask, "DAU"]
+        assert delta.values == pytest.approx(15_000 * mw_country_shares.loc[country])
+
+
+def test_lol_addback_winx_and_other_untouched(mw_country_shares, lol_lift_series):
+    fdf = _make_desktop_forecast_fixture()
+    out = add_lift_to_forecast(
+        fdf, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        forecast_start=FORECAST_START, population_value="modern_windows",
+    )
+    for seg in ["winX", "other"]:
+        mask = out["population"] == seg
+        pd.testing.assert_series_equal(
+            fdf.loc[mask, "DAU"].reset_index(drop=True),
+            out.loc[mask, "DAU"].reset_index(drop=True),
+        )
+
+
+def test_lol_addback_does_not_mutate_input(mw_country_shares, lol_lift_series):
+    fdf = _make_desktop_forecast_fixture()
+    snapshot = fdf["DAU"].copy()
+    _ = add_lift_to_forecast(
+        fdf, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        forecast_start=FORECAST_START, population_value="modern_windows",
+    )
+    pd.testing.assert_series_equal(fdf["DAU"], snapshot)
+
+
+def test_lol_subtract_addback_roundtrip_at_world(desktop_training_df, lol_lift_series, mw_country_shares):
+    """Add-back of a flat lift restores the world-level total we subtracted."""
+    fdf = _make_desktop_forecast_fixture()
+    added = add_lift_to_forecast(
+        fdf, daily_lift_series=lol_lift_series, country_shares=mw_country_shares,
+        forecast_start=FORECAST_START, population_value="modern_windows",
+    )
+    # Sum of per-country modern_windows add-backs equals the world modern_windows add-back.
+    day = pd.Timestamp("2026-06-01")
+    per_country = added[(added["target_date"] == day) & (added["population"] == "modern_windows")
+                        & (added["country"] != "ALL")]["DAU"].sum() - \
+        fdf[(fdf["target_date"] == day) & (fdf["population"] == "modern_windows")
+            & (fdf["country"] != "ALL")]["DAU"].sum()
+    assert per_country == pytest.approx(15_000.0, abs=2)
+
+
+# --- Registry + filename round-trips for `l` -------------------------------
+
+def test_lol_code_in_registry():
+    registry = load_code_registry()
+    assert "l" in registry
+    assert registry["l"]["name"] == "launch_on_login"
+
+
+def test_lol_code_canonical_and_marker():
+    assert canonical_codes(["m", "h", "l"]) == "hlm"
+    assert state_marker(["l", "h", "m"]) == "adj-hlm"
+
+
+def test_parse_state_from_path_adj_hl():
+    assert parse_state_from_path("foo.2026-06-29.ld-D.adj-hl.parquet") == ["h", "l"]
+
+
+def test_build_adjustments_applied_includes_lol(tmp_path):
+    spec = tmp_path / "lol.json"
+    spec.write_text(json.dumps({"type": "desktop_overlay"}))
+    applied = build_adjustments_applied_list(["l"], {"l": spec})
+    assert applied[0]["code"] == "l"
+    assert applied[0]["name"] == "launch_on_login"

@@ -1,0 +1,50 @@
+{
+  "model_name": "fenix_marketing_lift_hybrid_v2",
+  "description": "July 2026 hybrid marketing-lift series. Historical period (2026-04-06 \u2192 training_end): lift = empirical Fenix Android gap (fresh no-mktg actuals \u2212 April mktg-off forecast). Future period (training_end+1 \u2192 2026-12-31): lift anchored at the empirical level on training_end, growing per the July marketing-team CSV. Forward growth is driven by the '2026 DAU' acquisition-cohort column (campaign-attributable), NOT 'Total Paid DAU' \u2014 the latter's growth is cancelled by the declining Pre-2026 legacy cohort. Same recipe and pipeline as the June v2 build; only the CSV, the growth column, and training_end changed.",
+  "created_at_utc": "2026-06-30T21:45:24.964605+00:00",
+  "mozaic_daily_git_hash": "4d11a3fcd77980bdb8c22d92b9e62bf0b160f51b",
+  "coverage": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-12-31",
+    "campaign_launch": "2026-04-06",
+    "training_end": "2026-06-28",
+    "forecast_end": "2026-12-31"
+  },
+  "methodology": {
+    "framing": "hybrid: empirical-actuals for historical period, CSV-anchored projection for future",
+    "historical_rule": "lift(d) = fenix_gap_daily(d) for d in [CAMPAIGN_LAUNCH, training_end]; 0 pre-campaign",
+    "future_rule": "lift(d) = gap_at_training_end + (csv_daily_paid(d) \u2212 csv_daily_paid(training_end)) for d > training_end",
+    "gap_scope": "country='ALL', app_name='fenix_android'",
+    "csv_growth_column": "2026 DAU",
+    "csv_version": "July 2026 (2026-06-29) \u2014 Pre-2026 / 2026 acquisition-cohort decomposition",
+    "week_anchor": "Week 1 == 2026-01-05 (Monday); weekly Mondays linearly interpolated to daily"
+  },
+  "source_data": {
+    "source_csv": "/Users/brendanwells/work/mozaic-daily/data-official/2026-07/marketing/source_data/paid_dau_from_uac_campaigns.20260629.csv",
+    "source_csv_sha1": "2af256fd73738c53923cbee587b29a0f2bdb5838",
+    "april_forecast": "/Users/brendanwells/work/mozaic-daily/data-official/2026-04/mobile_cps0.02_thresh32_recent13_clip0.6/mozaic_daily_forecast.2026-04-01.gm-D.raw.parquet",
+    "no_marketing_forecast": "/Users/brendanwells/work/mozaic-daily/tmp/no_mktg_2026-06-29/mozaic_daily_forecast.2026-06-29.gm-D.parquet",
+    "june_v2_predecessor": "/Users/brendanwells/work/mozaic-daily/data-official/2026-06/marketing/marketing_lift_model.real_data_v2.hybrid.2026-05-22.parquet"
+  },
+  "validation": {
+    "a_n_compare_days": 77,
+    "a_residual_mean": -3361.147540159905,
+    "a_residual_std": 5997.650102568963,
+    "a_residual_rmse": 6841.195306238738,
+    "c_n_counterfactual_days": 148,
+    "c_residual_mean": 130738.75559814405,
+    "c_residual_std": 189126.04194966287,
+    "c_residual_min": -1.862645149230957e-09,
+    "c_residual_max": 537259.1785714291
+  },
+  "caveats": [
+    "Historical lift = raw daily fenix_gap_daily \u2014 carries DOW noise and non-marketing April-forecast errors.",
+    "Future lift uses the July CSV's '2026 DAU' cohort growth; the Pre-2026 legacy decline is left to Prophet's base trend.",
+    "Pre-campaign (< 2026-04-06) = 0 by convention.",
+    "The world-rollup add-back is not strictly tight: curate_mozaics reconciliation leaves a ~10-20% residual; inspect the trial visually."
+  ],
+  "source_notebooks": [
+    "06_july2026_hybrid_lift.ipynb"
+  ],
+  "artifact_sha1": "3886e9161ff2bfdfa35c09d5916f1fd73f9585b2"
+}

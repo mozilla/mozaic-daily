@@ -2,17 +2,32 @@
 
 Inputs for the `o` adjustment (planned): the MozillaOnline → Firefox desktop
 migration modeled as a bidirectional overlay (subtract from training before
-mozaic, add back after), same pattern as marketing-lift `m`. >90% China; ~10%
-tail (likely VPN) across other countries.
+mozaic, add back after), same OUTPUT pattern as marketing-lift `m`. The migrating
+build is telemetry `app_name = "Firefox Desktop MozillaOnline"`; migration flips
+users to `app_name = "Firefox Desktop"` (the canonical KPI). ~93% China; ~7% tail
+(likely VPN / diaspora).
 
 ## What's here
 
-- **`PLACEHOLDER_MODEL_HANDOFF.md`** — instructions for a fresh Claude to build a
-  conservative **placeholder** migration model (daily migration-DAU series parquet
-  + `mozillaonline.json` spec + meta + plot + generator script), designed so Brad's
-  official model drops in as a clean swap. **Start here** until the official model arrives.
+**Built (Part A — data-grounded placeholder):**
+- **`build_placeholder_model.py`** — reproducible generator; tunable constants at top.
+- **`mozillaonline_migration_model.placeholder.2026-06-25.parquet`** (+ `.meta.json`) —
+  daily `migration_dau_daily` + `migration_dau_ma` on a `target_date` index.
+- **`mozillaonline.json`** — spec (data_file, value_column, geo allocation shares, scope,
+  applies_to_forecast_start, placeholder flag).
+- **`README.md`** — model summary + swap path.
+- **`summary.html`** — self-contained proof doc for a reviewing DS.
+- **`*.png`** — curve, decomposition, conservation/fit, cohorts, geo.
+- **`source_data/*.csv`** — cached pre-June + migration-window telemetry inputs (legacy).
 
-## What lands here once the placeholder/official model is built
+**Handoffs:**
+- **`WIRING_HANDOFF.md`** — spec for a future agent to wire the `o` applier + tests (Part B).
+- **`PLACEHOLDER_MODEL_HANDOFF.md`** — original handoff (predates Brad's numbers; superseded by
+  the data-grounded build, kept for provenance).
 
-`mozillaonline_migration_model.*.parquet` (+ `.meta.json`), `mozillaonline.json`,
-`README.md`, `placeholder_curve.png`, `build_placeholder_model.py`.
+Tests: `tests/test_mozillaonline_model.py` (artifact contract).
+
+## Where new code goes
+- Model retunes → edit constants in `build_placeholder_model.py` and re-run (deterministic).
+- Brad's official model → swap per `mozillaonline_migration_model.*.meta.json` `swap_instructions`.
+- Applier code → `src/mozaic_daily/adjustments.py` (see `WIRING_HANDOFF.md`); NOT here.

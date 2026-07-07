@@ -1,0 +1,26 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "m",
+      "name": "marketing_lift",
+      "scope": "glean_mobile DAU only",
+      "spec_file": "data-official/2026-07/marketing/marketing.json"
+    }
+  ],
+  "artifact_sha1": "2f1dffc64cfb3798ec44b73a96fd8d496791f920",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-06-29",
+  "model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.032,
+    "prophet_changepoint_prior_scale": 0.02,
+    "prophet_changepoint_range": 0.82,
+    "prophet_n_changepoints": 25,
+    "prophet_recent_weeks": 8
+  },
+  "mozaic_daily_commit": "4d11a3fcd77980bdb8c22d92b9e62bf0b160f51b",
+  "produced_at": "2026-07-06T17:41:58.052394+00:00Z",
+  "produced_by": "scripts/run_mobile_param_scan.py"
+}

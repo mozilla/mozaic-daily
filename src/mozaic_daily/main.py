@@ -23,10 +23,15 @@ from pathlib import Path
 import os
 from joblib.externals import cloudpickle
 from .adjustments import (
+    add_lift_to_forecast,
     add_marketing_lift_to_forecast,
+    compute_country_shares,
     compute_fenix_country_shares,
+    load_lift_series,
     load_marketing_lift_series,
     load_marketing_spec,
+    load_overlay_spec,
+    subtract_lift_from_training,
     subtract_marketing_lift_from_training,
 )
 from .config import get_runtime_config, STATIC_CONFIG, build_filter_code
@@ -201,6 +206,78 @@ def _apply_marketing_lift_pre_mozaic(
     }
 
 
+def _find_launch_on_login_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
+    """Locate the launch_on_login/lol.json spec whose applies_to_forecast_start matches.
+
+    Mirrors ``_find_marketing_spec_for_forecast`` for the desktop LOL overlay (code
+    ``l``). Returns ``None`` if no spec matches — the "no LOL overlay for this cycle"
+    path, which is not an error.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    candidates = sorted(
+        glob.glob(str(repo_root / "data-official" / "*" / "launch_on_login" / "lol.json"))
+    )
+    matches = []
+    for candidate in candidates:
+        with open(candidate) as f:
+            spec = json.load(f)
+        if spec.get("applies_to_forecast_start") == forecast_start_date:
+            matches.append(Path(candidate))
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise ValueError(
+            f"Multiple launch_on_login/lol.json specs claim applies_to_forecast_start="
+            f"{forecast_start_date!r}: {[str(m) for m in matches]}"
+        )
+    return matches[0]
+
+
+def _apply_launch_on_login_pre_mozaic(
+    source_data: dict,
+    spec_path: Path,
+    training_end_date: str,
+) -> tuple[dict, dict]:
+    """Subtract the LOL desktop tailwind from DAU training before mozaic runs.
+
+    Structurally identical to ``_apply_marketing_lift_pre_mozaic`` but for the
+    desktop ``desktop_overlay`` spec: allocation keys off the boolean
+    ``modern_windows`` segment column instead of ``app_flag_column``.
+
+    Returns ``(modified_source_data, lol_context)`` where ``lol_context`` carries
+    ``{daily_lift_series, country_shares, spec}`` so the symmetric add-back uses
+    byte-identical inputs.
+    """
+    spec = load_overlay_spec(spec_path)
+    daily_lift_series = load_lift_series(spec, spec_path.parent)
+    flag_column = spec["allocation"]["flag_column"]
+    metric_key = Metric.DAU.value
+    training_df = source_data[metric_key]
+    country_shares = compute_country_shares(
+        training_df,
+        training_end_date=pd.Timestamp(training_end_date),
+        window_days=spec["allocation"]["window_days"],
+        flag_column=flag_column,
+    )
+    print(
+        f'Launch-on-login: subtracting from {metric_key} training data '
+        f'({len(country_shares)} countries, {(training_df[flag_column] == True).sum()} {flag_column} rows)'  # noqa: E712
+    )
+    modified_source_data = dict(source_data)
+    modified_source_data[metric_key] = subtract_lift_from_training(
+        training_df,
+        daily_lift_series=daily_lift_series,
+        country_shares=country_shares,
+        flag_column=flag_column,
+        sentinel_attr="launch_on_login_subtracted",
+    )
+    return modified_source_data, {
+        "daily_lift_series": daily_lift_series,
+        "country_shares": country_shares,
+        "spec": spec,
+    }
+
+
 def process_data_source(
     data_source: DataSource,
     datasets: dict,
@@ -208,6 +285,7 @@ def process_data_source(
     forecast_end: str,
     training_end_date: Optional[str] = None,
     marketing_spec_path: Optional[Path] = None,
+    lol_spec_path: Optional[Path] = None,
 ) -> pd.DataFrame:
     """Process a single data source through the forecast pipeline.
 
@@ -216,12 +294,18 @@ def process_data_source(
         datasets: Nested dict of data by platform/source/metric
         forecast_start: Start date for forecast period
         forecast_end: End date for forecast period
-        training_end_date: Last date of training data (used by the marketing-lift
-            allocation key window). Required when ``marketing_spec_path`` is set.
+        training_end_date: Last date of training data (used by the bidirectional
+            overlay allocation-key windows). Required when ``marketing_spec_path``
+            or ``lol_spec_path`` is set.
         marketing_spec_path: If set and ``data_source == GLEAN_MOBILE``, applies
             the marketing-lift `m` adjustment: subtracts lift from the DAU
             training rows before mozaic and adds it back to the per-tile
             forecast after mozaic. No-op for other data sources.
+        lol_spec_path: If set and ``data_source == LEGACY_DESKTOP``, applies the
+            launch-on-login `l` desktop overlay: subtracts the measured LOL rise
+            from the modern_windows DAU training rows before mozaic and adds the
+            capped curve back to the per-tile forecast after mozaic. No-op for
+            other data sources.
 
     Returns:
         Tuple of (DataFrame with forecasts, dict of metric -> fitted Mozaic objects)
@@ -250,6 +334,17 @@ def process_data_source(
             )
         source_data, marketing_context = _apply_marketing_lift_pre_mozaic(
             source_data, marketing_spec_path, training_end_date
+        )
+
+    lol_context = None
+    if lol_spec_path is not None and data_source == DataSource.LEGACY_DESKTOP \
+            and Metric.DAU.value in source_data:
+        if training_end_date is None:
+            raise ValueError(
+                "training_end_date is required when lol_spec_path is set"
+            )
+        source_data, lol_context = _apply_launch_on_login_pre_mozaic(
+            source_data, lol_spec_path, training_end_date
         )
 
     # Generate forecasts
@@ -282,6 +377,21 @@ def process_data_source(
         print(f'Marketing-lift: added back across {n_total} rows '
               f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
 
+    # Launch-on-login add-back (same timing/rationale as marketing-lift above).
+    if lol_context is not None and Metric.DAU.value in df_combined.columns:
+        df_combined = add_lift_to_forecast(
+            df_combined,
+            daily_lift_series=lol_context["daily_lift_series"],
+            country_shares=lol_context["country_shares"],
+            forecast_start=pd.Timestamp(forecast_start),
+            metric_column=Metric.DAU.value,
+            population_value=lol_context["spec"]["allocation"]["flag_column"],
+        )
+        n_total = len(df_combined)
+        n_forecast = (df_combined["source"] == "forecast").sum()
+        print(f'Launch-on-login: added back across {n_total} rows '
+              f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
+
     # Format
     format_func = get_format_function(platform)
     format_func(df_combined, data_source=data_source.value)
@@ -296,6 +406,7 @@ def generate_forecasts(
     checkpoints: bool = False,
     output_dir: str = ".",
     marketing_spec_path: Optional[Path] = None,
+    lol_spec_path: Optional[Path] = None,
 ) -> pd.DataFrame:
     """Generate forecasts for all data sources and combine them.
 
@@ -307,6 +418,9 @@ def generate_forecasts(
         output_dir: Directory for checkpoint files
         marketing_spec_path: If set, the marketing-lift `m` adjustment is applied
             to glean_mobile DAU (subtract pre-mozaic, add back post-mozaic).
+            Other data sources are unaffected.
+        lol_spec_path: If set, the launch-on-login `l` desktop overlay is applied
+            to legacy_desktop DAU (subtract pre-mozaic, add back post-mozaic).
             Other data sources are unaffected.
 
     Returns:
@@ -330,6 +444,7 @@ def generate_forecasts(
             runtime_config['forecast_end_date'],
             training_end_date=runtime_config['training_end_date'],
             marketing_spec_path=marketing_spec_path,
+            lol_spec_path=lol_spec_path,
         )
         all_dfs.append(df)
 
@@ -365,6 +480,7 @@ def main(
     forecast_start_date: Optional[str] = None,
     output_dir: Optional[str] = None,
     marketing_lift: bool = True,
+    launch_on_login: bool = True,
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
 
@@ -383,6 +499,10 @@ def main(
             matching this forecast cycle's start date and apply the `m`
             adjustment to glean_mobile DAU. If False, force the adjustment off
             even if a matching spec exists.
+        launch_on_login: If True (default), look for a launch-on-login spec
+            matching this forecast cycle's start date and apply the `l`
+            desktop overlay to legacy_desktop DAU. If False, force it off even
+            if a matching spec exists.
 
     Returns:
         DataFrame with forecasts
@@ -447,12 +567,25 @@ def main(
         elif marketing_spec_path is not None:
             print(f'Marketing-lift: using spec {marketing_spec_path}')
 
+        lol_spec_path = (
+            _find_launch_on_login_spec_for_forecast(config['forecast_start_date'])
+            if launch_on_login else None
+        )
+        if launch_on_login and lol_spec_path is None:
+            print(
+                f'Launch-on-login: no spec found for forecast_start='
+                f'{config["forecast_start_date"]}; overlay disabled for this cycle.'
+            )
+        elif lol_spec_path is not None:
+            print(f'Launch-on-login: using spec {lol_spec_path}')
+
         df = generate_forecasts(
             datasets, config,
             data_source_filter=data_source_filter,
             checkpoints=checkpoints,
             output_dir=resolved_output_dir,
             marketing_spec_path=marketing_spec_path,
+            lol_spec_path=lol_spec_path,
         )
         save_checkpoint(df, checkpoint_filename)
 

@@ -41,6 +41,14 @@ research/param-scans/pinned/
 # Marketing-lift model inputs (small, configuration-like) ARE tracked under
 # data-official/{YYYY-MM}/marketing/ so the pipeline can apply the `m` adjustment.
 !data-official/*/marketing/*.parquet
+# MozillaOnline migration model inputs (small) ARE tracked under
+# data-official/{YYYY-MM}/mozillaonline/ so the `o` adjustment + build script are
+# reproducible from git (model parquet + cached telemetry source CSVs).
+!data-official/*/mozillaonline/*.parquet
+!data-official/*/mozillaonline/source_data/*.csv
+# Launch-on-login (`l`) overlay curve input (small, ~10KB) ARE tracked under
+# data-official/{YYYY-MM}/launch_on_login/ so the pipeline can apply the `l` adjustment.
+!data-official/*/launch_on_login/*.parquet
 # Public-facing canonical exports: small (<100KB), referenced by the README
 # next to them, regenerable via export_canonical_curves.py. Tracked so
 # downstream consumers don't need to run the export script. The csv/ folder

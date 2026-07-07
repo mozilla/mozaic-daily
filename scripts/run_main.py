@@ -101,6 +101,18 @@ if __name__ == '__main__':
             'is to apply the adjustment when a spec matches forecast_start_date.'
         )
     )
+    parser.add_argument(
+        '--no-launch-on-login',
+        dest='launch_on_login',
+        action='store_false',
+        default=True,
+        help=(
+            'Disable the launch-on-login (`l`) desktop overlay for this run, even '
+            'if a matching spec exists in data-official/{YYYY-MM}/launch_on_login/. '
+            'Default is to apply it to legacy_desktop DAU when a spec matches '
+            'forecast_start_date.'
+        )
+    )
     args = parser.parse_args()
 
     # Validate that --testing is not combined with explicit filters
@@ -123,4 +135,5 @@ if __name__ == '__main__':
         forecast_start_date=args.forecast_start_date,
         output_dir=args.output_dir,
         marketing_lift=args.marketing_lift,
+        launch_on_login=args.launch_on_login,
     )

@@ -1,7 +1,6 @@
 # `data-official/2026-07/` — July 2026 forecast cycle
 
-Active cycle (branch `july-forecast`, off `june-forecast`). Setup in progress —
-the forecast has not yet been run.
+Active cycle (branch `july-forecast`, off `june-forecast`).
 
 ## What's here
 
@@ -10,18 +9,25 @@ the forecast has not yet been run.
   telemetry opt-out via deletion requests, desktop/mobile marketing, usage-experiment
   DAU movement), its modeling approach, the data needed, status, and the open questions
   for the user. **Start here.**
+- **`launch_on_login/`** — the launch-on-login (`l`) desktop DAU tailwind: `lol.json`
+  spec + `lol_tailwind.*.parquet` curve. Bidirectional overlay on `legacy_desktop` DAU,
+  125K flat conservative cap. See its `_index.md`.
+- **`mozillaonline/`** — MozillaOnline (`o`) CN desktop migration overlay. Model artifact
+  done; wiring pending — `WIRING_HANDOFF.md` has step-by-step reuse of the `l` machinery.
+- **`marketing/`** — refreshed marketing-lift (`m`) model for mobile DAU.
+- **`adjustments/`** — headwind (`h`) spec.
 - **`iran_gap_holiday_mozaic_handoff.md`** — feature-request handoff to the
   `mozaic-forecasting` package: add a training-exclusion ("gap holiday") so the Iran
   internet-shutdown window is masked out of fitting instead of corrupting the trend.
   (Companion handoff for the telemetry opt-out investigation lives outside this repo at
   `~/work/experiments/telemetry-optout-dau-impact/HANDOFF.md`.)
 
-## What's not here yet (added during the run, per monthly-forecast-update skill)
+## What's not here yet
 
-- `adjustments/` — headwind + any new component specs for July
-- `marketing/` — refreshed marketing-lift model
-- `desktop_<slug>/`, `mobile_<slug>/` — per-config forecast parquets + sidecars
-- `parameters.json`, the producer notebook, and `csv/` canonical exports
+- `desktop_<slug>/` per-config parquets, `parameters.json`, and `csv/` canonical exports.
+- The **re-run `legacy_desktop` DAU** carrying the `l` (and forthcoming `o`) overlays, swapped
+  into the canonical combined parquet. Per Brendan, regenerate the canonical desktop **once** with
+  both `l` and `o` (see `mozillaonline/WIRING_HANDOFF.md`), not once per overlay.
 
 ## Where new files go
 

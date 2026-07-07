@@ -1,0 +1,37 @@
+{
+  "artifact": "mozaic_daily_forecast.2026-06-29.gm+ld-D+NP.adj-m.parquet",
+  "description": "July canonical combined forecast (glean_mobile + legacy_desktop, DAU + New Profiles). Mobile DAU is the grid-search-accepted `grad_moderate` model (cps=0.035, changepoint_range=0.75, holiday_threshold=-0.055) with the TOTAL marketing lift (adj-m) baked in-pipeline. Produced by swapping the glean_mobile `dau` column of the raw combined parquet with the grad_moderate run; legacy_desktop rows and all new_profiles values are byte-identical to the raw base. Headwind (adj-h) is applied downstream in july_canonical_v2026-06-29.ipynb, not here. MIXED PACKAGE: mobile DAU on mozaic 0883806 (IR-2026 shutdown holiday-skip); desktop + all New Profiles carried from the prior-package Jun-30 base (mobile-DAU-only regen).",
+  "created_at_utc": "2026-07-06T22:10:50.117359+00:00",
+  "mozaic_daily_git_hash": "4d11a3fcd77980bdb8c22d92b9e62bf0b160f51b",
+  "mozaic_pkg_commit_mobile_dau": "088380695d317886e261cb7818d2dceac6a28916",
+  "mixed_package": true,
+  "mobile_model": "grad_moderate (grid-search accepted; research/param-scans/mobile-july)",
+  "mobile_model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.055,
+    "prophet_changepoint_prior_scale": 0.035,
+    "prophet_changepoint_range": 0.75,
+    "prophet_n_changepoints": 25,
+    "prophet_recent_weeks": 13
+  },
+  "adjustments_applied": [
+    {
+      "code": "m",
+      "name": "marketing_lift",
+      "scope": "glean_mobile DAU only",
+      "spec_file": "data-official/2026-07/marketing/marketing.json",
+      "lift_parquet": "data-official/2026-07/marketing/marketing_lift_model.total.2026-06-29.parquet",
+      "variant": "total (June-anchored, forward=Total Paid DAU)"
+    }
+  ],
+  "parents": {
+    "base_raw": "data-official/2026-07/mozaic_daily_forecast.2026-06-29.gm+ld-D+NP.parquet",
+    "base_raw_sha1": "a07b370dbaeb2f2f970c8b0b97a8ffee455c2bcd",
+    "mobile_run": "research/param-scans/mobile-july/results/cps0.035_thresh055_recent13_cpr0.75_ncp25_clip0.6/mozaic_daily_forecast.2026-06-29.gm-D.adj-m.parquet",
+    "mobile_run_sha1": "b98151fdb259981ef899036317cd121d553b49cd",
+    "mobile_run_produced_by": "scripts/run_mobile_param_scan.py"
+  },
+  "artifact_sha1": "5ce295e9fb48ba781f8bf11f0f54aab870aa438a"
+}
