@@ -54,6 +54,8 @@ research/param-scans/pinned/
 # downstream consumers don't need to run the export script. The csv/ folder
 # holds the ALL-level canonical curves plus one no-headwind CSV per country.
 !data-official/*/csv/june_canonical_curves.csv
+!data-official/*/csv/july_canonical_curves.csv
+!data-official/*/csv/july_dec15_summary.csv
 !data-official/*/csv/per_country/*.no-headwinds.csv
 !data-official/*/june_canonical_curves.csv
 !data-official/*/april_composite_forecast_28ma.adj-h.csv

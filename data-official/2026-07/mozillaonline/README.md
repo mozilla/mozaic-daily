@@ -1,8 +1,10 @@
 # MozillaOnline migration overlay (`o`)
 
 > **STATUS (2026-07-07): WIRED with Brad's OFFICIAL model.** The `o` overlay is implemented
-> (bidirectional, `legacy_desktop` DAU, `modern_windows` segment, fixed geo shares) and folded into
-> the canonical `…adj-lmo.parquet`. The **active** artifact is
+> (bidirectional, `legacy_desktop` DAU, `modern_windows` segment, fixed geo shares) and applied in the
+> **locked desktop model** `../desktop_locked/mozaic_daily_forecast.2026-07-06.ld-D.adj-lo.parquet`
+> (spec `applies_to_forecast_start` re-anchored to 2026-07-06; supersedes the earlier
+> `…adj-lmo.parquet` at 06-29). The **active** artifact is
 > `mozillaonline_migration_model.official.2026-06-29.parquet` (from `source_data/mozilla_online_forecast_jul.csv`
 > via `build_official_series.py`; Dec-15 28d-MA ~567K). OS scope is **modern_windows-only by
 > measurement** (winX users are pinned on Firefox too old to receive the migrating build). The

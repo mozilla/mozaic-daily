@@ -1,0 +1,4 @@
+series,measurement_date,current_july,prior_june,delta_vs_june,target,vs_target
+Desktop,2026-12-15,48585483,48334362,251121,48584362,1121
+Mobile,2026-12-15,17923869,17511100,412768,,
+ALL,2026-12-15,66509352,65845462,663890,,

@@ -4,7 +4,7 @@ Working doc for the July forecast cycle. Tracks every factor we want to consider
 its modeling approach, the data we need, and status. Update status inline as we go.
 
 - **Branch:** `july-forecast` (off `june-forecast`)
-- **Forecast start date:** TBD — confirm the run date (June ran with `forecast_start_date = 2026-05-26`; July is likely ~2026-06-26/30).
+- **Forecast start date:** `2026-07-06` (both platforms re-anchored to the freshest complete data, training_end 2026-07-05). Desktop parameter search + lock happened at this date; mobile refreshed to it too.
 - **Created:** 2026-06-26
 
 Status legend: `TODO` · `INVESTIGATING` · `MODELING` · `BLOCKED(reason)` · `DECIDED` · `DONE` · `DROPPED`
@@ -70,11 +70,14 @@ MozillaOnline is migrating onto Firefox desktop. Model as an **overlay**, same b
 > reuse instructions. The one open modeling decision is segment scope (modern_windows-only ⇒
 > identical to `l`, vs all-OS ⇒ small multi-segment allocation).
 
-### D3. Windows 10 migration headwinds — `TODO`
-Existing `adj-h` headwind models Win10→Win11 attrition. **Revisit the anchor magnitude** based on observed Win10 performance.
-- [ ] Pull recent Win10 vs modern_windows DAU trajectory; compare realized attrition vs the June headwind anchor (June desktop anchor `-1,408,000`; see `project_june_thresh_aligned_build` / `project_june_gap_resolution`).
-- [ ] June concluded the residual ~75–82k Dec-15 gap was a real Win10 headwind Prophet was absorbing, and that `adj-h` should **attenuate as the headwind shows up in data** — check whether it now appears in the actuals and resize/retire accordingly.
-- [ ] Update `data-official/2026-07/adjustments/headwind.json`.
+### D3. Windows 10 migration headwinds — `DONE 2026-07-07`
+`adj-h` desktop anchor **softened to −1,345,000** at the Dec-15 anchor (from June's −1,420,000, in two
+steps this cycle: −1,370,000, then a final **+25k add-back** to −1,345,000). Rationale: re-anchoring to
+fresh data (2026-07-06) showed Prophet has partly learned the Win10 decline from recent actuals, so the
+exogenous headwind can attenuate — consistent with June's conclusion that `adj-h` should shrink as the
+headwind shows up in the data. The +25k also closed the residual gap of the desktop parameter search to
+the 48,584,362 target (final desktop Dec-15 = 48,585,483). Mobile anchor unchanged (−27,162). Spec:
+`data-official/2026-07/adjustments/headwind.json`.
 
 ### D4. Telemetry opt-out via deletion-request rate — `HANDED OFF (exploratory, likely out of July timebox)`
 Users turning telemetry off may be artificially depressing measured DAU. Set up as a standalone investigation project.
@@ -138,8 +141,15 @@ Mobile is in scope of the same telemetry-opt-out investigation (`~/work/experime
 We now have ~Apr–June actuals; sanity-check June's delivered curve against realized DAU (`csv-vs-actuals` research topic; `project_actuals_vs_april_overlap`).
 - **User caveat:** the forecast is *expected* to sit **below** actuals because the **MozillaOnline migration ramp was deliberately conservative** (slower than what the data already shows). We knew this and don't expect a match — so validation is genuinely hard here; a forecast-below-actual gap is not by itself a defect. Focus validation on shape/trend rather than level-matching where the MozillaOnline overlay dominates (i.e. CN).
 
-### S2. Parameters decision — `TODO` (expected stable)
-**User:** params "should be mostly stable, though we'll see what we see." Default: **reuse June** (`forecast-parameters/2026-05-26.md` — desktop cps=0.15983/thresh=-0.05/recent13, mobile cps=0.02/thresh=-0.032/recent13), copy to `forecast-parameters/<DATE>.md`. Revisit only if S1 surfaces something. (No Iran-synthetic regeneration needed — that path is being retired, §0.)
+### S2. Parameters decision — `DONE 2026-07-07`
+Original plan was to reuse June. In practice a **desktop parameter search** was run (after re-anchoring
+to 2026-07-06) to lift the Dec-15 KPI toward the 48,584,362 target — see
+`research/param-scans/desktop_gradient_round{1,2,3,4}.ipynb` and `scripts/run_desktop_gradient.py`.
+**Locked desktop params: `cps=0.08983, changepoint_range=0.65, holiday_threshold=−0.032 (center)`**
+(other knobs default); holiday radii deliberately left at default (moving them only gains KPI by
+desensitizing holiday detection). **Mobile:** `grad_moderate` grid params (`cps=0.035, cpr=0.75,
+thresh=−0.055`) + `adj-m`, per `mobile_refresh_2026-07-06/`. June baseline params were
+`forecast-parameters/2026-05-26.md`. (No Iran-synthetic regeneration needed — retired, §0.)
 
 ### S3. Holiday calendar refresh — `TODO` (notes in ~/work/holiday-corrected)
 **User:** refresh the calendar; lots of notes in `~/work/holiday-corrected`. Findings from that repo:
