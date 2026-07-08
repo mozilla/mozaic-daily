@@ -118,6 +118,23 @@ ROUND3_PROBES = [
     ("combo__cps05_cpr45_thr027", {CPS: 0.05, CPR: 0.45, THR: -0.027}),
 ]
 
+# --- Round 4: cps × cpr 2-D grid with holiday_threshold LOCKED at center (-0.032, not overridden).
+# Answers "best achievable with cps+cpr together" near their individual peaks (cps~0.09, cpr~0.55),
+# mapping the (negative) interaction. Plus two boundary checks. Same re-anchored data (2026-07-06). ---
+ROUND4_PROBES = [
+    ("combo__cps08983_cpr55", {CPS: 0.08983, CPR: 0.55}),
+    ("combo__cps08983_cpr60", {CPS: 0.08983, CPR: 0.60}),
+    ("combo__cps08983_cpr65", {CPS: 0.08983, CPR: 0.65}),
+    ("combo__cps10983_cpr55", {CPS: 0.10983, CPR: 0.55}),
+    ("combo__cps10983_cpr60", {CPS: 0.10983, CPR: 0.60}),
+    ("combo__cps10983_cpr65", {CPS: 0.10983, CPR: 0.65}),
+    ("combo__cps12983_cpr55", {CPS: 0.12983, CPR: 0.55}),
+    ("combo__cps12983_cpr60", {CPS: 0.12983, CPR: 0.60}),
+    ("combo__cps12983_cpr65", {CPS: 0.12983, CPR: 0.65}),
+    ("combo__cps07_cpr65", {CPS: 0.07, CPR: 0.65}),        # boundary: aggressive cps + mild cpr
+    ("combo__cps13983_cpr55", {CPS: 0.13983, CPR: 0.55}),  # boundary: mild cps + aggressive cpr
+]
+
 
 def build_probes(round_num: int) -> list[tuple[str, dict]]:
     if round_num == 1:
@@ -130,6 +147,8 @@ def build_probes(round_num: int) -> list[tuple[str, dict]]:
         return ROUND2_PROBES
     if round_num == 3:
         return ROUND3_PROBES
+    if round_num == 4:
+        return ROUND4_PROBES
     raise ValueError(f"unknown round: {round_num}")
 
 
@@ -167,7 +186,7 @@ def run_probe(round_dir: Path, forecast_start: str, raw_cache_dir: Path | None,
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--round", type=int, default=2, choices=[1, 2, 3])
+    parser.add_argument("--round", type=int, default=2, choices=[1, 2, 3, 4])
     parser.add_argument("--forecast-start-date", default="2026-07-06")
     parser.add_argument("--raw-cache-dir", type=Path, default=None,
                         help="Dir with mozaic_parts.raw.legacy.desktop.DAU.parquet (skip BQ query).")
