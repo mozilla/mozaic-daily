@@ -61,7 +61,21 @@ duplicate, or diagnostic (see "Present vs Archived" at the bottom):
   currently reads the two per-platform parquets (`desktop_locked/`, `mobile_refresh_2026-07-06/`)
   directly.
 - Per-country no-headwind CSVs (June had them under `csv/per_country/`) not yet regenerated for July.
-- Archive this cycle to GCS (`july-2026/`) at button-down.
+- Archive this cycle to GCS (`july-2026/`) at button-down. **Done** (2026-07-08).
+
+## Present vs Archived
+
+Cycle archived to `gs://…/july-2026/data-official/2026-07/` at button-down; the full tree also
+remains in the `july-forecast` branch.
+
+- **Present (on disk):** the canonical working set listed at the top (desktop_locked +
+  mobile_refresh forecast parquets + sidecars, `csv/`, `kpi_sheet/`, adjustment specs, `iran_fill/`
+  specs, canonical/review notebooks) plus the small `2026-06-29.gm+ld-D+NP.*` combined parquets
+  (kept — they are the **new_profiles source** the canonical notebook carries) and the wired +
+  candidate `marketing/` lift parquets.
+- **Archived to GCS, removed from disk:** `desktop_lo_rerun/` (superseded pre-lock desktop rerun,
+  669M pkl), `mobile_refresh_2026-07-06/…/mozaic_objects.*.pkl` (872M) + its raw parts parquet,
+  `iran_fill/_draft/`, and the repo-root `2026-06-29` intermediates (`july-2026/root_intermediates_2026-06-29/`).
 
 ## Where new files go
 

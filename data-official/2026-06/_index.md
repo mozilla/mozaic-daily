@@ -51,3 +51,15 @@ The intermediate composite CSVs (`june_composite_forecast_28ma.adj-h.csv`, `june
 
 - `stakeholder_scenarios/` + `stakeholder_scenarios_2026-06.zip` — pre-packaged scenario CSVs for leadership review. `stakeholder_targets.json` defines the Dec-15 mobile/desktop low/baseline/stretch values used as marker points in the canonical notebook plots.
 - `parameters.json` — top-level config snapshot.
+
+## Present vs Archived
+
+- **Present (on disk):** all final deliverables — canonical + producer notebooks, `csv/`,
+  `handoff/` contents, `marketing/`, `adjustments/`, `kpi_sheet/`, `stakeholder_scenarios/`,
+  `update_scenarios/`, every forecast **`.parquet`** + sidecar, and the composite CSVs. June is the
+  retained N-1 comparison baseline.
+- **Archived to GCS (`gs://…/june-2026/data-official/2026-06/`), removed from disk:** the fitted
+  **`.pkl`** Mozaic objects (the ~11G bulk) and the regenerable `.zip` bundles
+  (`update_scenarios.zip`, `handoff/*.zip`, `csv/per_country*.zip`) — plus the editor backup
+  `june_canonical_v2026-05-27.copy.ipynb`. Pull a `.pkl` back only to re-fit from pickled state.
+  The full June tree (incl. pkls) also remains in the `july-forecast` branch history.

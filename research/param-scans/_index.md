@@ -1,14 +1,26 @@
 # `research/param-scans/` — Prophet parameter sensitivity exploration
 
-Sweeps over `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold`, and `clip` to understand how the model responds. Desktop-only (mobile's parameter search lives elsewhere — see scope discussion in CLAUDE.md).
+Sweeps over `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold`, `changepoint_range`, and
+`clip` to understand how the model responds. Desktop sweeps live at this level
+(`desktop_gradient_round{1..4}.ipynb`); the July **mobile** grid search lives in `mobile-july/`.
+
+## Present vs Archived
+
+- **Present (on disk):** the analysis notebooks (`param_scan_exploration.ipynb`,
+  `desktop_gradient_round{1..4}.ipynb`), `mobile-july/` notebooks + `_index.md` + `plots/` + the
+  per-config `parameters.json`/`*.meta.json` sidecars (the record of what each config produced).
+- **Archived to GCS (`gs://…/july-2026/param-scans/`), removed from disk:** the multi-GB sweep
+  **`results/`** and `mobile-july/results/` forecast-output blobs. Regenerable via the scan drivers
+  below, but re-running is compute-expensive — pull from GCS to reuse. Sidecar `.meta.json` +
+  `parameters.json` for each config remain on disk so the search is still legible without the blobs.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `param_scan_exploration.ipynb` | Analysis notebook; reads from `results/` and `pinned/` |
-| `results/` | Output of `scripts/run_param_scan.py` — unpinned wide sweep. **Gitignored, regenerable.** |
-| `pinned/` | Output of `scripts/run_pinned_scan.py` — curated subset reusing the April changepoints pkl. **Gitignored, regenerable.** |
+| `param_scan_exploration.ipynb`, `desktop_gradient_round{1..4}.ipynb` | Desktop analysis notebooks |
+| `mobile-july/` | July mobile grid search (notebooks + sidecars present; `results/` blobs archived) |
+| `results/`, `pinned/` | Output of `scripts/run_param_scan.py` / `run_pinned_scan.py`. **Archived to GCS; regenerable.** |
 
 ## Regenerating
 

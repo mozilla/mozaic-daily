@@ -11,16 +11,23 @@ The split between `data-official/{YYYY-MM}/` and `research/{topic}/` is the proj
 
 Add a new topic cluster here when work spans more than one month or doesn't tie to a specific forecast cycle. Add an `_index.md` to it. Inside the cluster, organize by version (`v1-convolution/`, `v2-real-data/`) when one approach supersedes another so the lineage stays legible.
 
-## Clusters
+## Clusters (present on disk)
 
 | Topic | What it covers |
 |---|---|
-| `iran/` | Internet-shutdown workaround: spec, synthetic DAU methodology, partial-recovery model |
-| `marketing-lift/` | Fenix Android paid-marketing DAU lift; v1 convolution (superseded) + v2 real-data (current) |
-| `april-vs-june-mechanism/` | Why June forecast levels lower than April; threshold-matching, changepoint pinning investigations |
-| `param-scans/` | Prophet `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold` sensitivity exploration |
+| `marketing-lift/` | Fenix Android paid-marketing DAU lift; **v2 real-data (current)**. (v1 convolution retired — archived.) |
+| `param-scans/` | Prophet param sensitivity exploration + `mobile-july/` grid search. Notebooks/tooling present; **the multi-GB sweep `results/` are archived to GCS** (regenerable). |
 | `headwinds/` | Linear-ramp profile explorations for the `h` (headwinds) adjustment |
-| `csv-vs-actuals/` | Validates exported forecast CSVs against actual DAU from BigQuery before release |
+| `csv-vs-actuals/` | Validates exported forecast CSVs against actual DAU from BigQuery before release (per-cycle) |
+| `ma-seam-turbulence/` | Diagnosis + backtest behind the `display_ma` seam fix shipped in `data-official/2026-06/export_canonical_curves.py` (test-locked). |
+
+## Archived (GCS — pull back only for prior art)
+
+Retired/superseded investigations were removed from the working tree at the July button-down and live
+in `gs://moz-data-science-brwells-bucket/mozaic-daily-archive/research-superseded/` (and in the
+`july-forecast` branch history): `iran/` (shutdown workaround — superseded by the in-package
+counterfactual fill), `marketing-lift/v1-convolution/`, `april-vs-june-mechanism/`,
+`desktop-gap-decomp/`, `country-overrides/`.
 
 ## Conventions inherited from `data-official/`
 
