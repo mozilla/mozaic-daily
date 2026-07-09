@@ -35,7 +35,24 @@ data-official/
       mozaic_daily_forecast.<date>.gm-D.adj-m.parquet          # marketing-lift applied
       ...
     june_composite_forecast_28ma.adj-hm.csv                    # headwinds + marketing-lift
+  2026-07/                          # July 2026 cycle (forecast_start 2026-07-06, both platforms)
+    desktop_locked/                                            # LOCKED desktop, adj-lo (l+o overlays)
+      mozaic_daily_forecast.2026-07-06.ld-D.adj-lo.parquet
+    mobile_refresh_2026-07-06/<config>/                        # refreshed mobile, adj-m
+      mozaic_daily_forecast.2026-07-06.gm-D.adj-m.parquet
+    adjustments/headwind.json                                  # h spec
+    launch_on_login/lol.json                                   # l spec (desktop tailwind)
+    mozillaonline/mozillaonline.json                           # o spec (CN desktop migration)
+    marketing/marketing.json                                   # m spec (mobile lift)
+    iran_fill/                                                 # Iran counterfactual-fill specs
+    csv/july_canonical_curves.csv                              # public-facing canonical export
+    _index.md                                                  # START HERE for the cycle
 ```
+
+**Working-tree scope:** only the **current cycle + N-1** stay on disk in full; older cycles and all
+superseded/intermediate large artifacts are archived to GCS
+(`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/{cycle}/`) and recoverable from the
+`july-forecast` branch history. See each cycle's `_index.md` "Present vs Archived" section.
 
 ## Naming convention (load-bearing files only)
 

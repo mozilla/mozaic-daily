@@ -11,7 +11,7 @@ import holidays
 import pandas as pd
 from unittest.mock import MagicMock
 
-from mozaic_daily.forecast import get_forecast_dfs, get_desktop_forecast_dfs, get_mobile_forecast_dfs
+from mozaic_daily.forecast import get_forecast_dfs, get_desktop_forecast_dfs, get_mobile_forecast_dfs, ForecastResult
 from mozaic.models import desktop_forecast_model, mobile_forecast_model
 from mozaic.holiday_smart import DesktopBugs
 from tests.conftest import generate_forecast_data
@@ -113,9 +113,9 @@ def test_get_forecast_dfs_calls_curate_mozaics(mocker, sample_datasets):
 
 
 def test_get_forecast_dfs_returns_metric_dataframes(mocker, sample_datasets):
-    """Verify output is dict mapping metric names to DataFrames.
+    """Verify output is a ForecastResult whose .dfs maps metric names to DataFrames.
 
-    Should return DataFrame with columns: target_date, country, population, source, value
+    Each df should have columns: target_date, country, population, source, value.
 
     Failure indicates output structure changed, breaking downstream code.
     """
@@ -155,23 +155,25 @@ def test_get_forecast_dfs_returns_metric_dataframes(mocker, sample_datasets):
         '2024-12-31'
     )
 
-    # Verify output is dict
-    assert isinstance(result, dict), f"Expected dict output, got {type(result)}"
+    # Verify output is a ForecastResult holding the metric dict in .dfs
+    assert isinstance(result, ForecastResult), f"Expected ForecastResult output, got {type(result)}"
+    dfs = result.dfs
+    assert isinstance(dfs, dict), f"Expected result.dfs to be a dict, got {type(dfs)}"
 
     # Verify metrics present
     expected_metrics = ['DAU', 'New Profiles', 'Existing Engagement DAU', 'Existing Engagement MAU']
     for metric in expected_metrics:
-        assert metric in result, f"Expected metric '{metric}' in output"
-        assert isinstance(result[metric], pd.DataFrame), (
-            f"Expected result['{metric}'] to be a DataFrame, got {type(result[metric])}"
+        assert metric in dfs, f"Expected metric '{metric}' in output"
+        assert isinstance(dfs[metric], pd.DataFrame), (
+            f"Expected result.dfs['{metric}'] to be a DataFrame, got {type(dfs[metric])}"
         )
 
         # Verify DataFrame has expected columns
         expected_cols = ['target_date', 'country', 'population', 'source', 'value']
         for col in expected_cols:
-            assert col in result[metric].columns, (
+            assert col in dfs[metric].columns, (
                 f"Expected column '{col}' in {metric} DataFrame. "
-                f"Found columns: {result[metric].columns.tolist()}"
+                f"Found columns: {dfs[metric].columns.tolist()}"
             )
 
 

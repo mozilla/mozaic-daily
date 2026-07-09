@@ -12,7 +12,7 @@ from mozaic_daily.queries import (
     Platform, Metric, TelemetrySource, DataSource,
     DateConstraints, AvailabilityCheckQuery, get_availability_check_queries,
 )
-from mozaic.holiday_smart import DesktopBugs
+from mozaic.holiday_smart import DesktopBugs, MobileEvents
 from mozaic_daily.data import get_queries
 from mozaic_daily.config import get_runtime_config, build_filter_code
 
@@ -573,16 +573,19 @@ def test_get_availability_check_queries_no_duplicate_combinations():
 
 # ===== ADDITIONAL_HOLIDAYS TESTS =====
 
-def test_additional_holidays_only_on_legacy_desktop():
-    """Verify ADDITIONAL_HOLIDAYS maps only legacy_desktop to [DesktopBugs].
+def test_additional_holidays_mapping():
+    """Verify ADDITIONAL_HOLIDAYS maps legacy_desktop→[DesktopBugs] and glean_mobile→[MobileEvents].
 
-    Failure indicates holidays assigned to wrong data source or missing for legacy_desktop.
+    Failure indicates holidays assigned to the wrong data source or a missing/extra entry.
     """
-    assert set(ADDITIONAL_HOLIDAYS.keys()) == {DataSource.LEGACY_DESKTOP}, (
-        f"Expected ADDITIONAL_HOLIDAYS only for LEGACY_DESKTOP, got: {set(ADDITIONAL_HOLIDAYS.keys())}"
+    assert set(ADDITIONAL_HOLIDAYS.keys()) == {DataSource.LEGACY_DESKTOP, DataSource.GLEAN_MOBILE}, (
+        f"Expected ADDITIONAL_HOLIDAYS for LEGACY_DESKTOP + GLEAN_MOBILE, got: {set(ADDITIONAL_HOLIDAYS.keys())}"
     )
     assert ADDITIONAL_HOLIDAYS[DataSource.LEGACY_DESKTOP] == [DesktopBugs], (
         f"Expected [DesktopBugs] for LEGACY_DESKTOP, got: {ADDITIONAL_HOLIDAYS[DataSource.LEGACY_DESKTOP]}"
+    )
+    assert ADDITIONAL_HOLIDAYS[DataSource.GLEAN_MOBILE] == [MobileEvents], (
+        f"Expected [MobileEvents] for GLEAN_MOBILE, got: {ADDITIONAL_HOLIDAYS[DataSource.GLEAN_MOBILE]}"
     )
 
 

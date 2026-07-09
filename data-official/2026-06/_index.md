@@ -1,5 +1,10 @@
 # `data-official/2026-06/` — June 2026 forecast cycle
 
+> **Retention:** June is the **N-1 reference cycle** — its final deliverables + canonical parquets
+> stay on disk as the prior-cycle comparison baseline. Large intermediates (fitted `.pkl`, scratch
+> parquets, `.zip` bundles) are archived to `gs://…/june-2026/` and removed from the pruned working
+> branch (`clean-slate`); they remain in the `july-forecast` branch. See "Present vs Archived" at the bottom.
+
 Forecast_start_date evolved across the cycle: **2026-05-13** initial → **2026-05-17** (cap-426 fix) → **2026-05-21** (param-scan rerun) → **2026-05-26** (canonical "best for now" handoff). Applies `h` (headwinds) on desktop+mobile and `m` (marketing-lift) on mobile, producing `.adj-hm.` composites.
 
 ## Canonical handoff (most recent — use this)

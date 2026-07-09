@@ -1309,5 +1309,5 @@ def test_real_mozillaonline_spec_loads_as_overlay():
     assert spec["type"] == "desktop_overlay"
     assert spec["allocation"]["flag_column"] == "modern_windows"
     assert spec["value_column"] == "migration_dau_daily"
-    assert spec["applies_to_forecast_start"] == "2026-06-29"
+    assert spec["applies_to_forecast_start"] == "2026-07-06"
     assert spec["scope"]["exclude_countries"] == ["IR"]

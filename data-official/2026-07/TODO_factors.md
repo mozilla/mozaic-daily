@@ -137,7 +137,10 @@ Mobile is in scope of the same telemetry-opt-out investigation (`~/work/experime
 
 ## Cross-cutting
 
-### S1. Validate June forecast vs realized actuals — `TODO` (note: hard to interpret)
+### S1. Validate June forecast vs realized actuals — `DEFERRED (next cycle)`
+*Deferred at July button-down: genuinely hard to interpret (MozillaOnline ramp deliberately
+conservative → forecast expected below actuals), and not blocking July delivery. Revisit as an
+Aug-cycle validation with more accumulated actuals. Tooling lives in `research/csv-vs-actuals/`.*
 We now have ~Apr–June actuals; sanity-check June's delivered curve against realized DAU (`csv-vs-actuals` research topic; `project_actuals_vs_april_overlap`).
 - **User caveat:** the forecast is *expected* to sit **below** actuals because the **MozillaOnline migration ramp was deliberately conservative** (slower than what the data already shows). We knew this and don't expect a match — so validation is genuinely hard here; a forecast-below-actual gap is not by itself a defect. Focus validation on shape/trend rather than level-matching where the MozillaOnline overlay dominates (i.e. CN).
 
@@ -151,7 +154,9 @@ desensitizing holiday detection). **Mobile:** `grad_moderate` grid params (`cps=
 thresh=−0.055`) + `adj-m`, per `mobile_refresh_2026-07-06/`. June baseline params were
 `forecast-parameters/2026-05-26.md`. (No Iran-synthetic regeneration needed — retired, §0.)
 
-### S3. Holiday calendar refresh — `TODO` (notes in ~/work/holiday-corrected)
+### S3. Holiday calendar refresh — `DEFERRED (next cycle)` (notes in ~/work/holiday-corrected)
+*Deferred at July button-down: July shipped on mozaic's native `get_calendar()`; the
+holiday-corrected pull-in is a scoped piece of work for the Aug cycle. Notes preserved below.*
 **User:** refresh the calendar; lots of notes in `~/work/holiday-corrected`. Findings from that repo:
 - The corrected calendar isn't an exported artifact — it lives in code:
   - `src/holiday_corrected/calendars/tables.py` — year-by-year moving-holiday dicts through 2026 (Eid al-Fitr/Adha, Lunar New Year, Vesak, Mid-Autumn, Hung Kings, Ashura, Arbaeen, Mawlid, Tazaungdaing, Thadingyut, Durga Puja).
@@ -161,8 +166,9 @@ thresh=−0.055`) + `adj-m`, per `mobile_refresh_2026-07-06/`. June baseline par
 - Verify the warmup-clamp fix (mozaic SHA `e97413b9`) is in the installed mozaic — it materially changed year-end holiday lift for leading-zero series.
 - [ ] Decide scope of the refresh and execute before the forecast run.
 
-### S4. Pipeline / data-landing health check — `TODO`
+### S4. Pipeline / data-landing health check — `DEFERRED (next cycle)`
 Pre-flight that training data has landed through `training_end_date` for all tables before the ~20–30 min runs (skill pre-flight + GCP ADC token check).
+*Deferred at July button-down: nice-to-have hardening, not required for the delivered July forecast.*
 
 ### S5. Button down June to GCS — `TODO`
 Archive `data-official/2026-06/` large artifacts (pkl/parquet/zip) to `gs://moz-data-science-brwells-bucket/mozaic-daily-archive/june-2026/` (single-process gsutil; CLAUDE.md GCS section). Once June review is closed.

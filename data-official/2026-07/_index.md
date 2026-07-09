@@ -2,6 +2,24 @@
 
 Active cycle (branch `july-forecast`, off `june-forecast`).
 
+## ✅ Current usable working set (the canonical July outputs)
+
+These are the up-to-date, load-bearing files. Everything else in this cycle is an intermediate,
+duplicate, or diagnostic (see "Present vs Archived" at the bottom):
+
+- **Desktop forecast** — `desktop_locked/mozaic_daily_forecast.2026-07-06.ld-D.adj-lo.parquet`
+  (+ sidecar, `parameters.json`, `README.md`). Locked model, `l`+`o` overlays, pre-headwind.
+- **Mobile forecast** — `mobile_refresh_2026-07-06/cps0.035_thresh055_recent13_cpr0.75_ncp25_clip0.6/mozaic_daily_forecast.2026-07-06.gm-D.adj-m.parquet`
+  (+ sidecar, `parameters.json`).
+- **Canonical curves / headline** — `csv/july_canonical_curves.csv`, `csv/july_dec15_summary.csv`,
+  `kpi_sheet/official_forecast_data.2026-07-06.csv`.
+- **Adjustment specs (wired)** — `adjustments/headwind.json` (`h`), `launch_on_login/lol.json` (`l`),
+  `mozillaonline/mozillaonline.json` (`o`), `marketing/marketing.json` (`m`, → wired lift model
+  `marketing/marketing_lift_model.total.2026-06-29.*`).
+- **Iran fill (wired, package-side copy is authoritative)** — `iran_fill/iran_fill.*.parquet` + specs.
+- **Producers** — `july_canonical_v2026-06-29.ipynb`, `regenerate_canonical_forecast.py`;
+  review notebook `canonical_review_2026-07-06.ipynb`.
+
 ## What's here
 
 - **`TODO_factors.md`** — the cycle's planning doc: every factor under consideration
@@ -28,10 +46,12 @@ Active cycle (branch `july-forecast`, off `june-forecast`).
 - **`csv/`** — public-facing canonical exports: `july_canonical_curves.csv` (daily 28d-MA — actuals +
   June prior + July current, per desktop/mobile/ALL) and `july_dec15_summary.csv`.
 - **`adjustments/`** — headwind (`h`) spec (desktop −1,345,000 / mobile −27,162 at the Dec-15 anchor).
-- **`iran_gap_holiday_mozaic_handoff.md`** — feature-request handoff to the
-  `mozaic-forecasting` package: add a training-exclusion ("gap holiday") so the Iran
-  internet-shutdown window is masked out of fitting instead of corrupting the trend.
-  (Companion handoff for the telemetry opt-out investigation lives outside this repo at
+- **`iran_gap_holiday_mozaic_handoff.md`** — *historical* handoff. The shutdown gap is **not**
+  handled by a NaN-mask "gap holiday"; the shipped mechanism is a **counterfactual fill** (train on a
+  synthetic "what Iran would have been with no shutdown" series, real telemetry kept as actuals),
+  which ships inside the mozaic package and auto-applies via `populate_tiles(data_source=...)`. See
+  `TODO_factors.md` §0 and `iran_fill/`. (This doc's original gap-holiday framing was superseded.
+  Companion telemetry-opt-out handoff lives outside the repo at
   `~/work/experiments/telemetry-optout-dau-impact/HANDOFF.md`.)
 
 ## Open / follow-ups

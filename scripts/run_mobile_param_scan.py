@@ -99,7 +99,13 @@ def _make_process_data_source_with_config(mobile_config: MobileModelConfig):
         forecast_end,
         training_end_date=None,
         marketing_spec_path=None,
+        lol_spec_path=None,
+        mozillaonline_spec_path=None,
     ):
+        # lol_spec_path / mozillaonline_spec_path are the desktop `l`/`o` overlays,
+        # threaded through by main.generate_forecasts. This scan is glean_mobile-only,
+        # so — exactly like the real process_data_source — they are no-ops here and are
+        # accepted purely for signature parity. Kept in sync with main.py by construction.
         import pandas as pd
 
         platform = data_source.platform

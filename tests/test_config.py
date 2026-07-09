@@ -72,8 +72,13 @@ def test_runtime_config_override_preserves_countries():
     assert config_default['country_string'] == config_override['country_string']
 
 
-def test_iran_not_in_countries():
-    """Verify IR is excluded from country configuration due to internet shutdown."""
+def test_iran_in_countries():
+    """Verify IR is present in country configuration.
+
+    Iran's internet returned and fully recovered (2026-05-26); as of the July 2026 cycle IR is
+    queried natively (added back to top_DAU_markets), and the shutdown gap is corrected by an
+    in-package counterfactual fill rather than by excluding IR. See 2026-07/TODO_factors.md §0.
+    """
     config = get_runtime_config()
-    assert 'IR' not in config['countries'], "IR should be excluded from top_DAU_markets"
-    assert "'IR'" not in config['country_string'], "IR should not appear in country_string"
+    assert 'IR' in config['countries'], "IR should be present in top_DAU_markets (queried natively)"
+    assert "'IR'" in config['country_string'], "IR should appear in country_string"
