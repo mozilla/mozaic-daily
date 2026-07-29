@@ -7,24 +7,48 @@ curve is added back to the per-country forecast.
 | file | role |
 |---|---|
 | `lol.json` | the spec — gated on `applies_to_forecast_start: 2026-07-28` |
-| `lol_tailwind.2026-07-29.parquet` | **active** curve (`lol_lift_daily`), 2026-01-01 → 2027-12-31 |
-| `lol_tailwind.2026-07-29.model_meta.json` | model provenance for the active curve |
+| `lol_tailwind.2026-07-29.cap180k.parquet` | **ACTIVE** curve — 180K ceiling, under review |
+| `lol_tailwind.2026-07-29.cap180k.model_meta.json` | provenance for the active curve |
+| `lol_tailwind.2026-07-29.parquet` | **alternate** — 165K ceiling, one revert away |
+| `lol_tailwind.2026-07-29.model_meta.json` | provenance for the 165K curve |
 | `lol_tailwind.2026-06-29.*` | **superseded** July curve (125K cap) — kept, not deleted |
-| `plots/lol_tailwind_curve.png` | measured excess vs delivered curve |
-| `LOL_165K_HANDOFF.md` | the brief this rebuild was executed from |
+| `plots/lol_tailwind_curve{,.cap180k}.png` | measured excess vs delivered curve, per variant |
+| `LOL_165K_HANDOFF.md` | the brief the 2026-07-29 rebuild was executed from |
 
-## The curve (rebuilt 2026-07-29, 165K ceiling)
+## Which curve is active
 
-| span | value |
-|---|---|
-| ≤ 2026-05-07 | 0 (pre-rollout) |
-| 2026-05-08 → **2026-06-23** | **measured** — FF152-excluded, interpolated 7d trailing MA of the holdback-experiment excess; 130,296 at the last clean day |
-| 2026-06-24 → 2026-07-05 | **extrapolated** — linear ramp at 2,714/day (the recorded ~19,000/wk rise at the cutoff) |
-| 2026-07-06 → 2027-12-31 | flat at **165,000** |
+**Exactly one curve is live: whatever `lol.json` names in `data_file`.** Both 2026-07-29 variants share
+an anchor, a slope, and a producer — only the ceiling differs. Switching is a two-line edit:
 
-August's ceiling is 165,000; July's was 125,000. The old cap bit *below* the measurement
+```jsonc
+// 180K (current)                           // 165K
+"data_file": "lol_tailwind.2026-07-29.cap180k.parquet",
+"model_meta_file": "lol_tailwind.2026-07-29.cap180k.model_meta.json",
+// swap the ".cap180k" out of both values to go back to 165K
+```
+
+Nothing else changes — **leave `applies_to_forecast_start: "2026-07-28"` alone**. Overlay specs are
+matched by exact string equality on that field; a run at a date no spec claims applies **no** overlays
+and silently emits `.raw.` instead of `.adj-lo`. Update the `notes` field's "ACTIVE CURVE" sentence
+when you switch, and re-run the forecast — the curve is baked into the parquet, so a swap without a
+re-run changes nothing downstream.
+
+## The curves (both rebuilt 2026-07-29)
+
+Identical construction; the ceiling is the only difference.
+
+| span | 180K (active) | 165K |
+|---|---|---|
+| ≤ 2026-05-07 | 0 (pre-rollout) | 0 |
+| 2026-05-08 → **2026-06-23** | **measured** — FF152-excluded, interpolated 7d trailing MA; 130,296 at the last clean day | same |
+| 2026-06-24 → ramp end | **extrapolated** — linear at 2,714/day (recorded ~19,000/wk) | same |
+| ceiling first reached | **2026-07-12** | 2026-07-06 |
+| through 2027-12-31 | flat **180,000** | flat 165,000 |
+
+Both ceilings are reached before the 2026-07-27 training end, so both are fully in effect across the
+whole forecast horizon. July's ceiling was 125,000; it bit *below* the measurement
 (`measured_daily_excess_at_last_clean` was 138,376 while the curve read 125,000 from 2026-06-19), so
-un-clamping 2026-06-19 → 2026-06-23 was part of the rebuild.
+un-clamping 2026-06-19 → 2026-06-23 was part of the 2026-07-29 rebuild.
 
 **Which series the cap applies to.** `.clip(upper=cap)` is applied to the FF152-excluded, interpolated
 7d trailing MA — *not* the raw daily excess (138,376 at the cutoff) and *not* the raw 7d-MA including
@@ -38,35 +62,51 @@ holdback control group received the feature, so the counterfactual is permanentl
 telemetry can extend the clean window — querying recent data shows the excess "collapsing," which is
 an artifact of the control being treated, not a decay. Do not re-measure past that date.
 
+Note this means the ceiling choice is **entirely** an extrapolation judgement: 125K, 165K, and 180K are
+indistinguishable on measured data, which stops at 130,296.
+
 ## Conservatism
 
-The curve models no retention decay in either direction; the conservatism is entirely the **flat
+The curves model no retention decay in either direction; the conservatism is entirely the **flat
 ceiling**. The measured effect had *not* plateaued at the cutoff (still rising ~19K/wk) and is stopped
 dead anyway — growth we cannot validate is never extrapolated forward. An independent convolution
 model of the same effect (`~/work/launch-on-login/dau_model_convolution.ipynb`) lands near
-220,000/day, so 165,000 is a standing haircut of roughly 55K/day.
+220,000/day, so the standing haircut is ~40K/day at 180K and ~55K/day at 165K.
 
-Note the curve is not strictly monotone: the 7d-MA of the measured excess carries day-of-week residue,
+Neither curve is strictly monotone: the 7d-MA of the measured excess carries day-of-week residue,
 giving six small downward steps inside the measured window (2026-05-27 → 05-30 and 2026-06-21, 06-23;
 largest −1,207, ≈1% of level). That is smoothing noise, not a modelled drop-off. From 2026-06-24
-onward the curve is strictly non-decreasing.
+onward both curves are strictly non-decreasing.
 
 ## Provenance note for the August baseline
 
 The committed baseline sidecar
 `../desktop_baseline_2026-07-28/*/mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet.meta.json`
-records `lol.json` at `spec_sha1: 99d2bdb72d2c3595c074de27a22c9ebc3edeedba` — that is the 125K-curve
-version of the spec, which this rebuild replaced in place. The baseline forecast was built against the
-superseded curve; the `lol_tailwind.2026-06-29.*` files stay on disk so it remains reproducible.
+records `lol.json` at `spec_sha1: 99d2bdb72d2c3595c074de27a22c9ebc3edeedba` — the 125K-curve version of
+the spec, which the 2026-07-29 rebuild replaced in place. That baseline (Dec-15 28d-MA 48,520,714
+post-headwind) was built against the superseded curve; the `lol_tailwind.2026-06-29.*` files stay on
+disk so it remains reproducible. Every later `lol.json` edit moves the sha1 again, so treat the
+sidecar's value as "which curve that forecast saw," not as a check against the current file.
 
 ## Producer
 
 `~/work/launch-on-login/build_lol_tailwind.py`, parameterised on `--cap` / `--run-date` /
-`--ramp-slope-per-day` / `--out-dir` / `--meta-suffix`. Defaults reproduce the July 125K artifact
-byte-for-byte (verified: sha1 `03f21345268dfbdf7cb7b2df8203c35cc5c0ff86`); the pre-parameterisation
-copy is preserved at `~/work/launch-on-login/archive/build_lol_tailwind.2026-06-29.125k.py`. That
-directory is **not** a git repo — copy before editing. The exact invocation for the active curve is in
-`produced_by_invocation` in its model meta.
+`--ramp-slope-per-day` / `--out-dir` / `--meta-suffix` / `--name-suffix` / `--note`. Defaults reproduce
+the July 125K artifact byte-for-byte (verified: sha1 `03f21345268dfbdf7cb7b2df8203c35cc5c0ff86`); the
+pre-parameterisation copy is preserved at
+`~/work/launch-on-login/archive/build_lol_tailwind.2026-06-29.125k.py`. That directory is **not** a git
+repo — copy before editing.
 
-**Where new files go:** refreshed curve builds for this cycle (new dated parquet + model meta), and
-diagnostic plots under `plots/`.
+`--name-suffix` is what lets cap variants for one cycle coexist without overwriting each other's
+parquet, meta, *or* plot. The exact invocation for each curve is in `produced_by_invocation` in its
+model meta, so a new ceiling is one command:
+
+```bash
+python3 ~/work/launch-on-login/build_lol_tailwind.py --cap <N> --run-date 2026-07-29 \
+    --ramp-slope-per-day 2714.29 --name-suffix .cap<N>k \
+    --out-dir data-official/2026-08/launch_on_login --meta-suffix .model_meta.json \
+    --note "..."
+```
+
+**Where new files go:** further curve variants for this cycle (dated parquet + model meta, tagged with
+`--name-suffix`), and diagnostic plots under `plots/`.
