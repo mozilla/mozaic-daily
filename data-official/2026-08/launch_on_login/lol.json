@@ -1,0 +1,15 @@
+{
+  "type": "desktop_overlay",
+  "platform": "desktop",
+  "data_file": "lol_tailwind.2026-06-29.parquet",
+  "value_column": "lol_lift_daily",
+  "allocation": {
+    "flag_column": "modern_windows",
+    "key": "trailing_dau_share",
+    "window_days": 28
+  },
+  "model_meta_file": "lol_tailwind.2026-06-29.model_meta.json",
+  "applies_to_forecast_start": "2026-07-28",
+  "applies_to_data_source": "legacy_desktop",
+  "notes": "August 2026 cycle BASELINE. Launch-on-login (LOL) desktop DAU tailwind (adjustment code `l`), carried forward from July UNCHANGED so the August baseline isolates the effect of fresher data. The curve file is byte-identical to data-official/2026-07/launch_on_login/lol_tailwind.2026-06-29.parquet; only applies_to_forecast_start moved 2026-07-06 -> 2026-07-28. Bidirectional overlay on legacy_desktop DAU: the measured historical rise is subtracted from modern_windows training rows before mozaic (allocated across countries by trailing 28d modern_windows DAU share), then the capped curve is added back to the per-country forecast. Curve rises with the measured holdback-experiment excess (7d-MA) and is clamped flat at 125,000 DAU/day from 2026-06-19 through 2027-12-31. CARRY-FORWARD CAVEAT: training now extends to 2026-07-27, ~5 weeks past the curve's last measured day, so those extra training rows have the flat 125K MODELLED value subtracted rather than a measured one. Expected to be re-measured and swapped this cycle. Curve produced by ~/work/launch-on-login/build_lol_tailwind.py."
+}

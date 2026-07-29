@@ -1,0 +1,19 @@
+{
+  "type": "marketing_lift",
+  "platform": "mobile",
+  "data_file": "marketing_lift_model.total.2026-06-29.parquet",
+  "value_column": "marketing_lift_daily",
+  "allocation": {
+    "app_flag_column": "fenix_android",
+    "key": "trailing_dau_share",
+    "window_days": 28
+  },
+  "scope": {
+    "exclude_countries": [
+      "IR"
+    ]
+  },
+  "model_meta_file": "marketing_lift_model.total.2026-06-29.meta.json",
+  "applies_to_forecast_start": "2026-07-28",
+  "notes": "August 2026 cycle BASELINE. Daily DAU lift for the Fenix Android paid acquisition campaign (adjustment code `m`), carried forward from July UNCHANGED so the August baseline isolates the effect of fresher data. The curve file is byte-identical to data-official/2026-07/marketing/marketing_lift_model.total.2026-06-29.parquet; only applies_to_forecast_start moved 2026-07-06 -> 2026-07-28. Built June-anchored: L_july(d) = L_june(d) + (July CSV Total Paid DAU - June CSV Total Paid DAU). Allocation is the per-country share of Fenix Android DAU in a trailing 28-day window ending at training_end_date, frozen for the horizon. IR excluded (no paid spend there; Iran handled natively via the fill). CARRY-FORWARD CAVEATS: (1) training now extends to 2026-07-27, ~4 weeks past the curve's last measured day, so those extra training rows subtract MODELLED lift; (2) the curve ends 2026-12-31 and the applier fills missing dates with 0.0, so the lift drops to zero across 2027 -- pre-existing in July and harmless for the Dec-15 2026 KPI, but wrong if the 2027 horizon is ever read. Expected to be re-measured and swapped this cycle."
+}

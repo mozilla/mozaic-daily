@@ -112,7 +112,19 @@ def test_pipeline_completes_without_crashing(sample_checkpoint_files, mocker):
             'countries': {'US', 'DE', 'FR'},
             'country_string': "'DE', 'FR', 'US'",
         }
-        mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
+        # Patch the name bound in mozaic_daily.main, NOT mozaic_daily.config. main.py does
+        # `from .config import get_runtime_config`, so the reference is resolved at import time and
+        # patching the config module has no effect -- the pipeline would silently run against the
+        # LIVE runtime config (today's date) instead of the pinned one below. That in turn makes the
+        # test date-coupled to whatever adjustment specs exist on disk: once a spec claims
+        # `applies_to_forecast_start == yesterday`, the real overlays fire against these synthetic
+        # fixtures and blow up. Pinning to 2024-01-31 keeps the smoke tests deterministic.
+        # Reached via sys.modules because the dotted string 'mozaic_daily.main' resolves to the
+        # re-exported `main` FUNCTION (see mozaic_daily/__init__.py), not the module.
+        mocker.patch.object(
+            sys.modules['mozaic_daily.main'], 'get_runtime_config',
+            return_value=mock_runtime_config,
+        )
         _patch_availability_check(mocker)
         _patch_save_mozaic_objects(mocker)
 
@@ -175,7 +187,19 @@ def test_pipeline_calls_components_in_order(sample_checkpoint_files, mocker):
             'countries': {'US', 'DE'},
             'country_string': "'DE', 'US'",
         }
-        mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
+        # Patch the name bound in mozaic_daily.main, NOT mozaic_daily.config. main.py does
+        # `from .config import get_runtime_config`, so the reference is resolved at import time and
+        # patching the config module has no effect -- the pipeline would silently run against the
+        # LIVE runtime config (today's date) instead of the pinned one below. That in turn makes the
+        # test date-coupled to whatever adjustment specs exist on disk: once a spec claims
+        # `applies_to_forecast_start == yesterday`, the real overlays fire against these synthetic
+        # fixtures and blow up. Pinning to 2024-01-31 keeps the smoke tests deterministic.
+        # Reached via sys.modules because the dotted string 'mozaic_daily.main' resolves to the
+        # re-exported `main` FUNCTION (see mozaic_daily/__init__.py), not the module.
+        mocker.patch.object(
+            sys.modules['mozaic_daily.main'], 'get_runtime_config',
+            return_value=mock_runtime_config,
+        )
         _patch_availability_check(mocker)
         _patch_save_mozaic_objects(mocker)
 
@@ -321,7 +345,19 @@ def test_desktop_and_mobile_processed_separately(sample_checkpoint_files, mocker
             'countries': {'US', 'DE'},
             'country_string': "'DE', 'US'",
         }
-        mocker.patch('mozaic_daily.config.get_runtime_config', return_value=mock_runtime_config)
+        # Patch the name bound in mozaic_daily.main, NOT mozaic_daily.config. main.py does
+        # `from .config import get_runtime_config`, so the reference is resolved at import time and
+        # patching the config module has no effect -- the pipeline would silently run against the
+        # LIVE runtime config (today's date) instead of the pinned one below. That in turn makes the
+        # test date-coupled to whatever adjustment specs exist on disk: once a spec claims
+        # `applies_to_forecast_start == yesterday`, the real overlays fire against these synthetic
+        # fixtures and blow up. Pinning to 2024-01-31 keeps the smoke tests deterministic.
+        # Reached via sys.modules because the dotted string 'mozaic_daily.main' resolves to the
+        # re-exported `main` FUNCTION (see mozaic_daily/__init__.py), not the module.
+        mocker.patch.object(
+            sys.modules['mozaic_daily.main'], 'get_runtime_config',
+            return_value=mock_runtime_config,
+        )
         _patch_availability_check(mocker)
         _patch_save_mozaic_objects(mocker)
 

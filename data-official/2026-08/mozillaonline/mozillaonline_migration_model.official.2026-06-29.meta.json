@@ -1,0 +1,49 @@
+{
+  "model_name": "mozillaonline_migration_official",
+  "placeholder": false,
+  "description": "Brad Ochocki Szasz's OFFICIAL MozillaOnline -> canonical Firefox desktop migration model, ingested for the July 2026 forecast cycle. Supersedes the retired data-grounded placeholder (mozillaonline_migration_model.placeholder.2026-06-25). Daily migration DAU that flips from app_name='Firefox Desktop MozillaOnline' to app_name='Firefox Desktop' (the canonical KPI); an additive desktop tailwind, >92% China.",
+  "created_at_utc": "2026-07-07",
+  "mozaic_daily_git_hash": "3658158c8e7ec3c788e1213a3253100f2913b34e",
+  "forecast_start_date": "2026-06-29",
+  "telemetry_source": "legacy",
+  "source_export": "source_data/mozilla_online_forecast_jul.csv",
+  "source_export_sha1": "9010c9af445d0e631b5956944089eb9272964cfd",
+  "artifact_sha1": "8ec5ff6dec6c23b6d79eeb4877b3652abe7e5f19",
+  "coverage": {
+    "start_date": "2026-01-01",
+    "end_date": "2027-12-31",
+    "actuals_through": "2026-06-28",
+    "forecast_from": "2026-06-29",
+    "official_series_end": "2026-12-31",
+    "hold_flat_from": "2027-01-01",
+    "hold_flat_value": 550268.0,
+    "hold_flat_basis": "2026-12-31 28d-MA level; frozen through the 2027-12-31 horizon to avoid a zero-cliff"
+  },
+  "validation": {
+    "peak_ma28": 750974.0,
+    "peak_ma28_date": "2026-07-06",
+    "dec15_ma28": 567549.0,
+    "dec31_ma28": 550268.0,
+    "brad_dec15_target": 560000
+  },
+  "os_scope": {
+    "segment": "modern_windows",
+    "basis": "measured pre-transition (May 2-15 baseline) app_name='Firefox Desktop MozillaOnline' by os_version x app_version_major",
+    "modern_windows_recent_fx_share": 0.922,
+    "winX_recent_fx_share": 0.0097,
+    "rationale": "winX (older Windows) users are 99% pinned on ancient Firefox that cannot receive the migrating build, so they do not migrate; the migration originates from and lands in modern_windows. modern_windows-only is the correct allocation, not merely the simplest."
+  },
+  "geo_shares": {
+    "CN": 0.9277,
+    "HK": 0.0225,
+    "US": 0.0152,
+    "JP": 0.0098,
+    "SG": 0.0083,
+    "TW": 0.0041,
+    "DE": 0.0011,
+    "AU": 0.001,
+    "ROW": 0.0103
+  },
+  "geo_shares_source": "Retained from the placeholder's mozonline_geo_windows.csv baseline distribution (CN baseline 976,788 reproduced to the dollar by the July OS-split re-query). The official export is geo-aggregate, so these fixed shares are carried forward.",
+  "applier_contract": "Bidirectional overlay (code `o`): subtract migration_dau_daily * renormalized_country_share from modern_windows legacy_desktop training rows before mozaic, add the same back to modern_windows + ALL forecast rows. IR excluded (scope.exclude_countries); shares renormalized over training-present countries."
+}
