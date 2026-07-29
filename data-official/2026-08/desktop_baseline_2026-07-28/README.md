@@ -36,7 +36,7 @@ built-in counterfactual fill.
 
 **48,672,970** — **+87,487 (+0.18%)** vs July's delivered 48,585,483.
 
-Aug-22 summer trough: 43,453,752 (post-headwind).
+Aug-22 summer trough: **43,921,488** (post-headwind, seam-anchored ramp; it was 43,453,752 under the superseded 2026-04-01 ramp start).
 
 Attribution ledger:
 
@@ -48,8 +48,10 @@ Attribution ledger:
 | **Aug current (180K LOL, hw −1,245,000)** | **48,672,970** | +100,000 headwind |
 
 **Only the LOL step involved this parquet.** Raising the ceiling required rebuilding it (`l` is baked in);
-the headwind step did not — `h` is applied to the 28-day MA in the canonical notebook, never to the
-training frame, so its Dec-15 effect is exactly the anchor delta with no Prophet interaction.
+neither headwind change did — `h` is applied to the 28-day MA in the canonical notebook, never to the
+training frame. The amplitude change moves Dec-15 by exactly the anchor delta; the ramp re-anchoring
+(`start_date` 2026-04-01 → 2026-07-28, applied 2026-07-29) moves Dec-15 by **zero** and instead lifts the
+near term, removing the seam discontinuity. See `../adjustments/_index.md`.
 
 The LOL curve is +55,000/day higher than the baseline's at every forecast date and the realised effect was
 +52,256 — **95% pass-through**. The extra training subtraction covers only 39 recent days

@@ -2,12 +2,16 @@
 
 Active cycle (branch `august-forecast`, off `clean-slate`).
 
-## Status: LOL-180K + headwind −1,245,000 — ALTERNATE under evaluation, not a delivered forecast
+## Status: LOL-180K, headwind −1,245,000, seam-anchored ramp — ALTERNATE under evaluation
 
 Current build is at forecast_start **2026-07-28** (trained through 2026-07-27) with July's locked
-parameters, the **launch-on-login (`l`) ceiling raised 125,000 → 180,000 DAU/day**, and the **Win10
-headwind desktop anchor attenuated +100,000 to −1,245,000**. `o` and `m` are unchanged stale
-carry-forwards from July.
+parameters, the **launch-on-login (`l`) ceiling raised 125,000 → 180,000 DAU/day**, the **Win10 headwind
+desktop anchor attenuated +100,000 to −1,245,000**, and the **headwind ramp re-anchored to start at the
+seam** instead of 2026-04-01. `o` and `m` are unchanged stale carry-forwards from July.
+
+**The seam discontinuity is fixed.** It was 100.9% the headwind switching on at 45.7% of its ramp; the
+model was always continuous there. Re-anchoring removed it and lifted the near term without moving
+Dec-15 at all. See `adjustments/_index.md` and `desktop_adjustment_ladder.ipynb`.
 
 **Dec-15 2026 28d-MA (headwind applied):**
 
@@ -17,7 +21,9 @@ carry-forwards from July.
 | Mobile | 17,924,607 | 17,923,869 | +738 (+0.00%) |
 | **ALL** | **66,597,577** | **66,509,352** | **+88,225 (+0.13%)** |
 
-Aug-22 summer trough (28d-MA, post-headwind): Desktop 43,453,752 · Mobile 17,046,467 · ALL 60,500,219.
+Aug-22 summer trough (28d-MA, post-headwind): Desktop **43,921,488** · Mobile 17,056,672 · ALL 60,978,160.
+(Under the superseded ramp convention these were 43,453,752 / 17,046,467 / 60,500,219 — the re-anchoring
+lifted the trough by +467,737 desktop with no change at Dec-15.)
 
 ### Attribution ledger
 
@@ -34,10 +40,15 @@ residual is a sensible pass-through of the raw curve change: the curve is +55,00
 baseline's, realised +52,256 = **95%**, asserted to fall in 0.5–1.5×. Near-zero would mean the add-back
 leg never ran; far above 1 would mean the training subtraction is reshaping the trend unexpectedly.
 
-**The headwind step is exactly +100,000 by construction.** `h` is applied to the 28-day MA, never to the
-training frame, so its Dec-15 effect is the anchor delta with no Prophet interaction and it needs no
-model re-run. (At Aug-22 the ramp is ~55% elapsed, so the trough gains ~+55,400 of it, not the full
-+100,000.)
+**The headwind amplitude step is exactly +100,000 by construction.** `h` is applied to the 28-day MA,
+never to the training frame, so its Dec-15 effect is the anchor delta with no Prophet interaction and it
+needs no model re-run.
+
+**The ramp re-anchoring is absent from the ledger because its Dec-15 effect is exactly zero** — both
+conventions terminate on the same anchor. It is not a KPI change; it is a near-horizon reshaping
+(+569,419 at the seam, +467,737 at Aug-22, +305,046 at Oct-1) that also removed the seam discontinuity.
+Near-horizon numbers from this build are therefore **not** comparable to the earlier August builds; Dec-15
+is.
 
 ### Read this before quoting the headline
 
@@ -47,6 +58,7 @@ model re-run. (At Aug-22 the ramp is ~55% elapsed, so the trough gains ~+55,400 
 |---|---|--:|---|
 | `l` LOL ceiling | 125,000 → 180,000/day | +52,256 | extrapolation judgement |
 | `h` Win10 anchor | −1,345,000 → −1,245,000 | +100,000 | calibration judgement |
+| `h` ramp start | 2026-04-01 → seam | **0** | convention correction (measured) |
 | data refresh | 07-06 → 07-28 anchor | −64,769 | what the fresher data said |
 
 The data component alone pointed **down** −64,769; the two judgement calls add +152,256. So August's
@@ -57,12 +69,15 @@ matters when this number is quoted.
 
 **Variant history this cycle** — all at the 2026-07-28 anchor, same data:
 
-| LOL ceiling | headwind | desktop Dec-15 |
-|--:|--:|--:|
-| 125,000 | −1,345,000 | 48,520,714 |
-| 165,000 | −1,345,000 | 48,561,795 |
-| 165,000 | −1,295,000 | 48,611,795 |
-| **180,000** | **−1,245,000** | **48,672,970** |
+| LOL ceiling | headwind | ramp start | desktop Dec-15 | Aug-22 trough |
+|--:|--:|---|--:|--:|
+| 125,000 | −1,345,000 | 2026-04-01 | 48,520,714 | 43,349,248 |
+| 165,000 | −1,345,000 | 2026-04-01 | 48,561,795 | 43,387,545 |
+| 165,000 | −1,295,000 | 2026-04-01 | 48,611,795 | 43,415,259 |
+| 180,000 | −1,245,000 | 2026-04-01 | 48,672,970 | 43,453,752 |
+| **180,000** | **−1,245,000** | **2026-07-28** | **48,672,970** | **43,921,488** |
+
+The last row is the ramp re-anchoring: identical Dec-15, +467,737 on the trough, seam discontinuity gone.
 
 **Still not the number to publish.** `o` and `m` remain ~4–5 weeks stale; the headwind anchor has been
 attenuated four times running without data-side validation; the LOL ceiling is unfalsifiable against
@@ -89,16 +104,18 @@ current data (measurement stopped 2026-06-23). See the caveats cell and `adjustm
   notebook asserts the drift is exactly 0).
 - **Adjustment specs (wired)** — `adjustments/headwind.json` (`h`, display layer),
   `launch_on_login/lol.json` (`l`), `mozillaonline/mozillaonline.json` (`o`),
-  `marketing/marketing.json` (`m`). `h`, `o`, and `m` are byte-identical carry-forwards of July's with
-  only `applies_to_forecast_start` moved 2026-07-06 → 2026-07-28. **`l` is rebuilt** — see
-  `launch_on_login/_index.md`.
+  `marketing/marketing.json` (`m`). `o` and `m` are byte-identical carry-forwards of July's with only
+  `applies_to_forecast_start` moved 2026-07-06 → 2026-07-28. **`l` is rebuilt** (180K ceiling — see
+  `launch_on_login/_index.md`) and **`h` has changed twice** (desktop amplitude −1,345,000 → −1,245,000,
+  and `start_date` 2026-04-01 → 2026-07-28 — see `adjustments/_index.md`).
 - **Iran** — queried natively; the shutdown gap is covered by mozaic's built-in counterfactual fill
   (auto-applied by `populate_tiles`). No cycle-local artifact needed.
 
 ## How the current build was produced
 
 The **mobile** command below was run once (2026-07-29) and has not been re-run since — `l` is
-desktop-only, and the mobile headwind never moved. The **desktop** command has been run three times into
+desktop-only, and mobile's headwind *amplitude* never moved (its ramp start did, but `h` is display-layer
+so that needs no model run). The **desktop** command has been run three times into
 the same directory, each overwriting the last, as the LOL ceiling was raised: 125K → 165K → 180K. Runs
 after the first reused the cached raw BQ pull already in the slug dir, so no `--raw-cache-dir` was needed
 and no BigQuery re-query happened. Logs, in order:

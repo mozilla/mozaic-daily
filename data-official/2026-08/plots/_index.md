@@ -30,17 +30,18 @@ Desktop filenames are deliberately **cap-agnostic** (`desktop_current_*`). The L
 headwind anchor are both being iterated this cycle, and encoding the variant in the filename churned the
 tracked plot set on every rebuild; the chart title carries the variant instead. Earlier `*_baseline_*` and
 `*_lol165_*` files were superseded 1:1 and removed. The mobile charts are unchanged in content across all
-variants — `l` is desktop-only and the mobile headwind never moved.
+variants in shape — `l` is desktop-only and mobile's headwind amplitude never moved; the ramp
+re-anchoring shifted mobile's near-term curve by ~12K, which is invisible at that scale.
 
 ## Reading the charts
 
-- **The step down at the seam is entirely the headwind — now measured, not asserted.** The Win10 headwind
-  is applied from the seam forward at its already-ramped value: the ramp starts 2026-04-01, so by
-  2026-07-28 it has accumulated 118/258 = 45.7% of the anchor, currently −569,419. The raw model output is
-  continuous across the seam (+5,157), so the headwind accounts for **100.9%** of the −564,262 drop. A
-  trailing 28-day MA cannot physically move that far in one day. July's and June's charts show the same
-  step at their own seams. **Whether the convention is correct is an open question** — see
-  `../desktop_adjustment_ladder.ipynb` and `research/ma-seam-turbulence/`.
+- **The seam step is GONE as of 2026-07-29 — and here is what it was.** The Win10 headwind used to ramp
+  from 2026-04-01 while only being *applied* from the seam forward, so it switched on at 118/258 = 45.7% of
+  full value (−569,419) in a single day. The raw model output is continuous across the seam (+5,157), so
+  that step was **100.9%** of the −564,262 drop visible in earlier charts. `headwind.json` now ramps from
+  the seam instead: same Dec-15 anchor, zero at the seam, no step. June's and July's charts still show the
+  old behaviour at their own seams. Measurement and both conventions:
+  `../desktop_adjustment_ladder.ipynb`; see also `research/ma-seam-turbulence/`.
 - **The gold low/baseline/stretch markers are NOT August targets.** They are the June-cycle aspirational
   benchmarks, reused unchanged in July and again here purely so the vertical scale stays comparable
   across the three cycles' charts. No August target has been set.
