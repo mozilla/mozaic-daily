@@ -21,7 +21,14 @@ CLI
 ---
     source .venv/bin/activate
     python scripts/score_near_horizon.py \\
-        data-official/2026-07/desktop_locked/mozaic_daily_forecast.2026-07-06.ld-D.adj-lo.parquet
+        data-official/2026-08/desktop_baseline_2026-07-28/\\
+cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/\\
+mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet
+
+``DEFAULT_HEADWIND`` is **cycle-scoped** and must be repointed each forecast
+cycle: both the amplitude and the ramp ``start_date`` change, and a stale spec
+mis-scores silently (no error, just wrong numbers). Pass ``--headwind`` to score
+a probe against a spec other than the current cycle's.
 """
 
 from __future__ import annotations
@@ -31,6 +38,7 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -38,15 +46,31 @@ SRC_PATH = REPO_ROOT / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
-from mozaic_daily.adjustments import load_forecast  # noqa: E402
+# export_canonical_curves lives under the June cycle dir (June's canonical exporter,
+# generic in forecast_start). Reused so this scorer's MA matches the canonical
+# notebook's exactly -- same precedent as scripts/mobile_sensitivity.py.
+_JUNE_DIR = REPO_ROOT / "data-official/2026-06"
+if str(_JUNE_DIR) not in sys.path:
+    sys.path.insert(0, str(_JUNE_DIR))
 
-DEFAULT_TARGET_DATE = "2026-08-22"
+from mozaic_daily.adjustments import load_forecast  # noqa: E402
+from export_canonical_curves import display_ma  # noqa: E402
+
+# The trough MINIMUM, not July's Aug-22. Aug-25 is exactly MA_WINDOW days past the
+# 2026-07-28 seam, so its window is entirely forecast and the value is independent of
+# the display_ma splice convention -- unlike Aug-22, which sits inside the transition
+# zone and reads ~41K apart under the two conventions.
+DEFAULT_TARGET_DATE = "2026-08-25"
 DEFAULT_DEC15 = "2026-12-15"
-DEFAULT_HEADWIND = REPO_ROOT / "data-official/2026-07/adjustments/headwind.json"
-TARGET_BULLSEYE = 45_060_000
-TARGET_TOL = 100_000  # land within +-0.1M
+DEFAULT_HEADWIND = REPO_ROOT / "data-official/2026-08/adjustments/headwind.json"
+# August target is a BAND, not a bullseye: "around 45M to 46M, exact target depends on
+# what's possible" (2026-07-29). July's 45.06M bullseye is retired -- it was the most
+# achievable value under July data, not an external benchmark.
+TARGET_BAND = (45_000_000, 46_000_000)
 OS_ALL = '{"os": "ALL"}'
 MA_WINDOW = 28
+# Days either side of the seam used to fit the reported slope match.
+SEAM_SLOPE_WINDOW = 14
 
 
 def _daily_series(df: pd.DataFrame, country: str) -> pd.Series:
@@ -73,6 +97,7 @@ def score_dataframe(
     df: pd.DataFrame,
     target_date: str = DEFAULT_TARGET_DATE,
     headwind_spec: dict | None = None,
+    forecast_start: str | pd.Timestamp | None = None,
 ) -> dict:
     """Pure scorer over a forecast dataframe (no file I/O).
 
@@ -80,17 +105,27 @@ def score_dataframe(
     dau). ``headwind_spec`` is the parsed headwind.json dict (linear_ramp).
     Reports global and ex-CN/IR scopes, each in pre-/post-headwind bases, at the
     target trough date and Dec-15.
+
+    The MA is the variance-matched ``display_ma``, matching the canonical
+    notebook. This matters only inside the 27 days after the seam, where the
+    window straddles actuals and forecast -- and the Aug-22 target date sits in
+    that zone (a plain ``rolling(28)`` reads ~41K low there). ``forecast_start``
+    defaults to the parquet's own ``forecast_start_date`` column.
     """
     spec = headwind_spec or {}
+    if forecast_start is None:
+        forecast_start = pd.Timestamp(df["forecast_start_date"].iloc[0])
 
     global_series = _daily_series(df, "ALL")
     cn = _daily_series(df, "CN").reindex(global_series.index).fillna(0.0)
     ir = _daily_series(df, "IR").reindex(global_series.index).fillna(0.0)
     ex_series = global_series - cn - ir
 
+    forecast_start = pd.Timestamp(forecast_start)
     ma = {
-        "global": global_series.rolling(MA_WINDOW).mean(),
-        "ex_cn_ir": ex_series.rolling(MA_WINDOW).mean(),
+        scope: display_ma(series.index.to_series(), series,
+                          forecast_start, window=MA_WINDOW)
+        for scope, series in [("global", global_series), ("ex_cn_ir", ex_series)]
     }
 
     out: dict = {"target_date": target_date}
@@ -103,10 +138,68 @@ def score_dataframe(
             out[f"{scope}_{label}_post"] = pre + hw
         out[f"headwind_{label}"] = hw
 
+    # Where the post-headwind trough actually bottoms out. A shape change can move the
+    # argmin off the scored date, so report it rather than assuming it stays put.
+    summer = ma["global"].loc[forecast_start:pd.Timestamp("2026-10-15")].dropna()
+    summer_post = summer + pd.Series(
+        [_headwind_ramp(d, spec) if spec else 0.0 for d in summer.index], index=summer.index)
+    out["trough_min_post"] = float(summer_post.min())
+    out["trough_min_date"] = str(summer_post.idxmin().date())
+
+    lo, hi = TARGET_BAND
     gt = out["global_target_post"]
-    out["in_band"] = abs(gt - TARGET_BULLSEYE) <= TARGET_TOL
-    out["gap_to_bullseye"] = gt - TARGET_BULLSEYE
+    out["in_band"] = lo <= gt <= hi
+    out["gap_to_band_low"] = gt - lo
+
+    out.update(seam_derivatives(ma["global"], forecast_start, spec))
     return out
+
+
+def seam_derivatives(
+    series_ma: pd.Series,
+    forecast_start: pd.Timestamp,
+    spec: dict | None = None,
+    window: int = SEAM_SLOPE_WINDOW,
+) -> dict:
+    """Slope of the display 28d-MA either side of the seam, in DAU/day (reported, not scored).
+
+    A well-behaved forecast hands off to the actuals with a matching first
+    derivative. Two distinct contributions to any mismatch, reported separately:
+
+    - ``model``: the slope kink in the forecast itself (pre-headwind). This is
+      what parameters can move.
+    - ``headwind``: the ramp contributes 0 slope before the seam and a constant
+      ``desktop_dau / (anchor - start)`` after it, so the display curve carries a
+      slope kink of exactly that size even though the re-anchored ramp removed
+      the level step. Not addressable by parameters.
+
+    Slopes are OLS fits over ``window`` days each side. The post-seam side sits
+    inside the splice transition zone, so the ``model`` figure reflects the
+    spliced curve the reader actually sees, not the raw forecast-only MA.
+    """
+    def slope(start: pd.Timestamp, end: pd.Timestamp) -> float:
+        seg = series_ma.loc[start:end].dropna()
+        if len(seg) < 3:
+            return float("nan")
+        days = (seg.index - seg.index[0]).days.to_numpy(dtype=float)
+        return float(np.polyfit(days, seg.to_numpy(dtype=float), 1)[0])
+
+    before = slope(forecast_start - pd.Timedelta(days=window), forecast_start - pd.Timedelta(days=1))
+    after = slope(forecast_start, forecast_start + pd.Timedelta(days=window - 1))
+
+    hw_slope = 0.0
+    if spec:
+        span = (pd.Timestamp(spec["anchor_date"]) - pd.Timestamp(spec["start_date"])).days
+        hw_slope = float(spec["desktop_dau"]) / span
+
+    return {
+        "seam_slope_before": before,
+        "seam_slope_after_model": after,
+        "seam_slope_after_display": after + hw_slope,
+        "seam_slope_kink_model": after - before,
+        "seam_slope_kink_display": after + hw_slope - before,
+        "seam_slope_headwind": hw_slope,
+    }
 
 
 def score_parquet(
@@ -149,8 +242,20 @@ def main() -> int:
               f"{_fmt(r[f'{scope}_target_post']):>16s} "
               f"{_fmt(r[f'{scope}_dec15_pre']):>16s} "
               f"{_fmt(r[f'{scope}_dec15_post']):>16s}")
+    lo, hi = TARGET_BAND
     band = "IN BAND" if r["in_band"] else "out of band"
-    print(f"\nglobal trough post vs 45.06M bullseye: {r['gap_to_bullseye']:+,.0f}  [{band}, +-0.1M]")
+    print(f"\ntrough minimum : {_fmt(r['trough_min_post'])} on {r['trough_min_date']}")
+    print(f"target band    : {lo/1e6:.0f}M-{hi/1e6:.0f}M  [{band}, "
+          f"{r['gap_to_band_low']:+,.0f} vs the {lo/1e6:.0f}M floor]")
+
+    # Reported, not scored: we want the handoff derivative to match where it can.
+    print("\nseam slope (DAU/day, 14d OLS each side of the seam) -- reported, not scored")
+    print(f"  before (actuals)      : {r['seam_slope_before']:+,.0f}")
+    print(f"  after, model only     : {r['seam_slope_after_model']:+,.0f}"
+          f"   kink {r['seam_slope_kink_model']:+,.0f}")
+    print(f"  after, with headwind  : {r['seam_slope_after_display']:+,.0f}"
+          f"   kink {r['seam_slope_kink_display']:+,.0f}")
+    print(f"  headwind contribution : {r['seam_slope_headwind']:+,.0f}  (not parameter-addressable)")
     return 0
 
 

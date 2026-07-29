@@ -11,17 +11,28 @@ should not be rediscovered.
 
 Raise the desktop summer trough while holding Dec-15 near its current value.
 
-| quantity | current |
+| quantity | center (regime=auto) |
 |---|--:|
-| Aug-22 28d-MA, post-headwind | **43,921,488** |
-| trough minimum | 43,833,674 on 2026-08-25 |
+| **trough minimum, post-headwind** — the scored KPI | **43,833,674** on 2026-08-25 |
 | Dec-15 28d-MA, post-headwind | **48,672,970** ← hold this |
+| Aug-22 28d-MA, post-headwind (July's date, no longer scored) | 43,921,488 |
 
-July's search used a bullseye of **45.06M ±0.1M** at Aug-22, which leaves a gap of ~1.14M.
+**Target: the 45M–46M band; exact value depends on what turns out to be achievable** (confirmed
+2026-07-29). July's **45.06M ±0.1M** bullseye is **retired** — it was never an external benchmark, just the
+most achievable value under July's data and knob ranges.
 
-⚠️ **That target needs re-confirming before you optimise to it.** It was set against a build whose trough
-was 43.25M; the baseline has since risen ~0.67M. How much more lift is actually wanted is a human
-question. Ask.
+**Score the Aug-25 trough minimum, not Aug-22.** Aug-22 sits inside the 27-day post-seam splice zone where
+the value is ~41K sensitive to the smoothing convention; Aug-25 is exactly 28 days past the seam, so its
+window is entirely forecast and the number is convention-independent.
+
+**Also report — but do not score — the 28d-MA derivative either side of the seam.** A matching handoff
+slope is wanted where it can be had, but raising Aug-25 and holding Dec-15 are the goals it yields to.
+`score_near_horizon.py` prints this. Note a hard floor: the headwind ramp contributes −8,893/day of slope
+kink (`desktop_dau / (anchor − start)`) that no parameter can touch.
+
+✅ **Phase 0 and phase 1 are done — see `phase1/FINDINGS.md`.** `regime=multiplicative` alone landed the
+trough **in band at 45,140,569** (+1,306,895) for **+252,550** on Dec-15, and cut the model's seam slope
+kink 68%. The open question is clawing that Dec-15 drift back.
 
 ## 2. What is already settled — do not re-litigate
 
@@ -136,17 +147,24 @@ available consumer-side. The promising *unexposed* Prophet knobs, in order of re
 | `scripts/run_aug_trough_gradient.py` | The `aug22-retune` driver; same repointing needed. |
 | `scripts/score_near_horizon.py` (+4 passing tests) | The scorer. **See the warning below.** |
 
-🚨 **`score_near_horizon.py` defaults are stale and fail silently.** `DEFAULT_HEADWIND` still points at
-`data-official/2026-07/adjustments/headwind.json`. Used unchanged, it scores every probe against July's
-−1,345,000 amplitude **and** July's 2026-04-01 ramp start — so both the trough and Dec-15 come out wrong
-with no error. Repoint it to `data-official/2026-08/adjustments/headwind.json` or pass `--headwind`.
+✅ **`score_near_horizon.py` was repaired in phase 0** — three defects, all of which mis-scored silently.
+Full detail in `phase1/FINDINGS.md`; in brief:
 
-Also in that file: `DEFAULT_TARGET_DATE = "2026-08-22"`, `TARGET_BULLSEYE = 45_060_000`,
-`TARGET_TOL = 100_000` — all encode the July target (see §1). And it scores a **single date**, whereas the
-stated aim is the whole seam → Oct-1 window; consider extending it to a window statistic.
+1. `DEFAULT_HEADWIND` pointed at July's spec → wrong amplitude *and* wrong ramp start. Now `2026-08`.
+   It stays **cycle-scoped**: repoint it every cycle, or pass `--headwind`.
+2. It used a plain `rolling(28).mean()` instead of the canonical `display_ma` splice, reading 41K low at
+   Aug-22. Now imports `display_ma` and reproduces the notebook exactly.
+3. `DEFAULT_TARGET_DATE` moved 2026-08-22 → **2026-08-25** (the convention-independent trough minimum), and
+   `TARGET_BULLSEYE`/`TARGET_TOL` were replaced by `TARGET_BAND = (45M, 46M)`.
+
+It also now reports the trough argmin (a shape change can move it) and the seam derivative. Tests: 6
+passing, including a new one that fails if the MA reverts to a plain rolling window.
+
+Still true: it scores a **single date**, whereas the aim is arguably the whole seam → Oct-1 window. Scoring
+the argmin covers most of that concern, but a window statistic is still worth considering.
 
 One benign difference: the scorer clamps the ramp at `anchor_date` and the notebook does not. Under
-seam-anchoring that only diverges after Dec-15, so Aug-22 and Dec-15 scoring agree.
+seam-anchoring that only diverges after Dec-15, so trough and Dec-15 scoring agree.
 
 ### Reuse the cached BigQuery pull
 
