@@ -13,6 +13,13 @@ Sweeps over `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold`, `cha
   **`results/`** and `mobile-july/results/` forecast-output blobs. Regenerable via the scan drivers
   below, but re-running is compute-expensive — pull from GCS to reuse. Sidecar `.meta.json` +
   `parameters.json` for each config remain on disk so the search is still legible without the blobs.
+- **`aug22-retune/` is slimmed here:** only its summary artifacts (`_index.md`, `FINDINGS.md`,
+  `*_scores.csv`, best-fit curve + notebook + plot, generators) are on this branch. Its ~197
+  per-probe `run.log` / `parameters.json` / `*.meta.json` sidecars live on the `july-forecast`
+  branch, and its ~40G of forecast blobs are archived to GCS under `july-2026/`.
+
+Most sweeps here target the **Dec-15 far horizon**. The one exception is `aug22-retune/`, which
+targets the **Aug-2026 summer trough** — a near-horizon KPI with its own scorer and driver.
 
 ## Files
 
@@ -20,6 +27,7 @@ Sweeps over `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold`, `cha
 |---|---|
 | `param_scan_exploration.ipynb`, `desktop_gradient_round{1..4}.ipynb` | Desktop analysis notebooks |
 | `mobile-july/` | July mobile grid search (notebooks + sidecars present; `results/` blobs archived) |
+| `aug22-retune/` | Near-horizon (Aug-22 trough) desktop retune — 3 rounds + LHS sampling. Concluded params **can't** hit Aug without breaking Dec; recommends a summer-trough overlay. Summary artifacts present; per-probe sidecars on `july-forecast` only. See its `_index.md`. |
 | `results/`, `pinned/` | Output of `scripts/run_param_scan.py` / `run_pinned_scan.py`. **Archived to GCS; regenerable.** |
 
 ## Regenerating
