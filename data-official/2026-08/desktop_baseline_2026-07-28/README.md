@@ -1,4 +1,4 @@
-# Desktop — August 2026 (forecast_start 2026-07-28, LOL 165K)
+# Desktop — August 2026 (forecast_start 2026-07-28, LOL 180K)
 
 `legacy_desktop` DAU. **Not a delivered forecast** — see `../_index.md`.
 
@@ -12,7 +12,7 @@ Single config subdir: `cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.
 ## Files
 
 - `mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet` — the forecast. Overlays `l`
-  (launch-on-login, **165K ceiling**) + `o` (MozillaOnline migration, stale July carry-forward) applied
+  (launch-on-login, **180K ceiling**) + `o` (MozillaOnline migration, stale July carry-forward) applied
   bidirectionally on `modern_windows`.
   **Pre-headwind** — the Win10 headwind is a display-layer adjustment applied in the canonical notebook.
 - `…meta.json` — sidecar provenance (model config, adjustments + spec sha1s, commit).
@@ -34,26 +34,31 @@ built-in counterfactual fill.
 
 ## Result (Dec-15 2026, 28d-MA, headwind applied)
 
-**48,611,795** — **+26,312 (+0.05%)** vs July's delivered 48,585,483.
+**48,672,970** — **+87,487 (+0.18%)** vs July's delivered 48,585,483.
 
-Aug-22 summer trough: 43,415,259 (post-headwind).
+Aug-22 summer trough: 43,453,752 (post-headwind).
 
-Attribution ledger (the notebook asserts this closes against the measured value; residual −0):
+Attribution ledger:
 
 | | Dec-15 28d-MA | step |
 |---|--:|--:|
 | July delivered (125K LOL, hw −1,345,000, 07-06 anchor) | 48,585,483 | — |
-| Aug baseline (125K LOL, hw −1,345,000, 07-28 anchor) — superseded | 48,520,714 | −64,769 data refresh |
-| Aug, LOL 165K (hw −1,345,000) — superseded | 48,561,795 | +41,081 LOL cap |
-| **Aug current (165K LOL, hw −1,295,000)** | **48,611,795** | +50,000 headwind |
+| Aug baseline (125K LOL, hw −1,345,000) — superseded | 48,520,714 | −64,769 data refresh |
+| Aug, LOL 180K (hw −1,345,000) — implied | 48,572,970 | +52,256 LOL ceiling |
+| **Aug current (180K LOL, hw −1,245,000)** | **48,672,970** | +100,000 headwind |
 
-**Only the first two steps involved this parquet.** The LOL cap change required rebuilding it; the
-headwind step did not — `h` is applied to the 28-day MA in the canonical notebook, never to the training
-frame, so its Dec-15 effect is exactly the anchor delta with no Prophet interaction.
+**Only the LOL step involved this parquet.** Raising the ceiling required rebuilding it (`l` is baked in);
+the headwind step did not — `h` is applied to the 28-day MA in the canonical notebook, never to the
+training frame, so its Dec-15 effect is exactly the anchor delta with no Prophet interaction.
 
-The LOL curve is +40,000/day higher at every forecast date and the realised effect was +41,081 —
-essentially pass-through, a +3% amplification rather than an offset, because the extra training
-subtraction covers only 39 recent days and barely shifts the fitted trend five months out.
+The LOL curve is +55,000/day higher than the baseline's at every forecast date and the realised effect was
++52,256 — **95% pass-through**. The extra training subtraction covers only 39 recent days
+(2026-06-19 → 2026-07-27, mean +37,433/day), which barely shifts the fitted trend five months out, so
+most of the add-back survives. The notebook asserts this pass-through lands in 0.5–1.5×; near-zero would
+indicate the bidirectional subtract leg misfired.
+
+**Build history at this anchor** (same data throughout): 125K/−1,345,000 → 48,520,714 ·
+165K/−1,345,000 → 48,561,795 · 165K/−1,295,000 → 48,611,795 · **180K/−1,245,000 → 48,672,970**.
 
 ## Reproduce
 

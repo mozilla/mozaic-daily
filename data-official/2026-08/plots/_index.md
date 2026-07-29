@@ -6,15 +6,17 @@ notebook cell the reader can re-run.
 
 | file | produced by | shows |
 |---|---|---|
-| `desktop_lol165_vs_july.png` | `[plot-desktop]` | Desktop DAU 28d-MA: actuals, July delivered, August LOL-165K, Dec-15 markers |
-| `desktop_lol165_only.png` | `[plot-desktop-current-only]` | Same without the prior line |
+| `desktop_current_vs_july.png` | `[plot-desktop]` | Desktop DAU 28d-MA: actuals, July delivered, August current build, Dec-15 markers |
+| `desktop_current_only.png` | `[plot-desktop-current-only]` | Same without the prior line |
 | `mobile_august_vs_july.png` | `[plot-mobile]` | Mobile DAU 28d-MA, same three series |
 | `mobile_august_only.png` | `[plot-mobile-current-only]` | Same without the prior line |
 | `mobile_ex_iran_august_vs_july.png` | `[plot-mobile-ex-iran]` | Mobile ex-Iran (ALL − IR), which strips the post-shutdown reconnection bounce |
 
-The earlier `*_baseline_*.png` files were the 125K-LOL build's charts, replaced 1:1 by the renamed
-files above when the LOL ceiling was raised to 165K. The mobile charts are unchanged in content — `l`
-is desktop-only — and were renamed only to drop the now-inaccurate "baseline" label.
+Desktop filenames are deliberately **cap-agnostic** (`desktop_current_*`). The LOL ceiling and the
+headwind anchor are both being iterated this cycle, and encoding the variant in the filename churned the
+tracked plot set on every rebuild; the chart title carries the variant instead. Earlier `*_baseline_*` and
+`*_lol165_*` files were superseded 1:1 and removed. The mobile charts are unchanged in content across all
+variants — `l` is desktop-only and the mobile headwind never moved.
 
 ## Reading the charts
 

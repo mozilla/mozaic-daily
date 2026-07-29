@@ -1,9 +1,10 @@
 # `data-official/2026-08/adjustments/` — display-layer adjustment specs (`h`)
 
 `headwind.json` — the Windows 10 migration headwind. A `linear_ramp` from 2026-04-01 reaching
-**desktop −1,295,000 / mobile −27,162** at the 2026-12-15 anchor.
+**desktop −1,245,000 / mobile −27,162** at the 2026-12-15 anchor.
 
-**Desktop anchor attenuated +50,000 on 2026-07-29** (July's was −1,345,000). Mobile unchanged. The
+**Desktop anchor attenuated +100,000 from July's −1,345,000**, in two steps on 2026-07-29 (−1,295,000,
+then −1,245,000). The current value is an **alternate under evaluation**. Mobile unchanged. The
 `start_date` / `anchor_date` / `type` fields are still July's.
 
 `adj-h` carries the portion of the Win10 migration decline that Prophet has *not* learned from data. As
@@ -13,18 +14,25 @@ standing rationale, reached in June and acted on in July. Five extra weeks of tr
 
 **The attenuation history deserves scrutiny as a run, not just per step:**
 
-| cycle | desktop anchor | step |
-|---|--:|--:|
-| June delivered | −1,420,000 | — |
-| July, first pass | −1,370,000 | +50,000 |
-| July delivered | −1,345,000 | +25,000 |
-| **August current** | **−1,295,000** | **+50,000** |
+| cycle | desktop anchor | step | cumulative vs June |
+|---|--:|--:|--:|
+| June delivered | −1,420,000 | — | — |
+| July, first pass | −1,370,000 | +50,000 | +50,000 |
+| July delivered | −1,345,000 | +25,000 | +75,000 |
+| August, first pass | −1,295,000 | +50,000 | +125,000 |
+| **August current (alternate)** | **−1,245,000** | **+50,000** | **+175,000** |
 
-Four values, three attenuations, each justified the same way and each raising the reported number. None
-is measured against a held-out estimate of how much of the decline Prophet actually absorbed — they are
-calibrated judgements. A validation pass against realised Win10-cohort DAU is worth doing before the
-next step, and if a cycle ever *needs* the headwind to attenuate to reach a target, that is the failure
-mode to catch.
+Five values, four attenuations, each justified the same way and each raising the reported number.
+Cumulatively +175,000, or 12.3% of June's value. **None is measured against a held-out estimate of how
+much of the decline Prophet actually absorbed** — they are calibrated judgements. If a cycle ever *needs*
+the headwind to attenuate to reach a target, that is the failure mode to catch.
+
+**A validation analysis is queued** (`../../../research/headwinds/`, not yet written). The tractable test:
+the ramp starts from zero on 2026-04-01, and training ends 2026-07-27 — 117 of 258 days, 45% along it. So
+a −1,245,000 anchor asserts that **≈565,000 of transition-attributable net loss is already observable in
+actuals**. That is directly measurable. Note that Win10 → Win11 migration is DAU-neutral: the headwind is
+attrition, not the falling Win10 curve. As of 2026-07-27 the split was Win11 26.30M / Win10 15.66M
+(`os_version` in the legacy `active_users_aggregates` separates them cleanly).
 
 Unlike `l`/`o`/`m`, this is a **display-layer** adjustment: it is *not* baked into the forecast
 parquets. It is applied to the 28-day MA in the canonical notebook (`[compute-series]`) via
