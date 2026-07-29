@@ -55,6 +55,53 @@ def test_slug_distinguishes_thresholds_and_omits_the_default():
     assert a.startswith(default_slug) and a.endswith("-0.15")
 
 
+def test_slug_is_injective_over_every_config_field():
+    """Every field must change the slug. This is a correctness requirement, not cosmetic.
+
+    Scan tooling uses the slug as an output directory name, so two configs sharing a
+    slug write to the same directory and overwrite each other. The failure mode is
+    silent and actively misleading: the colliding probes read back identical numbers,
+    which looks exactly like "that parameter has no effect".
+
+    Regression: holiday_max_radius and holiday_min_radius were absent from the slug,
+    which collapsed five gradient probes onto one directory.
+    """
+    import dataclasses
+
+    base = DesktopModelConfig()
+    base_slug = base.to_slug()
+    # A perturbation per field that is valid for that field's domain.
+    perturbations = {
+        "prophet_recent_weeks": 9,
+        "prophet_changepoint_range": 0.55,
+        "prophet_n_changepoints": 31,
+        "holiday_threshold": -0.041,
+        "holiday_max_radius": 6,
+        "holiday_min_radius": 2,
+        "holiday_effect_floor": -0.55,
+        "seasonality_regime": "multiplicative",
+        "seasonality_corr_threshold": -0.15,
+        "prophet_changepoint_prior_scale": 0.11,
+        "prophet_seasonality_prior_scale": 0.02,
+    }
+    fields = {f.name for f in dataclasses.fields(base)}
+    missing = fields - set(perturbations)
+    assert not missing, f"test needs a perturbation for new field(s): {missing}"
+
+    seen = {base_slug: "<default>"}
+    for field, value in perturbations.items():
+        slug = dataclasses.replace(base, **{field: value}).to_slug()
+        assert slug != base_slug, f"{field} does not appear in to_slug()"
+        assert slug not in seen, f"{field} collides with {seen[slug]} on slug {slug!r}"
+        seen[slug] = field
+
+
+def test_slug_unchanged_for_the_default_config():
+    """Back-compat: on-disk paths reference the default slug, so it must not drift."""
+    assert DesktopModelConfig().to_slug() == (
+        "cps0.15983_thresh032_recent13_cpr0.7_ncp25_clip0.6_sps0.00825")
+
+
 @pytest.mark.parametrize("bad", [-1.5, 1.5, 2.0])
 def test_threshold_outside_correlation_range_is_rejected(bad):
     """It is a correlation cutoff; values outside [-1, 1] are a caller error."""
