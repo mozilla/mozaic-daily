@@ -34,6 +34,15 @@ param_scan_results/
 param_scan_results_pinned/
 research/param-scans/results/
 research/param-scans/pinned/
+# Per-probe run logs (verbose mozaic stdout; the FINDINGS.md carries the conclusions).
+research/param-scans/*/grid/logs/
+# The grid report embeds plotly.js inline so it opens offline -- ~4.5MB, and it is
+# regenerated on every rebuild. Kept out of history; reproduce in one command:
+#   python research/param-scans/summer-trough-v2/build_grid_report.py
+research/param-scans/*/grid_report.html
+# ...but DO track its scored inputs (~12KB), so the result survives in git and the
+# report is reproducible without re-running the grid.
+!research/param-scans/*/grid_scores.csv
 
 # Data directories (large files archived to GCS — see follow-up in monthly-forecast-update.md)
 # data-official/ is NOT fully ignored: *.json and *.md parameter files are committed,
@@ -59,6 +68,9 @@ research/param-scans/pinned/
 !data-official/*/csv/per_country/*.no-headwinds.csv
 !data-official/*/june_canonical_curves.csv
 !data-official/*/april_composite_forecast_28ma.adj-h.csv
+# Win10 headwind anchor-validation extracts: small, and the notebook in
+# research/headwinds/ is only reproducible without a 515 GB BigQuery scan if these ship.
+!research/headwinds/extracts/*.csv
 !data-official/*/stakeholder_scenarios_*.zip
 data/
 data-mozaic/

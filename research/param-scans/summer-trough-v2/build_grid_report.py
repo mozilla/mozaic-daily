@@ -162,8 +162,30 @@ def hover_text(row: pd.Series) -> str:
     )
 
 
+def cluster_split(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame] | None:
+    """Split results at the largest gap in trough outcome, if the gap is decisive.
+
+    The regime switch is per tile and the heaviest tile is atomic, so outcomes can
+    land in two disjoint clusters with nothing between them. Detect that rather
+    than assuming a smooth frontier.
+    """
+    vals = df["trough_min"].sort_values()
+    gaps = vals.diff()
+    if gaps.max() < 200_000:  # no decisive separation -> treat as a continuum
+        return None
+    cut = vals[gaps.idxmax()]
+    return df[df["trough_min"] < cut], df[df["trough_min"] >= cut]
+
+
 def fig_frontier(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
+    split = cluster_split(df)
+    if split is not None:
+        low, high = split
+        fig.add_hrect(y0=low["trough_min"].max(), y1=high["trough_min"].min(),
+                      fillcolor="#c62828", opacity=0.07, line_width=0, layer="below",
+                      annotation_text="unreachable — no config lands here",
+                      annotation_position="top left")
     fig.add_vrect(x0=DEC_LO, x1=DEC_HI, fillcolor="#2e7d32", opacity=0.13,
                   line_width=0, layer="below",
                   annotation_text="Dec-15 band (±50k)", annotation_position="top left")
@@ -362,7 +384,56 @@ def main() -> int:
             fig, include_plotlyjs=(True if i == 0 else False), full_html=False,
             config={"displaylogo": False}))
 
-    if best is not None:
+    split = cluster_split(df)
+    if split is not None and best is not None:
+        low, high = split
+        gap = high["trough_min"].min() - low["trough_min"].max()
+        absorb = HEADWIND["desktop_dau"] - high["dec_drift"].min()
+        verdict = (
+            f"<p class='verdict bad-box'><b>Negative result: the ±50k Dec-15 constraint "
+            f"caps the trough gain at {best['trough_gain']:+,.0f}</b> "
+            f"({100*best['trough_gain']/TROUGH_CANONICAL:+.2f}%), i.e. effectively nothing. "
+            f"Best in-band config <code>{best['slug']}</code> reaches "
+            f"{best['trough_min']:,.0f} at Dec-15 {best['dec15']:,.0f} "
+            f"({best['dec_drift']:+,.0f}).</p>"
+
+            f"<p class='verdict warn-box'><b>Outcomes are bimodal, not a frontier.</b> "
+            f"All {len(df)} builds land in one of two disjoint clusters with an empty "
+            f"<b>{gap:,.0f}</b> gap between them — there is no interior to trade along:</p>"
+            f"<table class='clusters'><thead><tr><th></th><th>trough</th>"
+            f"<th>Dec-15 drift</th><th>seam kink</th><th>n</th><th>in band</th></tr></thead>"
+            f"<tbody>"
+            f"<tr><td class='name'>A · additive-dominant</td>"
+            f"<td>{low['trough_min'].min():,.0f} … {low['trough_min'].max():,.0f}</td>"
+            f"<td class='good'>{low['dec_drift'].min():+,.0f} … {low['dec_drift'].max():+,.0f}</td>"
+            f"<td>{low['seam_kink_model'].max():+,.0f} … {low['seam_kink_model'].min():+,.0f}</td>"
+            f"<td>{len(low)}</td><td class='good'>all ✓</td></tr>"
+            f"<tr><td class='name'>B · multiplicative-dominant</td>"
+            f"<td><b>{high['trough_min'].min():,.0f} … {high['trough_min'].max():,.0f}</b></td>"
+            f"<td class='bad'>{high['dec_drift'].min():+,.0f} … {high['dec_drift'].max():+,.0f}</td>"
+            f"<td><b>{high['seam_kink_model'].max():+,.0f} … "
+            f"{high['seam_kink_model'].min():+,.0f}</b></td>"
+            f"<td>{len(high)}</td><td class='bad'>none ✗</td></tr>"
+            f"</tbody></table>"
+
+            f"<p class='verdict note'><b>Why there is no middle.</b> The entire "
+            f"{gap:,.0f} step is one tile changing regime: <code>ROW/modern_windows</code> "
+            f"carries 27% of all desktop weight and flips atomically at corr −0.1465. "
+            f"Thresholds of −0.105, −0.13 and −0.14 move 11.6–16.0% of DAU to "
+            f"multiplicative and buy only +2,478 to +4,041 of trough — so the effect is "
+            f"almost entirely that single tile, and it cannot be bought in fractions. "
+            f"Both of the secondary goals live in cluster B too: the seam kink only "
+            f"improves there ({high['seam_kink_model'].max():+,.0f} vs "
+            f"{low['seam_kink_model'].max():+,.0f}).</p>"
+
+            f"<p class='verdict note'>The cheapest exit from cluster A costs "
+            f"<b>{high['dec_drift'].min():+,.0f}</b> on Dec-15 — "
+            f"<b>{high['dec_drift'].min()/DEC_TOL:.1f}×</b> the budget. Absorbing that "
+            f"with the headwind would require an anchor of <b>{absorb:,.0f}</b>, which is "
+            f"more negative than June's −1,420,000 and reverses all four of this year's "
+            f"attenuations. That is a judgement call, not a search result.</p>"
+        )
+    elif best is not None:
         verdict = (
             f"<p class='verdict good-box'><b>Best probe holding Dec-15:</b> "
             f"trough <b>{best['trough_min']:,.0f}</b> "
@@ -392,6 +463,11 @@ def main() -> int:
   .verdict {{ padding: 14px 18px; border-radius: 6px; font-size: 15px; }}
   .good-box {{ background: #e8f5e9; border-left: 5px solid #2e7d32; }}
   .bad-box  {{ background: #ffebee; border-left: 5px solid #c62828; }}
+  .warn-box {{ background: #fff8e1; border-left: 5px solid #f9a825; }}
+  .verdict.note {{ background: #f5f5f5; border-left: 5px solid #9e9e9e;
+                   font-size: 14px; }}
+  table.clusters {{ width: auto; min-width: 720px; margin: 4px 0 18px; }}
+  table.clusters td.name {{ font-family: inherit; font-size: 13.5px; font-weight: 600; }}
   table {{ border-collapse: collapse; font-size: 12.5px; width: 100%;
            font-variant-numeric: tabular-nums; }}
   th {{ background: #f4f4f4; text-align: right; padding: 7px 9px;

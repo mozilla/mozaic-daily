@@ -4,16 +4,27 @@ Desktop parameter search to lift the 2026 summer trough while holding Dec-15. Co
 `../aug22-retune/` (which concluded negative on July data) against the August build, after the headwind
 seam fix moved the starting point up ~0.67M.
 
-**Status: phases 0–1 done, awaiting a decision on Dec-15 drift.** `regime=multiplicative` alone put the
-trough **in band** at 45,140,569 (from 43,833,674) for +252,550 on Dec-15 — a 5.17:1 trade, and it cut the
-seam slope kink 68% as a side effect. `HANDOFF.md` is still the brief for what remains; read
-`phase1/FINDINGS.md` for what has been measured.
+**Status: complete — negative result, awaiting a human decision.** With Dec-15 held to **±50,000**, the
+best achievable trough gain across 26 builds is **+16,875 (+0.04%)**, i.e. nothing. The +1.3M lift is real
+but indivisible: outcomes are **bimodal** with an empty 1,281,347 gap, because the whole step is
+`ROW/modern_windows` (27% of desktop weight) flipping regime atomically at corr −0.1465. Cheapest exit
+costs +252,452 on Dec-15 = 5.0× the budget.
+
+Start with **`grid/FINDINGS.md`** and the chart in **`grid_report.html`**. `HANDOFF.md` is superseded as a
+plan (its phased approach was abandoned) but is still accurate on the objective, the tooling and the traps.
 
 | file | purpose |
 |---|---|
-| `HANDOFF.md` | The brief: goal, measured slopes, the hypothesis to test first, tooling repointing, traps |
-| `phase1/FINDINGS.md` | Center re-measure + the multiplicative probe; the three scorer defects fixed in phase 0 |
-| `phase1/<slug>/` | The probe's parquet, sidecar, pkl, `parameters.json` (blobs gitignored) |
+| `grid/FINDINGS.md` | **The result.** Bimodality, the single-tile explanation, what each knob did, the four options |
+| `grid_report.html` | Self-contained charts: frontier, the corr dial, seam derivative, parallel coordinates. **Gitignored** (~4.5MB of inline plotly.js so it opens offline); rebuild with `build_grid_report.py` |
+| `grid_scores.csv` | Every build scored — Aug-15, Aug-25, trough min, Dec-15, seam slopes, full config. Tracked via a `.gitignore` exception, so the result survives without the blobs |
+| `grid/<slug>/` | Per-probe parquet, sidecar, pkl, `parameters.json` (blobs gitignored) |
+| `grid/logs/` | Per-probe run logs (gitignored) |
+| `phase1/FINDINGS.md` | The earlier single multiplicative probe + the three scorer defects fixed in phase 0 |
+| `HANDOFF.md` | Original brief. Plan superseded; objective/tooling/traps still valid |
+
+Producers: `scripts/run_summer_trough_grid.py` (driver), `build_grid_report.py` (report),
+`scripts/tile_corr_distribution.py` (the per-tile corr distribution that placed the grid points).
 
 **What isn't here:** the July-data search (`../aug22-retune/`), the Dec-15 searches
 (`../desktop_gradient_round{1..4}.ipynb`), and the seam/overlay diagnostic that preceded this
