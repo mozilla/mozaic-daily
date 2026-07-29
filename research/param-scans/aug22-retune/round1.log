@@ -1,0 +1,51 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+========================================================================
+Aug-trough gradient round 1 — 12 probes
+Center (locked): cps=0.08983 cpr=0.65 recent=13 ncp=25 sps=0.00825 regime=auto
+Target: Global trough(2026-08-22) post-headwind 28d-MA -> 45.06M +-0.1M
+Raw cache: research/param-scans/aug22-retune/_rawcache
+Round dir: /Users/brendanwells/work/mozaic-daily/research/param-scans/aug22-retune/round1
+========================================================================
+  center           (center: locked)
+  cps__0.075       scale=0.075
+  cps__0.105       scale=0.105
+  cpr__0.60        range=0.6
+  cpr__0.70        range=0.7
+  recent__10       weeks=10
+  recent__16       weeks=16
+  ncp__20          changepoints=20
+  ncp__30          changepoints=30
+  sps__0.003       scale=0.003
+  sps__0.025       scale=0.025
+  sps__2.0         scale=2.0
+[1/12] cps__0.075       ok                              169.3s (wall  2.8m)
+[2/12] center           ok                              171.3s (wall  2.9m)
+[3/12] cps__0.105       ok                              172.7s (wall  2.9m)
+[4/12] cpr__0.60        ok                              173.2s (wall  2.9m)
+[5/12] cpr__0.70        ok                              175.7s (wall  5.8m)
+[6/12] ncp__20          ok                              171.8s (wall  5.8m)
+[7/12] recent__16       ok                              175.2s (wall  5.8m)
+[8/12] recent__10       ok                              177.2s (wall  5.8m)
+[9/12] sps__0.003       ok                              161.6s (wall  8.4m)
+[10/12] sps__2.0         ok                              168.2s (wall  8.6m)
+[11/12] ncp__30          ok                              173.0s (wall  8.6m)
+[12/12] sps__0.025       ok                              171.3s (wall  8.7m)
+
+Wrote /Users/brendanwells/work/mozaic-daily/research/param-scans/aug22-retune/round1/round1_scores.csv
+
+label              trough_post         gap      ex_cn_ir    dec15_post
+  center              43,246,576  -1,813,424    40,782,423    48,585,483
+  cps__0.075          43,214,383  -1,845,617    40,755,633    48,548,942
+  cps__0.105          43,251,500  -1,808,500    40,786,803    48,584,620
+  cpr__0.60           43,204,993  -1,855,007    40,796,620    48,538,531
+  cpr__0.70           43,223,686  -1,836,314    40,697,653    48,557,551
+  recent__10          43,217,575  -1,842,425    40,753,966    48,549,682
+  recent__16          43,228,257  -1,831,743    40,766,374    48,561,337
+  ncp__20             43,220,178  -1,839,822    40,760,985    48,553,753
+  ncp__30             43,200,354  -1,859,646    40,744,672    48,523,336
+  sps__0.003          45,287,305    +227,305    42,932,690    45,668,335
+  sps__0.025          43,172,585  -1,887,415    40,703,568    48,566,655
+  sps__2.0            43,166,741  -1,893,259    40,696,206    48,565,185

@@ -1,0 +1,60 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+========================================================================
+Aug-trough gradient round 3 — 15 probes
+Center (locked): cps=0.08983 cpr=0.65 recent=13 ncp=25 sps=0.00825 regime=auto
+Target: Global trough(2026-08-22) post-headwind 28d-MA -> 45.06M +-0.1M
+Raw cache: research/param-scans/aug22-retune/_rawcache
+Round dir: /Users/brendanwells/work/mozaic-daily/research/param-scans/aug22-retune/round3
+========================================================================
+  mult_center      regime=multiplicative
+  mult_cps005      regime=multiplicative, scale=0.05
+  mult_cps12       regime=multiplicative, scale=0.12
+  mult_cps15983    regime=multiplicative, scale=0.15983
+  mult_cps20       regime=multiplicative, scale=0.2
+  mult_cps30       regime=multiplicative, scale=0.3
+  mult_cpr055      regime=multiplicative, range=0.55
+  mult_cpr060      regime=multiplicative, range=0.6
+  mult_cpr070      regime=multiplicative, range=0.7
+  mult_cpr080      regime=multiplicative, range=0.8
+  mult_cpr090      regime=multiplicative, range=0.9
+  mult_ncp20       regime=multiplicative, changepoints=20
+  mult_ncp35       regime=multiplicative, changepoints=35
+  mult_recent8     regime=multiplicative, weeks=8
+  mult_recent20    regime=multiplicative, weeks=20
+[1/15] mult_cps12       ok                               96.2s (wall  1.6m)
+[2/15] mult_center      ok                               96.5s (wall  1.6m)
+[3/15] mult_cps15983    ok                               97.2s (wall  1.6m)
+[4/15] mult_cps005      ok                               97.6s (wall  1.6m)
+[5/15] mult_cpr055      ok                              100.3s (wall  3.3m)
+[6/15] mult_cps20       ok                              101.3s (wall  3.3m)
+[7/15] mult_cps30       ok                              101.8s (wall  3.3m)
+[8/15] mult_cpr060      ok                              101.0s (wall  3.3m)
+[9/15] mult_ncp20       ok                               92.1s (wall  4.8m)
+[10/15] mult_cpr080      ok                               94.4s (wall  4.9m)
+[11/15] mult_cpr090      ok                               94.2s (wall  4.9m)
+[12/15] mult_cpr070      ok                               97.2s (wall  4.9m)
+[13/15] mult_recent20    ok                               96.1s (wall  6.5m)
+[14/15] mult_recent8     ok                               96.8s (wall  6.5m)
+[15/15] mult_ncp35       ok                              114.4s (wall  6.7m)
+
+Wrote /Users/brendanwells/work/mozaic-daily/research/param-scans/aug22-retune/round3/round3_scores.csv
+
+label            regime           trough_post         gap    dec15_post     dec15_Δ
+  mult_center      multiplicative    44,539,723    -520,277    48,778,383    +192,900
+  mult_cps005      multiplicative    44,540,877    -519,123    48,771,692    +186,209
+  mult_cps12       multiplicative    44,538,835    -521,165    48,779,970    +194,487
+  mult_cps15983    multiplicative    44,533,758    -526,242    48,780,129    +194,646
+  mult_cps20       multiplicative    44,538,580    -521,420    48,780,599    +195,116
+  mult_cps30       multiplicative    44,537,529    -522,471    48,777,740    +192,257
+  mult_cpr055      multiplicative    44,640,182    -419,818    48,826,483    +241,000
+  mult_cpr060      multiplicative    44,613,462    -446,538    48,806,713    +221,230
+  mult_cpr070      multiplicative    44,538,192    -521,808    48,790,028    +204,545
+  mult_cpr080      multiplicative    44,468,997    -591,003    48,473,473    -112,010
+  mult_cpr090      multiplicative    44,425,756    -634,244    48,771,931    +186,448
+  mult_ncp20       multiplicative    44,548,114    -511,886    48,747,128    +161,645
+  mult_ncp35       multiplicative    44,576,778    -483,222    48,746,799    +161,316
+  mult_recent8     multiplicative    44,544,327    -515,673    48,787,877    +202,394
+  mult_recent20    multiplicative    44,515,857    -544,143    48,760,213    +174,730

@@ -1,0 +1,112 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+
+============================================================
+FILTERED MODE ENABLED
+  Data sources: legacy_desktop
+  Metrics: DAU
+============================================================
+
+Running forecast from 2026-07-06 through 2027-12-31
+Other config:
+{'forecast_run_dt': datetime.datetime(2026, 7, 10, 13, 46, 0, 790970), 'forecast_start_date': '2026-07-06', 'forecast_end_date': '2027-12-31', 'training_end_date': '2026-07-05', 'countries': {'CA', 'AR', 'FR', 'BR', 'PL', 'US', 'DE', 'IT', 'MX', 'IR', 'CN', 'ID', 'JP', 'IN', 'RU'}, 'country_string': "'AR', 'BR', 'CA', 'CN', 'DE', 'FR', 'ID', 'IN', 'IR', 'IT', 'JP', 'MX', 'PL', 'RU', 'US'", 'validation_countries': {'CA', 'AR', 'ALL', 'FR', 'BR', 'PL', 'US', 'DE', 'IT', 'MX', 'IR', 'CN', 'ID', 'JP', 'ROW', 'IN', 'RU'}}
+Pre-flight check: verifying training data is available through 2026-07-05...
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates' done 4s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.firefox_desktop.new_profiles_aggregates' done 3s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates' done 3s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.active_users_aggregates' done 4s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.desktop_new_profiles' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.desktop_engagement' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates' done 3s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.mobile_new_profiles' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.mobile_engagement' done 3s.
+Pre-flight check passed: all tables have data through 2026-07-05.
+[1/1] Querying Desktop Legacy DAU
+
+    SELECT submission_date AS x,
+           IF(country IN ('AR', 'BR', 'CA', 'CN', 'DE', 'FR', 'ID', 'IN', 'IR', 'IT', 'JP', 'MX', 'PL', 'RU', 'US'), country, 'ROW') AS country,
+           IFNULL(LOWER(os_version) LIKE '%windows 1%', FALSE) AS modern_windows,
+           IFNULL(LOWER(os_version) LIKE '%windows%' AND LOWER(os_version) NOT LIKE '%windows 10%' AND LOWER(os_version) NOT LIKE '%windows 11%', FALSE) AS winX,
+           SUM(dau) AS y,
+     FROM `moz-fx-data-shared-prod.telemetry.active_users_aggregates`
+    WHERE app_name = "Firefox Desktop" AND submission_date >= "2020-01-01"
+    GROUP BY ALL
+    ORDER BY 1, 2 ASC
+    
+[BQ-WATCHDOG] 'Desktop Legacy DAU' 30s. Next ≤35s. If stalled: check bigquerystorage host allowlist, ADC creds, or set MOZAIC_DAILY_DISABLE_BQSTORAGE=1.
+[BQ-WATCHDOG] 'Desktop Legacy DAU' 60s. Next ≤35s.
+[BQ-WATCHDOG] 'Desktop Legacy DAU' done 60s.
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-12-25 (-0.695), 2027-01-01 (-0.900), 2027-02-08 (-0.908), 2027-02-09 (-0.703)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-12-25 (-0.780), 2026-12-31 (-0.622), 2027-01-01 (-1.013), 2027-03-26 (-0.645), 2027-05-01 (-0.732)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-02-05 (-0.733), 2027-02-06 (-0.655), 2027-02-08 (-0.621), 2027-02-09 (-0.605), 2027-02-10 (-0.603)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-05-17 (-1.097)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-05-17 (-0.890)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-01-01 (-0.836), 2027-02-06 (-0.644), 2027-03-08 (-0.717), 2027-03-09 (-0.611), 2027-03-10 (-0.661), 2027-03-11 (-0.605), 2027-05-01 (-0.688), 2027-05-06 (-0.602), 2027-12-25 (-0.656)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-04-01 (-0.619), 2027-04-02 (-0.931)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-08-15 (-0.856), 2026-11-01 (-0.730), 2026-12-25 (-0.614), 2027-01-01 (-0.718), 2027-03-29 (-0.971), 2027-05-01 (-0.668), 2027-08-15 (-0.973), 2027-11-01 (-0.930)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-12-25 (-0.662), 2027-01-01 (-0.785), 2027-02-01 (-0.605), 2027-03-15 (-0.627)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-08-15 (-0.671), 2026-12-24 (-0.900), 2026-12-25 (-0.791), 2026-12-26 (-0.603), 2027-01-01 (-0.613), 2027-05-01 (-0.773), 2027-08-15 (-0.692), 2027-12-24 (-0.908), 2027-12-25 (-0.662)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-05-01 (-0.633)
+  unmatched = self._predict_holiday_effects()
+Marketing-lift: using spec /Users/brendanwells/work/mozaic-daily/data-official/2026-07/marketing/marketing.json
+Launch-on-login: using spec /Users/brendanwells/work/mozaic-daily/data-official/2026-07/launch_on_login/lol.json
+MozillaOnline: using spec /Users/brendanwells/work/mozaic-daily/data-official/2026-07/mozillaonline/mozillaonline.json
+
+[1/1] Forecasting Desktop Legacy
+Launch-on-login: subtracting from DAU training data (16 countries, 38096 modern_windows rows)
+MozillaOnline: subtracting from DAU training data (5 countries, 38096 modern_windows rows)
+
+--- Populate tiles
+
+
+DAU
+
+ AR: modern_windows, other, winX, 
+ BR: modern_windows, other, winX, 
+ CA: modern_windows, other, winX, 
+ CN: modern_windows, other, winX, 
+ DE: modern_windows, other, winX, 
+ FR: modern_windows, other, winX, 
+ ID: modern_windows, other, winX, 
+ IN: modern_windows, other, winX, 
+ IR: modern_windows, other, winX, 
+ IT: modern_windows, other, winX, 
+ JP: modern_windows, other, winX, 
+ MX: modern_windows, other, winX, 
+ PL: modern_windows, other, winX, 
+ROW: modern_windows, other, winX, 
+ RU: modern_windows, other, winX, 
+ US: modern_windows, other, winX, 
+
+--- Curate Mozaics
+
+DAU
+   countries: AR, BR, CA, CN, DE, FR, ID, IN, IR, IT, JP, MX, PL, ROW, RU, US, 
+   populations: modern_windows, other, winX, 
+   reconciling...
+
+⚠️ New holidays in forecasted dates:
+ - JP National Holiday
+
+done.
+
+--- Extracting forecasts (1 metrics)
+  [1/1] DAU
+Launch-on-login: added back across 198696 rows (36992 forecast + 161704 training/actual)
+MozillaOnline: added back across 198696 rows (36992 forecast + 161704 training/actual)
+Saved mozaic objects to research/param-scans/aug22-retune/_rawcache/mozaic_objects.legacy_desktop.2026-07-06.pkl
+
+
+Done with forecasts

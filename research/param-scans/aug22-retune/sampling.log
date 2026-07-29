@@ -1,0 +1,99 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+========================================================================
+Aug-trough sampling (28 LHS, extended multiplicative box) — 28 probes
+Center (locked): cps=0.08983 cpr=0.65 recent=13 ncp=25 sps=0.00825 regime=auto
+Target: Global trough(2026-08-22) post-headwind 28d-MA -> 45.06M +-0.1M
+Raw cache: research/param-scans/aug22-retune/_rawcache
+Round dir: /Users/brendanwells/work/mozaic-daily/research/param-scans/aug22-retune/sampling
+========================================================================
+  s00              regime=multiplicative, scale=0.1028, range=0.8785, weeks=11, changepoints=29
+  s01              regime=multiplicative, scale=0.1849, range=0.734, weeks=17, changepoints=35
+  s02              regime=multiplicative, scale=0.2598, range=0.537, weeks=14, changepoints=23
+  s03              regime=multiplicative, scale=0.2482, range=0.6451, weeks=11, changepoints=20
+  s04              regime=multiplicative, scale=0.2012, range=0.6356, weeks=13, changepoints=38
+  s05              regime=multiplicative, scale=0.0816, range=0.857, weeks=15, changepoints=33
+  s06              regime=multiplicative, scale=0.2997, range=0.603, weeks=19, changepoints=20
+  s07              regime=multiplicative, scale=0.27, range=0.7709, weeks=14, changepoints=37
+  s08              regime=multiplicative, scale=0.1339, range=0.568, weeks=11, changepoints=25
+  s09              regime=multiplicative, scale=0.2054, range=0.7099, weeks=13, changepoints=27
+  s10              regime=multiplicative, scale=0.2177, range=0.7938, weeks=12, changepoints=25
+  s11              regime=multiplicative, scale=0.1172, range=0.6976, weeks=16, changepoints=36
+  s12              regime=multiplicative, scale=0.0893, range=0.816, weeks=19, changepoints=23
+  s13              regime=multiplicative, scale=0.2294, range=0.6857, weeks=10, changepoints=26
+  s14              regime=multiplicative, scale=0.0661, range=0.7537, weeks=9, changepoints=22
+  s15              regime=multiplicative, scale=0.0393, range=0.5267, weeks=20, changepoints=32
+  s16              regime=multiplicative, scale=0.1778, range=0.5547, weeks=13, changepoints=24
+  s17              regime=multiplicative, scale=0.2361, range=0.6256, weeks=8, changepoints=19
+  s18              regime=multiplicative, scale=0.1502, range=0.583, weeks=10, changepoints=18
+  s19              regime=multiplicative, scale=0.1379, range=0.8861, weeks=15, changepoints=30
+  s20              regime=multiplicative, scale=0.1663, range=0.7747, weeks=17, changepoints=34
+  s21              regime=multiplicative, scale=0.2853, range=0.5116, weeks=17, changepoints=30
+  s22              regime=multiplicative, scale=0.0515, range=0.9414, weeks=15, changepoints=31
+  s23              regime=multiplicative, scale=0.075, range=0.9044, weeks=16, changepoints=28
+  s24              regime=multiplicative, scale=0.2753, range=0.9259, weeks=18, changepoints=39
+  s25              regime=multiplicative, scale=0.0477, range=0.6632, weeks=12, changepoints=37
+  s26              regime=multiplicative, scale=0.1621, range=0.8326, weeks=9, changepoints=32
+  s27              regime=multiplicative, scale=0.1102, range=0.8447, weeks=19, changepoints=40
+[1/28] s03              ok                               95.3s (wall  1.6m)
+[2/28] s02              ok                               99.7s (wall  1.7m)
+[3/28] s00              ok                              101.7s (wall  1.7m)
+[4/28] s01              ok                              114.7s (wall  1.9m)
+[5/28] s06              ok                               95.9s (wall  3.3m)
+[6/28] s05              ok                              109.6s (wall  3.5m)
+[7/28] s04              ok                              123.9s (wall  3.7m)
+[8/28] s07              ok                              118.5s (wall  3.9m)
+[9/28] s08              ok                              103.7s (wall  5.0m)
+[10/28] s10              ok                               95.3s (wall  5.2m)
+[11/28] s09              ok                              105.1s (wall  5.2m)
+[12/28] s11              ok                              114.0s (wall  5.8m)
+[13/28] s12              ok                               89.7s (wall  6.5m)
+[14/28] s14              ok                               88.5s (wall  6.7m)
+[15/28] s13              ok                               98.1s (wall  6.9m)
+[16/28] s15              ok                              106.3s (wall  7.6m)
+[17/28] s17              ok                               91.1s (wall  8.2m)
+[18/28] s16              ok                              103.6s (wall  8.2m)
+[19/28] s18              ok                               88.9s (wall  8.4m)
+[20/28] s19              ok                              100.7s (wall  9.2m)
+[21/28] s22              ok                               99.7s (wall 10.0m)
+[22/28] s21              ok                              109.5s (wall 10.1m)
+[23/28] s20              ok                              110.2s (wall 10.1m)
+[24/28] s23              ok                               94.5s (wall 10.8m)
+[25/28] s26              ok                              103.6s (wall 11.8m)
+[26/28] s24              ok                              111.1s (wall 11.9m)
+[27/28] s25              ok                              115.7s (wall 12.0m)
+[28/28] s27              ok                              114.9s (wall 12.7m)
+
+Wrote /Users/brendanwells/work/mozaic-daily/research/param-scans/aug22-retune/sampling/sampling_scores.csv
+
+label            regime           trough_post         gap    dec15_post     dec15_Δ
+  s00              multiplicative    44,587,773    -472,227    48,699,791    +114,308
+  s01              multiplicative    44,675,384    -384,616    48,525,451     -60,032
+  s02              multiplicative    44,666,222    -393,778    48,937,004    +351,521
+  s03              multiplicative    44,558,294    -501,706    48,748,000    +162,517
+  s04              multiplicative    44,544,314    -515,686    48,700,847    +115,364
+  s05              multiplicative    44,202,972    -857,028    48,153,876    -431,607
+  s06              multiplicative    44,670,207    -389,793    48,731,777    +146,294
+  s07              multiplicative    44,585,286    -474,714    48,500,355     -85,128
+  s08              multiplicative    44,630,166    -429,834    48,794,033    +208,550
+  s09              multiplicative    44,500,376    -559,624    48,712,497    +127,014
+  s10              multiplicative    44,507,780    -552,220    48,506,213     -79,270
+  s11              multiplicative    44,574,187    -485,813    48,791,549    +206,066
+  s12              multiplicative    44,400,316    -659,684    48,489,380     -96,103
+  s13              multiplicative    44,550,951    -509,049    48,797,537    +212,054
+  s14              multiplicative    44,524,249    -535,751    48,587,574      +2,091
+  s15              multiplicative    44,706,228    -353,772    48,947,121    +361,638
+  s16              multiplicative    44,586,244    -473,756    48,822,611    +237,128
+  s17              multiplicative    44,576,949    -483,051    48,762,070    +176,587
+  s18              multiplicative    44,593,026    -466,974    48,789,170    +203,687
+  s19              multiplicative    44,382,590    -677,410    48,608,496     +23,013
+  s20              multiplicative    44,550,401    -509,599    48,488,959     -96,524
+  s21              multiplicative    44,830,988    -229,012    49,108,582    +523,099
+  s22              multiplicative    44,722,370    -337,630    50,013,730  +1,428,247
+  s23              multiplicative    44,540,500    -519,500    48,990,340    +404,857
+  s24              multiplicative    44,657,086    -402,914    49,661,482  +1,075,999
+  s25              multiplicative    44,578,188    -481,812    48,748,551    +163,068
+  s26              multiplicative    44,508,731    -551,269    48,551,226     -34,257
+  s27              multiplicative    44,436,985    -623,015    48,392,730    -192,753

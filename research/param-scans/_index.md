@@ -2,11 +2,15 @@
 
 Sweeps over `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold`, and `clip` to understand how the model responds. Desktop-only (mobile's parameter search lives elsewhere — see scope discussion in CLAUDE.md).
 
+Most sweeps here target the **Dec-15 far horizon**. The one exception is `aug22-retune/`, which
+targets the **Aug-2026 summer trough** — a near-horizon KPI with its own scorer and driver.
+
 ## Files
 
 | File | Purpose |
 |---|---|
 | `param_scan_exploration.ipynb` | Analysis notebook; reads from `results/` and `pinned/` |
+| `aug22-retune/` | Near-horizon (Aug-22 trough) desktop retune — 3 rounds + LHS sampling. Concluded params **can't** hit Aug without breaking Dec; recommends a summer-trough overlay. See its `_index.md`. |
 | `results/` | Output of `scripts/run_param_scan.py` — unpinned wide sweep. **Gitignored, regenerable.** |
 | `pinned/` | Output of `scripts/run_pinned_scan.py` — curated subset reusing the April changepoints pkl. **Gitignored, regenerable.** |
 

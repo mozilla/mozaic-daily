@@ -1,0 +1,42 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+========================================================================
+Aug-trough gradient round 2 — 9 probes
+Center (locked): cps=0.08983 cpr=0.65 recent=13 ncp=25 sps=0.00825 regime=auto
+Target: Global trough(2026-08-22) post-headwind 28d-MA -> 45.06M +-0.1M
+Raw cache: research/param-scans/aug22-retune/_rawcache
+Round dir: /Users/brendanwells/work/mozaic-daily/research/param-scans/aug22-retune/round2
+========================================================================
+  auto__sps00825   (center: locked)
+  auto__sps003     scale=0.003
+  mult__sps00825   regime=multiplicative
+  mult__sps005     regime=multiplicative, scale=0.05
+  mult__sps05      regime=multiplicative, scale=0.5
+  mult__sps2       regime=multiplicative, scale=2.0
+  mult__sps10      regime=multiplicative, scale=10.0
+  add__sps00825    regime=additive
+  add__sps003      regime=additive, scale=0.003
+[1/9] mult__sps00825   ok                              100.3s (wall  1.7m)
+[2/9] mult__sps005     ok                              101.0s (wall  1.7m)
+[3/9] auto__sps003     ok                              153.0s (wall  2.5m)
+[4/9] auto__sps00825   ok                              160.2s (wall  2.7m)
+[5/9] mult__sps2       ok                               99.5s (wall  3.3m)
+[6/9] mult__sps05      ok                              102.0s (wall  3.4m)
+[7/9] mult__sps10      ok                               99.2s (wall  4.2m)
+[8/9] add__sps00825    ok                              175.6s (wall  5.6m)
+[9/9] add__sps003      ok                              171.2s (wall  6.2m)
+
+Wrote /Users/brendanwells/work/mozaic-daily/research/param-scans/aug22-retune/round2/round2_scores.csv
+
+label            regime           trough_post         gap    dec15_post     dec15_Δ
+  auto__sps00825   auto              43,246,576  -1,813,424    48,585,483          +0
+  auto__sps003     auto              45,287,305    +227,305    45,668,335  -2,917,148
+  mult__sps00825   multiplicative    44,539,723    -520,277    48,778,383    +192,900
+  mult__sps005     multiplicative    44,531,645    -528,355    48,771,640    +186,157
+  mult__sps05      multiplicative    44,536,639    -523,361    48,785,646    +200,163
+  mult__sps2       multiplicative    44,537,647    -522,353    48,777,538    +192,055
+  mult__sps10      multiplicative    44,534,409    -525,591    48,787,181    +201,698
+  add__sps00825    additive          43,243,611  -1,816,389    48,586,588      +1,105
+  add__sps003      additive          45,275,127    +215,127    45,667,152  -2,918,331
