@@ -290,6 +290,8 @@ def build_config(args: argparse.Namespace) -> DesktopModelConfig:
         overrides["prophet_seasonality_prior_scale"] = args.seasonality_prior_scale
     if args.seasonality_regime is not None:
         overrides["seasonality_regime"] = args.seasonality_regime
+    if args.seasonality_corr_threshold is not None:
+        overrides["seasonality_corr_threshold"] = args.seasonality_corr_threshold
     if args.holiday_threshold is not None:
         overrides["holiday_threshold"] = args.holiday_threshold
     if args.holiday_max_radius is not None:
@@ -347,6 +349,12 @@ def parse_args() -> argparse.Namespace:
     g.add_argument("--seasonality-regime", type=str, default=None,
                    choices=["auto", "additive", "multiplicative"],
                    help="DesktopModelConfig.seasonality_regime (default auto)")
+    g.add_argument("--seasonality-corr-threshold", type=float, default=None,
+                   help="DesktopModelConfig.seasonality_corr_threshold (default 0.0, the "
+                        "legacy hardcoded cutoff). Per-tile cutoff on corr(|y|,|dy|): a "
+                        "tile runs multiplicative+linear above it. Lower => more tiles "
+                        "multiplicative, so this dials continuously between the additive "
+                        "and multiplicative regimes. Only meaningful with regime=auto.")
 
     g = parser.add_argument_group("Holiday knobs")
     g.add_argument("--holiday-threshold", type=float, default=None,
