@@ -7,7 +7,7 @@ Versioned forecast outputs and the adjustment specs that derive composite number
 ```
 data-official/
   adjustment_codes.yaml             # registry of adjustment codes used in filenames
-  2026-04/                          # April 2026 forecast cycle (forecast_start 2026-04-01)
+  <cycle>/                          # e.g. 2026-04 — the per-cycle shape, kept for reference
     desktop_<config-slug>/
       mozaic_daily_forecast.<date>.ld-D.raw.parquet            # raw desktop forecast
       mozaic_daily_forecast.<date>.ld-D.raw.parquet.meta.json  # sidecar provenance
@@ -20,21 +20,6 @@ data-official/
     adjustments/
       headwind.json                                            # linear_ramp spec
     comparisons/                                               # scratch param-scan runs
-  2026-06/
-    ...                                                        # same pattern
-    june_composite_forecast_28ma.adj-h.csv                     # headwind-applied composite
-    june_composite_forecast_28ma.adj-h.csv.meta.json
-    june_mobile_plot_series.adj-h.csv                          # headwind-applied plot data
-    june_composite_forecast.ipynb                              # producer notebook
-    marketing/                                                 # marketing-lift adjustment (`m`)
-      marketing.json                                           # spec consumed by the pipeline
-      marketing_lift_model.<date>.parquet                      # daily lift series
-      marketing_lift_model.<date>.meta.json                    # sidecar with model provenance
-      README.md
-    mobile_<config-slug>/
-      mozaic_daily_forecast.<date>.gm-D.adj-m.parquet          # marketing-lift applied
-      ...
-    june_composite_forecast_28ma.adj-hm.csv                    # headwinds + marketing-lift
   2026-07/                          # July 2026 cycle (forecast_start 2026-07-06, both platforms)
     desktop_locked/                                            # LOCKED desktop, adj-lo (l+o overlays)
       mozaic_daily_forecast.2026-07-06.ld-D.adj-lo.parquet
@@ -51,8 +36,36 @@ data-official/
 
 **Working-tree scope:** only the **current cycle + N-1** stay on disk in full; older cycles and all
 superseded/intermediate large artifacts are archived to GCS
-(`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/{cycle}/`) and recoverable from the
-`july-forecast` branch history. See each cycle's `_index.md` "Present vs Archived" section.
+(`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/{cycle}/`) and recoverable from that
+cycle's branch history. See each cycle's `_index.md` "Present vs Archived" section.
+
+**Cycle roll-forward.** On this branch the window has advanced for the **August 2026** cycle:
+
+| cycle | state |
+|---|---|
+| `2026-08` | current — created on the `august-forecast` branch |
+| `2026-07` | N-1, present in full. The prior-forecast comparison series for August comes from here |
+| `2026-06` | N-2, **retained deliberately** — see below. Its large artifacts already went to GCS `june-2026/` during the July button-down; only ~10 MB of specs, canonical CSVs, and sidecars remain |
+| `2026-04` | removed in an earlier roll-forward. GCS `april-2026/`, branch `april-forecasting` |
+
+**Why 2026-06 is not pruned.** The rule is "current + N-1 in full", and June is N-2 — but its
+remaining tracked files are *load-bearing for the July cycle*, so deleting them would break
+reproducibility of the cycle we still depend on:
+
+- `marketing/marketing_lift_model.real_data_v2.hybrid.2026-05-22.parquet` (+ its `.meta.json`) is
+  what July's `marketing/build_lift.py` and the canonical `m` spec chain read.
+- `mozillaonline/june_delivered_mo_tailwind.json` is read by July's canonical-review notebook and by
+  `research/param-scans/aug22-retune/`.
+- `csv/june_canonical_curves.csv` is the N-1 comparison series for
+  `research/ma-seam-turbulence/backtest_seam.py` and `scripts/mobile_sensitivity.py`.
+- `adjustments/headwind.json` and `export_canonical_curves.py` are referenced across July.
+
+Pruning it saves ~10 MB and costs a broken July. **Revisit when July becomes N-2** (i.e. at the
+September roll-forward), at which point the August cycle should own its own copies of whatever it
+still needs and June can go.
+
+The prune is always done on this base branch, never on a cycle branch — cycle branches keep the
+complete record of what that cycle shipped.
 
 ## Naming convention (load-bearing files only)
 
