@@ -358,6 +358,14 @@ def parse_args() -> argparse.Namespace:
     g.add_argument("--holiday-effect-floor", type=float, default=None,
                    help="DesktopModelConfig.holiday_effect_floor (default -0.6)")
 
+    g = parser.add_argument_group("Overlay toggles (for isolating one overlay's effect)")
+    g.add_argument("--no-launch-on-login", action="store_true",
+                   help="Disable the launch-on-login (`l`) overlay even if a spec matches. "
+                        "Output is stamped without the `l` code.")
+    g.add_argument("--no-mozillaonline", action="store_true",
+                   help="Disable the MozillaOnline (`o`) overlay even if a spec matches. "
+                        "Output is stamped without the `o` code.")
+
     return parser.parse_args()
 
 
@@ -406,18 +414,25 @@ def main_cli() -> None:
 
     # Determine which desktop overlays apply for this forecast start (l / o).
     # main() applies them by default when their spec matches; we mirror that here
-    # to stamp the output marker + meta correctly.
+    # to stamp the output marker + meta correctly. The --no-* toggles suppress an
+    # overlay even when its spec matches, so a single overlay's effect can be
+    # isolated by differencing runs; the suppressed code is left off the marker so
+    # the filename always describes what is actually baked into the parquet.
     applied_codes: list[str] = []
     code_to_spec_file: dict[str, Path] = {}
     lol_spec = _find_launch_on_login_spec_for_forecast(args.forecast_start_date)
-    if lol_spec is not None:
+    if lol_spec is not None and not args.no_launch_on_login:
         applied_codes.append("l")
         code_to_spec_file["l"] = lol_spec
     mo_spec = _find_mozillaonline_spec_for_forecast(args.forecast_start_date)
-    if mo_spec is not None:
+    if mo_spec is not None and not args.no_mozillaonline:
         applied_codes.append("o")
         code_to_spec_file["o"] = mo_spec
     print(f"Desktop overlays applied this scan: {applied_codes or 'none (raw)'}")
+    for flag, code, spec in [(args.no_launch_on_login, "l", lol_spec),
+                             (args.no_mozillaonline, "o", mo_spec)]:
+        if flag and spec is not None:
+            print(f"  NOTE: `{code}` spec matched but was suppressed by --no-* flag.")
 
     # Patch process_data_source to inject our config (overlays applied within).
     run_main_module.process_data_source = _make_process_data_source_with_config(config)
@@ -428,6 +443,8 @@ def main_cli() -> None:
             metric_filter={Metric.DAU},
             forecast_start_date=args.forecast_start_date,
             output_dir=str(slug_dir),
+            launch_on_login=not args.no_launch_on_login,
+            mozillaonline=not args.no_mozillaonline,
         )
     finally:
         run_main_module.process_data_source = _original_process_data_source

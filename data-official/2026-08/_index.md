@@ -73,6 +73,12 @@ current data (measurement stopped 2026-06-23). See the caveats cell and `adjustm
 - **Producer / review notebook** — `august_canonical_v2026-07-28.ipynb` (16 cells, executed with
   outputs). The single canonical view: both platform plots, the ex-Iran mobile plot, the Dec-15 table,
   and the caveats. All plots are generated inside the notebook and saved to `plots/`.
+- **Adjustment-ladder diagnostic** — `desktop_adjustment_ladder.ipynb` (+ `adjustment_isolation/`).
+  Desktop only. Turns each adjustment on one at a time so its individual effect is visible. **Its main
+  finding: the seam discontinuity at 2026-07-28 is 100.9% the display-layer headwind**, not the model —
+  the raw model output is continuous across the seam, and no parameter value can change that. Also
+  measures the `l`/`o` interaction term (−15,590 at Dec-15) and contrasts the two headwind ramp
+  conventions. **Read this before starting a parameter search.**
 - **Desktop forecast** — `desktop_baseline_2026-07-28/cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet`
   (+ sidecar, `parameters.json`). Pre-headwind; `l` (180K) + `o` baked in. **The directory name is now a
   slight misnomer** — it held the 125K baseline, which this build overwrote in place. Kept as-is because
