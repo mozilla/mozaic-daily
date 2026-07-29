@@ -34,21 +34,26 @@ built-in counterfactual fill.
 
 ## Result (Dec-15 2026, 28d-MA, headwind applied)
 
-**48,561,795** — **−23,689 (−0.05%)** vs July's delivered 48,585,483.
+**48,611,795** — **+26,312 (+0.05%)** vs July's delivered 48,585,483.
 
-Aug-22 summer trough: 43,387,545 (post-headwind).
+Aug-22 summer trough: 43,415,259 (post-headwind).
 
-Decomposed against the superseded 125K baseline, which shared this build's anchor and data:
+Attribution ledger (the notebook asserts this closes against the measured value; residual −0):
 
-| | Dec-15 28d-MA | Aug-22 trough | attribution |
-|---|--:|--:|---|
-| July delivered (125K, 07-06 anchor) | 48,585,483 | 43,246,576 | — |
-| Aug baseline (125K, 07-28 anchor) — superseded | 48,520,714 | 43,349,248 | data refresh: −64,769 |
-| **Aug current (165K, 07-28 anchor)** | **48,561,795** | **43,387,545** | LOL cap: **+41,081** |
+| | Dec-15 28d-MA | step |
+|---|--:|--:|
+| July delivered (125K LOL, hw −1,345,000, 07-06 anchor) | 48,585,483 | — |
+| Aug baseline (125K LOL, hw −1,345,000, 07-28 anchor) — superseded | 48,520,714 | −64,769 data refresh |
+| Aug, LOL 165K (hw −1,345,000) — superseded | 48,561,795 | +41,081 LOL cap |
+| **Aug current (165K LOL, hw −1,295,000)** | **48,611,795** | +50,000 headwind |
 
-The LOL curve is +40,000/day higher at every forecast date and the realised Dec-15 effect was +41,081 —
-essentially pass-through, with a −1,081 (−3%) amplification rather than an offset. The extra training
-subtraction covers only 39 recent days, which barely shifts Prophet's fitted trend five months out.
+**Only the first two steps involved this parquet.** The LOL cap change required rebuilding it; the
+headwind step did not — `h` is applied to the 28-day MA in the canonical notebook, never to the training
+frame, so its Dec-15 effect is exactly the anchor delta with no Prophet interaction.
+
+The LOL curve is +40,000/day higher at every forecast date and the realised effect was +41,081 —
+essentially pass-through, a +3% amplification rather than an offset, because the extra training
+subtraction covers only 39 recent days and barely shifts the fitted trend five months out.
 
 ## Reproduce
 

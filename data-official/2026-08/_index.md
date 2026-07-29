@@ -2,43 +2,56 @@
 
 Active cycle (branch `august-forecast`, off `clean-slate`).
 
-## Status: LOL-165K iteration complete — not yet a delivered forecast
+## Status: LOL-165K + headwind −1,295,000 — not yet a delivered forecast
 
 Current build is at forecast_start **2026-07-28** (trained through 2026-07-27) with July's locked
-parameters and the **launch-on-login (`l`) ceiling raised 125,000 → 165,000 DAU/day** (rebuilt
-2026-07-29). `o`, `m`, and the Win10 headwind anchor are unchanged carry-forwards from July.
+parameters, the **launch-on-login (`l`) ceiling raised 125,000 → 165,000 DAU/day** (rebuilt 2026-07-29),
+and the **Win10 headwind desktop anchor attenuated +50,000 to −1,295,000**. `o` and `m` are unchanged
+stale carry-forwards from July.
 
 **Dec-15 2026 28d-MA (headwind applied):**
 
-| platform | Aug (LOL 165K) | Jul delivered | delta |
+| platform | Aug current | Jul delivered | delta |
 |---|--:|--:|--:|
-| Desktop | 48,561,795 | 48,585,483 | −23,689 (−0.05%) |
+| Desktop | 48,611,795 | 48,585,483 | +26,312 (+0.05%) |
 | Mobile | 17,924,607 | 17,923,869 | +738 (+0.00%) |
-| **ALL** | **66,486,402** | **66,509,352** | **−22,950 (−0.03%)** |
+| **ALL** | **66,536,402** | **66,509,352** | **+27,050 (+0.04%)** |
 
-Aug-22 summer trough (28d-MA, post-headwind): Desktop 43,387,545 · Mobile 17,046,467 · ALL 60,434,013.
+Aug-22 summer trough (28d-MA, post-headwind): Desktop 43,415,259 · Mobile 17,046,467 · ALL 60,461,726.
 
-### Attribution — the two effects separated
+### Attribution ledger
 
-The superseded 125K build shared this build's anchor and data, so differencing against it isolates the
-cap change from the data refresh:
+Three independent changes separate July's delivered desktop number from the current one. The notebook
+computes this ledger and **asserts it closes against the measured value** (residual −0), so a stale
+reference constant cannot pass silently:
 
-| desktop Dec-15 28d-MA | value | vs previous row |
+| desktop Dec-15 28d-MA | step | running |
 |---|--:|--:|
-| July delivered (125K, 2026-07-06 anchor) | 48,585,483 | — |
-| Aug baseline (125K, 2026-07-28 anchor) — **superseded** | 48,520,714 | −64,769 ← data refresh alone |
-| **Aug current (165K, 2026-07-28 anchor)** | **48,561,795** | **+41,081 ← LOL cap alone** |
+| July delivered (125K LOL, hw −1,345,000, 07-06 anchor) | — | 48,585,483 |
+| + data refresh to the 07-28 anchor | −64,769 | 48,520,714 |
+| + LOL ceiling 125K → 165K | +41,081 | 48,561,795 |
+| + Win10 headwind −1,345,000 → −1,295,000 | +50,000 | **48,611,795** |
 
-**The cap change passed through nearly one-for-one.** The curve is +40,000/day higher at every forecast
-date and the realised Dec-15 effect was +41,081 — a −1,081 (−3%) *amplification*, not the material
-offset that the bidirectional structure might suggest. Reason: the extra subtraction lands on only 39
-recent training days (2026-06-19 → 2026-07-27, mean +30,145/day), which barely moves Prophet's fitted
-trend five months out, so almost all of the add-back survives to Dec-15. Do not generalise July's
-"125K curve netted only +102K" to *marginal* cap changes — that figure was the absolute effect of
-introducing the whole curve.
+Two things worth reading off this:
 
-**Still not the number to publish.** `o` and `m` remain ~4–5 weeks stale and the headwind anchor was
-not revisited. See the caveats cell at the bottom of the notebook.
+**The LOL cap change passed through nearly one-for-one.** The curve is +40,000/day higher at every
+forecast date and the realised Dec-15 effect was +41,081 — a +3% *amplification*, not the material
+offset the bidirectional structure might suggest. The extra subtraction lands on only 39 recent training
+days (2026-06-19 → 2026-07-27, mean +30,145/day), which barely moves Prophet's fitted trend five months
+out, so almost all of the add-back survives. **Do not generalise July's "125K curve netted only +102K"
+to marginal cap changes** — that was the absolute effect of introducing the whole curve from zero.
+
+**The headwind step is exactly +50,000 by construction.** `h` is a display-layer adjustment applied to
+the 28-day MA, never to the training frame, so its effect is the anchor delta with no Prophet
+interaction and it required no model re-run. (At Aug-22 the ramp is only ~55% elapsed, so the trough
+moved +27,714, not +50,000.)
+
+**Net: the two upward adjustments together (+91,081) more than offset the data refresh (−64,769)**, so
+desktop now sits +26,312 above July's delivered number rather than −64,769 below it.
+
+**Still not the number to publish.** `o` and `m` remain ~4–5 weeks stale, and the headwind anchor has
+now been attenuated three cycles running without a data-side validation. See the caveats cell at the
+bottom of the notebook and `adjustments/_index.md`.
 
 ## Current working set
 
@@ -130,10 +143,12 @@ Three checks run as assertions, not eyeballs:
   ~4–5 week-stale carry-forwards and each needs a fresh build against data through late July. This is
   now the main reason the forecast is not deliverable. `l` is **done** (165K, rebuilt 2026-07-29).
   Do them one at a time: changing two overlays in one run makes the Dec-15 delta uninterpretable.
-- **Revisit the Win10 headwind anchor.** −1,345,000 is July's value. July softened it from −1,420,000
-  on the reasoning that Prophet had partly learned the decline; five more weeks of data plausibly means
-  it should attenuate further. Both June and July concluded `adj-h` should shrink as the headwind lands
-  in the data.
+- **Validate the Win10 headwind anchor against data.** Now at −1,295,000, attenuated +50,000 from July's
+  −1,345,000 (2026-07-29). That is the third successive attenuation on the same rationale
+  (−1,420,000 → −1,370,000 → −1,345,000 → −1,295,000), and none of the steps has been checked against a
+  held-out estimate of how much of the Win10 decline Prophet actually absorbed. They are calibrated
+  judgements, each of which raises the reported number. A validation pass against realised Win10-cohort
+  DAU is worth doing before any further step. See `adjustments/_index.md`.
 - **`TODO_factors.md`** — begin as a diff against July's.
 - **Open, needs go/no-go — summer-trough overlay.** `research/param-scans/aug22-retune/` established
   that no exposed parameter combination lifts the Aug trough to target while holding Dec-15 (best
