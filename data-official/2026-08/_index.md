@@ -2,25 +2,43 @@
 
 Active cycle (branch `august-forecast`, off `clean-slate`).
 
-## Status: BASELINE run complete — not a delivered forecast
+## Status: LOL-165K iteration complete — not yet a delivered forecast
 
-A **baseline** exists at forecast_start **2026-07-28** (trained through 2026-07-27). It carries July's
-locked parameters and all four adjustments (`h`/`l`/`o`/`m`) **unchanged**, so it isolates one variable:
-what the July model says on five more weeks of data.
+Current build is at forecast_start **2026-07-28** (trained through 2026-07-27) with July's locked
+parameters and the **launch-on-login (`l`) ceiling raised 125,000 → 165,000 DAU/day** (rebuilt
+2026-07-29). `o`, `m`, and the Win10 headwind anchor are unchanged carry-forwards from July.
 
 **Dec-15 2026 28d-MA (headwind applied):**
 
-| platform | Aug baseline | Jul delivered | delta |
+| platform | Aug (LOL 165K) | Jul delivered | delta |
 |---|--:|--:|--:|
-| Desktop | 48,520,714 | 48,585,483 | −64,769 (−0.13%) |
+| Desktop | 48,561,795 | 48,585,483 | −23,689 (−0.05%) |
 | Mobile | 17,924,607 | 17,923,869 | +738 (+0.00%) |
-| **ALL** | **66,445,321** | **66,509,352** | **−64,031 (−0.10%)** |
+| **ALL** | **66,486,402** | **66,509,352** | **−22,950 (−0.03%)** |
 
-Aug-22 summer trough (28d-MA, post-headwind): Desktop 43,349,248 · Mobile 17,046,467 · ALL 60,395,715.
+Aug-22 summer trough (28d-MA, post-headwind): Desktop 43,387,545 · Mobile 17,046,467 · ALL 60,434,013.
 
-**This is not the number to publish.** The overlay curves are ~5 weeks stale and the headwind anchor
-was deliberately not revisited. See the `[baseline-caveats]` cell of the notebook for the specifics and
-the expected direction of each bias.
+### Attribution — the two effects separated
+
+The superseded 125K build shared this build's anchor and data, so differencing against it isolates the
+cap change from the data refresh:
+
+| desktop Dec-15 28d-MA | value | vs previous row |
+|---|--:|--:|
+| July delivered (125K, 2026-07-06 anchor) | 48,585,483 | — |
+| Aug baseline (125K, 2026-07-28 anchor) — **superseded** | 48,520,714 | −64,769 ← data refresh alone |
+| **Aug current (165K, 2026-07-28 anchor)** | **48,561,795** | **+41,081 ← LOL cap alone** |
+
+**The cap change passed through nearly one-for-one.** The curve is +40,000/day higher at every forecast
+date and the realised Dec-15 effect was +41,081 — a −1,081 (−3%) *amplification*, not the material
+offset that the bidirectional structure might suggest. Reason: the extra subtraction lands on only 39
+recent training days (2026-06-19 → 2026-07-27, mean +30,145/day), which barely moves Prophet's fitted
+trend five months out, so almost all of the add-back survives to Dec-15. Do not generalise July's
+"125K curve netted only +102K" to *marginal* cap changes — that figure was the absolute effect of
+introducing the whole curve.
+
+**Still not the number to publish.** `o` and `m` remain ~4–5 weeks stale and the headwind anchor was
+not revisited. See the caveats cell at the bottom of the notebook.
 
 ## Current working set
 
@@ -28,17 +46,30 @@ the expected direction of each bias.
   outputs). The single canonical view: both platform plots, the ex-Iran mobile plot, the Dec-15 table,
   and the caveats. All plots are generated inside the notebook and saved to `plots/`.
 - **Desktop forecast** — `desktop_baseline_2026-07-28/cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet`
-  (+ sidecar, `parameters.json`). Pre-headwind; `l`+`o` baked in.
+  (+ sidecar, `parameters.json`). Pre-headwind; `l` (165K) + `o` baked in. **The directory name is now a
+  slight misnomer** — it held the 125K baseline, which this build overwrote in place. Kept as-is because
+  the notebook and the committed sidecar reference the path.
 - **Mobile forecast** — `mobile_baseline_2026-07-28/cps0.035_thresh055_recent13_cpr0.75_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-07-28.gm-D.adj-m.parquet`
-  (+ sidecar, `parameters.json`). Pre-headwind; `m` baked in.
+  (+ sidecar, `parameters.json`). Pre-headwind; `m` baked in. **Not rebuilt for the LOL change** — `l`
+  is desktop-only, so this is byte-identical to the baseline run and its Dec-15 is unchanged (the
+  notebook asserts the drift is exactly 0).
 - **Adjustment specs (wired)** — `adjustments/headwind.json` (`h`, display layer),
   `launch_on_login/lol.json` (`l`), `mozillaonline/mozillaonline.json` (`o`),
-  `marketing/marketing.json` (`m`). All four are byte-identical carry-forwards of July's, with only
-  `applies_to_forecast_start` moved 2026-07-06 → 2026-07-28.
+  `marketing/marketing.json` (`m`). `h`, `o`, and `m` are byte-identical carry-forwards of July's with
+  only `applies_to_forecast_start` moved 2026-07-06 → 2026-07-28. **`l` is rebuilt** — see
+  `launch_on_login/_index.md`.
 - **Iran** — queried natively; the shutdown gap is covered by mozaic's built-in counterfactual fill
   (auto-applied by `populate_tiles`). No cycle-local artifact needed.
 
-## How the baseline was produced
+## How the current build was produced
+
+The **mobile** command below was run once (2026-07-29 10:0x) and has not been re-run since — `l` is
+desktop-only. The **desktop** command was run twice into the same directory: first with July's 125K LOL
+curve, then again after the 165K rebuild, overwriting it. The second run reused the cached raw BQ pull
+already present in the slug dir, so no `--raw-cache-dir` was needed. Logs:
+`logs/aug_baseline_{desktop,mobile}_2026-07-28.log` (125K) and
+`logs/aug_lol165_desktop_2026-07-28.log` (165K).
+
 
 ```bash
 source .venv/bin/activate
@@ -95,8 +126,10 @@ Three checks run as assertions, not eyeballs:
 
 ## Next up
 
-- **Re-measure and swap the three overlay curves.** All are carried forward stale; each needs a fresh
-  build against data through late July. This is the main reason the baseline is not deliverable.
+- **Re-measure and swap the remaining two overlay curves** (`o` MozillaOnline, `m` marketing). Both are
+  ~4–5 week-stale carry-forwards and each needs a fresh build against data through late July. This is
+  now the main reason the forecast is not deliverable. `l` is **done** (165K, rebuilt 2026-07-29).
+  Do them one at a time: changing two overlays in one run makes the Dec-15 delta uninterpretable.
 - **Revisit the Win10 headwind anchor.** −1,345,000 is July's value. July softened it from −1,420,000
   on the reasoning that Prophet had partly learned the decline; five more weeks of data plausibly means
   it should attenuate further. Both June and July concluded `adj-h` should shrink as the headwind lands

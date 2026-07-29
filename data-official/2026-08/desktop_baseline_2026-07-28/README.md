@@ -1,13 +1,19 @@
-# Desktop baseline — August 2026 (forecast_start 2026-07-28)
+# Desktop — August 2026 (forecast_start 2026-07-28, LOL 165K)
 
-`legacy_desktop` DAU baseline. **Not a delivered forecast** — see `../_index.md`.
+`legacy_desktop` DAU. **Not a delivered forecast** — see `../_index.md`.
+
+⚠️ **The directory name is a misnomer.** It originally held the 125K-LOL *baseline*, which the
+2026-07-29 LOL-165K rebuild **overwrote in place** (deliberately — 125K was July's number). The name is
+kept because the canonical notebook and the committed sidecar reference this path. The superseded
+baseline's Dec-15 was **48,520,714**, preserved here and in git commit `140412e`.
 
 Single config subdir: `cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/`.
 
 ## Files
 
 - `mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet` — the forecast. Overlays `l`
-  (launch-on-login) + `o` (MozillaOnline migration) applied bidirectionally on `modern_windows`.
+  (launch-on-login, **165K ceiling**) + `o` (MozillaOnline migration, stale July carry-forward) applied
+  bidirectionally on `modern_windows`.
   **Pre-headwind** — the Win10 headwind is a display-layer adjustment applied in the canonical notebook.
 - `…meta.json` — sidecar provenance (model config, adjustments + spec sha1s, commit).
 - `parameters.json` — the exact `DesktopModelConfig` used.
@@ -28,9 +34,21 @@ built-in counterfactual fill.
 
 ## Result (Dec-15 2026, 28d-MA, headwind applied)
 
-**48,520,714** — **−64,769 (−0.13%)** vs July's delivered 48,585,483.
+**48,561,795** — **−23,689 (−0.05%)** vs July's delivered 48,585,483.
 
-Aug-22 summer trough: 43,349,248 (post-headwind).
+Aug-22 summer trough: 43,387,545 (post-headwind).
+
+Decomposed against the superseded 125K baseline, which shared this build's anchor and data:
+
+| | Dec-15 28d-MA | Aug-22 trough | attribution |
+|---|--:|--:|---|
+| July delivered (125K, 07-06 anchor) | 48,585,483 | 43,246,576 | — |
+| Aug baseline (125K, 07-28 anchor) — superseded | 48,520,714 | 43,349,248 | data refresh: −64,769 |
+| **Aug current (165K, 07-28 anchor)** | **48,561,795** | **43,387,545** | LOL cap: **+41,081** |
+
+The LOL curve is +40,000/day higher at every forecast date and the realised Dec-15 effect was +41,081 —
+essentially pass-through, with a −1,081 (−3%) amplification rather than an offset. The extra training
+subtraction covers only 39 recent days, which barely shifts Prophet's fitted trend five months out.
 
 ## Reproduce
 

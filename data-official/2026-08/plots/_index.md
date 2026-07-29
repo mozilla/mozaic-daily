@@ -6,11 +6,15 @@ notebook cell the reader can re-run.
 
 | file | produced by | shows |
 |---|---|---|
-| `desktop_baseline_vs_july.png` | `[plot-desktop]` | Desktop DAU 28d-MA: actuals, July delivered, August baseline, Dec-15 markers |
-| `desktop_baseline_only.png` | `[plot-desktop-current-only]` | Same without the prior line |
-| `mobile_baseline_vs_july.png` | `[plot-mobile]` | Mobile DAU 28d-MA, same three series |
-| `mobile_baseline_only.png` | `[plot-mobile-current-only]` | Same without the prior line |
-| `mobile_ex_iran_baseline_vs_july.png` | `[plot-mobile-ex-iran]` | Mobile ex-Iran (ALL − IR), which strips the post-shutdown reconnection bounce |
+| `desktop_lol165_vs_july.png` | `[plot-desktop]` | Desktop DAU 28d-MA: actuals, July delivered, August LOL-165K, Dec-15 markers |
+| `desktop_lol165_only.png` | `[plot-desktop-current-only]` | Same without the prior line |
+| `mobile_august_vs_july.png` | `[plot-mobile]` | Mobile DAU 28d-MA, same three series |
+| `mobile_august_only.png` | `[plot-mobile-current-only]` | Same without the prior line |
+| `mobile_ex_iran_august_vs_july.png` | `[plot-mobile-ex-iran]` | Mobile ex-Iran (ALL − IR), which strips the post-shutdown reconnection bounce |
+
+The earlier `*_baseline_*.png` files were the 125K-LOL build's charts, replaced 1:1 by the renamed
+files above when the LOL ceiling was raised to 165K. The mobile charts are unchanged in content — `l`
+is desktop-only — and were renamed only to drop the now-inaccurate "baseline" label.
 
 ## Reading the charts
 
