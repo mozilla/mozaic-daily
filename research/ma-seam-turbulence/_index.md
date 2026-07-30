@@ -1,5 +1,8 @@
 # `research/ma-seam-turbulence/` — early-horizon 28dMA turbulence investigation
 
+**ACTIVE (2026-07-29): a second, distinct seam artifact is open.** The v1 fix in this directory addressed the weekly-amplitude wobble. A separate defect remains: `reconstruct_matched_daily` deseasonalizes with a 7-day *centered* mean computed on the forecast only, so at the seam `min_periods=4` lets it degenerate to a weekday-only forward window — biasing the trend estimate +8.6–10.3% and stepping the published desktop curve **+102,595** at the seam. Brief: **`HANDOFF_recon_edge_bias.md`**. Measurement: `diagnose_recon_edge_bias.py`. Note `LOG.md` already records the obvious fix as tried and rejected.
+
+
 Cross-month, topic-anchored mechanism work (per the repo hybrid rule): diagnoses why the
 per-country desktop forecast curves, plotted as 28-day moving averages, oscillate for ~1
 month after the forecast-start date and then smooth out, and remediates it for the
