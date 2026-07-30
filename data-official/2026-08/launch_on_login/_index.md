@@ -7,24 +7,22 @@ curve is added back to the per-country forecast.
 | file | role |
 |---|---|
 | `lol.json` | the spec — gated on `applies_to_forecast_start: 2026-07-28` |
-| `lol_tailwind.2026-07-29.cap180k.parquet` | **ACTIVE** curve — 180K ceiling, under review |
-| `lol_tailwind.2026-07-29.cap180k.model_meta.json` | provenance for the active curve |
-| `lol_tailwind.2026-07-29.parquet` | **alternate** — 165K ceiling, one revert away |
-| `lol_tailwind.2026-07-29.model_meta.json` | provenance for the 165K curve |
+| `lol_tailwind.2026-07-29.cap180k.{parquet,model_meta.json}` | **ACTIVE** curve — 180K ceiling |
+| `lol_tailwind.2026-07-29.{parquet,model_meta.json}` | alternate — 165K ceiling |
+| `lol_tailwind.2026-07-29.cap200k.{parquet,model_meta.json}` | alternate — 200K ceiling |
 | `lol_tailwind.2026-06-29.*` | **superseded** July curve (125K cap) — kept, not deleted |
-| `plots/lol_tailwind_curve{,.cap180k}.png` | measured excess vs delivered curve, per variant |
+| `plots/lol_tailwind_curve{,.cap180k,.cap200k}.png` | measured excess vs delivered curve, per variant |
 | `LOL_165K_HANDOFF.md` | the brief the 2026-07-29 rebuild was executed from |
 
 ## Which curve is active
 
-**Exactly one curve is live: whatever `lol.json` names in `data_file`.** Both 2026-07-29 variants share
-an anchor, a slope, and a producer — only the ceiling differs. Switching is a two-line edit:
+**Exactly one curve is live: whatever `lol.json` names in `data_file`.** All three 2026-07-29 variants
+share an anchor, a slope, and a producer — only the ceiling differs. Switching is a two-line edit:
 
 ```jsonc
-// 180K (current)                           // 165K
-"data_file": "lol_tailwind.2026-07-29.cap180k.parquet",
+"data_file":       "lol_tailwind.2026-07-29.cap180k.parquet",        // current
 "model_meta_file": "lol_tailwind.2026-07-29.cap180k.model_meta.json",
-// swap the ".cap180k" out of both values to go back to 165K
+// 165K -> drop ".cap180k" from both;  200K -> swap it for ".cap200k"
 ```
 
 Nothing else changes — **leave `applies_to_forecast_start: "2026-07-28"` alone**. Overlay specs are
@@ -33,20 +31,23 @@ and silently emits `.raw.` instead of `.adj-lo`. Update the `notes` field's "ACT
 when you switch, and re-run the forecast — the curve is baked into the parquet, so a swap without a
 re-run changes nothing downstream.
 
-## The curves (both rebuilt 2026-07-29)
+## The curves (all three built 2026-07-29)
 
-Identical construction; the ceiling is the only difference.
+Identical construction — zero before the 2026-05-08 rollout; **measured** (FF152-excluded, interpolated
+7d trailing MA) to 130,296 at 2026-06-23; then **extrapolated** on a linear ramp at 2,714/day (the
+recorded ~19,000/wk) to the ceiling, flat through 2027-12-31. The ceiling is the only difference:
 
-| span | 180K (active) | 165K |
-|---|---|---|
-| ≤ 2026-05-07 | 0 (pre-rollout) | 0 |
-| 2026-05-08 → **2026-06-23** | **measured** — FF152-excluded, interpolated 7d trailing MA; 130,296 at the last clean day | same |
-| 2026-06-24 → ramp end | **extrapolated** — linear at 2,714/day (recorded ~19,000/wk) | same |
-| ceiling first reached | **2026-07-12** | 2026-07-06 |
-| through 2027-12-31 | flat **180,000** | flat 165,000 |
+| ceiling | first reached | days of plateau inside training (to 2026-07-27) | haircut vs ~220K model |
+|--:|---|--:|--:|
+| 165,000 | 2026-07-06 | 22 | ~55K/day |
+| **180,000** (active) | **2026-07-12** | **16** | **~40K/day** |
+| 200,000 | 2026-07-19 | 9 | ~20K/day |
 
-Both ceilings are reached before the 2026-07-27 training end, so both are fully in effect across the
-whole forecast horizon. July's ceiling was 125,000; it bit *below* the measurement
+All three reach ceiling before the 2026-07-27 training end, so all are fully in effect across the whole
+forecast horizon. The higher the ceiling the later the plateau, so the last weeks of training see a
+rising subtraction rather than a flat one — at 200K the plateau is only 9 days wide inside training.
+
+July's ceiling was 125,000; it bit *below* the measurement
 (`measured_daily_excess_at_last_clean` was 138,376 while the curve read 125,000 from 2026-06-19), so
 un-clamping 2026-06-19 → 2026-06-23 was part of the 2026-07-29 rebuild.
 
@@ -62,8 +63,9 @@ holdback control group received the feature, so the counterfactual is permanentl
 telemetry can extend the clean window — querying recent data shows the excess "collapsing," which is
 an artifact of the control being treated, not a decay. Do not re-measure past that date.
 
-Note this means the ceiling choice is **entirely** an extrapolation judgement: 125K, 165K, and 180K are
-indistinguishable on measured data, which stops at 130,296.
+Note this means the ceiling choice is **entirely** an extrapolation judgement: 125K, 165K, 180K and
+200K are indistinguishable on measured data, which stops at 130,296. Nothing in telemetry can
+adjudicate between them, and nothing will — the counterfactual died on 2026-06-24.
 
 ## Conservatism
 
@@ -71,7 +73,9 @@ The curves model no retention decay in either direction; the conservatism is ent
 ceiling**. The measured effect had *not* plateaued at the cutoff (still rising ~19K/wk) and is stopped
 dead anyway — growth we cannot validate is never extrapolated forward. An independent convolution
 model of the same effect (`~/work/launch-on-login/dau_model_convolution.ipynb`) lands near
-220,000/day, so the standing haircut is ~40K/day at 180K and ~55K/day at 165K.
+220,000/day; the haircut against it is the margin column in the table above, and it narrows as the
+ceiling rises. At 200K that margin is ~20K/day, so the ceiling is no longer meaningfully conservative
+against the convolution model — it is close to betting on it.
 
 Neither curve is strictly monotone: the 7d-MA of the measured excess carries day-of-week residue,
 giving six small downward steps inside the measured window (2026-05-27 → 05-30 and 2026-06-21, 06-23;
