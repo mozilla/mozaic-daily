@@ -7,9 +7,9 @@ curve is added back to the per-country forecast.
 | file | role |
 |---|---|
 | `lol.json` | the spec — gated on `applies_to_forecast_start: 2026-07-28` |
-| `lol_tailwind.2026-07-29.cap180k.{parquet,model_meta.json}` | **ACTIVE** curve — 180K ceiling |
+| `lol_tailwind.2026-07-29.cap180k.{parquet,model_meta.json}` | alternate — 180K ceiling (active 2026-07-29 until the 200K switch) |
 | `lol_tailwind.2026-07-29.{parquet,model_meta.json}` | alternate — 165K ceiling |
-| `lol_tailwind.2026-07-29.cap200k.{parquet,model_meta.json}` | alternate — 200K ceiling |
+| `lol_tailwind.2026-07-29.cap200k.{parquet,model_meta.json}` | **ACTIVE** curve — 200K ceiling (selected 2026-07-29) |
 | `lol_tailwind.2026-06-29.*` | **superseded** July curve (125K cap) — kept, not deleted |
 | `plots/lol_tailwind_curve{,.cap180k,.cap200k}.png` | measured excess vs delivered curve, per variant |
 | `LOL_165K_HANDOFF.md` | the brief the 2026-07-29 rebuild was executed from |
@@ -40,8 +40,8 @@ recorded ~19,000/wk) to the ceiling, flat through 2027-12-31. The ceiling is the
 | ceiling | first reached | days of plateau inside training (to 2026-07-27) | haircut vs ~220K model |
 |--:|---|--:|--:|
 | 165,000 | 2026-07-06 | 22 | ~55K/day |
-| **180,000** (active) | **2026-07-12** | **16** | **~40K/day** |
-| 200,000 | 2026-07-19 | 9 | ~20K/day |
+| 180,000 | 2026-07-12 | 16 | ~40K/day |
+| **200,000** (active) | **2026-07-19** | **9** | **~20K/day** |
 
 All three reach ceiling before the 2026-07-27 training end, so all are fully in effect across the whole
 forecast horizon. The higher the ceiling the later the plateau, so the last weeks of training see a

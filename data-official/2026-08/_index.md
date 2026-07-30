@@ -2,17 +2,17 @@
 
 Active cycle (branch `august-forecast`, off `clean-slate`).
 
-## Status: desktop LOCKED to s01, LOL-180K, headwind −1,245,000, seam-anchored ramp
+## Status: desktop LOCKED to s01, LOL-**200K**, headwind −1,245,000, seam-anchored ramp
 
 Current build is at forecast_start **2026-07-28** (trained through 2026-07-27). Four changes from July:
 the **desktop model retuned to the s01 config** (locked 2026-07-29 — `regime=multiplicative, cps=0.1849,
-cpr=0.734, recent=17, ncp=35`), the **launch-on-login (`l`) ceiling raised 125,000 → 180,000 DAU/day**,
+cpr=0.734, recent=17, ncp=35`), the **launch-on-login (`l`) ceiling raised 125,000 → 200,000 DAU/day**,
 the **Win10 headwind desktop anchor attenuated +100,000 to −1,245,000**, and the **headwind ramp
 re-anchored to start at the seam** instead of 2026-04-01. Mobile still carries July's lock. `o` and `m`
 are unchanged stale carry-forwards from July.
 
 **The s01 retune is the largest change of the cycle**: summer trough **+1,359,887** for **+5,642** at
-Dec-15 (11% of the ±50,000 budget). Canonical build: `desktop_locked/`. Delta evidence:
+Dec-15 on the 180K curve (11% of the ±50,000 budget). Canonical build: `desktop_locked/` (LOL 200K). Delta evidence:
 `../../research/param-scans/summer-trough-v2/s01_canonical_desktop.ipynb`. Holiday parameters were
 excluded from the search on principle — strictly local effects must not be used to move a whole-season
 quantity — and the notebook asserts all four are at defaults.
@@ -53,18 +53,35 @@ the transition zone and reads ~41K apart under the two conventions.
 |---|--:|--:|
 | July delivered (125K LOL, hw −1,345,000, 07-06 anchor) | — | 48,585,483 |
 | + data refresh to the 07-28 anchor | −64,769 | 48,520,714 |
-| + LOL ceiling 125K → 180K (derived) | +52,256 | 48,572,970 |
-| + Win10 headwind −1,345,000 → −1,245,000 | +100,000 | 48,672,970 |
-| **+ desktop model retune to s01 (measured)** | **+5,642** | **48,678,612** |
+| + Win10 headwind −1,345,000 → −1,245,000 | +100,000 | 48,620,714 |
+| **+ LOL ceiling 125,000 → 200,000 AND the s01 retune (combined residual)** | **+83,246** | **48,703,960** |
 
-The retune step is **measured**, not pinned: the canonical notebook loads the superseded build
-(`desktop_baseline_2026-07-28/`, identical in data, overlays and headwind) and differences against it,
-asserting the two configs differ in no holiday knob so the step is attributable. The data-refresh and
-headwind steps are known exactly, so the **LOL step is derived as the residual** —
-the ledger sums by construction and is not itself a check. What the notebook *does* assert is that the
-residual is a sensible pass-through of the raw curve change: the curve is +55,000/day higher than the
-baseline's, realised +52,256 = **95%**, asserted to fall in 0.5–1.5×. Near-zero would mean the add-back
-leg never ran; far above 1 would mean the training subtraction is reshaping the trend unexpectedly.
+**The LOL and retune steps are deliberately NOT separated.** Isolating the retune needs a build
+identical to the canonical one in every input except the model config. One exists at the 180K ceiling
+(the frozen `desktop_baseline_2026-07-28/` comparison point) but none exists at 200K, and **historical
+builds are locked — they are never re-run, rebuilt, or replaced to manufacture one.** Published deltas
+were quoted against those artifacts; a chain whose links move cannot be audited. So the canonical
+notebook reports one combined step and says so, rather than a clean-looking number obtained by
+regenerating a historical comparison point.
+
+The combined step is a residual, so the ledger sums by construction and is not itself a check. What the
+notebook *does* assert is that the residual is physically plausible: the LOL curve is +75,000/day higher
+than July's 125K curve at Dec-15 and the retune carried a ±50,000 budget, so the step must be positive
+and below +125,000. Realised **+83,246** = 111% of the curve change. Near-zero would mean the add-back
+leg never ran; far above the envelope would mean the training subtraction is reshaping the trend
+unexpectedly.
+
+**The retune's own like-for-like measurement** lives in
+`research/param-scans/summer-trough-v2/s01_canonical_desktop.ipynb`, which compares s01 against the
+previous config on an identical 180K curve: trough **+1,359,887** for **+5,642** at Dec-15. Quote the
+retune effect from there. That notebook stays on 180K builds on purpose — repointing it at 200K would
+confound the config evidence with the ceiling change.
+
+**Note the ceiling's effect is config-dependent.** 180K → 200K is worth +25,348 at Dec-15 under s01 but
+only ~+7,211 under the previous, flatter config: `l` is bidirectional, so a higher ceiling changes the
+training series too, and s01's 2.1× changepoint flexibility responds far more. Never treat a ceiling
+change as a level shift.
+
 
 **The headwind amplitude step is exactly +100,000 by construction.** `h` is applied to the 28-day MA,
 never to the training frame, so its Dec-15 effect is the anchor delta with no Prophet interaction and it
@@ -82,7 +99,7 @@ is.
 
 | lever | change | Dec-15 effect | basis |
 |---|---|--:|---|
-| `l` LOL ceiling | 125,000 → 180,000/day | +52,256 | extrapolation judgement |
+| `l` LOL ceiling | 125,000 → 200,000/day | (combined with the retune: +83,246) | extrapolation judgement; unfalsifiable |
 | `h` Win10 anchor | −1,345,000 → −1,245,000 | +100,000 | calibration judgement |
 | `h` ramp start | 2026-04-01 → seam | **0** | convention correction (measured) |
 | data refresh | 07-06 → 07-28 anchor | −64,769 | what the fresher data said |
@@ -101,7 +118,8 @@ matters when this number is quoted.
 | 165,000 | −1,345,000 | 2026-04-01 | 48,561,795 | 43,387,545 |
 | 165,000 | −1,295,000 | 2026-04-01 | 48,611,795 | 43,415,259 |
 | 180,000 | −1,245,000 | 2026-04-01 | 48,672,970 | 43,453,752 |
-| **180,000** | **−1,245,000** | **2026-07-28** | **48,672,970** | **43,921,488** |
+| 180,000 | −1,245,000 | 2026-07-28 | 48,672,970 | 43,921,488 |
+| **200,000** | **−1,245,000** | **2026-07-28** | **48,703,960** | **45,223,249** |
 
 The last row is the ramp re-anchoring: identical Dec-15, +467,737 on the trough, seam discontinuity gone.
 
@@ -122,7 +140,7 @@ current data (measurement stopped 2026-06-23). See the caveats cell and `adjustm
   conventions. **Read this before starting a parameter search.**
 - **Desktop forecast (CANONICAL)** — `desktop_locked/mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet`
 - **Desktop forecast (superseded, July's params)** — `desktop_baseline_2026-07-28/cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet` — kept: the ledger measures the retune against it, and its raw BQ pull is the shared cache
-  (+ sidecar, `parameters.json`). Pre-headwind; `l` (180K) + `o` baked in. **The directory name is now a
+  (+ sidecar, `parameters.json`). Pre-headwind; `l` (180K) + `o` baked in. **FROZEN — never re-run or rebuilt.** **The directory name is now a
   slight misnomer** — it held the 125K baseline, which this build overwrote in place. Kept as-is because
   the notebook and the committed sidecar reference the path.
 - **Mobile forecast** — `mobile_baseline_2026-07-28/cps0.035_thresh055_recent13_cpr0.75_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-07-28.gm-D.adj-m.parquet`
@@ -132,7 +150,7 @@ current data (measurement stopped 2026-06-23). See the caveats cell and `adjustm
 - **Adjustment specs (wired)** — `adjustments/headwind.json` (`h`, display layer),
   `launch_on_login/lol.json` (`l`), `mozillaonline/mozillaonline.json` (`o`),
   `marketing/marketing.json` (`m`). `o` and `m` are byte-identical carry-forwards of July's with only
-  `applies_to_forecast_start` moved 2026-07-06 → 2026-07-28. **`l` is rebuilt** (180K ceiling — see
+  `applies_to_forecast_start` moved 2026-07-06 → 2026-07-28. **`l` is rebuilt** (200K ceiling — see
   `launch_on_login/_index.md`) and **`h` has changed twice** (desktop amplitude −1,345,000 → −1,245,000,
   and `start_date` 2026-04-01 → 2026-07-28 — see `adjustments/_index.md`).
 - **Iran** — queried natively; the shutdown gap is covered by mozaic's built-in counterfactual fill
@@ -143,7 +161,7 @@ current data (measurement stopped 2026-06-23). See the caveats cell and `adjustm
 The **mobile** command below was run once (2026-07-29) and has not been re-run since — `l` is
 desktop-only, and mobile's headwind *amplitude* never moved (its ramp start did, but `h` is display-layer
 so that needs no model run). The **desktop** command has been run three times into
-the same directory, each overwriting the last, as the LOL ceiling was raised: 125K → 165K → 180K. Runs
+the same directory, each overwriting the last, as the LOL ceiling was raised: 125K → 165K → 180K → 200K. Runs
 after the first reused the cached raw BQ pull already in the slug dir, so no `--raw-cache-dir` was needed
 and no BigQuery re-query happened. Logs, in order:
 `logs/aug_baseline_{desktop,mobile}_2026-07-28.log` (125K), `logs/aug_lol165_desktop_2026-07-28.log`
@@ -195,7 +213,8 @@ Three checks run as assertions, not eyeballs:
 ```
 2026-08/
   august_canonical_v<date>.ipynb   # producer/review notebook (present)
-  desktop_locked/                  # present — CANONICAL (s01)
+  desktop_locked/                  # present — CANONICAL (s01, LOL 200K)
+  desktop_superseded_lol180k_2026-07-28/  # present — the 180K build it replaced; FROZEN
   desktop_baseline_2026-07-28/     # present — superseded (July's params); ledger baseline + raw cache
   mobile_baseline_2026-07-28/      # present
   adjustments/headwind.json        # present (h)
@@ -212,7 +231,7 @@ Three checks run as assertions, not eyeballs:
 
 - **Re-measure and swap the remaining two overlay curves** (`o` MozillaOnline, `m` marketing). Both are
   ~4–5 week-stale carry-forwards and each needs a fresh build against data through late July. This is
-  now the main reason the forecast is not deliverable. `l` is **rebuilt** (180K, 2026-07-29) though its
+  now the main reason the forecast is not deliverable. `l` is **rebuilt** (200K, 2026-07-29) though its
   ceiling remains an unfalsifiable judgement.
   Do them one at a time: changing two overlays in one run makes the Dec-15 delta uninterpretable.
 - **Validate the Win10 headwind anchor against data.** Now at −1,295,000, attenuated +50,000 from July's
