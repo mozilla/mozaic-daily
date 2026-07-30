@@ -225,3 +225,104 @@ curved realized MA better than a line between endpoints, with a guard that the t
 PASSED); regenerated `report.html`, ALL + per-country CSVs, per-country PNGs; notebook re-run with
 `display_ma` imported from `export_canonical_curves` (single source of truth) — Dec-15 unchanged
 (46,893,112 / 47,834,362 / 16,911,773 / 17,511,100).
+
+---
+
+## Phase 3 — the reconstruction edge bias (2026-07-30)
+
+Context: `HANDOFF_recon_edge_bias.md`. The August s01 desktop curve steps **+102,595 up** at
+the seam. Cause located: `trend_fc = fc.rolling(7, center=True, min_periods=4).mean()` is
+forecast-only, so at the seam it averages the first four forecast days — for a Tue seam,
+four consecutive weekdays. Harness: `recon_variants.py` (estimator variants + a fidelity
+assertion that `current` reproduces the shipped function exactly),
+`eval_recon_edge_fix.py`, `diagnose_splice_metric.py`, `eval_splice_correction_load.py`,
+`backtest_recon_variants.py`, `check_delivered_numbers.py`. All read-only, no BQ, no re-run.
+
+### H5 — a DoW-complete forward-7 window at the incomplete edge fixes it — **REJECTED on the stated criteria, but the criteria are partly wrong**
+
+*Statement (handoff §5):* keep the estimator forecast-only — so it cannot re-trigger the
+day-27 regression that killed the concatenated-trend fix — but make every window
+day-of-week complete: where the centered window is short (positions 0-2 and the last 3),
+use a one-sided 7-day mean.
+
+*Result against the handoff's 7 acceptance criteria:*
+
+| # | criterion | verdict |
+|---|---|--:|
+| 1 | Aug-25 / Dec-15 byte-identical | **PASS** — exactly +0 on both builds; trough minimum and its date also unchanged (45,193,561 @ 2026-08-25) |
+| 2 | \|seam step\| reduced | **FAIL** desktop: 102,595 → 112,730. Mobile mixed (June 16,574→10,903, July 9,405→1,466, Aug −1,498→−8,212) |
+| 3 | day-27 splice not worsened | **FAIL** — June's own metric: ALL 0.085% → 0.394% |
+| 4 | June/July delivered numbers reproduce | **PASS** — all six to within 0.42 DAU |
+| 5 | tests pass / tighten tolerance | n/a, no change made |
+| 6 | `backtest_seam.py` gate | **could not run** — April parquets archived to GCS; substituted a 4-seam realized backtest (below) |
+| 7 | notebooks re-executed | n/a |
+
+*But criteria 2 and 3 are each calibrated against a coincidence, and I wrote them:*
+
+- **Criterion 2 is unachievable by fixing the bug.** The shipped +102,595 is
+  (plain-MA step −108,884) + (reconstruction bias +211,479). forward7 returns −112,730,
+  i.e. within 3,846 of the plain 28d rolling MA's step. The bias was *masking* a genuine
+  −109K downward step in the s01 model. Removing the artifact cannot shrink \|step\|; it
+  reveals the true value. Same on mobile: August's −1,498 was bias +7,619 against a plain
+  −9,117, and forward7 exposes −8,212. Shrinking the step now requires either a
+  compensating display hack or a model change — not a bug fix.
+- **Criterion 3's 0.086% baseline is itself a cancellation.** `diagnose_splice_metric.py`
+  decomposes the visible day-27 step as `visible = -landing + one-day slope`. June desktop
+  ALL under the shipped estimator: landing **−0.445%**, slope **+0.360%**, visible
+  −0.085%. The handoff looks smooth only because a large landing error nearly cancels the
+  curve's genuine one-day slope. Under forward7 the landing error collapses to **+0.032%**
+  (14× better) — and precisely because it no longer cancels the slope, the *visible* step
+  grows to +0.394%. The slope-invariant corner on the uncorrected curve agrees with
+  `visible` (ALL 0.011% → 0.490%), because at a single junction a level step and a slope
+  change are not distinguishable from the displayed series alone.
+
+  Metric validated before use: `visible` reproduces every published June figure — ALL
+  0.085% (LOG: ~0.086%), AR 0.981% (~0.99%), BR 0.716% (~0.74%), US 0.031% (~0.031%), and
+  the rejected concat fix at 0.696% (~0.698%).
+
+- **In the configuration that actually ships, criterion 3 is neutral.** `continuous_splice`
+  (added July, after June's rejection) forces the transition onto the forecast-only MA, so
+  the shipped handoff corner is ALL 0.2850% → 0.2882% (+1.1%). The bend the correction must
+  apply moves the *opposite* way by cycle: August s01 238,537 → 44,199 (5.4× less
+  distortion), June ALL 200,712 → 358,987 (worse, slope-residual dominated).
+
+*Realized backtest — cannot discriminate.* April is archived, so scored four `.raw.`
+June-cycle desktop seams (2026-05-17 Sun, 05-21 Thu, 05-26 Tue, 05-28 Thu) against real
+actuals from the raw 2026-07-28 build's training rows, using June's bias-removed shape MAE
+and ALL-level gate. Mean ALL shape MAE: current 343,662 vs forward7 342,234 — **0.4%,
+noise**, and the sign flips by seam: forward7 wins on the Sun and Tue seams, loses on both
+Thu seams, i.e. exactly along the bias-regime split. Side finding, not chased: on these four
+May seams *every* variance-matched variant is ~8% **worse** than the OLD straight bridge,
+against April's +70%. Consistent with the known "levels up, refit lower" divergence in the
+May builds; it does not bear on the estimator comparison.
+
+*Weekday dependence — the strongest evidence for the fix, and in none of the criteria.*
+Sweeping the seam across seven consecutive days on the s01 build, the shipped estimator's
+bias at the seam ranges **−5,586,815 (Mon) to +4,428,872 (Fri)** — the sign flips because a
+Mon/Tue seam samples four weekdays and reads high, while a Thu/Fri seam takes 2 of 4 days
+from the weekend and reads low. The published seam step therefore spans **380K** purely as a
+function of which weekday the cycle happens to start on (+126,139 Mon … −253,905 Thu).
+forward7 narrows that to **79K** (−33,265 … −112,730), a 4.8× reduction.
+
+*Verdict:* forward7 is the correct estimator — it is DoW-complete for a seam on any weekday,
+it collapses the landing error 14×, and it removes a ±5M weekday artifact — but it **fails
+the stated criteria 2 and 3**, and the realized backtest cannot tell it apart from the
+status quo. Paused for a human decision rather than shipped: the criteria need to be reset
+onto quantities that are not cancellations, and criterion 2 in particular has to be
+abandoned or reinterpreted, because the seam step it asks to shrink is real.
+
+### H6 — the same `min_periods=4` defect biases the 13-week day-of-week profile — **CONFIRMED, second-order**
+
+*Statement (handoff §6):* `recent_trend = recent.rolling(7, center=True, min_periods=4).mean()`
+runs on `recent` *after* slicing to 13 weeks, so 3 rows at each end are detrended by a
+DoW-incomplete window and their ratios still enter `dow_act`.
+
+*Test:* compute the detrending mean on `pre` (which extends years further back) *before*
+slicing, so every ratio comes from a full 7-day window (`recon_variants._dow_profile`).
+
+*Result:* real but small. Max profile shift 0.0107 (June desktop Mon −0.0102 / Tue +0.0107,
+~1%); August desktop 0.0083; June mobile 0.0012. On top of forward7 it leaves Aug-25,
+Dec-15 and the trough byte-identical and moves the seam step 13,608 (−112,730 → −99,122).
+
+*Verdict:* **Confirmed** — same defect, same one-line class of fix, worth taking with H5
+since it is free. Not load-bearing on its own.
