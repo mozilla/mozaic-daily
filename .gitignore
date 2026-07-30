@@ -35,14 +35,16 @@ param_scan_results_pinned/
 research/param-scans/results/
 research/param-scans/pinned/
 # Per-probe run logs (verbose mozaic stdout; the FINDINGS.md carries the conclusions).
-research/param-scans/*/grid/logs/
-# The grid report embeds plotly.js inline so it opens offline -- ~4.5MB, and it is
-# regenerated on every rebuild. Kept out of history; reproduce in one command:
+research/param-scans/*/*/logs/
+# Search reports embed plotly.js inline so they open offline -- ~4.5MB each, and they are
+# regenerated on every rebuild. Kept out of history; each has a one-command producer, e.g.
 #   python research/param-scans/summer-trough-v2/build_grid_report.py
-research/param-scans/*/grid_report.html
-# ...but DO track its scored inputs (~12KB), so the result survives in git and the
-# report is reproducible without re-running the grid.
-!research/param-scans/*/grid_scores.csv
+research/param-scans/*/*_report.html
+# ...but DO track their scored inputs (~10-30KB each), so results survive in git and every
+# report is reproducible without re-running the probes.
+!research/param-scans/*/*_scores.csv
+!research/param-scans/*/*_slopes.csv
+!research/param-scans/*/*_pairs.csv
 
 # Data directories (large files archived to GCS — see follow-up in monthly-forecast-update.md)
 # data-official/ is NOT fully ignored: *.json and *.md parameter files are committed,

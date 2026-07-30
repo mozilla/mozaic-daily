@@ -35,7 +35,12 @@ re-anchoring shifted mobile's near-term curve by ~12K, which is invisible at tha
 
 ## Reading the charts
 
-- **The seam step is GONE as of 2026-07-29 — and here is what it was.** The Win10 headwind used to ramp
+- **The HEADWIND seam step is gone as of 2026-07-29 — but a smaller upward one remains.** The residual
+  **+102,595** step is a separate display artifact in `reconstruct_matched_daily` (7-day centered trend
+  computed on the forecast only degenerates to a weekday-only window at the seam). It does not affect
+  Aug-25 or Dec-15. The superseded build's near-continuity (+5,157) was coincidental cancellation, not
+  genuine continuity. See the canonical notebook's caveats and
+  `research/ma-seam-turbulence/diagnose_recon_edge_bias.py`. What the headwind step WAS: The Win10 headwind used to ramp
   from 2026-04-01 while only being *applied* from the seam forward, so it switched on at 118/258 = 45.7% of
   full value (−569,419) in a single day. The raw model output is continuous across the seam (+5,157), so
   that step was **100.9%** of the −564,262 drop visible in earlier charts. `headwind.json` now ramps from

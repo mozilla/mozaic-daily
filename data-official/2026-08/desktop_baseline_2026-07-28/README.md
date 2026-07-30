@@ -1,6 +1,12 @@
-# Desktop — August 2026 (forecast_start 2026-07-28, LOL 180K)
+# Desktop — August 2026, SUPERSEDED (forecast_start 2026-07-28, July's params, LOL 180K)
 
-`legacy_desktop` DAU. **Not a delivered forecast** — see `../_index.md`.
+`legacy_desktop` DAU. **SUPERSEDED 2026-07-29** by `../desktop_locked/`, which carries the s01
+retune. Kept on disk deliberately: the canonical notebook loads it to *measure* the retune step in
+the Dec-15 attribution ledger, and its raw BQ pull is the shared cache every scan symlinks. Do not
+delete it before button-down.
+
+Its Dec-15 (**48,672,970**) and Aug-25 trough (**43,833,674**) are the baseline every August delta is
+quoted against.
 
 ⚠️ **The directory name is a misnomer.** It originally held the 125K-LOL *baseline*, which the
 2026-07-29 LOL-165K rebuild **overwrote in place** (deliberately — 125K was July's number). The name is
