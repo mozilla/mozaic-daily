@@ -27,7 +27,11 @@ from pathlib import Path
 
 import pandas as pd
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+# Archived 2026-07-29 (see _archive/_index.md). This file moved from scripts/ to
+# _archive/scripts/, so the git root is now two levels up rather than one. This is the ONLY
+# edit made on archiving -- a path fix forced by the move itself. The behaviour, including its
+# dependence on the frozen 2026-06 seam-MA implementation, is deliberately unchanged.
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SRC_PATH = REPO_ROOT / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))

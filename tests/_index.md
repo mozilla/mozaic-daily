@@ -13,7 +13,7 @@ Unit and integration tests for `mozaic_daily`. Mirrors the package structure: on
 | `test_queries.py` | `QuerySpec.build_query()` SQL generation |
 | `test_data_fetching.py` | Data fetching helpers, checkpoint read/write, `query_to_dataframe` heartbeat watchdog (format, hint-on-first-tick, `Next ≤Ns` liveness bound) |
 | `test_table_manipulation.py` | `format_output_table`, ALL-row generation, column renaming |
-| `test_export_canonical_curves.py` | `display_ma` seam fix in `data-official/2026-06/export_canonical_curves.py`: bridge smooths the actuals→forecast seam, far-horizon (Dec-15) byte-identical, anti-tautology guard that the naive blend wobbles. See `research/ma-seam-turbulence/` |
+| `test_seam_ma.py` | `src/mozaic_daily/seam_ma.py` — the variance-matched actuals→forecast seam MA. Smoothness, far-horizon (Dec-15) byte-identity, anti-tautology guard that the naive blend wobbles, **weekday-invariance of the trend estimator**, the **identity invariant** (all-actuals input ⇒ the transition is a no-op), edge unbiasedness, and a **canary** asserting the suite still rejects the known-bad estimator. Replaces the archived `test_export_canonical_curves.py`. See `research/ma-seam-turbulence/` § Fix A |
 | `test_run_flow.py` | `run_flow.py` CLI argument parsing and backfill state logic |
 | `test_smoke.py` | Import smoke test — verifies the package and key symbols load |
 | `conftest.py` | Shared fixtures (sample DataFrames, runtime config stubs) |

@@ -1,6 +1,36 @@
 # `research/ma-seam-turbulence/` — early-horizon 28dMA turbulence investigation
 
-**ACTIVE (2026-07-29): a second, distinct seam artifact is open.** The v1 fix in this directory addressed the weekly-amplitude wobble. A separate defect remains: `reconstruct_matched_daily` deseasonalizes with a 7-day *centered* mean computed on the forecast only, so at the seam `min_periods=4` lets it degenerate to a weekday-only forward window — biasing the trend estimate +8.6–10.3% and stepping the published desktop curve **+102,595** at the seam. Brief: **`HANDOFF_recon_edge_bias.md`**. Measurement: `diagnose_recon_edge_bias.py`. Note `LOG.md` already records the obvious fix as tried and rejected.
+**RESOLVED (2026-07-29) — Fix A shipped.** The second seam artifact (`reconstruct_matched_daily`
+deseasonalizing with a 7-day *centered* mean of the raw forecast, so `min_periods=4` let it
+degenerate to a weekday-only forward window at the seam, stepping the published desktop curve
+**+102,595**) is fixed by **deseasonalizing before averaging**. Aug desktop display distortion
+211,480 → **116 DAU**; Dec-15 byte-identical on both platforms. Full record: **`LOG.md` § Fix A**.
+
+The fix lives in **`src/mozaic_daily/seam_ma.py`**, a new package home. `data-official/2026-06/export_canonical_curves.py`
+is deliberately **untouched** so June's and July's delivered curves cannot move; code still bound to
+it was moved to `_archive/`. Tests: `tests/test_seam_ma.py` (20, incl. a canary that fails if the
+suite ever stops catching this defect class).
+
+**Read these two, in order:**
+
+- **`seam_step_diagnosis.ipynb`** — the *why*. A rerunnable, plot-per-step walkthrough from the
+  published August chart back to the source arrays, built cold without reading the handoff below, and
+  independently reproducing the same mechanism and the same +102,595. Five rungs: rules out a
+  data-source mismatch, shows the model is continuous, isolates the weekday-only trend window,
+  converts the one-day error into the MA step, closes the waterfall to <1 DAU, then falsifies against
+  253 backtested seam dates (the error's sign tracks the seam's weekday, monotone in how many weekend
+  days land in the forward-4 window).
+- **`data-official/2026-08/seam_fix_before_after.ipynb`** — the *verification*. Published vs fixed
+  curves on both platforms, and an assertion that Dec-15 did not move.
+
+**Two negative results worth not re-deriving** (both in `LOG.md` § Fix A): variant **A3** looked
+better on the 253-seam identity backtest yet lost on the real builds, because that backtest is
+structurally blind to A3's only failure mode — a cancellation-free metric is not automatically a
+relevant one. And **H6**, which §H6 below recommends taking as "free", is mildly *harmful* on top of
+Fix A and was deliberately left in place.
+
+`HANDOFF_recon_edge_bias.md` is retained as the historical brief; its §7 acceptance criteria were
+**retired by decision**, not met — see `LOG.md` § Fix A.
 
 
 Cross-month, topic-anchored mechanism work (per the repo hybrid rule): diagnoses why the

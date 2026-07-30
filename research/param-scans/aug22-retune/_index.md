@@ -36,10 +36,11 @@ to ~0 by Nov/Dec so the winter peak is held by construction. See `round3/FINDING
 | `round2/FINDINGS.md` | `seasonality_regime` sweep (auto / additive / multiplicative) × sps. Finds the multiplicative asymmetry. |
 | `round3/FINDINGS.md` | Trend knobs *under* multiplicative — establishes the parametric ceiling + the overlay recommendation. |
 | `sampling/sampling_scores.csv` | 28-config Latin-hypercube over the multiplicative frontier; no `FINDINGS.md` — s01 is the winner and the conclusion is in `round3`. |
-| `desktop_bestfit_vs_july.ipynb` | Plots the s01 best-fit 28d-MA curve against the locked July forecast and actuals. |
+| `desktop_bestfit_vs_july.ipynb` | **MOVED to `_archive/` 2026-07-29** — imported the frozen 2026-06 seam MA. Plotted the s01 best-fit 28d-MA curve against the locked July forecast and actuals. |
 | `plots/desktop_bestfit_vs_july.png` | That plot. |
-| `bestfit_28tma_curve.csv` | s01's 28d-MA curve (global + ex-CN/IR, pre/post headwind), exported by `export_bestfit_curve.py`. |
-| `parameter_table.html`, `build_report.py`, `make_notebook.py` | Report/notebook generators for the above. |
+| `bestfit_28tma_curve.csv` | s01's 28d-MA curve (global + ex-CN/IR, pre/post headwind), exported by `export_bestfit_curve.py` (**moved to `_archive/` 2026-07-29**). Values predate the Fix A seam correction in the transition window. |
+| `parameter_table.html`, `build_report.py` | Report generators for the above. |
+| `make_notebook.py` | **MOVED to `_archive/` 2026-07-29** — imported the frozen 2026-06 seam MA. |
 
 ## Present vs Archived
 

@@ -1,13 +1,14 @@
 # `research/param-scans/` — Prophet parameter sensitivity exploration
 
 Sweeps over `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold`, `changepoint_range`, and
-`clip` to understand how the model responds. Desktop sweeps live at this level
-(`desktop_gradient_round{1..4}.ipynb`); the July **mobile** grid search lives in `mobile-july/`.
+`clip` to understand how the model responds. Desktop sweeps used to live at this level
+(`desktop_gradient_round{1..4}.ipynb` — **moved to `_archive/` on 2026-07-29**, see below); the July
+**mobile** grid search lives in `mobile-july/`.
 
 ## Present vs Archived
 
-- **Present (on disk):** the analysis notebooks (`param_scan_exploration.ipynb`,
-  `desktop_gradient_round{1..4}.ipynb`), `mobile-july/` notebooks + `_index.md` + `plots/` + the
+- **Present (on disk):** the analysis notebooks (`param_scan_exploration.ipynb`),
+  `mobile-july/` notebooks + `_index.md` + `plots/` + the
   per-config `parameters.json`/`*.meta.json` sidecars (the record of what each config produced).
 - **Archived to GCS (`gs://…/july-2026/param-scans/`), removed from disk:** the multi-GB sweep
   **`results/`** and `mobile-july/results/` forecast-output blobs. Regenerable via the scan drivers
@@ -25,7 +26,8 @@ targets the **Aug-2026 summer trough** — a near-horizon KPI with its own score
 
 | File | Purpose |
 |---|---|
-| `param_scan_exploration.ipynb`, `desktop_gradient_round{1..4}.ipynb` | Desktop analysis notebooks |
+| `param_scan_exploration.ipynb` | Desktop analysis notebook |
+| `summer-trough-v2/` | August desktop s01 lock. `s01_canonical_desktop.ipynb` was **repointed at `mozaic_daily.seam_ma`** on 2026-07-29, so its early-horizon curves differ from when it was first run. |
 | `mobile-july/` | July mobile grid search (notebooks + sidecars present; `results/` blobs archived) |
 | `aug22-retune/` | Near-horizon (Aug-22 trough) desktop retune — 3 rounds + LHS sampling. Concluded params **can't** hit Aug without breaking Dec; recommends a summer-trough overlay. Summary artifacts present; per-probe sidecars on `july-forecast` only. See its `_index.md`. |
 | `results/`, `pinned/` | Output of `scripts/run_param_scan.py` / `run_pinned_scan.py`. **Archived to GCS; regenerable.** |

@@ -13,3 +13,8 @@ package-dir = {"" = "src"}
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+# _archive/ holds code deliberately frozen against past forecast cycles (see _archive/_index.md).
+# Its tests exercise the frozen 2026-06 seam-MA copy, not the package, so they must not run as
+# part of the live suite -- collecting them would report on code that is not allowed to change.
+# Run them explicitly by path if you want to confirm frozen behaviour still holds.
+norecursedirs = ["_archive", ".venv", "data-official", "build", "dist"]

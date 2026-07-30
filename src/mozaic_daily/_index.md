@@ -13,11 +13,13 @@ Core forecasting package for Mozilla Firefox metrics. Each module has a single r
 | `tables.py` | `format_output_table()` — combines Desktop/Mobile, creates ALL rows, renames columns, sets data_source values | BigQuery upload, validation |
 | `validation.py` | `validate_output_dataframe()` — schema, format, row counts, nulls, duplicates | Data fetching, formatting |
 | `adjustments.py` | Adjustment-state filename markers (`.raw.` / `.adj-{codes}.`), sidecar `.meta.json` write/read, `load_forecast()` state-validating loader, **composite appliers** (`apply_net_adjustment_to_series`, `render_adjustment`, `load_adjustments_from_dir` — e.g. `h` headwinds), **per-tile appliers** (`load_marketing_spec`, `load_marketing_lift_series`, `compute_fenix_country_shares`, `subtract_marketing_lift_from_training`, `add_marketing_lift_to_forecast` — e.g. `m` marketing-lift) | Forecast generation, BigQuery I/O |
+| `seam_ma.py` | Display-layer moving averages: `display_ma()` (variance-matched actuals→forecast seam transition), `reconstruct_matched_daily()`, `daily_to_28ma()`. **The home for seam-MA logic going forward** | Forecast generation, plotting, BigQuery I/O, any cycle-specific paths |
 | `main.py` | Pipeline entry point; ties together fetch → forecast → format → validate; `save_mozaic_objects()` | Individual step logic |
-| `__init__.py` | Public surface: `main`, `validate_output_dataframe`, `get_git_commit_hash` | |
+| `__init__.py` | Public surface: `main`, `validate_output_dataframe`, `get_git_commit_hash`, `display_ma`, `reconstruct_matched_daily`, `daily_to_28ma` | |
 
 ## Where new code goes
 
+- **Display/plot-layer MA or seam handling**: `seam_ma.py`, with a test in `tests/test_seam_ma.py`. Do **not** copy it into a cycle directory — cycles through 2026-07 import a frozen copy from `data-official/2026-06/export_canonical_curves.py` so their delivered curves cannot move, and that file stays untouched. Everything new imports from here. See `_archive/_index.md`.
 - **New metric or data source**: add a `QuerySpec` to `queries.py` and wire it into `data.py`
 - **New forecast configuration knob**: add a field to `ModelConfig` (or a subclass) in `mozaic.models`, thread through `get_forecast_dfs()` kwargs
 - **New output column**: `tables.py` (`format_output_table`) and `validation.py` (schema check)

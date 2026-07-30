@@ -326,3 +326,138 @@ Dec-15 and the trough byte-identical and moves the seam step 13,608 (−112,730 
 
 *Verdict:* **Confirmed** — same defect, same one-line class of fix, worth taking with H5
 since it is free. Not load-bearing on its own.
+
+---
+
+## Fix A — deseasonalize before averaging (2026-07-29) — **SHIPPED**
+
+Closes the Phase-3 edge bias. Diagnosed cold in `seam_step_diagnosis.ipynb` (independently
+reproducing the +102,595 figure and mechanism recorded above), then fixed.
+
+**The prior acceptance criteria (handoff §7) were retired by decision, not met.** H5 established
+that criteria 2 and 3 are each calibrated against a cancellation — criterion 2 asks a bug fix to
+shrink a seam step that is partly real, and criterion 3's baseline is a large landing error nearly
+cancelling a genuine slope. Rather than reinterpret them, they were dropped.
+
+### What shipped
+
+`src/mozaic_daily/seam_ma.py` — a NEW home in the package. The trend estimator divides the forecast
+by its **own** day-of-week profile *before* smoothing:
+
+```
+was:  trend = fc.rolling(7, center=True, min_periods=4).mean()          # raw series
+now:  trend = (fc / dow_forecast).rolling(7, center=True, min_periods=1).mean()
+```
+
+Once each day is divided by its own weekday factor, every term in the window estimates the same
+deseasonalized level, so an incomplete window is unbiased in day-of-week terms and `min_periods=1`
+is safe. The window stays **centred** — no forward widening, so no shift of the estimate beyond
+what the missing left half unavoidably costs. `display_ma` itself is unchanged.
+
+`data-official/2026-06/export_canonical_curves.py` is **untouched**, so June's and July's delivered
+curves cannot move. Everything still bound to it moved to `_archive/` (see `_archive/_index.md`).
+August's notebooks, `research/param-scans/summer-trough-v2/s01_canonical_desktop.ipynb` and
+`scripts/score_near_horizon.py` were repointed at the package.
+
+### Measured (all six delivered builds, `plan_probe_fix_a.py`)
+
+| build | day-1 error before → after | display distortion (step vs plain 28dMA) before → after |
+|---|--:|--:|
+| Aug desktop | +5,921,427 → **+3,234** | 211,480 → **116** |
+| Aug mobile | +213,322 → +30,680 | 7,619 → 1,096 |
+| Jul desktop | +5,375,383 → +298,659 | 191,978 → 10,666 |
+| Jul mobile | +194,769 → −27,339 | 6,956 → −976 |
+| Jun desktop | +6,262,405 → +1,068,032 | 223,657 → 38,144 |
+| Jun mobile | +206,032 → +24,673 | 7,358 → 881 |
+
+Dec-15 and every date from seam+27 onward are **byte-identical on both platforms** (max delta
+0.000000 DAU over 495 dates each) — verified in `data-official/2026-08/seam_fix_before_after.ipynb`,
+which asserts rather than prints it. Structural, not coincidental: `display_ma` overwrites day 27
+onward with the forecast-only MA, which no reconstruction change can reach.
+
+**The fix does not make the published curve continuous, and should not.** August desktop goes from
+stepping +102,595 *up* at the seam to ~108,769 *down* — within 116 DAU of the plain 28-day MA. The
+old upward step was masking a genuine decline. Same story on July, whose apparent +2,789 continuity
+was bias +191,978 against a real −189,189, i.e. the same coincidence as the superseded build (§H5).
+
+### Variants scored and rejected
+
+- **A2 — divide by the ACTUALS' profile instead** (smaller diff, no second estimator).
+  **REJECTED: fails an existing test.** The forecast's amplitude is damped relative to the actuals',
+  so dividing by the strong profile over-corrects and leaves inverted weekly structure.
+  `curved_beats_straight_line` 0.345 vs its 0.333 threshold (A1: 0.076).
+- **A3 — deseasonalize BOTH sides, then centre the window across the seam.** Conceptually cleaner
+  (no forward lean at all) and it was the initially preferred option. **REJECTED on evidence.** It
+  won the 253-seam identity backtest (desktop RMSE 60,762 vs A1 66,992) but lost 4 of 6 real builds,
+  badly on the live one (Aug desktop distortion 12,996 vs A1's 116).
+  **Why the backtest favoured it is the important part:** the identity backtest feeds actuals to
+  *both* sides of the seam, so there is no level offset across the seam by construction — and
+  absorbing a seam level offset into the forecast's trend is precisely A3's only failure mode. The
+  metric is structurally blind to the risk it was being used to assess. Recorded because that is an
+  easy trap to re-enter: a cancellation-free metric is not automatically a *relevant* one.
+- **H6 — the DoW-profile `min_periods` defect** (§H6 above recommended taking it as "free").
+  **NOT TAKEN.** On top of A1 it is mildly harmful: Aug desktop day-1 error +3,234 → +385,040 and
+  the seam step moves *away* from the plain-MA reference (−108,769 → −95,133). It scored well in
+  §H6 only because it pushed |step| toward zero — criterion-2 reasoning again. The profile-edge
+  defect is real (~1% shape shift) but does not propagate materially. Left in place deliberately.
+
+### Tests
+
+`tests/test_seam_ma.py` (20 tests) replaces the retired `tests/test_export_canonical_curves.py`
+(archived; it targeted the frozen file, where nothing can regress).
+
+- **The 2% `step/day1` tolerance is gone.** It was the reason nothing failed: the band was set when
+  the step was +5,157, and 0.22% of level sits well inside it. Replaced by
+  `test_transition_ma_matches_the_analytically_correct_transition`, scored against a value the
+  fixture makes computable rather than against another curve.
+- **New fixtures carry seven distinct day-of-week levels and a parametrizable seam date.** The old
+  ones had two levels (weekday/weekend) and a hardcoded Monday seam, so they could not express a
+  weekday-unbalanced window at all — the defect was invisible to them by construction.
+- **`test_deseasonalized_trend_is_unbiased_at_the_series_edge`** targets the edge specifically. An
+  interior check cannot catch this class of bug: in the interior a centred 7-day mean of the raw
+  series already spans a full week and the buggy estimator is *correct* there.
+- **`test_suite_rejects_the_known_bad_estimator`** patches the old estimator back in and asserts the
+  two load-bearing bounds break (weekday spread 10.68% vs the 2.5% bound; identity deviation 1.087%
+  vs 0.2%). Without it, a future refactor could weaken those bounds until they no longer catch the
+  regression they exist for, with everything still green.
+
+### Follow-ups left open
+
+- `render_adjustment` / `load_adjustments` / `apply_net_adjustment` are still duplicated between the
+  frozen June exporter and August's `[helpers]` cell. Unrelated to this bug; not touched.
+- `data-official/2026-08/seam_fix_before_after.ipynb` is the only live file importing the frozen
+  copy, deliberately, as the "before" reference. **DECIDED 2026-07-29: it is KEPT, frozen with its
+  executed outputs, and must not be re-executed** — it is the proof of the choice, and the earlier
+  plan step to strip the import on sign-off was countermanded. A rerun is lossy: the "before" series
+  depends on the frozen implementation still being importable, so a future rerun could fail or
+  silently emit two identical curves, destroying the evidence while appearing to succeed. The same
+  reasoning keeps `seam_step_diagnosis.ipynb` and this directory's frozen-loading scripts in place.
+  Any future seam change gets a NEW before/after notebook rather than a re-execution of this one.
+- `scripts/score_near_horizon.py` scores are **not comparable across this change** — its near-horizon
+  window overlaps the transition. Re-baseline before comparing.
+
+### Post-implementation verification (2026-07-29)
+
+All three repointed notebooks re-executed clean. Confirmed unchanged:
+
+| quantity | value | status |
+|---|--:|---|
+| Desktop Dec-15 28d MA (post-headwind) | 48,678,612 | **unchanged** — matches the pinned s01 canonical |
+| Mobile Dec-15 28d MA | 17,924,607 | **unchanged** |
+| ALL Dec-15 | 66,603,219 | **unchanged** |
+| Aug-25 trough minimum | — | **unchanged** (+0; seam+28, outside the transition) |
+
+**One number moved, and it is worth knowing about: the Aug-22 near-horizon diagnostic.**
+2026-08-22 falls *inside* the 27-day transition window (the splice is at seam+27 = 2026-08-24), so
+unlike Aug-25 and Dec-15 it is **not** protected by the far-horizon guarantee:
+
+```
+Aug-22 desktop 28d MA, post-headwind:  45,238,336  ->  45,233,893   (-4,443, -0.01%)
+Aug-24 onward (incl. Aug-25, Dec-15):  byte-identical (+0)
+```
+
+The shift is small and in the direction of the model's own curve, but any Aug-22-referenced figure
+quoted before 2026-07-29 is on the old convention. Aug-25 was chosen as the trough KPI precisely
+because it sits a full window past the seam and is convention-independent (noted in
+`scripts/score_near_horizon.py`) — that choice is what kept the headline safe here, and it is the
+reason to keep preferring Aug-25 over Aug-22 for anything quotable.

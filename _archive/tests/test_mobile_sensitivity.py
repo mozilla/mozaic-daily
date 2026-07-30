@@ -20,8 +20,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-REPO = Path(__file__).resolve().parent.parent
-for p in (REPO / "scripts", REPO / "src", REPO / "data-official/2026-06"):
+# Archived 2026-07-29 (see _archive/_index.md): this module and its subject moved from
+# tests/ and scripts/ into _archive/, so the git root is now three levels up, and
+# mobile_sensitivity.py lives beside this file's parent rather than in the live scripts/.
+# The frozen seam-MA implementation is still read from its original 2026-06 location, which
+# is the whole reason this test is archived rather than repointed.
+REPO = Path(__file__).resolve().parent.parent.parent
+for p in (REPO / "_archive/scripts", REPO / "src", REPO / "data-official/2026-06"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 

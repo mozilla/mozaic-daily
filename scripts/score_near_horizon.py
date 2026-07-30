@@ -46,15 +46,16 @@ SRC_PATH = REPO_ROOT / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
-# export_canonical_curves lives under the June cycle dir (June's canonical exporter,
-# generic in forecast_start). Reused so this scorer's MA matches the canonical
-# notebook's exactly -- same precedent as scripts/mobile_sensitivity.py.
-_JUNE_DIR = REPO_ROOT / "data-official/2026-06"
-if str(_JUNE_DIR) not in sys.path:
-    sys.path.insert(0, str(_JUNE_DIR))
-
 from mozaic_daily.adjustments import load_forecast  # noqa: E402
-from export_canonical_curves import display_ma  # noqa: E402
+from mozaic_daily.seam_ma import display_ma  # noqa: E402
+
+# NOTE ON COMPARABILITY (2026-07-29): this scorer previously imported display_ma from the June
+# cycle dir. It now uses the package copy, which carries the A1 trend-estimator fix -- the old
+# estimator inflated the first forecast day by up to ~10% of the weekday/weekend swing, which fed
+# the near-horizon window. Scores produced before this change are therefore NOT comparable with
+# scores produced after it. Aug-25-style targets sit a full MA_WINDOW past the seam and are
+# unaffected, but any metric drawing on the 27-day transition has moved. Re-baseline before
+# comparing across that boundary. See research/ma-seam-turbulence/LOG.md, Fix A.
 
 # The trough MINIMUM, not July's Aug-22. Aug-25 is exactly MA_WINDOW days past the
 # 2026-07-28 seam, so its window is entirely forecast and the value is independent of

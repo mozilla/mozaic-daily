@@ -75,8 +75,32 @@ src/mozaic_daily/
 ├── forecast.py       # Mozaic forecasting logic
 ├── tables.py         # Table formatting and manipulation
 ├── validation.py     # Output validation
+├── seam_ma.py        # Display-layer 28d MAs; variance-matched actuals→forecast seam transition
 └── main.py           # Main entry point
 ```
+
+### Display-layer moving averages (`seam_ma.py`)
+
+Stakeholder-facing forecast curves are plotted as 28-day trailing MAs. A trailing window straddling
+the actuals→forecast seam mixes the two, and because the forecast's weekly amplitude is damped
+relative to recent actuals it fails to cancel the weekly cycle — so the MA wobbles for ~a month.
+`display_ma()` replaces those transition points with a variance-matched transition, and is
+**byte-identical to a plain `rolling(28).mean()` from seam+27 onward**, so Dec-15 and every headline
+number are untouched by anything it does.
+
+**Always import it from the package**, never from a cycle directory:
+
+```python
+from mozaic_daily.seam_ma import display_ma, daily_to_28ma
+```
+
+Cycles through 2026-07 import a **frozen** copy from `data-official/2026-06/export_canonical_curves.py`.
+That file must not be edited — past forecasts are never modified, even where they are known to be
+wrong — and code still bound to it lives in `_archive/` (see `_archive/_index.md`). On 2026-07-29 a
+trend-estimator defect was fixed here (the deseasonalizing window at the seam was day-of-week
+unbalanced, stepping the published August desktop curve +102,595); the fix went into the package and
+the frozen copy was left alone, so June's and July's delivered curves cannot move. Full record:
+`research/ma-seam-turbulence/LOG.md` § Fix A.
 
 ### Where new files go: the hybrid rule
 
