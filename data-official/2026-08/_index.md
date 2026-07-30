@@ -22,26 +22,36 @@ quantity — and the notebook asserts all four are at defaults.
 without moving Dec-15 at all — the ramp now contributes exactly 0 at the seam. See
 `adjustments/_index.md` and `desktop_adjustment_ladder.ipynb`.
 
-What remains is a **+102,595 upward** step, and it is a *different* artifact:
-`reconstruct_matched_daily` deseasonalizes with a 7-day centered mean computed on the forecast only, which
-at the seam degenerates to a weekday-only forward window (`min_periods=4`) and reads ~3.8M high. The
-superseded build's apparent continuity (+5,157) was a coincidental cancellation against its anomalously
-low first forecast day, not genuine continuity. **Headline numbers are unaffected** (the corruption spans
-~3 days; Aug-25 and Dec-15 are identical under the candidate fix), but the seam-kink magnitude is
-contaminated. The obvious fix was already tried and rejected in June — it worsens the day-27 splice. See
-`research/ma-seam-turbulence/diagnose_recon_edge_bias.py`.
+**The second, smaller seam artifact is also now FIXED (2026-07-29).** It was a **+102,595 upward** step
+from `reconstruct_matched_daily`, which deseasonalized with a 7-day centered mean computed on the forecast
+only — at the seam that degenerates to a weekday-only forward window (`min_periods=4`) and read ~10% high,
+then got multiplied by the day-of-week factor on top. `Fix A` divides by the forecast's own day-of-week
+profile *before* smoothing, so window composition stops mattering. The fixed implementation lives in
+`src/mozaic_daily/seam_ma.py`; `data-official/2026-06/export_canonical_curves.py` is untouched so past
+cycles cannot move, and code still bound to it is in `_archive/`.
+
+On this build the residual display distortion at the seam is **+102 DAU** (was 211,480), and the curve now
+steps **−107,445** — essentially the model's own plain 28d-MA step of −107,547. Dec-15 and everything from
+seam+27 onward were byte-identical before and after the fix. The seam-kink figures were re-measured as a
+result: s01 **−19,702/day vs −74,237** (pre-fix they read −20,604 vs −72,593). See
+`research/ma-seam-turbulence/LOG.md` § Fix A, `seam_step_diagnosis.ipynb`, and
+`seam_fix_before_after.ipynb` for the verification.
 
 **Dec-15 2026 28d-MA (headwind applied):**
 
 | platform | Aug current | Jul delivered | delta |
 |---|--:|--:|--:|
-| Desktop | 48,678,612 | 48,585,483 | +93,129 (+0.19%) |
+| Desktop | 48,703,960 | 48,585,483 | +118,477 (+0.24%) |
 | Mobile | 17,924,607 | 17,923,869 | +738 (+0.00%) |
-| **ALL** | **66,603,219** | **66,509,352** | **+93,867 (+0.14%)** |
+| **ALL** | **66,628,567** | **66,509,352** | **+119,215 (+0.18%)** |
 
 **Aug-25 trough minimum** (28d-MA, post-headwind) — the scored near-horizon KPI: Desktop
-**45,193,561**. Aug-22 for continuity with earlier builds: Desktop **45,238,336** · Mobile 17,056,672 ·
-ALL 62,295,008.
+**45,223,249**. Aug-22 for continuity with earlier builds: Desktop **45,263,042** · Mobile 17,056,561 ·
+ALL 62,319,604.
+
+Note Aug-22 moved by −4,443 when `Fix A` landed, because it sits *inside* the 27-day seam transition and
+so was never covered by the far-horizon guarantee. Aug-25 sits a full window past the seam and did not
+move — one more reason to prefer it for anything quotable.
 
 Aug-25 is scored rather than Aug-22 because it is exactly 28 days past the seam, so its window is
 entirely forecast and its value is independent of the `display_ma` splice convention; Aug-22 sits inside
@@ -49,38 +59,44 @@ the transition zone and reads ~41K apart under the two conventions.
 
 ### Attribution ledger
 
+Five changes separate July's delivered number from this build, and **all five are attributed**:
+
 | desktop Dec-15 28d-MA | step | running |
 |---|--:|--:|
 | July delivered (125K LOL, hw −1,345,000, 07-06 anchor) | — | 48,585,483 |
 | + data refresh to the 07-28 anchor | −64,769 | 48,520,714 |
-| + Win10 headwind −1,345,000 → −1,245,000 | +100,000 | 48,620,714 |
-| **+ LOL ceiling 125,000 → 200,000 AND the s01 retune (combined residual)** | **+83,246** | **48,703,960** |
+| + LOL ceiling 125,000 → 180,000 (derived residual) | +52,256 | 48,572,970 |
+| + Win10 headwind −1,345,000 → −1,245,000 | +100,000 | 48,672,970 |
+| + desktop model retune to s01 (measured, both @180K) | +5,642 | 48,678,612 |
+| **+ LOL ceiling 180,000 → 200,000 (measured, both s01)** | **+25,348** | **48,703,960** |
 
-**The LOL and retune steps are deliberately NOT separated.** Isolating the retune needs a build
-identical to the canonical one in every input except the model config. One exists at the 180K ceiling
-(the frozen `desktop_baseline_2026-07-28/` comparison point) but none exists at 200K, and **historical
-builds are locked — they are never re-run, rebuilt, or replaced to manufacture one.** Published deltas
-were quoted against those artifacts; a chain whose links move cannot be audited. So the canonical
-notebook reports one combined step and says so, rather than a clean-looking number obtained by
-regenerating a historical comparison point.
+**Each step differences two builds that differ in exactly one input**, and each is *pinned* as a constant
+in `[desktop-dec15]` rather than recomputed. Two consequences:
 
-The combined step is a residual, so the ledger sums by construction and is not itself a check. What the
-notebook *does* assert is that the residual is physically plausible: the LOL curve is +75,000/day higher
-than July's 125K curve at Dec-15 and the retune carried a ±50,000 budget, so the step must be positive
-and below +125,000. Realised **+83,246** = 111% of the curve change. Near-zero would mean the add-back
-leg never ran; far above the envelope would mean the training subtraction is reshaping the trend
-unexpectedly.
+- **The ledger is a real check, not a tautology.** Because the steps are pinned independently of the
+  canonical parquet, they do not close by construction — so the notebook asserts the chain sums to the
+  measured Dec-15 and fails loudly if a constant goes stale or the wrong parquet is loaded. It currently
+  closes to a residual of **−0**. A residual ledger cannot test itself.
+- **No comparison build was re-run to produce any of these numbers.** **Historical builds are locked** —
+  published deltas were quoted against them, and a chain whose links move cannot be audited. The
+  intermediate parquets are also gitignored and GCS-bound, which is the second reason the steps are pinned
+  rather than loaded.
 
-**The retune's own like-for-like measurement** lives in
-`research/param-scans/summer-trough-v2/s01_canonical_desktop.ipynb`, which compares s01 against the
-previous config on an identical 180K curve: trough **+1,359,887** for **+5,642** at Dec-15. Quote the
-retune effect from there. That notebook stays on 180K builds on purpose — repointing it at 200K would
-confound the config evidence with the ceiling change.
+The two LOL steps together are **+77,604** against a raw curve change of +75,000/day at Dec-15 — a 103%
+pass-through, which the notebook asserts falls in a plausible 0.5–1.5× band. Near-zero would mean the
+bidirectional add-back leg never ran; far above 1 would mean the training subtraction is reshaping trend.
 
-**Note the ceiling's effect is config-dependent.** 180K → 200K is worth +25,348 at Dec-15 under s01 but
-only ~+7,211 under the previous, flatter config: `l` is bidirectional, so a higher ceiling changes the
-training series too, and s01's 2.1× changepoint flexibility responds far more. Never treat a ceiling
-change as a level shift.
+**The retune's own like-for-like measurement** is in
+`research/param-scans/summer-trough-v2/s01_canonical_desktop.ipynb`: previous config vs s01 with **both
+sides on the 180K curve**, so the model config is the only difference — trough **+1,359,887** for
+**+5,642** at Dec-15, 11% of the ±50,000 budget. That notebook stays on 180K builds on purpose;
+repointing it at 200K would confound the config evidence with the ceiling change. Note 45,193,561 is the
+*180K* s01 trough — this build troughs at 45,223,249.
+
+**The ceiling's effect is config-dependent**, which is why the two LOL steps are not interchangeable:
+180K → 200K is worth +25,348 under s01 but only ~+7,211 under the previous flatter config. `l` is
+bidirectional, so a higher ceiling also changes the training series, and s01's 2.1× changepoint
+flexibility responds far more. Never treat a ceiling change as a level shift.
 
 
 **The headwind amplitude step is exactly +100,000 by construction.** `h` is applied to the 28-day MA,
@@ -110,7 +126,9 @@ of which currently has a validation artifact. That does not make either wrong (J
 *below* the last clean measurement of 130,296, so it was arguably too conservative), but the framing
 matters when this number is quoted.
 
-**Variant history this cycle** — all at the 2026-07-28 anchor, same data:
+**Variant history this cycle.** All at the 2026-07-28 anchor on the same data. **These rows are all on
+the previous cycle's model parameters** — they isolate the overlay/headwind levers, so do not read the
+canonical build off this table:
 
 | LOL ceiling | headwind | ramp start | desktop Dec-15 | Aug-22 trough |
 |--:|--:|---|--:|--:|
@@ -119,9 +137,18 @@ matters when this number is quoted.
 | 165,000 | −1,295,000 | 2026-04-01 | 48,611,795 | 43,415,259 |
 | 180,000 | −1,245,000 | 2026-04-01 | 48,672,970 | 43,453,752 |
 | 180,000 | −1,245,000 | 2026-07-28 | 48,672,970 | 43,921,488 |
-| **200,000** | **−1,245,000** | **2026-07-28** | **48,703,960** | **45,223,249** |
 
 The last row is the ramp re-anchoring: identical Dec-15, +467,737 on the trough, seam discontinuity gone.
+
+**Then the model was retuned to s01 and the ceiling raised again**, both of which required a rebuild:
+
+| build | params | LOL ceiling | desktop Dec-15 | Aug-25 trough |
+|---|---|--:|--:|--:|
+| `desktop_superseded_lol180k_2026-07-28/` | s01 | 180,000 | 48,678,612 | 45,193,561 |
+| **`desktop_locked/` (CANONICAL)** | **s01** | **200,000** | **48,703,960** | **45,223,249** |
+
+Note the trough column switches to **Aug-25** here, the scored KPI; Aug-22 sits inside the seam
+transition. Both rows are frozen builds and neither is ever re-run.
 
 **Still not the number to publish.** `o` and `m` remain ~4–5 weeks stale; the headwind anchor has been
 attenuated four times running without data-side validation; the LOL ceiling is unfalsifiable against
@@ -139,7 +166,11 @@ current data (measurement stopped 2026-06-23). See the caveats cell and `adjustm
   measures the `l`/`o` interaction term (−15,590 at Dec-15) and contrasts the two headwind ramp
   conventions. **Read this before starting a parameter search.**
 - **Desktop forecast (CANONICAL)** — `desktop_locked/mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet`
-- **Desktop forecast (superseded, July's params)** — `desktop_baseline_2026-07-28/cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet` — kept: the ledger measures the retune against it, and its raw BQ pull is the shared cache
+  — s01 params, `l` at the **200K** ceiling + `o`. Pre-headwind.
+- **Desktop forecast (s01 @180K, superseded 2026-07-29)** — `desktop_superseded_lol180k_2026-07-28/` —
+  the immediate predecessor, identical but for the `l` ceiling. **FROZEN.** Differencing it against the
+  canonical is what makes the +25,348 LOL step attributable; see its `README.md`
+- **Desktop forecast (previous-cycle params, superseded)** — `desktop_baseline_2026-07-28/cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet` — kept for two reasons: its raw BQ pull is the shared cache every scan symlinks, and its Dec-15 (48,672,970) is the anchor point the ledger's retune step is pinned from. The canonical notebook **no longer loads it** — all ledger steps are pinned constants
   (+ sidecar, `parameters.json`). Pre-headwind; `l` (180K) + `o` baked in. **FROZEN — never re-run or rebuilt.** **The directory name is now a
   slight misnomer** — it held the 125K baseline, which this build overwrote in place. Kept as-is because
   the notebook and the committed sidecar reference the path.

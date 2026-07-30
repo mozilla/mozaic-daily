@@ -116,3 +116,14 @@ python scripts/tile_corr_distribution.py \
 
 Requires the sibling mozaic checkout on `configurable-model-params` at `d781d97` or later for
 `seasonality_corr_threshold`.
+
+
+---
+
+> **Note added 2026-07-29 — kink magnitudes here are pre-`Fix A`.** Every seam-kink figure in this
+> document was measured with the old `reconstruct_matched_daily` trend estimator, which biased the first
+> forecast day and so contaminated kink magnitudes (not the trough or Dec-15 values, which are unaffected).
+> Re-measured after the fix, s01 reads **−19,702/day against the canonical's −74,237**; the pre-fix pair
+> was −20,604 / −72,593. **The rankings and every conclusion in this document are unchanged** — the
+> comparison was always like-for-like within one estimator — but do not quote these kink magnitudes as
+> current. See `research/ma-seam-turbulence/LOG.md` § Fix A.

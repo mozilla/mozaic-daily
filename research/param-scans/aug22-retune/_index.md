@@ -5,7 +5,8 @@ Desktop-only parameter search that targets the **28-day trailing MA of world-hea
 Bullseye **45.06M ±0.1M**, with Dec-15 held near the locked July value (48.585M, ±10k tolerance).
 
 This is the *near-horizon* counterpart to the Dec-15 searches at the parent level
-(`../desktop_gradient_round{1..4}.ipynb`). Same anchor **2026-07-06**, same cached raw data,
+(`_archive/research/param-scans/desktop_gradient_round{1..4}.ipynb`, archived 2026-07-29). Same anchor
+**2026-07-06**, same cached raw data,
 search center = the **locked July config** (cps 0.08983, cpr 0.65, recent 13, ncp 25, sps 0.00825)
 rather than package defaults.
 
@@ -86,6 +87,6 @@ come from the sibling checkout `mozaic-forecasting-official` on branch `configur
 
 ## Related
 
-- Parent Dec-15 searches: `../desktop_gradient_round{1..4}.ipynb`, `../_index.md`
+- Parent Dec-15 searches: `_archive/research/param-scans/desktop_gradient_round{1..4}.ipynb`, `../_index.md`
 - The summer-slump seasonal shape this search was trying to reproduce: `../../summer-slump/`
 - Overlay machinery the recommendation would reuse: `src/mozaic_daily/adjustments.py`, `data-official/adjustment_codes.yaml`

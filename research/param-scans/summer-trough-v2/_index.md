@@ -22,12 +22,22 @@ plan (its phased approach was abandoned) but is still accurate on the objective,
 | `grid/logs/` | Per-probe run logs (gitignored) |
 | `phase1/FINDINGS.md` | The earlier single multiplicative probe + the three scorer defects fixed in phase 0 |
 | `HANDOFF.md` | Original brief. Plan superseded; objective/tooling/traps still valid |
+| **`s01_canonical_desktop.ipynb`** | **The s01 promotion evidence, and the canonical cycle's cited source for the retune step.** Compares the previous config against s01 with **both sides on the 180K LOL curve**, so the model config is the only difference: trough **+1,359,887** for **+5,642** at Dec-15 (11% of the ±50,000 budget), seam kink **−19,702/day vs −74,237**. Loads from `s01_gradient/`, and is deliberately kept on 180K builds — repointing it at the canonical 200K ceiling would confound the config evidence with the ceiling change |
+| `s01_gradient/<slug>/` | Per-probe builds for the s01 sensitivity gradient (blobs gitignored; the canonical `.pkl` is hard-linked to one of these rather than duplicated) |
+| `s01_gradient_slopes.csv`, `s01_gradient_pairs.csv` | Per-knob central-difference slopes and the ±δ pairs behind them. **`changepoint_range` dominates and its curvature is 2.4× its own slope — do not extrapolate the local gradient** |
+| `s01_gradient_report.html` | Charts for the above. Gitignored; rebuild with `build_gradient_report.py` |
+| `trend_only/`, `trend_only_scores.csv` | The 21-probe trend-only grid (holiday knobs refused by policy). Found one config beating s01 inside the Dec-15 band (`ncp=42`) at 73% of the budget for a 0.09% gain — not taken |
+| `trend_only_report.html` | Frontier chart for the trend-only grid. Gitignored; rebuild with `build_trend_only_report.py` |
+| `plots/` | Saved figures from `s01_canonical_desktop.ipynb` (canonical-format curves, summer zoom, delta-vs-canonical) |
 
-Producers: `scripts/run_summer_trough_grid.py` (driver), `build_grid_report.py` (report),
-`scripts/tile_corr_distribution.py` (the per-tile corr distribution that placed the grid points).
+Producers: `scripts/run_summer_trough_grid.py` (grid driver), `scripts/run_s01_gradient.py` (gradient),
+`scripts/run_trend_only_grid.py` (trend-only grid; refuses holiday overrides by design),
+`scripts/tile_corr_distribution.py` (the per-tile corr distribution that placed the grid points), and
+`build_grid_report.py` / `build_gradient_report.py` / `build_trend_only_report.py` (reports).
 
 **What isn't here:** the July-data search (`../aug22-retune/`), the Dec-15 searches
-(`../desktop_gradient_round{1..4}.ipynb`), and the seam/overlay diagnostic that preceded this
+(`_archive/research/param-scans/desktop_gradient_round{1..4}.ipynb`, archived 2026-07-29), and the
+seam/overlay diagnostic that preceded this
 (`data-official/2026-08/desktop_adjustment_ladder.ipynb`).
 
 **Where new code goes:** probe outputs under this directory (never into

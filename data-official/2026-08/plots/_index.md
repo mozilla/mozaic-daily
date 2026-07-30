@@ -33,14 +33,20 @@ tracked plot set on every rebuild; the chart title carries the variant instead. 
 variants in shape — `l` is desktop-only and mobile's headwind amplitude never moved; the ramp
 re-anchoring shifted mobile's near-term curve by ~12K, which is invisible at that scale.
 
+| `seam_fix_before_after_ma.png` | **Fix A verification.** Desktop and mobile 28d-MA across the seam, published (pre-fix) vs fixed, with the plain 28d-MA drawn as the honest reference. Produced by `../seam_fix_before_after.ipynb`, which is frozen with its outputs as proof of the choice |
+| `seam_fix_before_after_daily.png` | The same comparison at daily resolution — the +5,921,427 day-1 rebuilt-value spike disappearing |
+
 ## Reading the charts
 
-- **The HEADWIND seam step is gone as of 2026-07-29 — but a smaller upward one remains.** The residual
-  **+102,595** step is a separate display artifact in `reconstruct_matched_daily` (7-day centered trend
-  computed on the forecast only degenerates to a weekday-only window at the seam). It does not affect
-  Aug-25 or Dec-15. The superseded build's near-continuity (+5,157) was coincidental cancellation, not
-  genuine continuity. See the canonical notebook's caveats and
-  `research/ma-seam-turbulence/diagnose_recon_edge_bias.py`. What the headwind step WAS: The Win10 headwind used to ramp
+- **Both seam steps are now fixed (2026-07-29).** The headwind one went first (re-anchoring the ramp to
+  the seam). The second was a **+102,595** upward display artifact in `reconstruct_matched_daily`, whose
+  7-day centered trend, computed on the forecast only, degenerated to a weekday-only window at the seam.
+  `Fix A` divides by the forecast's own day-of-week profile before smoothing; the residual distortion on
+  this build is **+102 DAU**, and the curve now steps −107,445 against a plain 28d-MA step of −107,547.
+  **The curve therefore leaves the actuals heading slightly DOWN, and that is correct** — the old upward
+  step was masking a real decline. Aug-25 and Dec-15 were byte-identical before and after. A near-zero
+  seam step is not a quality signal: the pre-retune build's +5,157 was two errors cancelling. See
+  `research/ma-seam-turbulence/LOG.md` § Fix A and `../seam_fix_before_after.ipynb`. What the headwind step WAS: The Win10 headwind used to ramp
   from 2026-04-01 while only being *applied* from the seam forward, so it switched on at 118/258 = 45.7% of
   full value (−569,419) in a single day. The raw model output is continuous across the seam (+5,157), so
   that step was **100.9%** of the −564,262 drop visible in earlier charts. `headwind.json` now ramps from

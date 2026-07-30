@@ -83,7 +83,8 @@ Three defects found and fixed in `scripts/score_near_horizon.py`:
 2. **Wrong MA convention.** The scorer used a plain `rolling(28).mean()`; the canonical notebook uses the
    variance-matched `display_ma` splice. These agree past the seam zone but disagree by **+41,189** at
    Aug-22, which sat *inside* the 27-day transition window. The scorer now imports `display_ma` (same
-   precedent as `scripts/mobile_sensitivity.py`) and reproduces the notebook exactly at both dates.
+   precedent as `mobile_sensitivity.py`, archived 2026-07-29 to `_archive/scripts/`) and reproduces the
+   notebook exactly at both dates.
 3. **Target date moved to the trough minimum, 2026-08-25.** Aug-22's value was 41K sensitive to the
    smoothing convention; Aug-25 is exactly 28 days past the seam, so its window is entirely forecast and
    the value is convention-independent (plain and spliced agree to the cent — verified).

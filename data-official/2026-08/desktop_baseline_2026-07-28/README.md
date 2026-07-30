@@ -1,9 +1,16 @@
 # Desktop — August 2026, SUPERSEDED (forecast_start 2026-07-28, July's params, LOL 180K)
 
-`legacy_desktop` DAU. **SUPERSEDED 2026-07-29** by `../desktop_locked/`, which carries the s01
-retune. Kept on disk deliberately: the canonical notebook loads it to *measure* the retune step in
-the Dec-15 attribution ledger, and its raw BQ pull is the shared cache every scan symlinks. Do not
-delete it before button-down.
+`legacy_desktop` DAU. **SUPERSEDED 2026-07-29** by `../desktop_locked/`, which carries the s01 retune
+and a 200K LOL ceiling. **FROZEN — never re-run, rebuilt or replaced.** Kept on disk deliberately: its
+raw BQ pull is the shared cache every scan symlinks, and its Dec-15 below is the anchor point the
+ledger's retune step is pinned from. Do not delete it before button-down.
+
+> **Role note, corrected 2026-07-29.** This file previously said the canonical notebook *loads* this
+> build to measure the retune step. It no longer does — every ledger step is now a pinned constant, so
+> the notebook has no dependency on this path (the parquet is gitignored and GCS-bound, which is why).
+> The retune step is still *derived from* this build's Dec-15, measured against the s01 build at the same
+> 180K ceiling; the like-for-like comparison lives in
+> `research/param-scans/summer-trough-v2/s01_canonical_desktop.ipynb`. **No number in this file changed.**
 
 Its Dec-15 (**48,672,970**) and Aug-25 trough (**43,833,674**) are the baseline every August delta is
 quoted against.

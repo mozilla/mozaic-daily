@@ -40,7 +40,7 @@ stakeholder-facing curves.
 
 ## What's here
 - **`LOG.md`** — append-only hypothesis ledger (confirmed + refuted). The audit trail; read
-  this first. Phase-1 verdict at the bottom.
+  this first. Chronological: the Phase-1 verdict is mid-file, **§ Fix A is at the end** and is current.
 - **`diagnose_seam.py`** — Phase-1 diagnostic. Reads only the canonical 2026-05-26 desktop
   parquet (no BQ, no model re-run). Emits AR/US decisive figures and a per-country seam-metrics
   table (`plots/decisive_*.png`, `plots/per_country_metrics.csv`).
@@ -56,15 +56,42 @@ stakeholder-facing curves.
   saved plots, incl. the April-backtest evidence panel. *(added in Phase 3, extended in 2B)*
 - **`report.html`** — boss-facing diagnostic: problem, what it is NOT, root cause, the fix with
   before/after examples, why it won't recur. *(added in Phase 3)*
-- **`plots/`** — saved figures and CSV tables.
+- **`plots/`** — saved figures and CSV tables, including the six `step_rung*.png` figures from
+  `seam_step_diagnosis.ipynb`.
+- **`extracts/`** — cached BQ pulls so the diagnosis is rerunnable without re-querying.
+  `desktop_actuals_2026-06-01_2026-07-27.csv` is force-added to git (it is tiny, and regenerating it
+  costs a ~93 GB scan).
+- **`plots.zip`** — archived Phase-1 figures.
+
+### Phase-3 / Fix A harness (the trend-estimator defect)
+
+All read-only: no BQ, no model re-runs, no spec edits.
+
+- **`recon_variants.py`** — the estimator variants behind a common signature (`current`, `forward7`,
+  `concat`) plus `patched_reconstructor` to swap one in, and a fidelity assertion that `current`
+  reproduces the shipped function exactly.
+- **`diagnose_recon_edge_bias.py`** — the per-day reconstructed-vs-raw table and the edge-bias measurement.
+- **`eval_recon_edge_fix.py`** — scores a variant against the handoff's original seven criteria.
+- **`diagnose_splice_metric.py`** — decomposes the day-27 `visible` step into landing residual + slope,
+  which is how criterion 3 was shown to be a cancellation.
+- **`eval_splice_correction_load.py`** — how much work the cubic splice correction is doing.
+- **`backtest_recon_variants.py`** — realized backtest across several June-cycle seams.
+- **`check_delivered_numbers.py`** — asserts June/July delivered values still reproduce under a variant.
+- **`eval_deseason_variant.py`** — scores the **deseasonalize-before-averaging** variants (A1/A2) and
+  introduces the **identity backtest**: on all-actuals input the transition must be a no-op, so any
+  deviation from the plain rolling mean is pure estimator error against known ground truth.
+- **`plan_probe_fix_a.py`** — the implementation-planning probe: which existing tests a variant breaks,
+  A1 vs A2 vs A3, far-horizon invariance across all six delivered builds, and transition-window shift.
+- **`verify_fix.py`** — Dec-15 delta check for a candidate fix.
 
 ## What isn't here
-- The fix itself lives in the export/plot path under `data-official/2026-06/`
-  (`export_canonical_curves.py` — `display_ma` + `reconstruct_matched_daily`,
-  `plot_per_country_curves.py`); the regression tests live in `tests/`. This directory is
-  diagnosis + gating + reporting only.
+- **The live fix**, which is `src/mozaic_daily/seam_ma.py` (`display_ma` +
+  `reconstruct_matched_daily`), test-locked by `tests/test_seam_ma.py`. The **v1** fix shipped in
+  `data-official/2026-06/export_canonical_curves.py`, which is now frozen and must not be edited —
+  cycles through 2026-07 import it, and code still bound to it lives in `_archive/`.
+- This directory is diagnosis + gating + reporting only.
 
-## Remediation (Phase 2B — current)
+## Remediation, v1 (Phase 2B — superseded in part by Fix A)
 The display-side fix is a **variance-matched seam transition** spliced to the clean
 forecast-only MA at +27d: the forecast's first 27 daily values are rebuilt to carry the recent
 actuals' weekly amplitude, so the trailing 28d window cancels the weekly cycle and the transition
@@ -74,7 +101,11 @@ shape regressions (e.g. desktop IN) and a small per-country splice kink are acce
 v1 limitations — this is a bandaid for the global curve, not a per-country fix. See `LOG.md`
 Phase 2B.
 
-## Verdict (see LOG.md)
+## Verdict, Phase 1 (see LOG.md)
+
+Still accurate as the *v1* diagnosis; **Fix A later found a second, independent defect in the same
+function** — the trend estimator's day-of-week-unbalanced window at the seam. See the banner above.
+
 Primarily an **MA-seam artifact**: the plotted forecast 28dMA blends trailing raw actuals with
 forecast for its first 27 points, and a weekly-pattern discontinuity at the seam (dominantly a
 **damped forecast weekly amplitude** vs higher actuals amplitude for high-DOW-swing countries)

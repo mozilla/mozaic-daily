@@ -136,8 +136,16 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `export_forecast_csv.py` - Export a forecast parquet checkpoint to CSV
 - `run_comparison_forecasts.py` - Run multiple forecast variants side-by-side for comparison
 - `test_local_docker.sh` - Test Docker image builds locally
-- `generate_iran_synthetic.py` - Generate ALL-level synthetic Iran data (historical + forecast) from BigQuery
-- `add_iran_to_forecast.py` - Add synthetic Iran DAU values to a no-Iran forecast output via summation
+- `generate_iran_fill.py` - Produce the Iran counterfactual gap-fill artifact (**current** approach)
+- `generate_iran_synthetic.py` - **RETIRED** (superseded by the fill): ALL-level synthetic Iran data from BigQuery
+- `add_iran_to_forecast.py` - **RETIRED** (superseded by the fill): add synthetic Iran DAU via summation
+- `run_param_scan.py` - **One desktop forecast with a fully configurable `DesktopModelConfig`.** The only way to
+  reproduce a locked parameter config — `run_main.py` has no parameter flags. Scan drivers
+  (`run_s01_gradient.py`, `run_summer_trough_grid.py`, `run_trend_only_grid.py`, `run_desktop_gradient.py`,
+  `run_aug_trough_gradient.py`, `run_mobile_param_scan.py`, `mobile_grid_search.py`) each wrap it
+- `score_near_horizon.py` - Score a build at the near-horizon trough and Dec-15. **Scores are not comparable
+  across the 2026-07-29 `Fix A` boundary** — its window overlaps the seam transition
+- `verify_lol_overlay.py` / `verify_mozillaonline_overlay.py` - End-to-end checks of the `l` and `o` overlays
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `migrate_forecast_names.py` - Rename forecast artifacts to the `.raw.` / `.adj-h.` marker convention and write sidecar metas
 - `regenerate_composites.py` - Reproduce composite CSVs from raw parquets via `mozaic_daily.adjustments`; diffs against on-disk
@@ -413,7 +421,7 @@ Adjustment codes are registered in `data-official/adjustment_codes.yaml`. Curren
 |------|------|-------------|
 | `h`  | headwinds | Linear ramp anchored at a target date; spec lives in `data-official/{YYYY-MM}/adjustments/headwind.json`. Composite-style applier (post-forecast Series mutation). |
 | `m`  | marketing_lift | Daily DAU lift from the Fenix Android paid campaign launched 2026-04-06; spec + parquet live in `data-official/{YYYY-MM}/marketing/`. Per-tile bidirectional applier: subtracts lift from Fenix training rows before mozaic so Prophet learns the no-marketing dynamic, then adds the lift back to the per-tile forecast. Only applies to `glean_mobile` DAU. |
-| `l`  | launch_on_login | Launch-on-login desktop DAU tailwind (feature launched 2026-05-08); spec + curve live in `data-official/{YYYY-MM}/launch_on_login/`. Same per-tile bidirectional applier as `m` but on `legacy_desktop` DAU, `modern_windows` segment: subtracts the measured historical rise from modern_windows training rows before mozaic, then adds the capped/flat curve back. Spec type is the generic `desktop_overlay`. **The ceiling is per-cycle, not a constant** — July 2026 used 125K, August 2026 uses 165K; read `cap_dau_daily` from the curve's `model_meta.json` rather than assuming. The measurement window closed permanently on 2026-06-23 (the holdback control received the feature), so every cycle's curve is measured to that date and extrapolated after it. |
+| `l`  | launch_on_login | Launch-on-login desktop DAU tailwind (feature launched 2026-05-08); spec + curve live in `data-official/{YYYY-MM}/launch_on_login/`. Same per-tile bidirectional applier as `m` but on `legacy_desktop` DAU, `modern_windows` segment: subtracts the measured historical rise from modern_windows training rows before mozaic, then adds the capped/flat curve back. Spec type is the generic `desktop_overlay`. **The ceiling is per-cycle, not a constant, and it moved three times inside the August cycle alone** — July 2026 used 125K; August 2026 built 165K, 180K and 200K and shipped **200K**. Never assume a value: read `data-official/{YYYY-MM}/launch_on_login/lol.json` for which curve is active, then `cap_dau_daily` from that curve's `model_meta.json`. All variants share one anchor and slope and differ only in the ceiling, so switching is a two-line spec edit **plus a model re-run** (the curve is baked into the parquet). The choice is unfalsifiable by construction — see below. The measurement window closed permanently on 2026-06-23 (the holdback control received the feature), so every cycle's curve is measured to that date and extrapolated after it. |
 | `o`  | mozillaonline_migration | MozillaOnline → canonical Firefox desktop migration tailwind (China distribution partner migrating users onto mainline Firefox; migrating users flip `app_name` and newly count as `Firefox Desktop`); spec + curve live in `data-official/{YYYY-MM}/mozillaonline/`. Same per-tile bidirectional `desktop_overlay` applier as `l`, on `legacy_desktop` DAU `modern_windows` segment, but with **fixed geo shares** (CN ~93%, IR excluded, renormalized over training-present countries) instead of trailing-DAU shares. modern_windows-only by measurement (older-Windows users are pinned on Firefox too old to receive the migrating build). Distinct sentinel `mozillaonline_subtracted` so it stacks with `l`. |
 
 Combined with existing markers, filenames look like:

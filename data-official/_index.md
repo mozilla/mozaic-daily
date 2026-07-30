@@ -57,8 +57,11 @@ reproducibility of the cycle we still depend on:
 - `mozillaonline/june_delivered_mo_tailwind.json` is read by July's canonical-review notebook and by
   `research/param-scans/aug22-retune/`.
 - `csv/june_canonical_curves.csv` is the N-1 comparison series for
-  `research/ma-seam-turbulence/backtest_seam.py` and `scripts/mobile_sensitivity.py`.
-- `adjustments/headwind.json` and `export_canonical_curves.py` are referenced across July.
+  `research/ma-seam-turbulence/backtest_seam.py` and `_archive/scripts/mobile_sensitivity.py` (archived
+  2026-07-29 — it binds the frozen 2026-06 seam MA; see `_archive/_index.md`).
+- `adjustments/headwind.json` is referenced across July. `export_canonical_curves.py` was the seam-MA home
+  through the 2026-07 cycle; as of 2026-07-29 the live implementation is `src/mozaic_daily/seam_ma.py` and
+  the 2026-06 copy is frozen (see `_archive/_index.md`).
 
 Pruning it saves ~10 MB and costs a broken July. **Revisit when July becomes N-2** (i.e. at the
 September roll-forward), at which point the August cycle should own its own copies of whatever it

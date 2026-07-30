@@ -19,7 +19,7 @@ Add a new topic cluster here when work spans more than one month or doesn't tie 
 | `param-scans/` | Prophet param sensitivity exploration + `mobile-july/` grid search. Notebooks/tooling present; **the multi-GB sweep `results/` are archived to GCS** (regenerable). |
 | `headwinds/` | Linear-ramp profile explorations for the `h` (headwinds) adjustment |
 | `csv-vs-actuals/` | Validates exported forecast CSVs against actual DAU from BigQuery before release (per-cycle) |
-| `ma-seam-turbulence/` | Diagnosis + backtest behind the `display_ma` seam fix shipped in `data-official/2026-06/export_canonical_curves.py` (test-locked). |
+| `ma-seam-turbulence/` | Diagnosis + backtest behind the `display_ma` seam work. Two fixes shipped: the v1 variance-matched transition (in the now-frozen `data-official/2026-06/export_canonical_curves.py`) and **Fix A**, the trend-estimator correction that moved the live implementation to `src/mozaic_daily/seam_ma.py` (test-locked in `tests/test_seam_ma.py`). See its `LOG.md` § Fix A. |
 
 ## Archived (GCS — pull back only for prior art)
 
