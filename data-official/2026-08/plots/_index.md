@@ -25,11 +25,49 @@ notebook cell the reader can re-run.
 | `mobile_august_vs_july.png` | `[plot-mobile]` | Mobile DAU 28d-MA, same three series |
 | `mobile_august_only.png` | `[plot-mobile-current-only]` | Same without the prior line |
 | `mobile_ex_iran_august_vs_july.png` | `[plot-mobile-ex-iran]` | Mobile ex-Iran (ALL − IR), which strips the post-shutdown reconnection bounce |
+| `desktop_current_vs_july_with_2025.png` | `[plot-desktop-vs-july-with-2025]` | `desktop_current_vs_july` **plus a faint grey 2025-actuals reference line** |
+| `desktop_current_only_with_2025.png` | `[plot-desktop-current-only-with-2025]` | August desktop alone against the 2025 reference — the cleanest year-over-year read |
+| `mobile_august_vs_july_with_2025.png` | `[plot-mobile-vs-july-with-2025]` | `mobile_august_vs_july` plus the 2025 reference |
+| `mobile_august_only_with_2025.png` | `[plot-mobile-current-only-with-2025]` | August mobile alone against the 2025 reference |
+
+### The `*_with_2025` variants
+
+These are **additional** charts, not replacements. `render_desktop_plot` / `render_mobile_plot` gained an
+optional `show_2025=False` flag, and the 2025 line is drawn only inside `if show_2025:`, so the four
+originals are unaffected by the change. (They *were* rewritten when the notebook was re-run on
+2026-07-30, because `[bq-actuals]` advanced the actuals line by one day, 2026-07-27 → 2026-07-28. No
+forecast number moved: Dec-15, the attribution ledger, and the prior-curve reproduction check are all
+identical. The one table change is the Actuals row's "Aug trough min" going `N/A` → `47,108,607`, which is
+a single observed day inside the 07-28..10-15 window rather than a meaningful trough.)
+
+The split into separate charts exists because the 2025 line is drawn at **true 2025 levels, not rebased**,
+and the two years' ranges differ enough to cost real vertical resolution:
+
+| | 2025 range (28d MA) | 2026 display range | Dec-15: current vs 2025 |
+|---|---|---|---|
+| Desktop | 47.06M – 53.95M | 44.8M – 50.0M | **−3,142,278** (2025 was higher) |
+| Mobile | 13.43M – 15.71M | 15.2M – 18.0M | **+2,233,888** (2025 was lower) |
+
+Mobile is the binding case — the two years barely overlap, so a combined axis spans ~4.5M instead of
+~2.7M and visually flattens the curve the headline chart exists to show. Keeping the reference on its own
+chart preserves both readings. (Desktop's Dec-15 gap is against the **headwind-adjusted** current curve;
+against the raw model output it is −1,897,278, the difference being the −1,245,000 `h` anchor.)
+
+The 2025 series is read from the **`training` rows already in the forecast parquets**, not a fresh
+BigQuery query — verified equal to raw actuals day-for-day (61/61 exact, 0 DAU difference, March and
+September 2025 probes, both platforms) by `scripts/verify_training_rows_are_actuals.py`. Every
+training-row modification in the pipeline (Iran fill, `l`, `o`, `m`) is confined to 2026. Re-querying BQ
+for 2025 would add ~1TB of scan (~$5) to every notebook run for an identical series.
+
+Alignment is by **calendar date** (2025-12-15 drawn at the 2026-12-15 position), so holidays and seasonal
+turns land in the right place. Day-of-week drifts by one day, which costs nothing on a 28-day MA that has
+already averaged the weekly cycle out.
 
 Desktop filenames are deliberately **cap-agnostic** (`desktop_current_*`). The LOL ceiling and the
-headwind anchor are both being iterated this cycle, and encoding the variant in the filename churned the
-tracked plot set on every rebuild; the chart title carries the variant instead. Earlier `*_baseline_*` and
-`*_lol165_*` files were superseded 1:1 and removed. The mobile charts are unchanged in content across all
+headwind anchor were both iterated this cycle, and encoding the variant in the filename churned the
+tracked plot set on every rebuild; the chart title carries the variant instead. Earlier per-variant files
+were superseded 1:1 and removed, as were the superseded LOL curve plots under
+`../launch_on_login/plots/` (2026-07-30 — only the active curve's plot remains). The mobile charts are unchanged in content across all
 variants in shape — `l` is desktop-only and mobile's headwind amplitude never moved; the ramp
 re-anchoring shifted mobile's near-term curve by ~12K, which is invisible at that scale.
 

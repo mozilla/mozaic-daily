@@ -1,12 +1,20 @@
-# `research/headwinds/` — headwind-ramp profile exploration
+# `research/headwinds/` — headwind ramp shape and anchor magnitude
 
-Explores linear-ramp shapes for the `h` (headwinds) adjustment — anchor date, slope, target value, MA28 alignment math.
+Two distinct questions live here. **Ramp shape** — given a target, what profile gets you there
+(anchor date, slope, MA28 alignment math). **Anchor magnitude** — is the target itself the right
+size, tested against telemetry.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `headwind_options.ipynb` | Compares ramp profiles; covers the Order-1 vs. Order-2 alignment trick (apply to MA28, not daily series) |
+| `headwind_options.ipynb` | *Shape.* Compares ramp profiles; covers the Order-1 vs. Order-2 alignment trick (apply to MA28, not daily series) |
+| `win10_anchor_validation.ipynb` | *Magnitude.* Validates the Win10 desktop anchor against Legacy telemetry — measures net Win10+Win11 change (migration is DAU-neutral, so the Win10 curve is not the headwind), ex-IR/CN, net of the `l`/`o` overlays |
+| `WIN10_ANCHOR_FINDINGS.md` | *Magnitude.* Verdict: −1,295,000 vs −1,270,000 vs the live −1,245,000 are mutually indistinguishable, but all three require ~−540K of loss by Jul-22 that no specification variant finds. Also flags the forecast-seam double-count |
+| `win10_anchor_report.html` | *Magnitude.* Self-contained narrative writeup of the same work for a non-specialist reader (figures embedded as base64; forwardable without the repo) |
+| `build_report.py` | Generates `win10_anchor_report.html`; holds the report prose. Edit here, not in the generated HTML. Run from the repo root |
+| `extracts/` | Committed BigQuery extracts + SQL for the magnitude work, so the notebook reruns without re-scanning 515 GB |
+| `plots/` | Figures from `win10_anchor_validation.ipynb` |
 
 ## Production usage
 

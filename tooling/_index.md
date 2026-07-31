@@ -7,6 +7,7 @@ Standalone CLI utilities that aren't part of `mozaic_daily` itself but support a
 | Subdir | What it does |
 |---|---|
 | `prophet_decompose/` | Decompose a desktop Mozaic forecast pkl into Prophet components (trend / weekly / yearly / holidays) and write to a long parquet |
+| `transcript_review/` | Render Claude Code session `.jsonl` logs into compact reviewable text (human turns, or turns plus tool names) |
 
 ## Where new code goes
 

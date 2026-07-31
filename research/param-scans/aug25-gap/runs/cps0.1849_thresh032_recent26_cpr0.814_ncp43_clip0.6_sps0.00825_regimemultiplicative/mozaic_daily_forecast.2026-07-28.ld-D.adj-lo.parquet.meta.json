@@ -1,0 +1,35 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "l",
+      "name": "launch_on_login",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-08/launch_on_login/lol.json",
+      "spec_sha1": "a6c2ed014c578e32f6f013998c3b0acb6b90dfd8"
+    },
+    {
+      "code": "o",
+      "name": "mozillaonline_migration",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-08/mozillaonline/mozillaonline.json",
+      "spec_sha1": "0ef68c75fac08774763ae3cc65bf9a0a13cca161"
+    }
+  ],
+  "artifact_sha1": "a9bc99932adc4bda61ef376cde011fe9882d780a",
+  "data_source": "legacy_desktop",
+  "forecast_start_date": "2026-07-28",
+  "model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.032,
+    "prophet_changepoint_prior_scale": 0.1849,
+    "prophet_changepoint_range": 0.814,
+    "prophet_n_changepoints": 43,
+    "prophet_recent_weeks": 26,
+    "prophet_seasonality_prior_scale": 0.00825,
+    "seasonality_corr_threshold": 0.0,
+    "seasonality_regime": "multiplicative"
+  },
+  "mozaic_daily_commit": "f5a5c6f3e33acf27702d7cf7d8dc5681264bada2",
+  "produced_at": "2026-07-31T04:56:26.002178+00:00Z",
+  "produced_by": "scripts/run_param_scan.py"
+}

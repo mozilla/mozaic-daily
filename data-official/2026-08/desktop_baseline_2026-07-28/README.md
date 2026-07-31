@@ -1,4 +1,4 @@
-# Desktop — August 2026, SUPERSEDED (forecast_start 2026-07-28, July's params, LOL 180K)
+# Desktop — August 2026, SUPERSEDED (forecast_start 2026-07-28, July's params, pre-200K LOL ceiling)
 
 `legacy_desktop` DAU. **SUPERSEDED 2026-07-29** by `../desktop_locked/`, which carries the s01 retune
 and a 200K LOL ceiling. **FROZEN — never re-run, rebuilt or replaced.** Kept on disk deliberately: its
@@ -8,15 +8,22 @@ ledger's retune step is pinned from. Do not delete it before button-down.
 > **Role note, corrected 2026-07-29.** This file previously said the canonical notebook *loads* this
 > build to measure the retune step. It no longer does — every ledger step is now a pinned constant, so
 > the notebook has no dependency on this path (the parquet is gitignored and GCS-bound, which is why).
-> The retune step is still *derived from* this build's Dec-15, measured against the s01 build at the same
-> 180K ceiling; the like-for-like comparison lives in
+> The retune step is still *derived from* this build's Dec-15, measured against the s01 build on the same
+> LOL curve; the like-for-like comparison lives in
 > `research/param-scans/summer-trough-v2/s01_canonical_desktop.ipynb`. **No number in this file changed.**
+
+> ⚠️ **This build's LOL curve was deleted 2026-07-30**, along with every other non-200K variant, at the
+> user's instruction. The build itself is untouched and frozen, and its numbers below stand — but it can
+> no longer be rebuilt from scratch. That is not a practical loss: **historical builds are locked and are
+> never re-run.** Its comparison partner (the s01 build on the same curve) survives under
+> `research/param-scans/summer-trough-v2/s01_gradient/cps0.1849_…_regimemultiplicative/`, so the retune
+> delta remains reproducible by differencing the two.
 
 Its Dec-15 (**48,672,970**) and Aug-25 trough (**43,833,674**) are the baseline every August delta is
 quoted against.
 
-⚠️ **The directory name is a misnomer.** It originally held the 125K-LOL *baseline*, which the
-2026-07-29 LOL-165K rebuild **overwrote in place** (deliberately — 125K was July's number). The name is
+⚠️ **The directory name is a misnomer.** It originally held the July-ceiling *baseline*, which the
+2026-07-29 rebuild **overwrote in place** (deliberately — that ceiling was July's number). The name is
 kept because the canonical notebook and the committed sidecar reference this path. The superseded
 baseline's Dec-15 was **48,520,714**, preserved here and in git commit `140412e`.
 
@@ -25,7 +32,7 @@ Single config subdir: `cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.
 ## Files
 
 - `mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet` — the forecast. Overlays `l`
-  (launch-on-login, **180K ceiling**) + `o` (MozillaOnline migration, stale July carry-forward) applied
+  (launch-on-login, **a since-deleted pre-200K ceiling**) + `o` (MozillaOnline migration, stale July carry-forward) applied
   bidirectionally on `modern_windows`.
   **Pre-headwind** — the Win10 headwind is a display-layer adjustment applied in the canonical notebook.
 - `…meta.json` — sidecar provenance (model config, adjustments + spec sha1s, commit).
@@ -55,10 +62,10 @@ Attribution ledger:
 
 | | Dec-15 28d-MA | step |
 |---|--:|--:|
-| July delivered (125K LOL, hw −1,345,000, 07-06 anchor) | 48,585,483 | — |
-| Aug baseline (125K LOL, hw −1,345,000) — superseded | 48,520,714 | −64,769 data refresh |
-| Aug, LOL 180K (hw −1,345,000) — implied | 48,572,970 | +52,256 LOL ceiling |
-| **Aug current (180K LOL, hw −1,245,000)** | **48,672,970** | +100,000 headwind |
+| July delivered (July's LOL ceiling, hw −1,345,000, 07-06 anchor) | 48,585,483 | — |
+| Aug baseline (July's ceiling, hw −1,345,000) — superseded | 48,520,714 | −64,769 data refresh |
+| Aug, raised ceiling (hw −1,345,000) — implied | 48,572,970 | +52,256 LOL ceiling |
+| **Aug current (this build, hw −1,245,000)** | **48,672,970** | +100,000 headwind |
 
 **Only the LOL step involved this parquet.** Raising the ceiling required rebuilding it (`l` is baked in);
 neither headwind change did — `h` is applied to the 28-day MA in the canonical notebook, never to the
@@ -72,8 +79,10 @@ The LOL curve is +55,000/day higher than the baseline's at every forecast date a
 most of the add-back survives. The notebook asserts this pass-through lands in 0.5–1.5×; near-zero would
 indicate the bidirectional subtract leg misfired.
 
-**Build history at this anchor** (same data throughout): 125K/−1,345,000 → 48,520,714 ·
-165K/−1,345,000 → 48,561,795 · 165K/−1,295,000 → 48,611,795 · **180K/−1,245,000 → 48,672,970**.
+**Build history at this anchor.** This directory was overwritten in place several times as the LOL ceiling
+was raised and the headwind anchor attenuated; the intermediate numbers were removed from this file on
+2026-07-30 with the curves they belonged to. This build's own result is the **48,672,970** above. The
+canonical ledger is in `../_index.md`.
 
 ## Reproduce
 

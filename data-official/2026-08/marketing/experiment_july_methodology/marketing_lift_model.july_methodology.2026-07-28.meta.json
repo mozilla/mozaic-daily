@@ -1,0 +1,31 @@
+{
+  "model_name": "fenix_marketing_lift_july_methodology_august_values",
+  "description": "EXPERIMENT \u2014 NOT WIRED. August lift curve built with July's methodology: L(d) = L_july_delivered(d) + [aug_source_total(d) - jul_source_total(d)], 0 pre-launch. Counterfactual for 'what if we had not switched to anchor-and-subtract'. The canonical August curve is ../marketing_lift_model.uac_meta_total.2026-07-28.parquet.",
+  "created_at_utc": "2026-07-31T16:20:19.676234+00:00",
+  "mozaic_daily_git_hash": "f5a5c6f3e33acf27702d7cf7d8dc5681264bada2",
+  "coverage": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-12-31",
+    "campaign_launch": "2026-04-06"
+  },
+  "methodology": {
+    "framing": "prior-cycle delivered curve + change in the marketing team's source outlook",
+    "rule": "L(d) = L_july(d) + (aug_total(d) - jul_total(d)); 0 pre-launch",
+    "inherits": "July's curve, which itself inherits June's empirical 45-day gap measurement",
+    "meta_channel": "July's source has no Meta, so the entire Meta contribution enters as incremental delta under this rule"
+  },
+  "source_data": {
+    "july_delivered_lift": "data-official/2026-07/marketing/marketing_lift_model.total.2026-06-29.parquet",
+    "july_delivered_lift_sha1": "06ecd5925dafc3bb43b048d83c856c7e24145892",
+    "july_source_csv": "data-official/2026-07/marketing/source_data/paid_dau_from_uac_campaigns.20260629.csv",
+    "august_source_csv": "data-official/2026-08/marketing/source_data/uac_meta_paid_dau.20260730.csv",
+    "august_source_csv_sha1": "4083106f96f73770adf8d9a3e057ce0fec5e9ea2"
+  },
+  "key_values": {
+    "july_lift_dec15": 778879.7144986456,
+    "source_delta_dec15": 51480.782876950456,
+    "lift_dec15": 830360.4973755961,
+    "lift_year_end": 834833.5915426926
+  },
+  "artifact_sha1": "d906db8450e16e478a82d7435c82afb1032aeeed"
+}

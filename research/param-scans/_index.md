@@ -19,8 +19,14 @@ Sweeps over `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold`, `cha
   per-probe `run.log` / `parameters.json` / `*.meta.json` sidecars live on the `july-forecast`
   branch, and its ~40G of forecast blobs are archived to GCS under `july-2026/`.
 
-Most sweeps here target the **Dec-15 far horizon**. The one exception is `aug22-retune/`, which
-targets the **Aug-2026 summer trough** — a near-horizon KPI with its own scorer and driver.
+Most sweeps here target the **Dec-15 far horizon**. Two exceptions target the **Aug-2026 summer
+trough**, and they pull in *opposite directions* — do not read one's results into the other:
+
+- `aug22-retune/` and `summer-trough-v2/` moved the trough **up**, toward a 45M–46M band.
+- `aug25-gap/` moves it **down**, to close 10% of the August-vs-July gap.
+
+`scripts/score_near_horizon.py` is shared by all three and still prints a `target band : 45M-46M`
+line belonging to the *upward* objective. It is meaningless for `aug25-gap/`.
 
 ## Files
 
@@ -29,6 +35,7 @@ targets the **Aug-2026 summer trough** — a near-horizon KPI with its own score
 | `param_scan_exploration.ipynb` | Desktop analysis notebook |
 | `summer-trough-v2/` | August desktop s01 lock. `s01_canonical_desktop.ipynb` was **repointed at `mozaic_daily.seam_ma`** on 2026-07-29, so its early-horizon curves differ from when it was first run. |
 | `mobile-july/` | July mobile grid search (notebooks + sidecars present; `results/` blobs archived) |
+| `aug25-gap/` | **Downward** near-horizon search (opened 2026-07-30): close 10% of the Aug-25 August-vs-July gap (−196,183 to 45,027,066) on Prophet params only, holding Dec-15 within ±50,000. Side-folder work; `data-official/2026-08/desktop_locked/` stays canonical. See its `_index.md` and `PLAN.md`. |
 | `aug22-retune/` | Near-horizon (Aug-22 trough) desktop retune — 3 rounds + LHS sampling. Concluded params **can't** hit Aug without breaking Dec; recommends a summer-trough overlay. Summary artifacts present; per-probe sidecars on `july-forecast` only. See its `_index.md`. |
 | `results/`, `pinned/` | Output of `scripts/run_param_scan.py` / `run_pinned_scan.py`. **Archived to GCS; regenerable.** |
 

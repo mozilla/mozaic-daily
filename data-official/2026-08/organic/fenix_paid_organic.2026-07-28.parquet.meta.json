@@ -1,0 +1,65 @@
+{
+  "adjustments_applied": [],
+  "artifact_sha1": "f4e5059c820e4bd8753216b1ea4a5aa002c66d32",
+  "artifact_type": "measured_paid_organic_split",
+  "checks": [
+    {
+      "check": "tail overlap",
+      "days": 7,
+      "max_abs_rel_diff": 0.0013351803958477904,
+      "median_rel_diff": -0.0010817604122598246,
+      "status": "PASS"
+    },
+    {
+      "check": "partition identity",
+      "days": 787,
+      "growth_sources": 3,
+      "status": "PASS"
+    },
+    {
+      "check": "split coverage",
+      "countries": 16,
+      "days": 787,
+      "max_share": 1.0,
+      "min_share": 0.7083760195952534,
+      "null_shares": 0,
+      "rows": 12592,
+      "status": "PASS"
+    },
+    {
+      "check": "shredder drift",
+      "days": 787,
+      "edge_max_abs_rel_gap": 0.0,
+      "newest_rel_gap": 0.0,
+      "oldest_day": "2024-06-01",
+      "oldest_rel_gap": -0.028553984718281744,
+      "rank_corr": 0.9981959893083046,
+      "status": "PASS"
+    }
+  ],
+  "coverage": {
+    "countries": 16,
+    "measured_from": "2024-06-01",
+    "measured_to": "2026-07-27",
+    "rows": 12592,
+    "training_end_date": "2026-07-27"
+  },
+  "data_source": "glean_mobile",
+  "definition": "Fenix client is paid iff mozdata.fenix.new_profile_clients has paid_vs_organic_gclid='Paid' AND normalized_channel='release' AND install_source='com.android.vending'. Organic is the residual. All channels.",
+  "forecast_start_date": "2026-07-28",
+  "key_values": {
+    "organic_share_first_day": 0.9930470866922069,
+    "organic_share_last_day": 0.8809444923764668
+  },
+  "known_limitations": "Measured coverage starts at the mirror's own start date (2024-06-01) because mozdata.fenix.active_users retains only a rolling ~25 months. Mobile DAU trains from 2020-12-31, so the applier holds the earliest measured per-country share flat backwards over the uncovered region. At the oldest measured month paid was 1.10% of Fenix DAU ex-IR, so that assumption is bounded at ~1.1pp.",
+  "model_config": null,
+  "mozaic_daily_commit": "7dd95b285d86d9c5d50cae6023fc9b01da0428cf",
+  "produced_at": "2026-07-31T22:24:44.567143+00:00Z",
+  "produced_by": "scripts/build_fenix_organic_split.py",
+  "sources": {
+    "mirror_expires": "2027-04-01",
+    "mirror_table": "moz-fx-data-bq-data-science.brwells.fenix_dau_growth_source_v1",
+    "tail_active_users": "mozdata.fenix.active_users",
+    "tail_new_profile_clients": "mozdata.fenix.new_profile_clients"
+  }
+}

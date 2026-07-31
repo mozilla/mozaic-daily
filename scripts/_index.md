@@ -16,6 +16,7 @@ One-off runners, backfill tools, and utilities for local development. Not part o
 | `run_comparison_forecasts.py` | Run multiple forecast variants for side-by-side comparison |
 | `test_local_docker.sh` | Build and smoke-test the Docker image locally |
 | `generate_iran_fill.py` | Produces the Iran counterfactual-fill artifact for the shutdown gap (current approach; supersedes the synthetic pair above) |
+| `build_fenix_organic_split.py` | Producer for the `p` adjustment: builds a cycle's measured Fenix paid/organic split from the growth-source mirror + a tail extension, into `data-official/{YYYY-MM}/organic/`. Four checks raise on failure. **Always pass `--production-raw`.** ~141 GB scan, ~$0.70; run once per cycle |
 | `verify_forecast_states.py` | Audit on-disk forecast artifacts, verify raw/adjusted state, write `tmp/inventory.csv` |
 | `migrate_forecast_names.py` | Rename artifacts to the `.raw.` / `.adj-{codes}.` convention and write sidecar metas |
 | `regenerate_composites.py` | Reproduce composite CSVs from raw parquets via `mozaic_daily.adjustments`; diffs against on-disk |

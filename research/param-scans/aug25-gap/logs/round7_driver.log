@@ -1,0 +1,119 @@
+Round 7 extension grid: 108 cells (3 x 3 x 4 x 3 x 1)
+  cps     (0.1749, 0.1849, 0.1949)
+  cpr     (0.814, 0.829, 0.844)
+  ncp     (40, 43, 46, 49)
+  recent  (20, 23, 26)
+  sps     (0.00825,)
+Already on disk: 1.  To run: 107.
+
+ADC check passed.
+
+[1/108] cps0.1749_thresh032_recent20_cpr0.814_ncp40_clip0. 118.4s | median 118.4s | elapsed   2.0m | ETA 211.2m
+[2/108] cps0.1749_thresh032_recent26_cpr0.814_ncp40_clip0. 118.5s | median 118.4s | elapsed   2.0m | ETA 104.7m
+[3/108] cps0.1749_thresh032_recent23_cpr0.814_ncp40_clip0. 119.8s | median 118.5s | elapsed   2.0m | ETA  69.9m
+[4/108] cps0.1749_thresh032_recent20_cpr0.814_ncp43_clip0. 143.8s | median 119.1s | elapsed   2.4m | ETA  62.3m
+[5/108] cps0.1749_thresh032_recent26_cpr0.814_ncp43_clip0. 127.8s | median 119.8s | elapsed   4.1m | ETA  84.6m
+[6/108] cps0.1749_thresh032_recent23_cpr0.814_ncp43_clip0. 128.7s | median 123.8s | elapsed   4.1m | ETA  70.0m
+[7/108] cps0.1749_thresh032_recent20_cpr0.814_ncp46_clip0. 128.9s | median 127.8s | elapsed   4.1m | ETA  59.8m
+[8/108] cps0.1749_thresh032_recent23_cpr0.814_ncp46_clip0. 125.1s | median 126.5s | elapsed   4.5m | ETA  56.0m
+[9/108] cps0.1749_thresh032_recent26_cpr0.814_ncp46_clip0. 129.9s | median 127.8s | elapsed   6.3m | ETA  69.0m
+[10/108] cps0.1749_thresh032_recent20_cpr0.814_ncp49_clip0. 132.8s | median 128.3s | elapsed   6.3m | ETA  62.1m
+[11/108] cps0.1749_thresh032_recent23_cpr0.814_ncp49_clip0. 132.0s | median 128.7s | elapsed   6.3m | ETA  55.9m
+[12/108] cps0.1749_thresh032_recent26_cpr0.814_ncp49_clip0. 131.9s | median 128.8s | elapsed   6.7m | ETA  53.4m
+[13/108] cps0.1749_thresh032_recent20_cpr0.829_ncp40_clip0. 119.8s | median 128.7s | elapsed   8.3m | ETA  60.4m
+[14/108] cps0.1749_thresh032_recent23_cpr0.829_ncp40_clip0. 119.4s | median 128.3s | elapsed   8.3m | ETA  55.9m
+[15/108] cps0.1749_thresh032_recent26_cpr0.829_ncp40_clip0. 121.6s | median 127.8s | elapsed   8.4m | ETA  51.9m
+[16/108] cps0.1749_thresh032_recent20_cpr0.829_ncp43_clip0. 121.8s | median 126.5s | elapsed   8.7m | ETA  50.1m
+[17/108] cps0.1749_thresh032_recent23_cpr0.829_ncp43_clip0. 126.1s | median 126.1s | elapsed  10.4m | ETA  55.5m
+[18/108] cps0.1749_thresh032_recent26_cpr0.829_ncp43_clip0. 124.5s | median 125.6s | elapsed  10.4m | ETA  52.0m
+[19/108] cps0.1749_thresh032_recent20_cpr0.829_ncp46_clip0. 130.9s | median 126.1s | elapsed  10.6m | ETA  49.4m
+[20/108] cps0.1749_thresh032_recent23_cpr0.829_ncp46_clip0. 130.5s | median 127.0s | elapsed  10.9m | ETA  47.9m
+[21/108] cps0.1749_thresh032_recent26_cpr0.829_ncp46_clip0. 125.9s | median 126.1s | elapsed  12.5m | ETA  51.6m
+[22/108] cps0.1749_thresh032_recent20_cpr0.829_ncp49_clip0. 130.8s | median 127.0s | elapsed  12.6m | ETA  49.2m
+[23/108] cps0.1749_thresh032_recent23_cpr0.829_ncp49_clip0. 129.1s | median 127.8s | elapsed  12.7m | ETA  47.0m
+[24/108] cps0.1749_thresh032_recent26_cpr0.829_ncp49_clip0. 126.7s | median 127.3s | elapsed  13.0m | ETA  45.5m
+[25/108] cps0.1749_thresh032_recent20_cpr0.844_ncp40_clip0. 116.5s | median 126.7s | elapsed  14.4m | ETA  47.8m
+[26/108] cps0.1749_thresh032_recent23_cpr0.844_ncp40_clip0. 116.1s | median 126.4s | elapsed  14.5m | ETA  45.8m
+[27/108] cps0.1749_thresh032_recent26_cpr0.844_ncp40_clip0. 116.9s | median 126.1s | elapsed  14.7m | ETA  44.0m
+[28/108] cps0.1749_thresh032_recent20_cpr0.844_ncp43_clip0. 118.2s | median 126.0s | elapsed  15.0m | ETA  42.8m
+[29/108] cps0.1749_thresh032_recent23_cpr0.844_ncp43_clip0. 124.6s | median 125.9s | elapsed  16.5m | ETA  44.9m
+[30/108] cps0.1749_thresh032_recent26_cpr0.844_ncp43_clip0. 121.4s | median 125.5s | elapsed  16.5m | ETA  43.0m
+[31/108] cps0.1749_thresh032_recent20_cpr0.844_ncp46_clip0. 123.9s | median 125.5s | elapsed  16.7m | ETA  41.5m
+[32/108] cps0.1749_thresh032_recent23_cpr0.844_ncp46_clip0. 124.5s | median 125.5s | elapsed  17.0m | ETA  40.5m
+[33/108] cps0.1749_thresh032_recent26_cpr0.844_ncp46_clip0. 128.0s | median 126.0s | elapsed  18.6m | ETA  42.3m
+[34/108] cps0.1749_thresh032_recent20_cpr0.844_ncp49_clip0. 135.8s | median 126.0s | elapsed  18.8m | ETA  40.9m
+[35/108] cps0.1749_thresh032_recent23_cpr0.844_ncp49_clip0. 133.9s | median 126.0s | elapsed  19.0m | ETA  39.5m
+[36/108] cps0.1749_thresh032_recent26_cpr0.844_ncp49_clip0. 130.4s | median 126.0s | elapsed  19.2m | ETA  38.4m
+[37/108] cps0.1849_thresh032_recent23_cpr0.814_ncp40_clip0. 117.2s | median 125.5s | elapsed  20.6m | ETA  39.5m
+[38/108] cps0.1849_thresh032_recent26_cpr0.814_ncp40_clip0. 115.2s | median 125.3s | elapsed  20.7m | ETA  38.2m
+[39/108] cps0.1849_thresh032_recent20_cpr0.814_ncp43_clip0. 123.3s | median 124.6s | elapsed  21.0m | ETA  37.2m
+[40/108] cps0.1849_thresh032_recent23_cpr0.814_ncp43_clip0. 123.4s | median 124.5s | elapsed  21.3m | ETA  36.2m
+[41/108] cps0.1849_thresh032_recent26_cpr0.814_ncp43_clip0. 121.5s | median 124.2s | elapsed  22.6m | ETA  36.9m
+[42/108] cps0.1849_thresh032_recent20_cpr0.814_ncp46_clip0. 127.2s | median 124.2s | elapsed  22.8m | ETA  35.9m
+[43/108] cps0.1849_thresh032_recent23_cpr0.814_ncp46_clip0. 129.7s | median 124.5s | elapsed  23.2m | ETA  35.0m
+[44/108] cps0.1849_thresh032_recent26_cpr0.814_ncp46_clip0. 125.1s | median 124.6s | elapsed  23.4m | ETA  34.0m
+[45/108] cps0.1849_thresh032_recent20_cpr0.814_ncp49_clip0. 131.3s | median 124.9s | elapsed  24.8m | ETA  34.7m
+[46/108] cps0.1849_thresh032_recent23_cpr0.814_ncp49_clip0. 130.1s | median 125.5s | elapsed  25.0m | ETA  33.7m
+[47/108] cps0.1849_thresh032_recent20_cpr0.829_ncp40_clip0. 1057.8s | median 125.5s | elapsed  41.0m | ETA  53.2m
+[48/108] cps0.1849_thresh032_recent26_cpr0.814_ncp49_clip0. 1071.6s | median 126.3s | elapsed  41.0m | ETA  51.3m
+[49/108] cps0.1849_thresh032_recent23_cpr0.829_ncp40_clip0. 2015.5s | median 126.3s | elapsed  58.4m | ETA  70.3m
+[50/108] cps0.1849_thresh032_recent26_cpr0.829_ncp40_clip0. 2010.5s | median 126.3s | elapsed  58.5m | ETA  67.9m
+[51/108] cps0.1849_thresh032_recent20_cpr0.829_ncp43_clip0. 1072.6s | median 126.9s | elapsed  58.9m | ETA  65.8m
+[52/108] cps0.1849_thresh032_recent23_cpr0.829_ncp43_clip0. 1073.0s | median 126.9s | elapsed  58.9m | ETA  63.4m
+[53/108] cps0.1849_thresh032_recent26_cpr0.829_ncp43_clip0. 123.6s | median 125.9s | elapsed  60.4m | ETA  62.7m
+[54/108] cps0.1849_thresh032_recent20_cpr0.829_ncp46_clip0. 126.0s | median 125.6s | elapsed  60.6m | ETA  60.6m
+[55/108] cps0.1849_thresh032_recent23_cpr0.829_ncp46_clip0. 127.6s | median 126.6s | elapsed  61.0m | ETA  58.8m
+[56/108] cps0.1849_thresh032_recent26_cpr0.829_ncp46_clip0. 127.8s | median 127.4s | elapsed  61.0m | ETA  56.7m
+[57/108] cps0.1849_thresh032_recent20_cpr0.829_ncp49_clip0. 132.4s | median 127.7s | elapsed  62.6m | ETA  56.0m
+[58/108] cps0.1849_thresh032_recent23_cpr0.829_ncp49_clip0. 131.1s | median 127.9s | elapsed  62.8m | ETA  54.1m
+[59/108] cps0.1849_thresh032_recent20_cpr0.844_ncp40_clip0. 116.7s | median 127.9s | elapsed  63.0m | ETA  52.3m
+[60/108] cps0.1849_thresh032_recent26_cpr0.829_ncp49_clip0. 128.7s | median 128.3s | elapsed  63.1m | ETA  50.5m
+[61/108] cps0.1849_thresh032_recent23_cpr0.844_ncp40_clip0. 117.5s | median 128.3s | elapsed  64.6m | ETA  49.8m
+[62/108] cps0.1849_thresh032_recent26_cpr0.844_ncp40_clip0. 112.7s | median 128.3s | elapsed  64.7m | ETA  48.0m
+[63/108] cps0.1849_thresh032_recent20_cpr0.844_ncp43_clip0. 120.1s | median 128.2s | elapsed  65.0m | ETA  46.4m
+[64/108] cps0.1849_thresh032_recent23_cpr0.844_ncp43_clip0. 120.0s | median 127.7s | elapsed  65.1m | ETA  44.8m
+[65/108] cps0.1849_thresh032_recent26_cpr0.844_ncp43_clip0. 123.8s | median 127.4s | elapsed  66.7m | ETA  44.1m
+[66/108] cps0.1849_thresh032_recent20_cpr0.844_ncp46_clip0. 123.1s | median 126.6s | elapsed  66.7m | ETA  42.5m
+[67/108] cps0.1849_thresh032_recent23_cpr0.844_ncp46_clip0. 125.9s | median 126.6s | elapsed  67.1m | ETA  41.1m
+[68/108] cps0.1849_thresh032_recent26_cpr0.844_ncp46_clip0. 126.0s | median 126.6s | elapsed  67.2m | ETA  39.6m
+[69/108] cps0.1849_thresh032_recent20_cpr0.844_ncp49_clip0. 134.0s | median 127.4s | elapsed  68.9m | ETA  38.9m
+[70/108] cps0.1849_thresh032_recent23_cpr0.844_ncp49_clip0. 134.6s | median 127.7s | elapsed  69.0m | ETA  37.4m
+[71/108] cps0.1949_thresh032_recent20_cpr0.814_ncp40_clip0. 118.6s | median 127.7s | elapsed  69.2m | ETA  36.1m
+[72/108] cps0.1849_thresh032_recent26_cpr0.844_ncp49_clip0. 133.6s | median 128.2s | elapsed  69.3m | ETA  34.7m
+[73/108] cps0.1949_thresh032_recent23_cpr0.814_ncp40_clip0. 117.5s | median 127.7s | elapsed  70.9m | ETA  34.0m
+[74/108] cps0.1949_thresh032_recent26_cpr0.814_ncp40_clip0. 119.4s | median 127.7s | elapsed  71.0m | ETA  32.6m
+[75/108] cps0.1949_thresh032_recent20_cpr0.814_ncp43_clip0. 122.5s | median 126.8s | elapsed  71.3m | ETA  31.4m
+[76/108] cps0.1949_thresh032_recent23_cpr0.814_ncp43_clip0. 125.4s | median 126.0s | elapsed  71.4m | ETA  30.1m
+[77/108] cps0.1949_thresh032_recent26_cpr0.814_ncp43_clip0. 122.3s | median 126.0s | elapsed  72.9m | ETA  29.3m
+[78/108] cps0.1949_thresh032_recent20_cpr0.814_ncp46_clip0. 124.9s | median 125.7s | elapsed  73.0m | ETA  28.1m
+[79/108] cps0.1949_thresh032_recent23_cpr0.814_ncp46_clip0. 128.1s | median 125.7s | elapsed  73.4m | ETA  26.9m
+[80/108] cps0.1949_thresh032_recent26_cpr0.814_ncp46_clip0. 125.8s | median 125.6s | elapsed  73.5m | ETA  25.7m
+[81/108] cps0.1949_thresh032_recent20_cpr0.814_ncp49_clip0. 133.8s | median 125.6s | elapsed  75.1m | ETA  25.0m
+[82/108] cps0.1949_thresh032_recent23_cpr0.814_ncp49_clip0. 134.4s | median 125.6s | elapsed  75.3m | ETA  23.9m
+[83/108] cps0.1949_thresh032_recent20_cpr0.829_ncp40_clip0. 117.4s | median 125.6s | elapsed  75.5m | ETA  22.7m
+[84/108] cps0.1949_thresh032_recent26_cpr0.814_ncp49_clip0. 129.9s | median 125.6s | elapsed  75.6m | ETA  21.6m
+[85/108] cps0.1949_thresh032_recent23_cpr0.829_ncp40_clip0. 115.4s | median 125.2s | elapsed  77.0m | ETA  20.8m
+[86/108] cps0.1949_thresh032_recent26_cpr0.829_ncp40_clip0. 114.8s | median 124.4s | elapsed  77.2m | ETA  19.7m
+[87/108] cps0.1949_thresh032_recent20_cpr0.829_ncp43_clip0. 120.2s | median 123.5s | elapsed  77.5m | ETA  18.7m
+[88/108] cps0.1949_thresh032_recent23_cpr0.829_ncp43_clip0. 122.7s | median 122.9s | elapsed  77.6m | ETA  17.6m
+[89/108] cps0.1949_thresh032_recent26_cpr0.829_ncp43_clip0. 123.1s | median 123.1s | elapsed  79.1m | ETA  16.9m
+[90/108] cps0.1949_thresh032_recent20_cpr0.829_ncp46_clip0. 125.9s | median 123.1s | elapsed  79.3m | ETA  15.9m
+[91/108] cps0.1949_thresh032_recent23_cpr0.829_ncp46_clip0. 126.2s | median 123.5s | elapsed  79.6m | ETA  14.9m
+[92/108] cps0.1949_thresh032_recent26_cpr0.829_ncp46_clip0. 125.2s | median 124.4s | elapsed  79.7m | ETA  13.9m
+[93/108] cps0.1949_thresh032_recent20_cpr0.829_ncp49_clip0. 125.7s | median 125.1s | elapsed  81.2m | ETA  13.1m
+[94/108] cps0.1949_thresh032_recent23_cpr0.829_ncp49_clip0. 130.5s | median 125.3s | elapsed  81.5m | ETA  12.1m
+[95/108] cps0.1949_thresh032_recent20_cpr0.844_ncp40_clip0. 114.7s | median 125.3s | elapsed  81.6m | ETA  11.2m
+[96/108] cps0.1949_thresh032_recent26_cpr0.829_ncp49_clip0. 130.2s | median 125.6s | elapsed  81.7m | ETA  10.2m
+[97/108] cps0.1949_thresh032_recent23_cpr0.844_ncp40_clip0. 116.3s | median 125.3s | elapsed  83.1m | ETA   9.4m
+[98/108] cps0.1949_thresh032_recent26_cpr0.844_ncp40_clip0. 116.2s | median 125.1s | elapsed  83.4m | ETA   8.5m
+[99/108] cps0.1949_thresh032_recent20_cpr0.844_ncp43_clip0. 120.3s | median 124.0s | elapsed  83.6m | ETA   7.6m
+[100/108] cps0.1949_thresh032_recent23_cpr0.844_ncp43_clip0. 117.8s | median 122.9s | elapsed  83.7m | ETA   6.7m
+[101/108] cps0.1949_thresh032_recent26_cpr0.844_ncp43_clip0. 120.0s | median 122.9s | elapsed  85.1m | ETA   5.9m
+[102/108] cps0.1949_thresh032_recent20_cpr0.844_ncp46_clip0. 124.4s | median 122.9s | elapsed  85.5m | ETA   5.0m
+[103/108] cps0.1949_thresh032_recent23_cpr0.844_ncp46_clip0. 126.1s | median 123.8s | elapsed  85.7m | ETA   4.2m
+[104/108] cps0.1949_thresh032_recent26_cpr0.844_ncp46_clip0. 127.2s | median 124.7s | elapsed  85.8m | ETA   3.3m
+[105/108] cps0.1949_thresh032_recent20_cpr0.844_ncp49_clip0. 131.8s | median 125.1s | elapsed  87.3m | ETA   2.5m
+[106/108] cps0.1949_thresh032_recent23_cpr0.844_ncp49_clip0. 130.7s | median 125.1s | elapsed  87.7m | ETA   1.7m
+[107/108] cps0.1949_thresh032_recent26_cpr0.844_ncp49_clip0. 130.5s | median 125.5s | elapsed  87.9m | ETA   0.8m
+
+Round 7 finished in 87.9m. 108/108 succeeded.

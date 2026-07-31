@@ -1,0 +1,37 @@
+{
+  "prototype_target": {
+    "organic_dec15": 16215080,
+    "paid_dec15": 1559477,
+    "total_dec15": 17769950
+  },
+  "mozaic_version": "/Users/brendanwells/work/mozaic-forecasting-official/mozaic/__init__.py",
+  "arms": [
+    {
+      "arm": "buggy",
+      "organic_dec15": 16112984.852402661,
+      "paid_dec15": 1559477.211448379,
+      "total_dec15": 17672462.06385104,
+      "ex_iran_organic_dec15": 15517619.244940858,
+      "iran_dec15": 595365.607461803
+    },
+    {
+      "arm": "plumbed",
+      "organic_dec15": 16122594.019086685,
+      "paid_dec15": 1559477.211448379,
+      "total_dec15": 17682071.230535064,
+      "ex_iran_organic_dec15": 15527001.119907428,
+      "iran_dec15": 595592.8991792557
+    }
+  ],
+  "measured_terms": {
+    "farsi_locale_outside_ir_28d_mean_at_training_end": 89677,
+    "ir_geo_28d_mean_at_training_end": 554463,
+    "aua_table_equivalence_delta": 0,
+    "per_country_vs_global_share_global_total_delta": 9,
+    "prototype_ex_iran_dec15": 15509650,
+    "prototype_iran_dec15_implied": 705200,
+    "production_per_country_total_dec15_pre_headwind": 17628317,
+    "production_per_country_total_dec15_post_headwind": 17601155
+  },
+  "notes": "Prototype ex-Iran/Iran split is its 6-app headline (Klar is 37 DAU/day, immaterial). Iran differs because production uses mozaic's built-in 2026 counterfactual fill on IR-geo only, while the prototype masks three outage windows AND reassigns Farsi-locale clients outside IR into its Iran tile. The latter is unavailable here: the production mobile QuerySpec has no `locale` column."
+}

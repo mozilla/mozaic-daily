@@ -1,0 +1,32 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "m",
+      "name": "marketing_lift",
+      "spec_file": "data-official/2026-08/marketing/marketing.json",
+      "spec_sha1": "e2d88584380d55f8178b1b34806ae98336ee778d"
+    }
+  ],
+  "artifact_sha1": "4b6aaa98b4f31dc9364abaee32a7d737bb377c73",
+  "backup": "data-official/2026-08/_backup_mobile_methodology_2026-07-31/",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-07-28",
+  "lift_curve": "marketing_lift_model.uac_meta_total.2026-07-28.parquet",
+  "methodology": "anchor-and-subtract on UAC+Meta query, Total Paid DAU basis",
+  "model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.055,
+    "prophet_changepoint_prior_scale": 0.035,
+    "prophet_changepoint_range": 0.75,
+    "prophet_n_changepoints": 25,
+    "prophet_recent_weeks": 13,
+    "prophet_seasonality_prior_scale": 0.1,
+    "seasonality_regime": "auto"
+  },
+  "mozaic_daily_commit": "f5a5c6f3e33acf27702d7cf7d8dc5681264bada2",
+  "produced_at": "2026-07-31T15:37:06.071970+00:00Z",
+  "produced_by": "scripts/run_main.py (mobile methodology swap 2026-07-31)",
+  "replaces": "data-official/2026-08/mobile_baseline_2026-07-28/ (July carried-forward curve)"
+}

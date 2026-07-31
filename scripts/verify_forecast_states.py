@@ -240,6 +240,11 @@ def tag_scratch_dir(scratch_glob: str, inventory: list[dict], note: str) -> None
 def verify_june_mobile_plot_series(inventory: list[dict]) -> None:
     """Verify the june_mobile_plot_series.csv against the (verified adj-h) composite CSVs."""
     plot_path = "data-official/2026-06/june_mobile_plot_series.csv"
+    required = [plot_path, "data-official/2026-06/june_composite_forecast_28ma.csv",
+                "april_composite_forecast_28ma.csv"]
+    if any(not Path(p).exists() for p in required):
+        print("\n=== SKIPPING june mobile plot-series check — inputs not on disk (pruned cycle) ===")
+        return
     plot = pd.read_csv(plot_path, parse_dates=["date"]).set_index("date")
     june = pd.read_csv("data-official/2026-06/june_composite_forecast_28ma.csv", parse_dates=["date"]).set_index("date")
     april = pd.read_csv("april_composite_forecast_28ma.csv", parse_dates=["date"]).set_index("date")
@@ -273,6 +278,18 @@ def main():
 
     inventory: list[dict] = []
     for ds in DATASETS:
+        # Cycles older than current+N-1 get pruned from the working tree (see the `clean-slate`
+        # commit), which used to crash this whole audit on the first missing file. Skip loudly
+        # instead: the point of the tool is to check what IS on disk, and a hard failure on an
+        # intentionally-absent cycle means nothing downstream ever gets verified.
+        required = [ds["composite_csv"], ds["desktop_no_iran"], ds["mobile_no_iran"]]
+        missing = [p for p in required if not Path(p).exists()]
+        if missing:
+            print(f"\n=== SKIPPING {ds['label']} — {len(missing)} input(s) not on disk ===")
+            for path in missing:
+                print(f"    missing: {path}")
+            print("    (expected for a pruned cycle; archived under gs://moz-data-science-brwells-bucket/)")
+            continue
         verify_dataset(ds, inventory)
 
     verify_june_mobile_plot_series(inventory)

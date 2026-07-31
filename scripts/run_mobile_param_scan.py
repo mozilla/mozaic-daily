@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 """Run one mobile (glean_mobile DAU) forecast with a configurable MobileModelConfig.
 
-Mobile analog of ``scripts/run_param_scan.py``. Two differences from the desktop
-scan matter:
+Mobile analog of ``scripts/run_param_scan.py``. Two things differ from the desktop scan:
 
-1. **Marketing-lift is applied in-pipeline.** The July mobile headline number is
-   measured *with* the marketing tailwind (`m`), so this runner threads the
-   marketing spec through a patched ``process_data_source`` that mirrors the real
-   mobile+marketing branch of ``mozaic_daily.main.process_data_source`` — subtract
-   lift from Fenix training rows before mozaic, add it back to the per-tile
-   forecast after — but swaps the forecast call for ``get_mobile_forecast_dfs``
-   with our ``MobileModelConfig`` injected. Output carries the ``.adj-m.`` marker.
-2. **The all-level Iran fill is kept.** ``data_source="glean_mobile"`` is forwarded
-   so the built-in Iran-2026 counterfactual fill is auto-applied, matching the
-   canonical July build.
+1. **The paid adjustment is applied in-pipeline.** The mobile headline is measured *with* the
+   paid treatment, so whichever adjustment the cycle's specs gate on is applied by ``main()``
+   itself and the output carries the matching state marker — ``.adj-p.`` for the paid/organic
+   split (2026-08 onward) or ``.adj-m.`` for the retired marketing-lift overlay.
+2. **The all-level Iran fill is kept.** ``data_source="glean_mobile"`` is forwarded so the
+   built-in Iran-2026 counterfactual fill is auto-applied.
 
-The pre-flight BigQuery data-availability check is patched to a no-op: when a raw
-cache is symlinked in, the training data was already fetched when that cache was
-built, so the check is redundant (and would otherwise require live gcloud creds
-for every scan cell).
+The config reaches Prophet via ``main(model_configs=...)``. **This runner used to monkeypatch
+``process_data_source`` with a hand-copied mobile branch**, which meant every change to the real
+mobile path had to be mirrored here or the scan would silently forecast with stale code. That
+duplication is gone: ``main()`` now threads ``model_configs`` through, so there is one code path.
+
+The pre-flight BigQuery data-availability check is still patched to a no-op: when a raw cache is
+symlinked in, the training data was already fetched when that cache was built, so the check is
+redundant (and would otherwise require live gcloud creds for every scan cell).
 
 Usage
 -----
@@ -41,8 +40,8 @@ Outputs
 ``<results-dir>/<slug>/``
     parameters.json
     mozaic_parts.raw.glean.mobile.DAU.parquet            (symlinked from raw-cache-dir)
-    mozaic_daily_forecast.<date>.gm-D.adj-m.parquet      (forecast, marketing applied)
-    mozaic_daily_forecast.<date>.gm-D.adj-m.parquet.meta.json
+    mozaic_daily_forecast.<date>.gm-D.adj-p.parquet      (forecast, paid/organic split applied)
+    mozaic_daily_forecast.<date>.gm-D.adj-p.parquet.meta.json
     mozaic_objects.glean_mobile.<date>.pkl               (fitted mozaics, for decomposition)
 """
 
@@ -53,7 +52,7 @@ import importlib
 import json
 import sys
 from pathlib import Path
-from typing import Optional
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_PATH = REPO_ROOT / "src"
@@ -64,101 +63,11 @@ from mozaic.models import MobileModelConfig  # noqa: E402
 
 run_main_module = importlib.import_module("mozaic_daily.main")  # noqa: E402
 from mozaic_daily.main import (  # noqa: E402
-    combine_tables,
-    get_format_function,
-    _apply_marketing_lift_pre_mozaic,
     _find_marketing_spec_for_forecast,
+    _find_organic_spec_for_forecast,
 )
-from mozaic_daily.adjustments import (  # noqa: E402
-    add_marketing_lift_to_forecast,
-    insert_state_marker,
-    write_meta,
-)
-from mozaic_daily.forecast import get_mobile_forecast_dfs  # noqa: E402
-from mozaic_daily.queries import ADDITIONAL_HOLIDAYS, DataSource, Metric  # noqa: E402
-
-
-# ---------------------------------------------------------------------------
-# Config injection (mirrors main.process_data_source mobile + marketing branch)
-# ---------------------------------------------------------------------------
-
-def _make_process_data_source_with_config(mobile_config: MobileModelConfig):
-    """Wrap ``process_data_source`` so the mobile forecast uses our config.
-
-    This is a faithful copy of the mobile path of
-    ``mozaic_daily.main.process_data_source`` (marketing subtract-before /
-    add-back around the mozaic call) with a single change: the forecast call is
-    ``get_mobile_forecast_dfs(..., config=mobile_config)`` instead of the
-    config-less ``forecast_func``. Kept in sync with main.py by construction.
-    """
-
-    def patched(
-        data_source: DataSource,
-        datasets,
-        forecast_start,
-        forecast_end,
-        training_end_date=None,
-        marketing_spec_path=None,
-        lol_spec_path=None,
-        mozillaonline_spec_path=None,
-    ):
-        # lol_spec_path / mozillaonline_spec_path are the desktop `l`/`o` overlays,
-        # threaded through by main.generate_forecasts. This scan is glean_mobile-only,
-        # so — exactly like the real process_data_source — they are no-ops here and are
-        # accepted purely for signature parity. Kept in sync with main.py by construction.
-        import pandas as pd
-
-        platform = data_source.platform
-        source = data_source.telemetry_source
-        source_data = datasets[platform.value][source.value]
-
-        # Normalize the date column (defensive, matches main.py).
-        source_data = {
-            metric: (df.assign(x=pd.to_datetime(df["x"]))
-                     if isinstance(df, pd.DataFrame) and "x" in df.columns else df)
-            for metric, df in source_data.items()
-        }
-
-        marketing_context = None
-        if marketing_spec_path is not None and data_source == DataSource.GLEAN_MOBILE \
-                and Metric.DAU.value in source_data:
-            if training_end_date is None:
-                raise ValueError("training_end_date is required when marketing_spec_path is set")
-            source_data, marketing_context = _apply_marketing_lift_pre_mozaic(
-                source_data, marketing_spec_path, training_end_date
-            )
-
-        additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
-        forecast_result = get_mobile_forecast_dfs(
-            source_data,
-            forecast_start,
-            forecast_end,
-            additional_holidays=additional_holidays,
-            config=mobile_config,
-            data_source=data_source.value,
-        )
-
-        df_combined = combine_tables(forecast_result.dfs)
-
-        if marketing_context is not None and Metric.DAU.value in df_combined.columns:
-            df_combined = add_marketing_lift_to_forecast(
-                df_combined,
-                daily_lift_series=marketing_context["daily_lift_series"],
-                country_shares=marketing_context["country_shares"],
-                forecast_start=pd.Timestamp(forecast_start),
-                metric_column=Metric.DAU.value,
-                app_population_value=marketing_context["spec"]["allocation"]["app_flag_column"],
-            )
-            n_total = len(df_combined)
-            n_forecast = (df_combined["source"] == "forecast").sum()
-            print(f"Marketing-lift: added back across {n_total} rows "
-                  f"({n_forecast} forecast + {n_total - n_forecast} training/actual)")
-
-        format_func = get_format_function(platform)
-        format_func(df_combined, data_source=data_source.value)
-        return df_combined, forecast_result.mozaics
-
-    return patched
+from mozaic_daily.adjustments import insert_state_marker, write_meta  # noqa: E402
+from mozaic_daily.queries import DataSource, Metric  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -196,17 +105,27 @@ def symlink_raw_cache(raw_cache_dir: Path, slug_dir: Path) -> list[Path]:
 # State marker + sidecar meta
 # ---------------------------------------------------------------------------
 
-def stamp_adjm_marker_and_meta(
+#: Which adjustment code a given mobile spec kind produces.
+_SPEC_CODES = {"organic": ("p", "paid_organic_split"), "marketing": ("m", "marketing_lift")}
+
+
+def stamp_marker_and_meta(
     slug_dir: Path,
     forecast_start_date: str,
     config: MobileModelConfig,
-    marketing_spec_path: Path,
+    spec_kind: str,
+    spec_path: Path,
 ) -> Path:
-    """Rename the unmarked mobile forecast parquet to ``.adj-m.`` and write its sidecar."""
+    """Rename the unmarked mobile forecast parquet to its ``.adj-<code>.`` state and write the sidecar.
+
+    The code is derived from which spec actually gated the run, so the filename can never claim
+    an adjustment the build did not apply.
+    """
+    code, name = _SPEC_CODES[spec_kind]
     unmarked = slug_dir / f"mozaic_daily_forecast.{forecast_start_date}.gm-D.parquet"
     if not unmarked.exists():
         raise FileNotFoundError(f"Expected forecast parquet not found after main(): {unmarked}")
-    target = insert_state_marker(unmarked, ["m"])
+    target = insert_state_marker(unmarked, [code])
     unmarked.rename(target)
     write_meta(
         target,
@@ -215,11 +134,11 @@ def stamp_adjm_marker_and_meta(
         produced_by="scripts/run_mobile_param_scan.py",
         model_config=config.to_dict(),
         adjustments_applied=[{
-            "code": "m",
-            "name": "marketing_lift",
+            "code": code,
+            "name": name,
             "scope": "glean_mobile DAU only",
-            "spec_file": str(marketing_spec_path.relative_to(REPO_ROOT))
-            if marketing_spec_path.is_absolute() else str(marketing_spec_path),
+            "spec_file": str(spec_path.relative_to(REPO_ROOT))
+            if spec_path.is_absolute() else str(spec_path),
         }],
     )
     return target
@@ -289,11 +208,26 @@ def main_cli() -> None:
     slug_dir = args.results_dir / slug
     slug_dir.mkdir(parents=True, exist_ok=True)
 
+    # The mobile headline is always measured *with* the cycle's paid treatment, so exactly one
+    # of the two mobile specs must gate this run. `p` supersedes `m`; both at once is the
+    # double-count that main.process_data_source refuses.
+    organic_spec_path = _find_organic_spec_for_forecast(args.forecast_start_date)
     marketing_spec_path = _find_marketing_spec_for_forecast(args.forecast_start_date)
-    if marketing_spec_path is None:
+    if organic_spec_path is not None and marketing_spec_path is not None:
         raise SystemExit(
-            f"No marketing.json spec found for forecast_start={args.forecast_start_date}. "
-            f"The mobile scan measures the with-marketing (adj-m) headline, so a spec is required."
+            f"Both an organic.json ({organic_spec_path}) and a marketing.json "
+            f"({marketing_spec_path}) claim forecast_start={args.forecast_start_date}. "
+            f"They are mutually exclusive — clear the marketing spec's date gate."
+        )
+    if organic_spec_path is not None:
+        spec_kind, spec_path = "organic", organic_spec_path
+    elif marketing_spec_path is not None:
+        spec_kind, spec_path = "marketing", marketing_spec_path
+    else:
+        raise SystemExit(
+            f"No organic.json or marketing.json spec found for "
+            f"forecast_start={args.forecast_start_date}. The mobile scan measures the "
+            f"with-paid headline, so one is required."
         )
 
     print("=" * 60)
@@ -303,7 +237,8 @@ def main_cli() -> None:
     print(f"Slug                : {slug}")
     print(f"Output dir          : {slug_dir}")
     print(f"Raw cache dir       : {args.raw_cache_dir}")
-    print(f"Marketing spec      : {marketing_spec_path}")
+    print(f"Paid adjustment     : {_SPEC_CODES[spec_kind][0]} ({_SPEC_CODES[spec_kind][1]})")
+    print(f"Spec                : {spec_path}")
     print(f"Config              : {json.dumps(config.to_dict(), indent=2)}")
 
     params_path = slug_dir / "parameters.json"
@@ -311,7 +246,8 @@ def main_cli() -> None:
         "forecast_start_date": args.forecast_start_date,
         "slug": slug,
         "config": config.to_dict(),
-        "marketing_spec": str(marketing_spec_path),
+        "adjustment_code": _SPEC_CODES[spec_kind][0],
+        f"{spec_kind}_spec": str(spec_path),
     }, indent=2))
     print(f"Wrote {params_path}")
 
@@ -325,11 +261,10 @@ def main_cli() -> None:
         print("\n[dry-run] Skipping actual forecast.")
         return
 
-    # Inject config via process_data_source patch; skip the redundant BQ pre-flight
-    # (raw cache is authoritative — training data already landed when it was built).
-    original_pds = run_main_module.process_data_source
+    # The config goes through main()'s supported model_configs channel — no monkeypatch.
+    # The BQ pre-flight is still skipped: the raw cache is authoritative, since the training
+    # data already landed when it was built.
     original_preflight = run_main_module.check_training_data_availability
-    run_main_module.process_data_source = _make_process_data_source_with_config(config)
     run_main_module.check_training_data_availability = lambda *a, **k: None
     try:
         run_main_module.main(
@@ -338,17 +273,16 @@ def main_cli() -> None:
             metric_filter={Metric.DAU},
             forecast_start_date=args.forecast_start_date,
             output_dir=str(slug_dir),
-            marketing_lift=True,
+            model_configs={DataSource.GLEAN_MOBILE: config},
         )
     finally:
-        run_main_module.process_data_source = original_pds
         run_main_module.check_training_data_availability = original_preflight
 
-    adjm_path = stamp_adjm_marker_and_meta(
-        slug_dir, args.forecast_start_date, config, marketing_spec_path
+    marked_path = stamp_marker_and_meta(
+        slug_dir, args.forecast_start_date, config, spec_kind, spec_path
     )
-    print(f"Renamed forecast to: {adjm_path}")
-    print(f"Wrote sidecar meta:  {adjm_path}.meta.json")
+    print(f"Renamed forecast to: {marked_path}")
+    print(f"Wrote sidecar meta:  {marked_path}.meta.json")
     print(f"\nDone. Results in: {slug_dir}")
 
 

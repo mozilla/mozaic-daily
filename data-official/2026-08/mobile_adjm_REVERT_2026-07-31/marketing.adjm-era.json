@@ -1,0 +1,19 @@
+{
+  "type": "marketing_lift",
+  "platform": "mobile",
+  "data_file": "marketing_lift_model.uac_meta_total.2026-07-28.parquet",
+  "value_column": "marketing_lift_daily",
+  "allocation": {
+    "app_flag_column": "fenix_android",
+    "key": "trailing_dau_share",
+    "window_days": 28
+  },
+  "scope": {
+    "exclude_countries": [
+      "IR"
+    ]
+  },
+  "model_meta_file": "marketing_lift_model.uac_meta_total.2026-07-28.meta.json",
+  "applies_to_forecast_start": "2026-07-28",
+  "notes": "August 2026 cycle. Daily DAU lift for Fenix Android paid acquisition (adjustment code `m`), REBUILT 2026-07-31 on the marketing team's new UAC + Meta Android query, replacing July's carried-forward June-anchored curve. Method is anchor-and-subtract: lift(d) = paid_dau(d) - paid_dau(2026-03-30), 0 before the anchor -- restoring the approach in research/marketing-lift/v2-real-data/02_forecast_projection.ipynb that June replaced with an empirical-gap hybrid. Metric basis is Total Paid DAU (the 12-mo rolling alternative is on disk as marketing_lift_model.uac_meta_rolling.2026-07-28.parquet). Meta Android is stacked cumulatively in the source and treated as fully incremental. Dec-15 lift 637,227 vs July's 778,880; the realised mobile Dec-15 KPI effect is smaller than that difference because the overlay is bidirectional. Memoryless by construction -- no dependence on any prior cycle's curve. KNOWN LIMITATION: understates post-anchor cohort DAU by the pre-existing paid base's churn; the query carries no cohort dimension, so the shortfall is not measurable from this source. Curve ends 2026-12-31 (2027 out of scope this cycle). Allocation unchanged: per-country share of Fenix Android DAU over a trailing 28-day window ending at training_end_date, frozen for the horizon. IR excluded. PREVIOUS METHODOLOGY BACKED UP AT data-official/2026-08/_backup_mobile_methodology_2026-07-31/ (see RESTORE.md)."
+}

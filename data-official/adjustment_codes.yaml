@@ -30,13 +30,41 @@ codes:
   m:
     name: marketing_lift
     description: >
-      Marketing-attributable DAU lift. Subtracted from Fenix Android training
-      data before mozaic forecasting (so Prophet learns the no-marketing
-      dynamic), then added back to the per-country forecast output (so the
-      final answer reflects "campaign continues at modeled levels"). Per-month
-      spec lives in data-official/{YYYY-MM}/marketing/marketing.json with a
-      sidecar daily lift parquet from the marketing_lift_model notebooks.
+      RETIRED FOR NEW CYCLES as of 2026-08 -- superseded by `p`
+      (paid_organic_split). Still registered because July's and August's
+      pre-swap `.adj-m.` artifacts must keep loading and reproducing; do not
+      remove it. Marketing-attributable DAU lift, subtracted from Fenix Android
+      training data before mozaic forecasting (so Prophet learns the
+      no-marketing dynamic), then added back to the per-country forecast output.
+      Retired because the lift is defined as an increment since an ANCHOR, and
+      mobile paid acquisition has no start date -- so the anchor was an
+      accounting choice, and the bidirectional overlay absorbed 58% of any
+      change to the curve, making a lift comparison useless as a KPI estimate.
+      Per-month spec lives in data-official/{YYYY-MM}/marketing/marketing.json
+      with a sidecar daily lift parquet from the marketing_lift_model notebooks.
     spec_glob: "data-official/*/marketing/marketing.json"
+  p:
+    name: paid_organic_split
+    description: >
+      Mobile organic/paid decomposition -- the mobile replacement for `m`. Paid
+      DAU is MEASURED, not modelled: Fenix training rows are multiplied by
+      organic_share(date, country) taken from the client-level growth_source
+      mirror, so mozaic forecasts organic DAU only. Paid is then stacked back on
+      as a LEVEL -- the measured paid for training rows (which keeps them
+      byte-identical to raw actuals), and marketing's paid level
+      (lift + anchor), allocated by trailing-28d Fenix DAU share, for forecast
+      rows. Because the add-back is additive and post-mozaic, paid contributes
+      exactly its own value with no Prophet interaction, unlike `m`.
+      The share comes from the mirror and the LEVEL from the production query:
+      the mirror loses ~2.9% to shredder attrition over 26 months, so using it
+      for the level would read as +3.3pp of fake growth. IR is excluded (98.8%
+      organic; marketing's curve is ex-IR). Non-Fenix mobile apps are 100%
+      organic -- Firefox iOS carries no paid signal at all. Per-month spec lives
+      in data-official/{YYYY-MM}/organic/organic.json with a sidecar measured
+      split parquet from scripts/build_fenix_organic_split.py.
+      MUTUALLY EXCLUSIVE with `m`: main.py raises if both specs claim the same
+      applies_to_forecast_start.
+    spec_glob: "data-official/*/organic/organic.json"
   l:
     name: launch_on_login
     description: >

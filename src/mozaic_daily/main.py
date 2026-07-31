@@ -22,6 +22,16 @@ import pandas as pd
 from pathlib import Path
 import os
 from joblib.externals import cloudpickle
+from .organic import (
+    add_paid_to_forecast,
+    build_share_lookup,
+    load_organic_spec,
+    load_split_frame,
+    marketing_paid_level,
+    measured_paid_country_shares,
+    paid_seam_step,
+    split_training_to_organic,
+)
 from .adjustments import (
     add_lift_to_forecast,
     add_marketing_lift_to_forecast,
@@ -137,6 +147,106 @@ def load_checkpoint_if_exists(filename: str) -> Optional[pd.DataFrame]:
 def save_checkpoint(df: pd.DataFrame, filename: str) -> None:
     """Save DataFrame to checkpoint file."""
     df.to_parquet(filename)
+
+
+def _find_spec_for_forecast(pattern: str, forecast_start_date: str, label: str) -> Optional[Path]:
+    """Locate the single spec under ``data-official/`` whose date gate matches.
+
+    ``pattern`` is a glob relative to the repo root. Returns ``None`` when nothing matches —
+    the "this adjustment does not apply to this cycle" path, which is not an error — and raises
+    when more than one spec claims the same ``forecast_start_date``.
+
+    The exact string match is deliberate and is the safety gate for the whole overlay system: a
+    run at a date no spec claims applies *no* overlays and emits ``.raw.``, which the canonical
+    notebook then rejects via ``load_forecast(..., require_state=[...])``.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    matches = []
+    for candidate in sorted(glob.glob(str(repo_root / pattern))):
+        with open(candidate) as f:
+            spec = json.load(f)
+        if spec.get("applies_to_forecast_start") == forecast_start_date:
+            matches.append(Path(candidate))
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise ValueError(
+            f"Multiple {label} specs claim applies_to_forecast_start="
+            f"{forecast_start_date!r}: {[str(m) for m in matches]}"
+        )
+    return matches[0]
+
+
+def _find_organic_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
+    """Locate the organic/organic.json spec whose applies_to_forecast_start matches.
+
+    Mirrors the other overlay finders for the mobile paid/organic split (code ``p``).
+    """
+    return _find_spec_for_forecast(
+        "data-official/*/organic/organic.json", forecast_start_date, "organic/organic.json"
+    )
+
+
+def _apply_organic_split_pre_mozaic(
+    source_data: dict,
+    spec_path: Path,
+    training_end_date: str,
+) -> tuple[dict, dict]:
+    """Scale Fenix DAU training rows down to their measured organic component.
+
+    Returns ``(modified_source_data, organic_context)`` carrying everything the two-piece
+    add-back needs: the measured paid we removed (for training rows), marketing's paid level
+    (for forecast rows), the country allocation, and the spec.
+    """
+    spec = load_organic_spec(spec_path)
+    split = load_split_frame(spec, spec_path.parent)
+    metric_key = Metric.DAU.value
+    training_df = source_data[metric_key]
+
+    flag_column = spec["scope"]["app_flag_column"]
+    excluded = spec["scope"].get("exclude_countries", [])
+    training_dates = pd.DatetimeIndex(pd.to_datetime(training_df["x"]).unique())
+    countries = sorted(set(training_df["country"].unique()) - set(excluded))
+
+    share_lookup = build_share_lookup(
+        split,
+        share_column=spec["share_column"],
+        training_dates=training_dates,
+        countries=countries,
+    )
+    measured_from = pd.Timestamp(spec["share_backfill"]["measured_from"])
+    n_backfilled = int((training_dates < measured_from).sum())
+    print(
+        f'Paid/organic split: {len(countries)} countries, '
+        f'{(training_df[flag_column] == True).sum()} fenix rows, '  # noqa: E712
+        f'excluding {excluded or "nothing"}; '
+        f'{n_backfilled} of {len(training_dates)} training days predate the measured window '
+        f'({measured_from.date()}) and use the held-flat earliest share'
+    )
+
+    modified_source_data = dict(source_data)
+    modified_source_data[metric_key], measured_paid = split_training_to_organic(
+        training_df,
+        share_lookup=share_lookup,
+        flag_column=flag_column,
+        exclude_countries=excluded,
+    )
+
+    country_shares = measured_paid_country_shares(
+        split,
+        training_end_date=pd.Timestamp(training_end_date),
+        window_days=spec["allocation"]["window_days"],
+        exclude_countries=excluded,
+        allocation_key=spec["allocation"]["key"],
+        dau_training=training_df,
+        flag_column=flag_column,
+    )
+    return modified_source_data, {
+        "measured_paid": measured_paid,
+        "country_shares": country_shares,
+        "spec": spec,
+        "spec_dir": spec_path.parent,
+    }
 
 
 def _find_marketing_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
@@ -359,6 +469,8 @@ def process_data_source(
     marketing_spec_path: Optional[Path] = None,
     lol_spec_path: Optional[Path] = None,
     mozillaonline_spec_path: Optional[Path] = None,
+    organic_spec_path: Optional[Path] = None,
+    model_configs: Optional[dict] = None,
 ) -> pd.DataFrame:
     """Process a single data source through the forecast pipeline.
 
@@ -370,10 +482,22 @@ def process_data_source(
         training_end_date: Last date of training data (used by the bidirectional
             overlay allocation-key windows). Required when ``marketing_spec_path``
             or ``lol_spec_path`` is set.
+        organic_spec_path: If set and ``data_source == GLEAN_MOBILE``, applies the
+            paid/organic split `p` adjustment: scales Fenix DAU training rows down
+            to their measured organic component before mozaic, then stacks paid
+            back on after (measured paid for training rows, marketing's paid level
+            for forecast rows). Mutually exclusive with ``marketing_spec_path``.
+            No-op for other data sources.
+        model_configs: Optional ``{DataSource: ModelConfig}``. When a config is
+            present for this data source it is passed to the forecast function,
+            which is what routes the tuned Prophet *and* holiday parameters
+            through. Omitting it uses the package's hardcoded defaults — which is
+            why a plain ``run_main.py`` run cannot reproduce a tuned build.
         marketing_spec_path: If set and ``data_source == GLEAN_MOBILE``, applies
             the marketing-lift `m` adjustment: subtracts lift from the DAU
             training rows before mozaic and adds it back to the per-tile
             forecast after mozaic. No-op for other data sources.
+            RETIRED for mobile as of the 2026-08 cycle — see ``organic_spec_path``.
         lol_spec_path: If set and ``data_source == LEGACY_DESKTOP``, applies the
             launch-on-login `l` desktop overlay: subtracts the measured LOL rise
             from the modern_windows DAU training rows before mozaic and adds the
@@ -403,6 +527,27 @@ def process_data_source(
                  if isinstance(df, pd.DataFrame) and "x" in df.columns else df)
         for metric, df in source_data.items()
     }
+
+    # `m` and `p` both remove paid DAU from the same Fenix training rows and both add it back.
+    # Running them together would subtract twice and add twice — the totals would look plausible
+    # while the training rows and the fitted trend were both wrong. Fail loudly instead.
+    if marketing_spec_path is not None and organic_spec_path is not None:
+        raise ValueError(
+            f"Both a marketing-lift spec ({marketing_spec_path}) and a paid/organic-split spec "
+            f"({organic_spec_path}) claim this forecast start. They are mutually exclusive: `p` "
+            f"supersedes `m` for mobile. Clear `applies_to_forecast_start` in the marketing spec."
+        )
+
+    organic_context = None
+    if organic_spec_path is not None and data_source == DataSource.GLEAN_MOBILE \
+            and Metric.DAU.value in source_data:
+        if training_end_date is None:
+            raise ValueError(
+                "training_end_date is required when organic_spec_path is set"
+            )
+        source_data, organic_context = _apply_organic_split_pre_mozaic(
+            source_data, organic_spec_path, training_end_date
+        )
 
     marketing_context = None
     if marketing_spec_path is not None and data_source == DataSource.GLEAN_MOBILE \
@@ -440,14 +585,51 @@ def process_data_source(
     # Generate forecasts
     forecast_func = get_forecast_function(platform)
     additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
+    model_config = (model_configs or {}).get(data_source)
     forecast_result = forecast_func(
         source_data, forecast_start, forecast_end,
         additional_holidays=additional_holidays,
         data_source=data_source.value,
+        config=model_config,
     )
 
     # Combine
     df_combined = combine_tables(forecast_result.dfs)
+
+    # Paid add-back (before format_func so the population column still exists).
+    #
+    # Two regions, deliberately: training rows get back the MEASURED paid we removed, so they
+    # return to raw actuals exactly (verify_training_rows_are_actuals.py enforces that, and the
+    # canonical notebook's 28-day MA straddles the seam); forecast rows get marketing's paid
+    # LEVEL. The two disagree where they meet, and that step is reported rather than smoothed —
+    # see research/mobile-organic/paid_seam_methods.ipynb for the open decision.
+    if organic_context is not None and Metric.DAU.value in df_combined.columns:
+        marketing_paid = marketing_paid_level(
+            organic_context["spec"],
+            organic_context["spec_dir"],
+            forecast_start=pd.Timestamp(forecast_start),
+            forecast_end=pd.Timestamp(forecast_end),
+        )
+        df_combined = add_paid_to_forecast(
+            df_combined,
+            measured_paid=organic_context["measured_paid"],
+            marketing_paid=marketing_paid,
+            country_shares=organic_context["country_shares"],
+            forecast_start=pd.Timestamp(forecast_start),
+            metric_column=Metric.DAU.value,
+            population_value=organic_context["spec"]["scope"]["app_flag_column"],
+        )
+        step = paid_seam_step(
+            organic_context["measured_paid"], marketing_paid,
+            training_end_date=pd.Timestamp(training_end_date),
+        )
+        n_total = len(df_combined)
+        n_forecast = (df_combined["source"] == "forecast").sum()
+        print(f'Paid/organic split: added back across {n_total} rows '
+              f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
+        print(f'  seam step at {step["training_end"]}: measured 28d mean '
+              f'{step["measured_paid_mean"]:,.0f} -> marketing {step["marketing_paid_mean"]:,.0f} '
+              f'= {step["step_abs"]:+,.0f} ({step["step_rel"]:+.2%} of paid)')
 
     # Marketing-lift add-back (before format_func so the population column still exists).
     # Operates on every row where the lift series has a non-zero value — that
@@ -513,6 +695,8 @@ def generate_forecasts(
     marketing_spec_path: Optional[Path] = None,
     lol_spec_path: Optional[Path] = None,
     mozillaonline_spec_path: Optional[Path] = None,
+    organic_spec_path: Optional[Path] = None,
+    model_configs: Optional[dict] = None,
 ) -> pd.DataFrame:
     """Generate forecasts for all data sources and combine them.
 
@@ -522,9 +706,14 @@ def generate_forecasts(
         data_source_filter: If set, only process these data sources
         checkpoints: If True, save fitted Mozaic objects to disk alongside other checkpoints
         output_dir: Directory for checkpoint files
+        organic_spec_path: If set, the paid/organic split `p` adjustment is applied
+            to glean_mobile DAU. Mutually exclusive with ``marketing_spec_path``.
+        model_configs: Optional ``{DataSource: ModelConfig}`` passed through to the
+            per-source forecast call. This is the supported way to run a tuned
+            build; the param-scan runners use it instead of monkeypatching.
         marketing_spec_path: If set, the marketing-lift `m` adjustment is applied
             to glean_mobile DAU (subtract pre-mozaic, add back post-mozaic).
-            Other data sources are unaffected.
+            Other data sources are unaffected. Retired for mobile as of 2026-08.
         lol_spec_path: If set, the launch-on-login `l` desktop overlay is applied
             to legacy_desktop DAU (subtract pre-mozaic, add back post-mozaic).
             Other data sources are unaffected.
@@ -555,6 +744,8 @@ def generate_forecasts(
             marketing_spec_path=marketing_spec_path,
             lol_spec_path=lol_spec_path,
             mozillaonline_spec_path=mozillaonline_spec_path,
+            organic_spec_path=organic_spec_path,
+            model_configs=model_configs,
         )
         all_dfs.append(df)
 
@@ -592,6 +783,8 @@ def main(
     marketing_lift: bool = True,
     launch_on_login: bool = True,
     mozillaonline: bool = True,
+    organic_split: bool = True,
+    model_configs: Optional[dict] = None,
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
 
@@ -618,6 +811,13 @@ def main(
             this forecast cycle's start date and apply the `o` desktop overlay to
             legacy_desktop DAU. If False, force it off even if a matching spec
             exists.
+        organic_split: If True (default), look for an organic/organic.json spec
+            matching this forecast cycle's start date and apply the `p` paid/organic
+            split to glean_mobile DAU. If False, force it off even if a matching
+            spec exists — which yields a *total*-DAU mobile forecast with no paid
+            treatment at all, not an organic one.
+        model_configs: Optional ``{DataSource: ModelConfig}`` for tuned runs. The
+            CLI does not expose this; the param-scan runners pass it directly.
 
     Returns:
         DataFrame with forecasts
@@ -706,6 +906,18 @@ def main(
         elif mozillaonline_spec_path is not None:
             print(f'MozillaOnline: using spec {mozillaonline_spec_path}')
 
+        organic_spec_path = (
+            _find_organic_spec_for_forecast(config['forecast_start_date'])
+            if organic_split else None
+        )
+        if organic_split and organic_spec_path is None:
+            print(
+                f'Paid/organic split: no spec found for forecast_start='
+                f'{config["forecast_start_date"]}; adjustment disabled for this cycle.'
+            )
+        elif organic_spec_path is not None:
+            print(f'Paid/organic split: using spec {organic_spec_path}')
+
         df = generate_forecasts(
             datasets, config,
             data_source_filter=data_source_filter,
@@ -714,6 +926,8 @@ def main(
             marketing_spec_path=marketing_spec_path,
             lol_spec_path=lol_spec_path,
             mozillaonline_spec_path=mozillaonline_spec_path,
+            organic_spec_path=organic_spec_path,
+            model_configs=model_configs,
         )
         save_checkpoint(df, checkpoint_filename)
 

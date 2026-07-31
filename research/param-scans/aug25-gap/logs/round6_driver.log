@@ -1,0 +1,371 @@
+Full factorial 3 x 3 x 3 x 3 x 3 = 243 cells
+  cps     (0.1649, 0.1849, 0.2049)
+  cpr     (0.754, 0.784, 0.814)
+  ncp     (30, 35, 40)
+  recent  (14, 17, 20)
+  sps     (0.0065, 0.00825, 0.01)
+Already on disk: 1.  To run: 242.  Concurrency: 4.
+Pickles deleted per cell; ~1.5MB retained each.
+
+[1/243] cps0.1649_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 105.8s | median 105.8s | elapsed   1.8m | ETA 426.9m
+[2/243] cps0.1649_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 105.9s | median 105.9s | elapsed   1.8m | ETA 212.6m
+[3/243] cps0.1649_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 106.0s | median 105.9s | elapsed   1.8m | ETA 141.4m
+[4/243] cps0.1649_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 106.6s | median 105.9s | elapsed   1.8m | ETA 106.2m
+[5/243] cps0.1649_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 103.4s | median 105.9s | elapsed   3.5m | ETA 166.6m
+[6/243] cps0.1649_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 105.3s | median 105.9s | elapsed   3.5m | ETA 139.0m
+[7/243] cps0.1649_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 105.6s | median 105.8s | elapsed   3.5m | ETA 118.8m
+[8/243] cps0.1649_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 107.7s | median 105.9s | elapsed   3.6m | ETA 104.6m
+[9/243] cps0.1649_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 104.4s | median 105.8s | elapsed   5.2m | ETA 136.2m
+[10/243] cps0.1649_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 112.2s | median 105.9s | elapsed   5.4m | ETA 125.6m
+[11/243] cps0.1649_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 112.5s | median 105.9s | elapsed   5.4m | ETA 113.9m
+[12/243] cps0.1649_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 112.0s | median 105.9s | elapsed   5.4m | ETA 104.5m
+[13/243] cps0.1649_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 112.9s | median 106.0s | elapsed   7.1m | ETA 126.0m
+[14/243] cps0.1649_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 112.2s | median 106.3s | elapsed   7.3m | ETA 118.8m
+[15/243] cps0.1649_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 112.9s | median 106.6s | elapsed   7.3m | ETA 111.1m
+[16/243] cps0.1649_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 115.0s | median 107.2s | elapsed   7.3m | ETA 103.8m
+[17/243] cps0.1649_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 113.4s | median 107.7s | elapsed   9.0m | ETA 119.8m
+[18/243] cps0.1649_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 113.7s | median 109.9s | elapsed   9.2m | ETA 114.4m
+[19/243] cps0.1649_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 117.4s | median 112.0s | elapsed   9.3m | ETA 109.3m
+[20/243] cps0.1649_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 119.7s | median 112.1s | elapsed   9.3m | ETA 103.8m
+[21/243] cps0.1649_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 122.8s | median 112.2s | elapsed  11.1m | ETA 116.9m
+[22/243] cps0.1649_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took 119.0s | median 112.2s | elapsed  11.1m | ETA 111.9m
+[23/243] cps0.1649_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took 118.7s | median 112.2s | elapsed  11.2m | ETA 107.6m
+[24/243] cps0.1649_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took 118.4s | median 112.4s | elapsed  11.3m | ETA 103.0m
+[25/243] cps0.1649_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took 101.7s | median 112.2s | elapsed  13.0m | ETA 113.2m
+[26/243] cps0.1649_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took 119.2s | median 112.4s | elapsed  13.0m | ETA 108.9m
+[27/243] cps0.1649_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took 120.5s | median 112.5s | elapsed  13.1m | ETA 105.2m
+[28/243] cps0.1649_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took 120.7s | median 112.7s | elapsed  13.3m | ETA 101.8m
+[29/243] cps0.1649_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took 103.4s | median 112.5s | elapsed  14.7m | ETA 108.5m
+[30/243] cps0.1649_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took 101.6s | median 112.4s | elapsed  14.7m | ETA 104.6m
+[31/243] cps0.1649_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took 103.0s | median 112.4s | elapsed  14.9m | ETA 101.6m
+[32/243] cps0.1649_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took  99.8s | median 112.4s | elapsed  14.9m | ETA  98.4m
+[33/243] cps0.1649_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took 102.3s | median 112.4s | elapsed  16.4m | ETA 104.4m
+[34/243] cps0.1649_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took 101.0s | median 112.4s | elapsed  16.4m | ETA 100.9m
+[35/243] cps0.1649_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took 100.9s | median 112.4s | elapsed  16.5m | ETA  98.3m
+[36/243] cps0.1649_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took 103.1s | median 112.4s | elapsed  16.6m | ETA  95.7m
+[37/243] cps0.1649_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took 112.4s | median 112.4s | elapsed  18.3m | ETA 101.8m
+[38/243] cps0.1649_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took 113.5s | median 112.7s | elapsed  18.3m | ETA  98.8m
+[39/243] cps0.1649_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took 113.8s | median 112.9s | elapsed  18.4m | ETA  96.5m
+[40/243] cps0.1649_thresh032_recent17_cpr0.784_ncp35_clip0.6_ took 112.7s | median 112.9s | elapsed  18.5m | ETA  94.0m
+[41/243] cps0.1649_thresh032_recent17_cpr0.784_ncp35_clip0.6_ took 113.3s | median 113.1s | elapsed  20.2m | ETA  99.4m
+[42/243] cps0.1649_thresh032_recent17_cpr0.784_ncp35_clip0.6_ took 113.0s | median 113.2s | elapsed  20.2m | ETA  96.7m
+[43/243] cps0.1649_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took 111.0s | median 113.2s | elapsed  20.3m | ETA  94.4m
+[44/243] cps0.1649_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took 110.2s | median 113.2s | elapsed  20.4m | ETA  92.1m
+[45/243] cps0.1649_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took 113.9s | median 113.3s | elapsed  22.1m | ETA  97.1m
+[46/243] cps0.1649_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took 119.8s | median 113.3s | elapsed  22.2m | ETA  95.1m
+[47/243] cps0.1649_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took 120.3s | median 113.4s | elapsed  22.3m | ETA  93.0m
+[48/243] cps0.1649_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took 118.7s | median 113.4s | elapsed  22.3m | ETA  90.7m
+[49/243] cps0.1649_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took 119.6s | median 113.4s | elapsed  24.1m | ETA  95.3m
+[50/243] cps0.1649_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took 119.3s | median 113.4s | elapsed  24.2m | ETA  93.3m
+[51/243] cps0.1649_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took 118.9s | median 113.4s | elapsed  24.3m | ETA  91.4m
+[52/243] cps0.1649_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took 118.9s | median 113.4s | elapsed  24.3m | ETA  89.3m
+[53/243] cps0.1649_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took 102.5s | median 113.2s | elapsed  26.0m | ETA  93.2m
+[54/243] cps0.1649_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took 101.4s | median 112.8s | elapsed  26.0m | ETA  91.0m
+[55/243] cps0.1649_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took 117.9s | median 113.2s | elapsed  26.0m | ETA  89.0m
+[56/243] cps0.1649_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took 117.1s | median 113.2s | elapsed  26.1m | ETA  87.3m
+[57/243] cps0.1649_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took 103.5s | median 112.8s | elapsed  27.7m | ETA  90.4m
+[58/243] cps0.1649_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took 103.1s | median 112.5s | elapsed  27.7m | ETA  88.4m
+[59/243] cps0.1649_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took 102.2s | median 112.5s | elapsed  27.7m | ETA  86.5m
+[60/243] cps0.1649_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took 104.2s | median 112.5s | elapsed  27.9m | ETA  85.0m
+[61/243] cps0.1649_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took 102.4s | median 112.5s | elapsed  29.4m | ETA  87.8m
+[62/243] cps0.1649_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took 103.1s | median 112.5s | elapsed  29.4m | ETA  86.0m
+[63/243] cps0.1649_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took 103.9s | median 112.5s | elapsed  29.4m | ETA  84.1m
+[64/243] cps0.1649_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 114.1s | median 112.8s | elapsed  29.8m | ETA  83.3m
+[65/243] cps0.1649_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took 113.5s | median 113.2s | elapsed  31.3m | ETA  85.8m
+[66/243] cps0.1649_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 113.7s | median 113.4s | elapsed  31.3m | ETA  84.0m
+[67/243] cps0.1649_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 114.4s | median 113.5s | elapsed  31.3m | ETA  82.3m
+[68/243] cps0.1649_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took 111.6s | median 113.4s | elapsed  31.6m | ETA  81.4m
+[69/243] cps0.1649_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took 111.3s | median 113.2s | elapsed  33.2m | ETA  83.7m
+[70/243] cps0.1649_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took 112.8s | median 113.2s | elapsed  33.2m | ETA  82.1m
+[71/243] cps0.1649_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took 113.7s | median 113.3s | elapsed  33.2m | ETA  80.5m
+[72/243] cps0.1649_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took 111.7s | median 113.2s | elapsed  33.5m | ETA  79.6m
+[73/243] cps0.1649_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took 119.6s | median 113.6s | elapsed  35.2m | ETA  81.9m
+[74/243] cps0.1649_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took 117.4s | median 113.7s | elapsed  35.2m | ETA  80.4m
+[75/243] cps0.1649_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took 120.1s | median 113.7s | elapsed  35.2m | ETA  78.9m
+[76/243] cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took 120.5s | median 113.7s | elapsed  35.5m | ETA  78.0m
+[77/243] cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took 116.8s | median 113.7s | elapsed  37.1m | ETA  80.1m
+[78/243] cps0.1649_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took 118.5s | median 113.7s | elapsed  37.2m | ETA  78.7m
+[79/243] cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took 121.7s | median 113.7s | elapsed  37.2m | ETA  77.3m
+[80/243] cps0.1649_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took 120.7s | median 113.7s | elapsed  37.5m | ETA  76.4m
+[81/243] cps0.1849_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 101.2s | median 113.6s | elapsed  38.9m | ETA  77.8m
+[82/243] cps0.1849_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 103.9s | median 113.2s | elapsed  38.9m | ETA  76.5m
+[83/243] cps0.1649_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took 118.0s | median 113.6s | elapsed  39.1m | ETA  75.4m
+[84/243] cps0.1849_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 100.1s | median 113.6s | elapsed  39.2m | ETA  74.2m
+[85/243] cps0.1849_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 100.8s | median 113.2s | elapsed  40.6m | ETA  75.4m
+[86/243] cps0.1849_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 104.8s | median 112.2s | elapsed  40.7m | ETA  74.3m
+[87/243] cps0.1849_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 101.4s | median 112.2s | elapsed  40.8m | ETA  73.2m
+[88/243] cps0.1849_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 100.3s | median 112.2s | elapsed  40.9m | ETA  72.0m
+[89/243] cps0.1849_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 1585.2s | median 113.2s | elapsed  67.0m | ETA 115.9m
+[90/243] cps0.1849_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 1584.4s | median 113.6s | elapsed  67.1m | ETA 114.1m
+[91/243] cps0.1849_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 1593.6s | median 113.7s | elapsed  67.4m | ETA 112.5m
+[92/243] cps0.1849_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 1590.5s | median 113.9s | elapsed  67.4m | ETA 110.6m
+[93/243] cps0.1849_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 114.3s | median 114.2s | elapsed  68.9m | ETA 111.1m
+[94/243] cps0.1849_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 115.0s | median 114.3s | elapsed  69.0m | ETA 109.4m
+[95/243] cps0.1849_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 111.7s | median 114.3s | elapsed  69.2m | ETA 107.8m
+[96/243] cps0.1849_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 111.5s | median 114.3s | elapsed  69.2m | ETA 106.0m
+[97/243] cps0.1849_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 114.6s | median 114.4s | elapsed  70.8m | ETA 106.6m
+[98/243] cps0.1849_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 112.8s | median 114.4s | elapsed  70.9m | ETA 104.9m
+[99/243] cps0.1849_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 112.0s | median 114.4s | elapsed  71.1m | ETA 103.4m
+[100/243] cps0.1849_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 117.1s | median 114.8s | elapsed  71.2m | ETA 101.8m
+[101/243] cps0.1849_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 119.3s | median 115.9s | elapsed  72.8m | ETA 102.3m
+[102/243] cps0.1849_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 120.3s | median 117.0s | elapsed  72.9m | ETA 100.8m
+[103/243] cps0.1849_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took 119.2s | median 117.0s | elapsed  73.1m | ETA  99.3m
+[104/243] cps0.1849_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took 118.0s | median 117.0s | elapsed  73.1m | ETA  97.8m
+[105/243] cps0.1849_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took 120.9s | median 117.0s | elapsed  74.8m | ETA  98.3m
+[106/243] cps0.1849_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took 122.1s | median 117.0s | elapsed  74.9m | ETA  96.9m
+[107/243] cps0.1849_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took 120.1s | median 117.6s | elapsed  75.1m | ETA  95.4m
+[108/243] cps0.1849_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took 120.0s | median 117.6s | elapsed  75.1m | ETA  93.9m
+[109/243] cps0.1849_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took 104.5s | median 116.1s | elapsed  76.5m | ETA  94.1m
+[110/243] cps0.1849_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took 106.5s | median 114.8s | elapsed  76.7m | ETA  92.8m
+[111/243] cps0.1849_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took 106.5s | median 114.8s | elapsed  76.8m | ETA  91.4m
+[112/243] cps0.1849_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took 103.7s | median 114.8s | elapsed  76.9m | ETA  89.9m
+[113/243] cps0.1849_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took 102.7s | median 114.4s | elapsed  78.3m | ETA  90.0m
+[114/243] cps0.1849_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took 104.2s | median 114.4s | elapsed  78.4m | ETA  88.8m
+[115/243] cps0.1849_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took 101.4s | median 114.4s | elapsed  78.5m | ETA  87.4m
+[116/243] cps0.1849_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took 102.1s | median 114.4s | elapsed  78.6m | ETA  86.0m
+[117/243] cps0.1849_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took 102.2s | median 114.4s | elapsed  80.0m | ETA  86.1m
+[118/243] cps0.1849_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took 114.5s | median 114.5s | elapsed  80.4m | ETA  85.1m
+[skip] cps0.1849_thresh032_recent17_cpr0.784_ncp35_clip0.6_ already present
+[119/243] cps0.1849_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took 110.0s | median 114.4s | elapsed  80.4m | ETA  83.8m
+[120/243] cps0.1849_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took 112.8s | median 113.5s | elapsed  80.4m | ETA  82.4m
+[121/243] cps0.1849_thresh032_recent17_cpr0.784_ncp35_clip0.6_ took 110.8s | median 112.8s | elapsed  81.8m | ETA  82.5m
+[122/243] cps0.1849_thresh032_recent17_cpr0.784_ncp35_clip0.6_ took 111.3s | median 112.4s | elapsed  82.2m | ETA  81.5m
+[123/243] cps0.1849_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took 111.8s | median 111.9s | elapsed  82.3m | ETA  80.3m
+[124/243] cps0.1849_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took 114.1s | median 111.9s | elapsed  82.3m | ETA  79.0m
+[125/243] cps0.1849_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took 113.6s | median 112.4s | elapsed  83.7m | ETA  79.0m
+[126/243] cps0.1849_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took 117.4s | median 112.8s | elapsed  84.2m | ETA  78.2m
+[127/243] cps0.1849_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took 116.5s | median 112.8s | elapsed  84.2m | ETA  76.9m
+[128/243] cps0.1849_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took 116.3s | median 113.2s | elapsed  84.3m | ETA  75.7m
+[129/243] cps0.1849_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took 117.4s | median 113.9s | elapsed  85.7m | ETA  75.7m
+[130/243] cps0.1849_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took 117.8s | median 113.9s | elapsed  86.1m | ETA  74.9m
+[131/243] cps0.1849_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took 118.3s | median 113.9s | elapsed  86.2m | ETA  73.7m
+[132/243] cps0.1849_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took 117.3s | median 113.9s | elapsed  86.2m | ETA  72.5m
+[133/243] cps0.1849_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took 862.8s | median 113.9s | elapsed 100.0m | ETA  82.7m
+[134/243] cps0.1849_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took 846.1s | median 113.9s | elapsed 100.3m | ETA  81.6m
+[135/243] cps0.1849_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took 848.8s | median 113.9s | elapsed 100.3m | ETA  80.3m
+[136/243] cps0.1849_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took 864.1s | median 113.9s | elapsed 100.5m | ETA  79.1m
+[137/243] cps0.1849_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took 106.3s | median 113.2s | elapsed 101.8m | ETA  78.8m
+[138/243] cps0.1849_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took 100.9s | median 112.3s | elapsed 102.0m | ETA  77.6m
+[139/243] cps0.1849_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took 102.7s | median 112.3s | elapsed 102.0m | ETA  76.3m
+[140/243] cps0.1849_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took 101.8s | median 112.3s | elapsed 102.2m | ETA  75.2m
+[141/243] cps0.1849_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took 100.1s | median 112.3s | elapsed 103.5m | ETA  74.9m
+[142/243] cps0.1849_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took  99.3s | median 112.3s | elapsed 103.7m | ETA  73.7m
+[143/243] cps0.1849_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took  99.9s | median 112.3s | elapsed 103.7m | ETA  72.5m
+[144/243] cps0.1849_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 109.3s | median 112.3s | elapsed 104.0m | ETA  71.5m
+[145/243] cps0.1849_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 113.3s | median 113.1s | elapsed 105.4m | ETA  71.2m
+[146/243] cps0.1849_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 110.2s | median 113.1s | elapsed 105.5m | ETA  70.1m
+[147/243] cps0.1849_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took 111.7s | median 113.1s | elapsed 105.6m | ETA  68.9m
+[148/243] cps0.1849_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took 113.0s | median 112.9s | elapsed 105.9m | ETA  68.0m
+[149/243] cps0.1849_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took 112.1s | median 112.9s | elapsed 107.2m | ETA  67.6m
+[150/243] cps0.1849_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took 111.3s | median 112.5s | elapsed 107.3m | ETA  66.6m
+[151/243] cps0.1849_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took 113.7s | median 113.2s | elapsed 107.5m | ETA  65.5m
+[152/243] cps0.1849_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took 111.6s | median 113.2s | elapsed 107.8m | ETA  64.5m
+[153/243] cps0.1849_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took 118.6s | median 113.4s | elapsed 109.2m | ETA  64.2m
+[154/243] cps0.1849_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took 120.1s | median 113.4s | elapsed 109.3m | ETA  63.2m
+[155/243] cps0.1849_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took 117.1s | median 113.5s | elapsed 109.4m | ETA  62.1m
+[156/243] cps0.1849_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took 119.4s | median 113.5s | elapsed 109.8m | ETA  61.2m
+[157/243] cps0.1849_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took 118.1s | median 113.5s | elapsed 111.2m | ETA  60.9m
+[158/243] cps0.1849_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took 121.0s | median 113.5s | elapsed 111.4m | ETA  59.9m
+[159/243] cps0.1849_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took 120.9s | median 113.5s | elapsed 111.4m | ETA  58.9m
+[160/243] cps0.1849_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took 118.4s | median 113.5s | elapsed 111.8m | ETA  58.0m
+[161/243] cps0.2049_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 104.7s | median 113.2s | elapsed 113.1m | ETA  57.6m
+[162/243] cps0.1849_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took 117.7s | median 113.2s | elapsed 113.1m | ETA  56.6m
+[163/243] cps0.2049_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 102.9s | median 112.5s | elapsed 113.1m | ETA  55.5m
+[164/243] cps0.2049_thresh032_recent14_cpr0.754_ncp30_clip0.6_ took 102.8s | median 111.9s | elapsed 113.5m | ETA  54.7m
+[165/243] cps0.2049_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 103.6s | median 111.6s | elapsed 114.8m | ETA  54.3m
+[166/243] cps0.2049_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 102.2s | median 111.4s | elapsed 114.8m | ETA  53.3m
+[167/243] cps0.2049_thresh032_recent17_cpr0.754_ncp30_clip0.6_ took 103.2s | median 111.4s | elapsed 114.9m | ETA  52.3m
+[168/243] cps0.2049_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 100.3s | median 111.4s | elapsed 115.1m | ETA  51.4m
+[169/243] cps0.2049_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 104.4s | median 111.4s | elapsed 116.6m | ETA  51.0m
+[170/243] cps0.2049_thresh032_recent20_cpr0.754_ncp30_clip0.6_ took 104.2s | median 111.4s | elapsed 116.6m | ETA  50.1m
+[171/243] cps0.2049_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 111.1s | median 111.4s | elapsed 116.7m | ETA  49.1m
+[172/243] cps0.2049_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 110.3s | median 111.4s | elapsed 117.0m | ETA  48.3m
+[173/243] cps0.2049_thresh032_recent14_cpr0.754_ncp35_clip0.6_ took 112.5s | median 111.6s | elapsed 118.4m | ETA  47.9m
+[174/243] cps0.2049_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 113.2s | median 111.9s | elapsed 118.5m | ETA  47.0m
+[175/243] cps0.2049_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 112.4s | median 111.9s | elapsed 118.6m | ETA  46.1m
+[176/243] cps0.2049_thresh032_recent17_cpr0.754_ncp35_clip0.6_ took 114.5s | median 112.2s | elapsed 118.9m | ETA  45.3m
+[177/243] cps0.2049_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 112.1s | median 112.3s | elapsed 120.3m | ETA  44.9m
+[178/243] cps0.2049_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 114.7s | median 112.3s | elapsed 120.4m | ETA  44.0m
+[179/243] cps0.2049_thresh032_recent20_cpr0.754_ncp35_clip0.6_ took 110.7s | median 112.3s | elapsed 120.4m | ETA  43.1m
+[180/243] cps0.2049_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 117.9s | median 112.4s | elapsed 120.9m | ETA  42.3m
+[181/243] cps0.2049_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 3264.7s | median 112.4s | elapsed 174.7m | ETA  59.9m
+[182/243] cps0.2049_thresh032_recent14_cpr0.754_ncp40_clip0.6_ took 3268.7s | median 112.8s | elapsed 174.8m | ETA  58.6m
+[183/243] cps0.2049_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took 3271.6s | median 112.8s | elapsed 175.0m | ETA  57.4m
+[184/243] cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took  21.9s | median 112.4s | elapsed 175.2m | ETA  56.2m
+  FAILED cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.0065_regimemultiplicative.log
+[185/243] cps0.2049_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took  28.1s | median 112.3s | elapsed 175.2m | ETA  54.9m
+  FAILED cps0.2049_thresh032_recent17_cpr0.754_ncp40_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.754_ncp40_clip0.6_sps0.01_regimemultiplicative.log
+[186/243] cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took  15.5s | median 111.6s | elapsed 175.2m | ETA  53.7m
+  FAILED cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.00825_regimemultiplicative.log
+[187/243] cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_ took   1.9s | median 110.9s | elapsed 175.2m | ETA  52.5m
+  FAILED cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.01_regimemultiplicative.log
+[188/243] cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took   2.1s | median 110.5s | elapsed 175.2m | ETA  51.3m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative.log
+[189/243] cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took   2.6s | median 107.5s | elapsed 175.3m | ETA  50.1m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative.log
+[190/243] cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_ took   2.8s | median 104.6s | elapsed 175.3m | ETA  48.9m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative.log
+[191/243] cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took   2.8s | median 104.3s | elapsed 175.3m | ETA  47.7m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative.log
+[192/243] cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took   2.6s | median 103.9s | elapsed 175.3m | ETA  46.6m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative.log
+[193/243] cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_ took   2.4s | median 103.9s | elapsed 175.3m | ETA  45.4m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative.log
+[194/243] cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took   2.4s | median 103.9s | elapsed 175.3m | ETA  44.3m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative.log
+[195/243] cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took   2.4s | median 103.7s | elapsed 175.3m | ETA  43.2m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative.log
+[196/243] cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_ took   2.4s | median 103.7s | elapsed 175.4m | ETA  42.1m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative.log
+[197/243] cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took   2.4s | median 102.3s | elapsed 175.4m | ETA  40.9m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative.log
+[198/243] cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took   2.4s | median  66.2s | elapsed 175.4m | ETA  39.9m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative.log
+[199/243] cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_ took   2.4s | median  25.0s | elapsed 175.4m | ETA  38.8m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative.log
+[200/243] cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_ took   2.4s | median  18.7s | elapsed 175.4m | ETA  37.7m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative.log
+[201/243] cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_ took   2.3s | median   9.1s | elapsed 175.4m | ETA  36.7m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative.log
+[202/243] cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_ took   2.3s | median   2.8s | elapsed 175.4m | ETA  35.6m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative.log
+[203/243] cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took   2.3s | median   2.7s | elapsed 175.4m | ETA  34.6m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative.log
+[204/243] cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took   2.3s | median   2.6s | elapsed 175.5m | ETA  33.5m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative.log
+[205/243] cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_ took   2.3s | median   2.5s | elapsed 175.5m | ETA  32.5m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative.log
+[206/243] cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took   2.3s | median   2.4s | elapsed 175.5m | ETA  31.5m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative.log
+[207/243] cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took   2.3s | median   2.4s | elapsed 175.5m | ETA  30.5m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative.log
+[208/243] cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_ took   2.4s | median   2.4s | elapsed 175.5m | ETA  29.5m
+  FAILED cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative.log
+[209/243] cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took   2.4s | median   2.4s | elapsed 175.5m | ETA  28.6m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative.log
+[210/243] cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took   2.3s | median   2.4s | elapsed 175.5m | ETA  27.6m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative.log
+[211/243] cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_ took   2.4s | median   2.4s | elapsed 175.6m | ETA  26.6m
+  FAILED cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative.log
+[212/243] cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took   2.3s | median   2.4s | elapsed 175.6m | ETA  25.7m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative.log
+[213/243] cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took   2.3s | median   2.4s | elapsed 175.6m | ETA  24.7m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative.log
+[214/243] cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_ took   2.4s | median   2.4s | elapsed 175.6m | ETA  23.8m
+  FAILED cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative.log
+[215/243] cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took   2.4s | median   2.4s | elapsed 175.6m | ETA  22.9m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative.log
+[216/243] cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took   2.4s | median   2.4s | elapsed 175.6m | ETA  22.0m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative.log
+[217/243] cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_ took   2.4s | median   2.4s | elapsed 175.6m | ETA  21.0m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative.log
+[218/243] cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took   2.4s | median   2.4s | elapsed 175.6m | ETA  20.1m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative.log
+[219/243] cps0.2049_thresh032_recent17_cpr0.754_ncp40_clip0.6_ took 3288.3s | median   2.4s | elapsed 175.7m | ETA  19.3m
+[220/243] cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took   2.4s | median   2.4s | elapsed 175.7m | ETA  18.4m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative.log
+[221/243] cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_ took   2.5s | median   2.4s | elapsed 175.7m | ETA  17.5m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative.log
+[222/243] cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took   2.5s | median   2.4s | elapsed 175.7m | ETA  16.6m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative.log
+[223/243] cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took   2.5s | median   2.4s | elapsed 175.7m | ETA  15.8m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative.log
+[224/243] cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_ took   2.5s | median   2.4s | elapsed 175.7m | ETA  14.9m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative.log
+[225/243] cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 921.9s | median   2.4s | elapsed 191.0m | ETA  15.3m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative.log
+[226/243] cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 922.1s | median   2.4s | elapsed 191.1m | ETA  14.4m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative.log
+[227/243] cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_ took 921.7s | median   2.4s | elapsed 191.1m | ETA  13.5m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative.log
+[228/243] cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took 921.7s | median   2.4s | elapsed 191.1m | ETA  12.6m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative.log
+[229/243] cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took   2.1s | median   2.4s | elapsed 191.1m | ETA  11.7m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative.log
+[230/243] cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_ took   1.9s | median   2.4s | elapsed 191.1m | ETA  10.8m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative.log
+[231/243] cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took   1.8s | median   2.4s | elapsed 191.1m | ETA   9.9m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative.log
+[232/243] cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took   1.9s | median   2.4s | elapsed 191.1m | ETA   9.1m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative.log
+[233/243] cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_ took   1.9s | median   2.4s | elapsed 191.1m | ETA   8.2m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative.log
+[234/243] cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took   1.9s | median   2.4s | elapsed 191.1m | ETA   7.4m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative.log
+[235/243] cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took   1.8s | median   2.4s | elapsed 191.1m | ETA   6.5m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative.log
+[236/243] cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_ took   1.8s | median   2.4s | elapsed 191.1m | ETA   5.7m
+  FAILED cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative.log
+[237/243] cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took   1.9s | median   2.4s | elapsed 191.1m | ETA   4.8m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative.log
+[238/243] cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took   1.9s | median   2.4s | elapsed 191.1m | ETA   4.0m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative.log
+[239/243] cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_ took   1.7s | median   2.4s | elapsed 191.2m | ETA   3.2m
+  FAILED cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative.log
+[240/243] cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took   1.7s | median   2.4s | elapsed 191.2m | ETA   2.4m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative.log
+[241/243] cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took   1.7s | median   2.4s | elapsed 191.2m | ETA   1.6m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative.log
+[242/243] cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_ took   1.6s | median   2.4s | elapsed 191.2m | ETA   0.8m
+  FAILED cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative -- see logs/round6_cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative.log
+
+Grid finished in 191.2m. 185/243 succeeded.
+FAILED cells:
+  cps0.2049_thresh032_recent17_cpr0.754_ncp40_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.754_ncp40_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp30_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp35_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.784_ncp40_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp30_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp35_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent14_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.0065_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative
+  cps0.2049_thresh032_recent20_cpr0.814_ncp40_clip0.6_sps0.01_regimemultiplicative

@@ -125,6 +125,19 @@ if __name__ == '__main__':
             'legacy_desktop DAU when a spec matches forecast_start_date.'
         )
     )
+    parser.add_argument(
+        '--no-organic-split',
+        dest='organic_split',
+        action='store_false',
+        default=True,
+        help=(
+            'Disable the paid/organic split (`p`) for this run, even if a matching '
+            'spec exists in data-official/{YYYY-MM}/organic/. Default is to apply it '
+            'to glean_mobile DAU when a spec matches forecast_start_date. Note this '
+            'yields a TOTAL-DAU mobile forecast with no paid treatment at all, not an '
+            'organic one.'
+        )
+    )
     args = parser.parse_args()
 
     # Validate that --testing is not combined with explicit filters
@@ -149,4 +162,5 @@ if __name__ == '__main__':
         marketing_lift=args.marketing_lift,
         launch_on_login=args.launch_on_login,
         mozillaonline=args.mozillaonline,
+        organic_split=args.organic_split,
     )

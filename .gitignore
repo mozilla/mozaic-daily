@@ -60,6 +60,11 @@ research/param-scans/*/*_report.html
 # Launch-on-login (`l`) overlay curve input (small, ~10KB) ARE tracked under
 # data-official/{YYYY-MM}/launch_on_login/ so the pipeline can apply the `l` adjustment.
 !data-official/*/launch_on_login/*.parquet
+# Paid/organic split (`p`) input: the measured Fenix organic share by date x country
+# (~350KB). Tracked for the same reason as the three above -- the pipeline cannot run the
+# mobile forecast without it, and its producer depends on a scratch mirror table that
+# expires 2027-04-01, so git is the durable copy.
+!data-official/*/organic/*.parquet
 # Public-facing canonical exports: small (<100KB), referenced by the README
 # next to them, regenerable via export_canonical_curves.py. Tracked so
 # downstream consumers don't need to run the export script. The csv/ folder
@@ -67,6 +72,8 @@ research/param-scans/*/*_report.html
 !data-official/*/csv/june_canonical_curves.csv
 !data-official/*/csv/july_canonical_curves.csv
 !data-official/*/csv/july_dec15_summary.csv
+!data-official/*/csv/august_canonical_curves.csv
+!data-official/*/csv/august_dec15_summary.csv
 !data-official/*/csv/per_country/*.no-headwinds.csv
 !data-official/*/june_canonical_curves.csv
 !data-official/*/april_composite_forecast_28ma.adj-h.csv

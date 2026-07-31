@@ -1311,3 +1311,55 @@ def test_real_mozillaonline_spec_loads_as_overlay():
     assert spec["value_column"] == "migration_dau_daily"
     assert spec["applies_to_forecast_start"] == "2026-07-06"
     assert spec["scope"]["exclude_countries"] == ["IR"]
+
+
+# --- Registry + filename canonicalization round-trips for `p` --------------
+#
+# `p` (paid_organic_split) replaces `m` for mobile from the 2026-08 cycle. `m` stays
+# registered so July's and August's pre-swap artifacts keep loading; these tests pin both
+# facts, because dropping `m` would silently break `verify_forecast_states.py` on every
+# historical mobile parquet.
+
+def test_paid_organic_split_code_in_registry():
+    registry = load_code_registry()
+    assert "p" in registry
+    assert registry["p"]["name"] == "paid_organic_split"
+    assert registry["p"]["spec_glob"] == "data-official/*/organic/organic.json"
+
+
+def test_retired_marketing_code_is_still_registered():
+    """Retired for new cycles, but old .adj-m. artifacts must still load and verify."""
+    registry = load_code_registry()
+    assert "m" in registry
+    assert registry["m"]["name"] == "marketing_lift"
+
+
+def test_paid_organic_code_canonical_with_headwind():
+    assert canonical_codes(["p", "h"]) == "hp"
+    assert state_marker(["p", "h"]) == "adj-hp"
+
+
+def test_parse_state_from_path_adj_p():
+    assert parse_state_from_path("foo.2026-07-28.gm-D.adj-p.parquet") == ["p"]
+
+
+def test_parse_state_from_path_adj_hp():
+    assert parse_state_from_path("august_composite_28ma.adj-hp.csv") == ["h", "p"]
+
+
+def test_paid_and_marketing_codes_produce_distinct_markers():
+    """A cycle must be tellable from its filename alone: .adj-m. and .adj-p. are different
+    methodologies, not different vintages of the same one."""
+    assert state_marker(["m"]) != state_marker(["p"])
+    assert insert_state_marker("f.2026-07-28.gm-D.parquet", ["p"]).name.endswith(".adj-p.parquet")
+
+
+def test_build_adjustments_applied_list_accepts_p(tmp_path):
+    spec_file = tmp_path / "organic.json"
+    spec_file.write_text(json.dumps({"type": "paid_organic_split"}))
+    out = build_adjustments_applied_list(
+        codes=["p"], code_to_spec_file={"p": spec_file},
+    )
+    assert out[0]["code"] == "p"
+    assert out[0]["name"] == "paid_organic_split"
+    assert out[0]["spec_sha1"] == adjustment_spec_hash(spec_file)

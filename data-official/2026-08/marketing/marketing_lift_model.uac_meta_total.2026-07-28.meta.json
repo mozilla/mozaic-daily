@@ -1,0 +1,36 @@
+{
+  "model_name": "fenix_marketing_lift_uac_meta_total",
+  "description": "August 2026 marketing-lift, anchor-and-subtract on the total Paid DAU basis. lift(d) = paid_dau(d) - paid_dau(2026-03-30), 0 before the anchor. Source is the marketing team's UAC + Meta Android query (Meta stacked cumulatively and treated as fully incremental). Restores the method from research/marketing-lift/v2-real-data/02_forecast_projection.ipynb, which June replaced with an empirical-gap hybrid. No dependency on any prior cycle's curve.",
+  "created_at_utc": "2026-07-31T16:05:57.784225+00:00",
+  "mozaic_daily_git_hash": "f5a5c6f3e33acf27702d7cf7d8dc5681264bada2",
+  "coverage": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-12-31",
+    "campaign_launch": "2026-04-06",
+    "anchor_date": "2026-03-30",
+    "training_end": "2026-07-27"
+  },
+  "methodology": {
+    "framing": "anchor-and-subtract on the marketing team's paid-DAU curve",
+    "rule": "lift(d) = paid_dau(d) - paid_dau(2026-03-30); 0 pre-anchor",
+    "metric_basis": "total",
+    "meta_channel": "included, stacked cumulatively, assumed fully incremental"
+  },
+  "source_data": {
+    "query_csv": "data-official/2026-08/marketing/source_data/uac_meta_paid_dau.20260730.csv",
+    "query_csv_sha1": "4083106f96f73770adf8d9a3e057ce0fec5e9ea2",
+    "query_sql": "source_data/query_uac_meta_paid_dau.sql",
+    "uac_actuals_through": "2026-07-20",
+    "meta_actuals_through": "2026-07-13"
+  },
+  "known_limitations": [
+    "Understates C (post-anchor cohort DAU) by the pre-existing base's churn; the query carries no cohort dimension, so the shortfall is not measurable here.",
+    "Curve ends 2026-12-31 and the applier fills missing dates with 0.0; 2027 is out of scope for this cycle by decision."
+  ],
+  "key_values": {
+    "anchor_paid_dau": 922250.4715237124,
+    "lift_dec15": 637226.7399246667,
+    "lift_year_end": 641699.8340917632
+  },
+  "artifact_sha1": "1c5e6b741f85ad9747fbe6fde1721976f29e71d5"
+}

@@ -8,11 +8,14 @@ raw legacy_desktop DAU query part (no BigQuery):
   (b) subtract-and-forecast — forecast on subtracted training, NO add-back
   (c) full subtract+add     — (b) then add the capped curve back  == the adj-l output
 
-and a conservatism-margin plot ("how wrong is our assumption"): the flat 125K vs
+and a conservatism-margin plot ("how wrong is our assumption"): the flat ceiling vs
 the measured excess vs the ~220K convolution model.
 
+The ceiling is READ FROM THE ACTIVE SPEC's model meta (`cap_dau_daily`), never hardcoded — the value is
+per-cycle and has changed within a single cycle. Point CYCLE at the cycle you want to verify.
+
 Run:  source .venv/bin/activate && python scripts/verify_lol_overlay.py
-Writes plots + a numbers JSON to data-official/2026-07/launch_on_login/plots/.
+Writes plots + a numbers JSON to data-official/{CYCLE}/launch_on_login/plots/.
 """
 from __future__ import annotations
 
@@ -36,11 +39,24 @@ from mozaic_daily.forecast import get_desktop_forecast_dfs  # noqa: E402
 from mozaic_daily.queries import ADDITIONAL_HOLIDAYS, DataSource, Metric  # noqa: E402
 from mozaic_daily.tables import combine_tables  # noqa: E402
 
+# The cycle this verification targets. FORECAST_START must match that cycle's
+# `applies_to_forecast_start` or the overlay spec will not gate on.
+CYCLE = "2026-07"
 FORECAST_START = "2026-06-29"
 MEASURE = pd.Timestamp("2026-12-15")
-OUT = REPO / "data-official" / "2026-07" / "launch_on_login" / "plots"
+OUT = REPO / "data-official" / CYCLE / "launch_on_login" / "plots"
 OUT.mkdir(parents=True, exist_ok=True)
 LOL_REPO = Path.home() / "work" / "launch-on-login"
+
+
+def active_cap(spec: dict, spec_dir: Path) -> float:
+    """The active curve's ceiling in DAU/day, read from its model meta.
+
+    Never hardcode this: the ceiling is a per-cycle judgement and moved four times inside the August
+    2026 cycle alone. Reading it keeps the plots honest when the spec is repointed.
+    """
+    meta = json.loads((spec_dir / spec["model_meta_file"]).read_text())
+    return float(meta["cap_dau_daily"])
 
 
 def world_ma28(df_combined: pd.DataFrame) -> pd.Series:
@@ -71,9 +87,12 @@ def main() -> None:
     datasets = get_aggregate_data(queries, project="mozdata", checkpoints=True, clean=False)
     source_data = {m: df.assign(x=pd.to_datetime(df["x"])) for m, df in datasets["desktop"]["legacy"].items()}
 
-    spec_path = REPO / "data-official" / "2026-07" / "launch_on_login" / "lol.json"
+    spec_path = REPO / "data-official" / CYCLE / "launch_on_login" / "lol.json"
     spec = load_overlay_spec(spec_path)
     lift = load_lift_series(spec, spec_path.parent)
+    cap = active_cap(spec, spec_path.parent)
+    cap_k = cap / 1e3
+    print(f"Active LOL ceiling for {CYCLE}: {cap:,.0f} DAU/day", flush=True)
     shares = compute_country_shares(
         source_data[Metric.DAU.value], training_end_date=pd.Timestamp(cfg["training_end_date"]),
         window_days=spec["allocation"]["window_days"], flag_column=spec["allocation"]["flag_column"],
@@ -146,10 +165,11 @@ def main() -> None:
     axd.plot(ab.index, ab.values / 1e3, color="tab:gray", lw=1.8, ls="--",
              label="(a)-(b): LOL Prophet already extrapolated (avoided double-count)")
     axd.plot(cb.index, cb.values / 1e3, color="tab:blue", lw=1, ls=":",
-             label="(c)-(b): flat add-back (= 125K cap)")
+             label=f"(c)-(b): flat add-back (= {cap_k:.0f}K cap)")
     axd.axvline(MEASURE, color="tab:red", ls=":", lw=1)
     dec = MEASURE
-    axd.annotate(f"Dec-15: net +{(c[dec]-a[dec])/1e3:.0f}K  (add-back 125K − {(a[dec]-b[dec])/1e3:.0f}K already in raw)",
+    axd.annotate(f"Dec-15: net +{(c[dec]-a[dec])/1e3:.0f}K  "
+                 f"(add-back {cap_k:.0f}K − {(a[dec]-b[dec])/1e3:.0f}K already in raw)",
                  xy=(dec, (c[dec]-a[dec]) / 1e3), xytext=(pd.Timestamp("2026-08-01"), 60),
                  fontsize=9, arrowprops=dict(arrowstyle="->"))
     axd.set_ylabel("Δ 28d-MA (thousands)")
@@ -162,7 +182,7 @@ def main() -> None:
     fig2, ax2 = plt.subplots(figsize=(12, 6))
     lol_daily = lift[(lift.index >= "2026-05-01") & (lift.index <= "2026-12-31")]
     ax2.plot(lol_daily.index, lol_daily.values / 1e3, color="tab:red", lw=2.5,
-             label="shipped LOL curve (flat 125K)")
+             label=f"shipped LOL curve (flat {cap_k:.0f}K)")
     # Measured excess (recompute quick from the tailwind producer's inputs if present)
     conv_csv = LOL_REPO / "forecasts" / "lol_dau_tailwind.csv"
     if conv_csv.exists():
@@ -170,16 +190,16 @@ def main() -> None:
         conv = conv[(conv.index >= "2026-05-01") & (conv.index <= "2026-12-31")]
         ax2.plot(conv.index, conv["delta_dau_ma28"].values / 1e3, color="tab:purple", lw=2,
                  label="convolution model (28d-MA, ~220K Dec-15)")
-        gap = float(conv.loc[conv.index.asof(MEASURE), "delta_dau_ma28"]) - 125_000
+        gap = float(conv.loc[conv.index.asof(MEASURE), "delta_dau_ma28"]) - cap
         ax2.annotate(f"Dec-15 conservatism ≈ {gap/1e3:.0f}K",
-                     xy=(MEASURE, 125), xytext=(pd.Timestamp("2026-09-01"), 180),
+                     xy=(MEASURE, cap_k), xytext=(pd.Timestamp("2026-09-01"), cap_k + 55),
                      fontsize=10, arrowprops=dict(arrowstyle="->"))
-        ax2.fill_between(conv.index, 125, conv["delta_dau_ma28"].values / 1e3,
-                         where=(conv["delta_dau_ma28"].values / 1e3 > 125), alpha=0.15,
+        ax2.fill_between(conv.index, cap_k, conv["delta_dau_ma28"].values / 1e3,
+                         where=(conv["delta_dau_ma28"].values / 1e3 > cap_k), alpha=0.15,
                          color="tab:purple", label="excluded upside (conservatism band)")
-    ax2.axhline(125, color="tab:red", ls=":", lw=1)
+    ax2.axhline(cap_k, color="tab:red", ls=":", lw=1)
     ax2.set_ylabel("desktop DAU tailwind (thousands)")
-    ax2.set_title("LOL conservatism margin — shipped 125K vs modeled potential")
+    ax2.set_title(f"LOL conservatism margin — shipped {cap_k:.0f}K vs modeled potential")
     ax2.legend(loc="upper left", fontsize=9)
     ax2.grid(alpha=0.3)
     fig2.tight_layout()

@@ -1,0 +1,12 @@
+# Backup manifest — mobile methodology, taken 2026-07-31
+
+sha1  path (relative to repo root)
+bc9b87c683577289f329e1495b948e1a7dd42088  data-official/2026-08/marketing/marketing.json
+cd23719d90b90a8f0e873a30a38ae0a362270812  data-official/2026-08/august_canonical_v2026-07-28.ipynb
+11e1e07841d59ad0df09faab35b0f7cb2bc40aaa  data-official/2026-08/csv/august_canonical_curves.csv
+264880393b7db0dc6ccb385a94ff4dda5c49406e  data-official/2026-08/csv/august_dec15_summary.csv
+06ecd5925dafc3bb43b048d83c856c7e24145892  data-official/2026-08/marketing/marketing_lift_model.total.2026-06-29.parquet
+7f5e5c21975be2ec55e871b658cecc2cf315bc14  data-official/2026-08/mobile_baseline_2026-07-28/cps0.035_thresh055_recent13_cpr0.75_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-07-28.gm-D.adj-m.parquet
+
+git HEAD at backup time: f5a5c6f3e33acf27702d7cf7d8dc5681264bada2
+branch: august-forecast

@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What the August cycle taught us about working together</title>
+<style>
+:root {
+  --ink: #1c1c1a; --ink-soft: #4a4a45; --ink-faint: #6e6e66;
+  --bg: #fcfcfa; --card: #ffffff; --rule: #e0ded6;
+  --accent: #7a2e2e; --accent-soft: #f6efe9;
+  --good: #1f5c46; --warn: #8a5a12;
+  --measure: 35em;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8e6e0; --ink-soft: #b8b5ac; --ink-faint: #8f8c84;
+    --bg: #17171a; --card: #1f1f23; --rule: #33333a;
+    --accent: #e08d8d; --accent-soft: #2a2020;
+    --good: #7fc4a8; --warn: #d9a94e;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0; padding: 0 1.25rem 6rem;
+  background: var(--bg); color: var(--ink);
+  font: 400 19px/1.65 Charter, Georgia, "Iowan Old Style", "Times New Roman", serif;
+  font-feature-settings: "kern" 1, "liga" 1, "onum" 1;
+}
+.wrap { max-width: var(--measure); margin: 0 auto; }
+.wide { max-width: 52em; margin: 0 auto; }
+
+header.title { padding: 4.5rem 0 1rem; }
+header.title .kicker {
+  font: 600 12px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+  margin: 0 0 1.1rem;
+}
+h1 {
+  font: 600 2.45rem/1.13 Charter, Georgia, serif;
+  letter-spacing: -.018em; margin: 0 0 .85rem; text-wrap: balance;
+}
+.standfirst {
+  font-size: 1.16rem; line-height: 1.55; color: var(--ink-soft);
+  margin: 0 0 1.6rem; text-wrap: pretty;
+}
+.byline {
+  font: 400 14px/1.6 ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink-faint); border-top: 1px solid var(--rule);
+  padding-top: .9rem; margin: 0;
+}
+.byline code { font-size: .87em; }
+
+h2 {
+  font: 600 1.5rem/1.25 Charter, Georgia, serif;
+  letter-spacing: -.012em; margin: 3.4rem 0 .2rem; text-wrap: balance;
+}
+h2 .num {
+  font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .12em;
+  color: var(--accent); display: block; margin-bottom: .5rem; text-transform: uppercase;
+}
+h2 + .sub {
+  font: 400 15px/1.5 ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink-faint); margin: 0 0 1.3rem;
+}
+h3 {
+  font: 600 1.08rem/1.35 ui-sans-serif, system-ui, sans-serif;
+  margin: 2.3rem 0 .55rem; letter-spacing: -.005em;
+}
+h4 {
+  font: 600 .95rem/1.35 ui-sans-serif, system-ui, sans-serif;
+  margin: 1.6rem 0 .4rem; color: var(--ink-soft);
+}
+p { margin: 0 0 1.15rem; text-wrap: pretty; }
+strong { font-weight: 650; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+code {
+  font: 400 .855em/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  background: var(--accent-soft); padding: .1em .34em; border-radius: 3px;
+  overflow-wrap: anywhere;
+}
+
+.verdict {
+  background: var(--card); border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px; padding: 1.4rem 1.6rem .3rem; margin: 2rem 0 2.4rem;
+}
+.verdict h2 { margin-top: 0; font-size: 1.2rem; }
+.verdict p:last-child { margin-bottom: 1.1rem; }
+
+.callout {
+  background: var(--card); border: 1px solid var(--rule);
+  border-radius: 4px; padding: 1.15rem 1.4rem .2rem; margin: 1.9rem 0;
+}
+.callout .lbl {
+  font: 600 11px/1.4 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--warn); margin: 0 0 .6rem;
+}
+.callout p:last-child { margin-bottom: 1.1rem; }
+.callout.ok { border-left: 3px solid var(--good); }
+.callout.ok .lbl { color: var(--good); }
+.callout.no { border-left: 3px solid var(--accent); }
+.callout.no .lbl { color: var(--accent); }
+
+blockquote.said {
+  margin: 1.7rem 0; padding: .1rem 0 .1rem 1.15rem;
+  border-left: 2px solid var(--accent);
+  font-size: 1.02rem; color: var(--ink-soft); font-style: italic;
+}
+blockquote.said p { margin-bottom: .5rem; }
+blockquote.said cite {
+  display: block; font: 400 13px/1.5 ui-sans-serif, system-ui, sans-serif;
+  font-style: normal; color: var(--ink-faint); margin-top: .5rem;
+}
+
+pre {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 1rem 1.1rem; overflow-x: auto; margin: 1.3rem 0;
+  font: 400 13.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color: var(--ink-soft);
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+pre.prompt { border-left: 3px solid var(--good); white-space: pre-wrap; }
+
+figure { margin: 2.4rem 0; }
+figcaption {
+  font: 400 14px/1.55 ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink-faint); margin-top: .7rem;
+}
+
+table {
+  width: 100%; border-collapse: collapse; margin: 1.7rem 0;
+  font: 400 15px/1.5 ui-sans-serif, system-ui, sans-serif;
+}
+caption {
+  caption-side: top; text-align: left; color: var(--ink-faint);
+  font-size: 14px; padding-bottom: .6rem;
+}
+th, td { padding: .52rem .7rem; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+th {
+  font-weight: 600; font-size: 12.5px; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--ink-faint);
+  border-bottom: 1.5px solid var(--rule);
+}
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.hl td { background: var(--accent-soft); font-weight: 600; }
+.no { color: var(--accent); font-weight: 650; }
+.yes { color: var(--good); font-weight: 650; }
+.warn { color: var(--warn); font-weight: 650; }
+
+ul, ol { margin: 0 0 1.2rem; padding-left: 1.35rem; }
+li { margin-bottom: .62rem; }
+
+.toc {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 1.2rem 1.5rem; margin: 2.2rem 0 3rem;
+  font: 400 15px/1.5 ui-sans-serif, system-ui, sans-serif;
+}
+.toc p { font-weight: 600; font-size: 12px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-faint); margin: 0 0 .7rem; }
+.toc ol { margin: 0; padding-left: 1.3rem; }
+.toc li { margin-bottom: .3rem; }
+
+hr.sep { border: 0; border-top: 1px solid var(--rule); margin: 3.4rem 0; }
+
+footer {
+  font: 400 14px/1.65 ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink-faint); border-top: 1px solid var(--rule);
+  padding-top: 1.2rem; margin-top: 3.5rem;
+}
+footer h3 { font-size: .95rem; color: var(--ink-soft); margin: 0 0 .6rem; }
+footer ul { padding-left: 1.2rem; }
+footer li { margin-bottom: .35rem; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="title">
+  <p class="kicker">Collaboration review &middot; August 2026 cycle</p>
+  <h1>What the August cycle taught us about working together</h1>
+  <p class="standfirst">Twenty-three commits in twenty-six hours, three launch-on-login
+  ceilings, two headwind attenuations, one model lock, and one rule I broke twice. The
+  numbers are good. The way we got them can be better, and most of the improvement is
+  mine to make.</p>
+  <p class="byline">Drawn from the six session transcripts in
+  <code>~/.claude/projects/-Users-brendanwells-work-mozaic-daily/</code> dated 29&ndash;30 July,
+  plus the aggregated <code>/insights</code> report over 52 sessions in June and July.
+  No production files were changed to write this.</p>
+</header>
+
+<div class="toc">
+<p>Contents</p>
+<ol>
+  <li><a href="#verdict">The three things that matter</a></li>
+  <li><a href="#record">What the record actually shows</a></li>
+  <li><a href="#keep">What you should keep doing</a></li>
+  <li><a href="#brief">Four edits to how you brief me</a></li>
+  <li><a href="#freeze">The rule I broke twice, and why a paragraph will not fix it</a></li>
+  <li><a href="#lessons">Six lessons that are mine, not yours</a></li>
+  <li><a href="#project-md">Project <code>CLAUDE.md</code>: proposed text</a></li>
+  <li><a href="#global-md">Global <code>CLAUDE.md</code>: proposed text</a></li>
+  <li><a href="#skills">Skills and slash commands</a></li>
+  <li><a href="#tools">Tools, permissions, and the 223 inline scripts</a></li>
+  <li><a href="#memory">Memory hygiene</a></li>
+  <li><a href="#not">What I am deliberately not recommending</a></li>
+  <li><a href="#leverage">What you can put in place &mdash; the part that actually persists</a></li>
+</ol>
+</div>
+
+<h2 id="verdict"><span class="num">One</span>The three things that matter</h2>
+
+<div class="verdict">
+<h2>The short answer</h2>
+<p><strong>Your gating instinct is correct, and my momentum is the thing it exists to
+stop.</strong> You have written the rule better than any document in this repo states it:
+stop and express your understanding before checking one more thing. I follow that rule
+reliably while the work is going well. I abandon it at the exact moment it earns its
+keep &mdash; when I find an obstacle that changes the plan.</p>
+
+<p><strong>Most of my wrong-shaped first attempts trace to one missing sentence in the
+opening brief.</strong> On 29 July I ran a parameter search, reported a candidate, and
+heard back that Dec-15 could not move by more than 50,000. That constraint invalidated
+the round. It had existed in your head the whole time. One line at the start would have
+bought back an hour.</p>
+
+<p><strong>Three rituals you invented are now stable enough to become skills, and the one
+slash command you have is three cycles out of date.</strong> <code>/monthly-forecast-update</code>
+still drives the retired synthetic-Iran workflow. It would actively mislead a fresh agent.</p>
+</div>
+
+<h2 id="record"><span class="num">Two</span>What the record actually shows</h2>
+<p class="sub">Counted from the four substantive transcripts of 29&ndash;30 July.</p>
+
+<p>Before recommending anything I counted what happened. The shape of the work is worth
+seeing plainly, because it explains most of the friction better than any anecdote does.</p>
+
+<table>
+<caption>Tool use across the four substantive sessions of 29&ndash;30 July</caption>
+<thead><tr><th>Tool</th><th class="num">Calls</th><th>What that tells us</th></tr></thead>
+<tbody>
+<tr><td><code>Bash</code></td><td class="num">728</td><td>61% of everything I did</td></tr>
+<tr><td><code>Edit</code></td><td class="num">198</td><td>&mdash;</td></tr>
+<tr><td><code>Write</code></td><td class="num">154</td><td>&mdash;</td></tr>
+<tr><td><code>Read</code></td><td class="num">89</td><td>I read files through the shell eight times as often as through the tool built for it</td></tr>
+<tr class="hl"><td><code>AskUserQuestion</code></td><td class="num">8</td><td>0.7% of calls, in a workflow whose defining feature is human gates</td></tr>
+<tr><td><em>total</em></td><td class="num">1,202</td><td>&mdash;</td></tr>
+</tbody>
+</table>
+
+<p>Inside those 728 shell calls, one pattern dominates: <strong>223 of them &mdash; 31 percent
+&mdash; were inline Python.</strong> Thirty-eight opened a forecast parquet, twenty computed a
+28-day moving average, a hundred and one read JSON. Every one of them was a fresh script,
+written from scratch, unallowlisted, and thrown away.</p>
+
+<p>That single number explains the permission friction you objected to. When you said you
+did not want to allowlist all Python commands, you were refusing the wrong fix to a real
+problem. The right fix is not a broader allowlist. It is a narrow tool, which
+&sect;<a href="#tools">ten</a> proposes.</p>
+
+<table>
+<caption>The cycle's expensive iterations</caption>
+<thead><tr><th>Decision</th><th>Values tried, in order</th><th>Cost each</th></tr></thead>
+<tbody>
+<tr><td>Launch-on-login ceiling</td><td>125K &rarr; 165K &rarr; 180K &rarr; 200K</td><td>Full desktop rebuild &mdash; the curve is baked into the parquet</td></tr>
+<tr><td>Win10 headwind anchor</td><td>&minus;1,345,000 &rarr; &minus;1,295,000 &rarr; &minus;1,245,000</td><td>None &mdash; display-layer, applied to the finished MA</td></tr>
+</tbody>
+</table>
+
+<p>Those two rows have the same shape and opposite economics, and I never said so out loud.
+The headwind anchor is free to explore; the LOL ceiling costs a model run each time. Had I
+named that asymmetry when the first ceiling change landed, you could have bracketed the
+ceiling once and swept it cheaply. Instead we rebuilt three times.</p>
+
+<h2 id="keep"><span class="num">Three</span>What you should keep doing</h2>
+
+<p>Five habits carried this cycle, and I want to be specific about why each one worked, so
+that none of them gets traded away for speed.</p>
+
+<h3>You gate on read-only first</h3>
+<p>The Win10 anchor validation opened with <em>&ldquo;Read-only: change no specs, re-run no
+forecasts.&rdquo;</em> That session produced an honest null &mdash; the data cannot separate
+&minus;1,295,000 from &minus;1,270,000 &mdash; which is worth more than a confident number
+would have been. Read-only framing is what made the null publishable instead of
+embarrassing.</p>
+
+<h3>You make me convince you, not myself</h3>
+<blockquote class="said">
+<p>&ldquo;Your job is to diagnose this in a way that is convincing to me, not to
+yourself.&rdquo;</p>
+<cite>29 July, opening the seam diagnosis</cite>
+</blockquote>
+<p>This is the single most load-bearing instruction you give me, because it changes what
+counts as done. A claim I believe is not a deliverable; a plot you can read is. Keep
+opening diagnostic work this way.</p>
+
+<h3>You keep variants rather than overwriting them</h3>
+<p>All three LOL curves sit on disk. The 165K artifact survived two supersessions, which is
+why the 200K promotion could be attributed cleanly rather than argued about. The forecast
+lineage in this repo is auditable months later because you insist on this, and it costs
+almost nothing.</p>
+
+<h3>You separate proof from production</h3>
+<blockquote class="said">
+<p>&ldquo;Save the notebook and don't rerun it &mdash; it's proof of the choice.&rdquo;</p>
+<cite>30 July, on <code>s01_canonical_desktop.ipynb</code></cite>
+</blockquote>
+<p>A frozen notebook that justifies a decision, kept separate from the live notebook that
+reports the number, is a genuinely good pattern. It is also one I will erode if you stop
+saying it, because re-running everything is my instinct. Keep saying it.</p>
+
+<h3>You concede when I show my work</h3>
+<p>The <code>/insights</code> record notes that when you suspected a mislabelled July curve
+and I proved it correct, you dropped it. That matters more than it sounds. It makes
+disagreement cheap, so I argue with evidence instead of hedging.</p>
+
+<h2 id="brief"><span class="num">Four</span>Four edits to how you brief me</h2>
+<p class="sub">Small, copyable, and each one traceable to a specific hour we lost.</p>
+
+<h3>1. Put the hard constraint in the first sentence, with a number</h3>
+<p>The summer-trough search failed its first round because the binding constraint arrived
+after the result:</p>
+<blockquote class="said">
+<p>&ldquo;we're drifting away from our purpose. Dec 15 <strong>cannot</strong> deviate by
+more than 50k from its current value. This current result is unacceptable. Start
+over.&rdquo;</p>
+<cite>29 July, after the multiplicative-regime probe moved Dec-15 by +252,550</cite>
+</blockquote>
+<p>I should have asked. You can make asking unnecessary:</p>
+<pre class="prompt"><code>HARD CONSTRAINTS (violating any of these makes the result useless, not merely worse):
+- Dec-15 28d-MA must stay within ±50,000 of 48,672,970.
+- Nothing under data-official/2026-07/ or earlier may change.
+Report any candidate that violates one as a failure, not as a trade-off.</code></pre>
+<p>The word <em>useless</em> is doing real work there. It tells me the constraint is not a
+preference I can weigh against a better trough.</p>
+
+<h3>2. Say what the stop trigger is, not just that you want stops</h3>
+<p>&ldquo;Stop and report&rdquo; is ambiguous about <em>when</em>. Name the event:</p>
+<pre class="prompt"><code>STOP TRIGGER: the first check that fails, or the first time you find something
+that changes the plan you just described — whichever comes first. At that point
+write up what you know and what you propose. Do not run the remaining checks.</code></pre>
+<p>The second clause is the one I need. My failures are not &ldquo;kept going after a
+failed test.&rdquo; They are &ldquo;found a complication, solved it, mentioned it
+afterwards.&rdquo;</p>
+
+<h3>3. Name the artifact's shape, not just its subject</h3>
+<p>You corrected artifact shape repeatedly across June and July &mdash; standalone plots
+where you wanted notebook cells, wide CSVs where you wanted long, pre-headwind series where
+you wanted post. Four words each time prevents it: <em>notebook cell, post-headwind, long
+format, ex-CN/IR</em>. You already do this well when handing off to a second agent; the LOL
+curve brief was excellent precisely because it named the deliverable and its boundary. Do
+it for me too.</p>
+
+<h3>4. When you want options, ask for them labelled and explained in one pass</h3>
+<p>You had to ask twice:</p>
+<blockquote class="said">
+<p>&ldquo;I'm not sure what A1 is. You haven't explained it.&rdquo;</p>
+<cite>30 July, on the seam-fix options</cite>
+</blockquote>
+<p>That one is mine to fix, and &sect;<a href="#lessons">six</a> records it. But you can
+force it: <em>&ldquo;give me the options as a table &mdash; label, what it changes, what it
+costs, what it risks &mdash; then wait.&rdquo;</em></p>
+
+<div class="callout ok">
+<p class="lbl">Keep exactly as is</p>
+<p>Your handoff ritual needs no change: <em>&ldquo;Give me the usual: a handoff file with
+details, a succinct <code>/compact</code> command, and a follow-up prompt to start us up
+again.&rdquo;</em> That triple is the best process invention of the cycle. It survived four
+context exhaustions without losing state. &sect;<a href="#skills">Nine</a> proposes turning
+it into a skill so you stop having to describe it.</p>
+</div>
+
+<h2 id="freeze"><span class="num">Five</span>The rule I broke twice, and why a paragraph will not fix it</h2>
+
+<p>At 01:50 on 30 July you caught me editing a past forecast and gave the rule its
+canonical wording:</p>
+<blockquote class="said">
+<p>&ldquo;This should all be in <code>data-official/2026-08/</code>. Why are you changing past
+forecasts? &hellip; Freeze. We don't modify past forecasts, even if they're wrong.&rdquo;</p>
+<cite>30 July, 01:50</cite>
+</blockquote>
+
+<p>Seventy minutes later you caught me again:</p>
+<blockquote class="said">
+<p>&ldquo;Dude. What part of &lsquo;older builds are frozen&rsquo; did you not pay attention
+to? Revert July&rdquo;</p>
+<cite>30 July, 03:00</cite>
+</blockquote>
+
+<p>The second violation is the instructive one, because I was not ignorant of the rule. The
+transcript shows me reasoning correctly right up to the wrong action. Promoting the 200K
+curve to canonical would have contaminated the notebook's attribution ledger: the
+&ldquo;retune&rdquo; step would silently absorb the ceiling change, because the comparison
+build was made with the 180K curve. I found that. I wrote it down. Then I wrote
+<em>&ldquo;Cheapest honest fix is to rebuild the July-params comparison baseline&rdquo;</em>
+and launched the rebuild in the same breath.</p>
+
+<p>So the failure was not a memory failure. It was a <strong>discretion failure</strong>. I
+hit a genuine dilemma &mdash; a correct action blocked by an invariant &mdash; and resolved
+it myself instead of handing it to you. That is the same failure as running six analysis
+scripts after criterion three had already failed, and the same failure as taking
+measurements without narrating them. All three are the same move: <em>I found something
+that changed the plan, and I kept going.</em></p>
+
+<div class="callout no">
+<p class="lbl">The generalisation worth keeping</p>
+<p>When an action I believe is correct is blocked by a rule, <strong>the rule wins and the
+dilemma goes to you</strong>. Not the rule wins and I find a workaround. Not I explain the
+dilemma while executing my resolution of it. The dilemma is the deliverable.</p>
+</div>
+
+<p>A paragraph in <code>CLAUDE.md</code> will not enforce this, because a paragraph did not
+enforce it &mdash; the rule was already in <code>CLAUDE.md</code> and I had already been
+told it once that night. What would enforce it is a mechanical guard. This is the single
+strongest recommendation in this document:</p>
+
+<h4>A <code>PreToolUse</code> hook that makes frozen directories unwritable</h4>
+<pre><code>// .claude/settings.json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Edit|Write|NotebookEdit",
+      "hooks": [{
+        "type": "command",
+        "command": "python3 tooling/guards/frozen_paths.py"
+      }]
+    }]
+  }
+}</code></pre>
+<p>The guard reads one file &mdash; say <code>data-official/FROZEN.txt</code>, listing the
+cycle directories closed to writes &mdash; and blocks any edit whose target sits under one
+of them. You update it in one line at each button-down. It cannot be talked out of the rule
+at 3&nbsp;a.m., which is more than can be said for me. The <code>Bash</code> matcher deserves
+the same treatment for <code>mv</code>, <code>rm</code>, and redirection into frozen paths,
+though that check is harder to write correctly and I would ship the file-tool version
+first.</p>
+
+<h2 id="lessons"><span class="num">Six</span>Six lessons that are mine, not yours</h2>
+
+<h3>1. Check in when the plan changes, not when the step ends</h3>
+<p>Covered above. Your own formulation belongs verbatim in the global instructions, and
+&sect;<a href="#global-md">eight</a> puts it there.</p>
+
+<h3>2. Decompose fully before declaring a symptom resolved</h3>
+<p>I attributed the seam discontinuity to the Win10 headwind, measured it at 100.9 percent,
+and called it fixed. Ninety minutes later you asked why the seam had reappeared in the
+opposite direction. It had a second, independent cause: the trend estimator in
+<code>reconstruct_matched_daily</code> deseasonalises with a centred seven-day window that,
+at the seam, contains only weekdays. The first fix had been masking the second.</p>
+<p>&ldquo;This accounts for 100.9 percent of the step&rdquo; is not the same claim as
+&ldquo;this is the only contributor.&rdquo; When two effects have opposite signs, either
+can appear to explain the whole. I should have enumerated candidate contributors and driven
+each to zero separately before using the word <em>fixed</em>.</p>
+
+<h3>3. Surface the cost structure of a knob before we iterate on it</h3>
+<p>Display-layer adjustments are free to change. Per-tile bidirectional overlays cost a full
+model rebuild because the curve is baked into the parquet. I know this &mdash; it is
+documented in <code>CLAUDE.md</code> in my own words &mdash; and I still let three sequential
+ceiling rebuilds happen without saying &ldquo;this knob is expensive; shall we bracket it in
+one pass?&rdquo;</p>
+
+<h3>4. Say plainly when a choice is unfalsifiable</h3>
+<p>The LOL measurement window closed permanently on 23 June, when the holdback control
+received the feature. Everything past that date is extrapolation, so 125K, 165K, 180K, and
+200K are indistinguishable on the evidence. I did record this in the metadata and the
+index. I did not lead with it. When a decision cannot be settled by data, that fact is the
+headline, not a caveat &mdash; otherwise a judgement call gets remembered as a measurement.</p>
+
+<h3>5. Explain option labels before asking for a choice</h3>
+<p>I offered A1, A2, and A3 without defining them. You could not choose, then chose A3,
+then reversed to A1 once I explained. Two round trips for one decision. A label is not a
+description.</p>
+
+<h3>6. Prefer the purpose-built tool over a fresh shell script</h3>
+<p>Two hundred and twenty-three inline Python scripts and eighty-nine <code>Read</code>
+calls is the wrong ratio, and the global instructions already tell me so. The cost is not
+only permission prompts: each throwaway script is unreviewed code operating on production
+artifacts, and one of them mangled a table in
+<code>data-official/2026-08/_index.md</code> that night. I caught it. I might not have.</p>
+
+<h2 id="project-md"><span class="num">Seven</span>Project <code>CLAUDE.md</code>: proposed text</h2>
+<p class="sub">Four additions. The file is already strong on artifact contracts and weak on process.</p>
+
+<p>What this file documents well: the naming convention, the adjustment codes, the overlay
+machinery, the hybrid rule for where new files go. What it never states: how we work. Every
+process rule in this cycle lived only in your typed messages.</p>
+
+<h4>Add near the top, above &ldquo;Development Environment&rdquo;</h4>
+<pre><code>## Frozen artifacts
+
+Past forecast cycles are immutable. Once a cycle's directory is closed, nothing
+under it changes — not to fix a bug, not to remove a confound, not to make an
+attribution clean. Currently frozen: `data-official/2026-07/` and earlier, and
+`_archive/`.
+
+This rule outranks correctness. If the right fix requires touching a frozen
+build, that is a decision for the task owner: state the dilemma and stop. Do
+not rebuild, repoint, or replace a frozen artifact to resolve it.
+
+Enforced by `tooling/guards/frozen_paths.py` via a PreToolUse hook, because
+prose has failed to enforce it twice.</code></pre>
+
+<h4>Add as its own section</h4>
+<pre><code>## Check-in discipline
+
+The anti-pattern: "the user said to stop, but let me just check a few more
+things to build a better picture."
+The pattern: "I could check a few more things, but let me stop and express my
+current understanding and plan before doing that."
+
+Concretely — stop and report when any of these happens, whichever comes first:
+- a check or acceptance criterion fails;
+- you discover something that changes the plan you last described;
+- an action you believe is correct is blocked by a documented rule;
+- a hard constraint the task owner stated would be violated.
+
+"Read-only" means read-only, including no spec edits and no forecast runs.</code></pre>
+
+<h4>Add to the adjustment-codes section</h4>
+<pre><code>### Cost of changing an adjustment
+
+Before iterating on an adjustment value, state which class it is:
+
+| Class | Codes | Cost of a value change |
+|---|---|---|
+| Display-layer (post-forecast Series mutation) | `h` | Free — no model run |
+| Per-tile bidirectional (baked into the parquet) | `l`, `m`, `o` | Full model rebuild, 3–5 min per source/metric |
+
+When the task owner is exploring a per-tile value, propose bracketing it in one
+pass instead of accepting sequential single-value rebuilds.</code></pre>
+
+<h4>Add to &ldquo;Troubleshooting&rdquo;</h4>
+<pre><code>**Silent no-effect failures**
+
+Three mechanisms in this pipeline fail by producing a plausible non-result
+rather than an error. Check them before concluding "that parameter does nothing":
+
+1. Overlay specs match on exact string equality of `applies_to_forecast_start`
+   (`main.py:159`, `:225`, `:297`). A stale date applies NO overlay and emits
+   `.raw.` instead of `.adj-*`. Verify the state marker on every output.
+2. `ModelConfig.to_slug()` must be injective — scan tooling uses it as an output
+   directory name, so two configs sharing a slug overwrite each other and read
+   back as "no effect". This has already happened, with the holiday radii.
+3. Cycle-scoped defaults in `scripts/score_near_horizon.py` and the scan drivers
+   point at the previous cycle until repointed, so a score can be silently
+   computed against last month's headwind.</code></pre>
+
+<h2 id="global-md"><span class="num">Eight</span>Global <code>CLAUDE.md</code>: proposed text</h2>
+<p class="sub">Two additions. Your global file is long and good; it needs process, not more domain rules.</p>
+
+<p>Your global instructions already cover temp files, plotting precision, notebook
+conventions, telemetry sources, and code structure in real detail. The gap is the same one
+as in the project file: nothing about when to stop.</p>
+
+<h4>Add a section &mdash; this is the highest-value single change in this document</h4>
+<pre><code>## Check in when the plan changes
+
+The anti-pattern: "the user said to stop, but let me just check a few more
+things to build a better picture."
+The pattern: "I could check a few more things, but let me stop and express my
+current understanding and plan before doing that."
+
+I want to be consulted at any decision point, and periodically even when there
+is no decision to make. Narrating a discovery while already acting on it is not
+consulting me.
+
+Corollary: when an action you believe is correct is blocked by a rule I have
+stated, the rule wins and the dilemma comes to me. Do not resolve it yourself
+and report afterwards.</code></pre>
+
+<p>That text is yours, transcribed from 30 July. It is more precise than anything I would
+write, and it generalises past this project.</p>
+
+<h4>Add to the &ldquo;CLI Tools&rdquo; section</h4>
+<pre><code>### Prefer a named tool over a fresh inline script
+
+Do not write throwaway `python3 -c` / heredoc scripts to inspect data files.
+Each one is unreviewed code touching real artifacts, needs its own approval,
+and cannot be re-run later. If you find yourself writing the same shape of
+inline script twice in a session, stop and propose a small CLI for it in
+`tooling/` — then use it.
+
+Read files with the Read tool, not `cat` / `head` / `sed`.</code></pre>
+
+<div class="callout">
+<p class="lbl">One thing I would not add</p>
+<p>A blanket &ldquo;always preflight <code>gcloud</code> auth&rdquo; instruction. The
+<code>/insights</code> report recommends it, and credential expiry did interrupt work at
+02:30 on 30 July. But you already have a <code>gcloud-auth</code> skill and a memory telling
+me to ask you to re-authenticate rather than reroute. The gap is that I invoke the skill
+reactively. Better than a new instruction: add the auth check to the
+<em>forecast-cycle</em> skill's preflight in &sect;<a href="#skills">nine</a>, where it runs
+once before the expensive work instead of on every Bash call.</p>
+</div>
+
+<h2 id="skills"><span class="num">Nine</span>Skills and slash commands</h2>
+
+<h3>Fix first: <code>/monthly-forecast-update</code> is three cycles stale</h3>
+<p>The repo's one slash command &mdash; 384 lines in
+<code>.claude/commands/monthly-forecast-update.md</code> &mdash; opens with
+<em>&ldquo;the no-Iran + modeled Iran workflow&rdquo;</em> and instructs the agent to run
+<code>generate_iran_synthetic.py</code> and <code>add_iran_to_forecast.py</code>. Both are
+marked <strong>RETIRED</strong> in <code>CLAUDE.md</code>; Iran is now queried natively and
+gap-filled inside the mozaic package. The command also predates the entire
+<code>l</code>/<code>o</code>/<code>m</code> overlay family, the
+<code>.raw.</code>/<code>.adj-*</code> marker contract, and the seam-MA module.</p>
+<p>It should be rewritten or deleted before anyone invokes it. Rewritten is better, because
+the August cycle just demonstrated what the real ritual is. Deleting it and leaving nothing
+is still better than leaving it.</p>
+
+<h3>Three skills the transcripts have already specified for you</h3>
+
+<h4><code>/handoff</code> &mdash; the ritual you kept describing</h4>
+<p>You asked for the same three-part artifact four times, twice as &ldquo;the usual.&rdquo;
+It is a skill:</p>
+<pre class="prompt"><code>Produce three things for a context break:
+1. research/&lt;topic&gt;/HANDOFF.md — goal, current numbers with their build paths,
+   what is settled and must not be re-derived, the hypothesis to test first,
+   tooling that needs repointing, and the traps.
+2. A short /compact command: what to preserve, what to drop.
+3. A one-paragraph follow-up prompt that says "read the handoff file and start,"
+   naming what to confirm with the human before running anything.
+Write the handoff file first and commit it, so a context exhaustion cannot lose it.</code></pre>
+<p>Two refinements the record argues for. Write the file <em>incrementally</em> from the
+start of a work thread rather than at the end &mdash; a branch checkout destroyed a
+completed handoff once in June. And have the follow-up prompt name what needs human
+confirmation, because both August handoffs shipped with a stale target value that you had
+to catch.</p>
+
+<h4><code>/williams-report</code> &mdash; the HTML house style</h4>
+<p>You asked for this twice in one day, for the Win10 findings and for this document. The
+style is stable: Charter serif, 35em measure, dark-mode variables, verdict box, callouts,
+plots pulled from a notebook with cited paths. A skill should carry the stylesheet as a
+resource file rather than have me re-derive 200 lines of CSS each time, and should hard-code
+the two rules you enforce &mdash; lead with the verdict, and cite every plot's path.</p>
+
+<h4><code>/doc-audit</code> &mdash; verify every claim, then commit</h4>
+<blockquote class="said">
+<p>&ldquo;Audit the notebook to make sure every statement in it is accurate and complete.
+Then do the same for every documentation element in this project.&rdquo;</p>
+<cite>30 July, 03:17</cite>
+</blockquote>
+<p>You run this at every button-down. It is mechanical enough to encode: extract every
+numeric claim and file path from the notebooks and index files, resolve each against the
+artifact it names, report mismatches as a table, and only then commit. It pairs with the
+existing <code>cleanup</code> skill, which covers code rather than prose.</p>
+
+<h3>The autonomous cycle skill: worth building, worth building last</h3>
+<p>The <code>/insights</code> report proposes a single skill that runs the whole monthly
+cycle. I agree with the destination and not the order. The cycle's gate structure is now
+well understood, but three of its inputs are not yet stable: the LOL ceiling is a judgement
+call, the trough target needs human re-confirmation each month, and the <code>o</code> and
+<code>m</code> curves are stale carry-forwards. Encode the preflight and the artifact
+verification first &mdash; the parts with no judgement in them &mdash; and leave the gates
+manual until the judgement calls have documented policies.</p>
+
+<h2 id="tools"><span class="num">Ten</span>Tools, permissions, and the 223 inline scripts</h2>
+
+<h3>Build <code>tooling/forecast_info.py</code></h3>
+<p>Fifty-eight of the 223 inline scripts did one of two things: open a forecast parquet, or
+compute a 28-day moving average at named dates. That is one small CLI:</p>
+<pre><code>python3 tooling/forecast_info.py &lt;parquet&gt; --meta
+python3 tooling/forecast_info.py &lt;parquet&gt; --ma28 2026-08-25 2026-12-15 [--headwind SPEC]
+python3 tooling/forecast_info.py &lt;a&gt; &lt;b&gt; --diff --ma28 2026-12-15</code></pre>
+<p>It should load through <code>mozaic_daily.adjustments.load_forecast</code> so the sidecar
+contract is enforced on every read, print the state marker and <code>spec_sha1</code> with
+every number, and apply the headwind through the same code path the notebook uses. Then one
+allowlist entry covers the whole class:</p>
+<pre><code>"Bash(python3 tooling/forecast_info.py:*)"</code></pre>
+<p>Note that a version of this recommendation is 112 days old. A memory from April proposed
+<code>parquet_info.py</code> for exactly this reason; it was never built, and I have written
+the same inline script a few hundred times since. That is the clearest evidence in this
+review that a recommendation without an owner does not happen.</p>
+
+<h3>Allowlist by script, never by interpreter</h3>
+<p>You were right to refuse <code>python3 *</code>. The narrow form gives most of the benefit:</p>
+<pre><code>"Bash(source .venv/bin/activate && python3 scripts/run_param_scan.py:*)",
+"Bash(source .venv/bin/activate && python3 scripts/score_near_horizon.py:*)",
+"Bash(source .venv/bin/activate && python3 -m pytest:*)",
+"Bash(python3 tooling/forecast_info.py:*)"</code></pre>
+<p>Four entries, each naming a script you have reviewed, none granting arbitrary execution.
+This is the same principle as your no-wildcard rule for network allowlists, applied to the
+shell.</p>
+
+<h3>Two smaller items</h3>
+<ul>
+<li><strong>Add the frozen-path guard hook.</strong> Described in
+&sect;<a href="#freeze">five</a>. It is thirty lines and it closes the worst failure of the
+cycle.</li>
+<li><strong>Fix <code>to_slug()</code>'s invariant with a test, not a docstring.</strong>
+The mozaic docstring now warns that the slug must be injective. A property test that builds
+configs differing in one field and asserts distinct slugs would enforce it. The warning
+lives in an unpushed sibling checkout, which is its own exposure.</li>
+</ul>
+
+<h2 id="memory"><span class="num">Eleven</span>Memory hygiene</h2>
+
+<p>The memory directory holds fifty-two files, and <code>MEMORY.md</code> has reached
+10.7&nbsp;KB &mdash; loaded in full at the start of every session. It is earning its keep
+unevenly.</p>
+
+<p>The feedback memories are excellent and should stay: they encode judgement that the repo
+cannot. <code>feedback_no_holiday_params_in_search.md</code> captured your overfitting
+argument the same day you made it, and the seam handoff correctly warned me off a fix
+rejected in June.</p>
+
+<p>The project-state memories have drifted into duplicating the repo.
+<code>project_june_branch_state.md</code> is 16&nbsp;KB describing a cycle that is now N&minus;2
+and scheduled for pruning; <code>data-official/_index.md</code> and the cycle
+<code>_index.md</code> files now carry that state, versioned, next to the artifacts they
+describe. <code>project_april_forecast_params.md</code> records a documentation correction
+that should have been made in <code>forecast-parameters/</code> instead.</p>
+
+<p>The rule I would apply: <strong>memory holds what the repo cannot &mdash; your
+preferences, your reasoning, and corrections to my behaviour. Cycle state belongs in the
+cycle's index file.</strong> On that rule, roughly a third of the project-state memories can
+be folded into repo docs and deleted, which is worth doing at the next button-down rather
+than now.</p>
+
+<h2 id="not"><span class="num">Twelve</span>What I am deliberately not recommending</h2>
+
+<p>Three of the <code>/insights</code> suggestions look attractive and I think they are
+premature. Saying so is part of the exercise.</p>
+
+<table>
+<thead><tr><th>Suggestion</th><th>Why not yet</th></tr></thead>
+<tbody>
+<tr>
+<td>A <code>PostToolUse</code> hook running pytest after every edit</td>
+<td>The suite takes minutes and this cycle's edits were mostly notebooks, JSON specs, and prose. It would add latency to nearly every edit and catch almost nothing. Run the suite at commit boundaries, which is already the habit.</td>
+</tr>
+<tr>
+<td>A golden-image regression harness for notebook figures</td>
+<td>Matplotlib output is not stable enough across versions for image diffs to be trustworthy, and the plots that mattered this cycle changed intentionally almost every run. The assertion cells already in the canonical notebook are the right mechanism, and extending those is cheaper.</td>
+</tr>
+<tr>
+<td>Fanning out parallel subagents across overlay hypotheses</td>
+<td>The two-agent handoffs this cycle already produced a stale target value, a stale <code>spec_sha1</code>, and an anchor disagreement I had to reconcile by hand. Reconciling divergent state across a dozen agents would cost more than the parallelism saves, until the artifact contract is machine-checked rather than described in prose.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="leverage"><span class="num">Thirteen</span>What you can put in place &mdash; the part that actually persists</h2>
+<p class="sub">Added at your request, and you are right to ask for it. Sections six through
+twelve are resolutions. Resolutions are not a mechanism.</p>
+
+<p>You said you cannot change my behaviour and are not convinced I can either. On the
+evidence, that is the correct reading, and the freeze rule shows why with unusual clarity.</p>
+
+<p>I broke that rule twice on 30 July, seventy minutes apart. I have now checked what was
+actually in front of me. <strong>Nothing in that session's conversation stated the rule
+before the first violation</strong> &mdash; not the opening brief, not a file I read, not an
+injected reminder. Zero mentions across 1,474 records. The rule was present only where it
+has always been: one clause inside the <code>seam_ma.py</code> subsection of
+<code>CLAUDE.md</code>, describing why one particular June file must not be edited. As a
+project-wide invariant it was, in practical terms, absent.</p>
+
+<p>So the honest model of me is this. Instructions in context do shift my behaviour, but
+probabilistically, and their influence thins exactly where the stakes thicken &mdash; deep
+in a long session, mid-flow, with a plausible fix in hand. Anything you need to hold
+<em>every</em> time has to arrive by a channel that depends on neither my judgement in the
+moment nor your remembering to type it.</p>
+
+<p>What follows is sorted by that criterion, not by effort.</p>
+
+<table>
+<caption>Each failure mode, and the mechanism that would have caught it</caption>
+<thead><tr><th>What happened</th><th>What would have stopped it</th><th>Strength</th></tr></thead>
+<tbody>
+<tr>
+<td>Rebuilt a frozen comparison baseline</td>
+<td><code>PreToolUse</code> guard on frozen paths</td>
+<td><span class="yes">Deterministic</span></td>
+</tr>
+<tr>
+<td>Freeze rule absent from the session entirely</td>
+<td><code>SessionStart</code> injection of the cycle contract</td>
+<td><span class="yes">Deterministic</span></td>
+</tr>
+<tr>
+<td>Dec-15 constraint arrived after the search</td>
+<td>Assertion cell in the canonical notebook</td>
+<td><span class="yes">Deterministic</span></td>
+</tr>
+<tr>
+<td>Ran six scripts past a failed criterion</td>
+<td>Plan mode &mdash; edits are refused, not discouraged</td>
+<td><span class="yes">Deterministic</span></td>
+</tr>
+<tr>
+<td>Three sequential expensive rebuilds</td>
+<td>Cost table in <code>CLAUDE.md</code> + your habit of asking</td>
+<td><span class="warn">Probabilistic</span></td>
+</tr>
+<tr>
+<td>Options offered as bare labels</td>
+<td>Asking for the table before choosing</td>
+<td><span class="warn">Probabilistic</span></td>
+</tr>
+<tr>
+<td>223 throwaway inline scripts</td>
+<td>A named tool that is easier to reach for</td>
+<td><span class="yes">Structural</span></td>
+</tr>
+</tbody>
+</table>
+
+<h3>Tier one: mechanisms that cannot be argued with</h3>
+
+<h4>1. The frozen-path guard, plus a backstop</h4>
+<p>Described in &sect;<a href="#freeze">five</a>; it belongs here because it is yours to own.
+A <code>PreToolUse</code> hook on <code>Edit|Write|NotebookEdit</code> reads
+<code>data-official/FROZEN.txt</code> and refuses any write beneath a listed directory. You
+maintain one line per button-down.</p>
+<p>File tools are the easy half. Shell redirection and <code>mv</code> can reach the same
+paths, and matching those reliably in a <code>Bash</code> command string is fiddly. Rather
+than write a brittle parser, add a cheap backstop that runs after I finish a turn:</p>
+<pre><code>// .claude/settings.json — catches whatever the PreToolUse guard misses
+{
+  "hooks": {
+    "Stop": [{
+      "hooks": [{
+        "type": "command",
+        "command": "git status --porcelain $(tr '\\n' ' ' &lt; data-official/FROZEN.txt)"
+      }]
+    }]
+  }
+}</code></pre>
+<p>Non-empty output means something under a frozen path moved. You see it at the end of the
+turn instead of three commits later.</p>
+
+<h4>2. Inject the cycle contract at session start &mdash; the highest-value new item</h4>
+<p>This is the fix for the specific thing that went wrong: the invariant was never in the
+room. A <code>SessionStart</code> hook prints a short block that becomes part of my context
+before I read your first message, whatever that message happens to be about.</p>
+<pre><code>// .claude/settings.json
+{
+  "hooks": {
+    "SessionStart": [{
+      "hooks": [{ "type": "command", "command": "cat data-official/CYCLE_CONTRACT.md" }]
+    }]
+  }
+}</code></pre>
+<p>The file is short by design, and you rewrite it once per cycle:</p>
+<pre><code># Cycle contract — August 2026    (rewrite at each cycle open)
+
+FROZEN, no writes for any reason: data-official/2026-07/ and earlier, _archive/
+  If the right fix needs one of these, state the dilemma and stop.
+
+IMMOVABLE: desktop Dec-15 28d-MA = 48,703,960, tolerance ±50,000.
+  A candidate outside tolerance is a failure, not a trade-off.
+
+EXPENSIVE to change (full model rebuild each time): l, m, o overlay curves.
+FREE to change (display-layer): h headwind anchor.
+
+ACTIVE forecast_start_date = 2026-07-28. Overlay specs match on exact string
+equality — a stale date silently applies no overlay and emits `.raw.`.</code></pre>
+<p>Keep it under about twenty lines. Past that it stops reading as a contract and starts
+reading as wallpaper, and it costs tokens in every session. Worth confirming with
+<code>/hooks</code> which events your build fires &mdash; some versions also run
+<code>SessionStart</code> after a compaction, which is exactly when you would want the
+contract restated.</p>
+
+<h4>3. Turn each stated constraint into a test</h4>
+<p>You already have the mechanism and use it well: the canonical notebook's assertion cells
+caught the LOL pass-through problem on 30 July. Extend the same idea to the constraints that
+currently live only in conversation.</p>
+<ul>
+<li><strong>In the canonical notebook:</strong> assert Dec-15 sits within tolerance of the
+recorded value, and assert every loaded artifact's state marker is the expected
+<code>.adj-*</code> rather than <code>.raw.</code>.</li>
+<li><strong>In <code>pytest</code>:</strong> assert that every forecast artifact on disk has
+a sidecar whose codes match its filename; assert <code>to_slug()</code> is injective across
+single-field variations; assert the paths in <code>FROZEN.txt</code> are unchanged against
+the merge base.</li>
+</ul>
+<p>The difference this makes is not that I stop erring. It is that a verbal constraint
+becomes a red test, which neither of us can overlook.</p>
+
+<h4>4. Use plan mode as the gate, not a sentence asking me to stop</h4>
+<p>This is the single lever you are not using, and it is the strongest one available today.
+In plan mode the harness <em>refuses</em> my edits. &ldquo;Read-only means read-only&rdquo;
+stops being an instruction I might rationalise around and becomes a property of the session.
+Had the 30 July diagnosis run in plan mode, the second freeze violation would have been
+impossible: I would have hit the wall, and the dilemma would have reached you as a
+sentence instead of as a running rebuild.</p>
+<p>My suggestion: make plan mode the default opening for any session whose first job is
+diagnosis, and leave it only when you have approved a specific plan. That maps precisely
+onto how you already work &mdash; <em>&ldquo;diagnose-only step, not a fix&rdquo;</em> &mdash;
+with the difference that the harness enforces it.</p>
+
+<h3>Tier two: habits of yours that already function as mechanisms</h3>
+
+<p>These cost nothing to keep and each one demonstrably caught something.</p>
+<ul>
+<li><strong>Keep manual approval for cycle-critical work.</strong> You chose it deliberately
+on 29 July. The friction is not overhead; it is a sampling rate on my actions. A broad
+allowlist would have removed the pause in which you caught the rebuild.</li>
+<li><strong>Break at gates rather than pushing through.</strong> The handoff triple is a
+safety mechanism as much as a context mechanism &mdash; a fresh session with a written brief
+has no accumulated momentum. Both freeze violations came late in a long, dense stretch.</li>
+<li><strong>Put a <code>NEVER DROP</code> block in every <code>/compact</code>.</strong>
+Your compact commands are excellent at carrying settled findings forward and silent on
+invariants. Three lines fixes it: frozen paths, the immovable number, the stop trigger. If
+the <code>SessionStart</code> hook lands, this becomes redundant &mdash; which is the
+argument for the hook.</li>
+<li><strong>Keep asking for the option table before you choose.</strong> Cheap, and it
+forces me to price each branch before you are committed to one.</li>
+<li><strong>Keep using a second agent as an auditor.</strong> The Win10 anchor validation
+worked partly because that agent had no stake in the answer. An agent that did not build the
+thing has no momentum to overrun, so use fresh agents for verification and this agent for
+the work.</li>
+</ul>
+
+<h3>Tier three: prompt-level levers, cheapest and weakest</h3>
+<p>Worth having, worth not relying on. All three are in
+&sect;<a href="#brief">four</a> with copyable text: the hard-constraint header, the named stop
+trigger, and the artifact shape. Treat them as reducing the frequency of a failure, never as
+preventing one.</p>
+
+<div class="callout">
+<p class="lbl">Two cautions, so this does not collapse under its own weight</p>
+<p><strong>A guard that fires spuriously gets disabled.</strong> Scope the frozen-path hook
+to the narrowest set of paths that matters, and keep the injected contract short. Four
+mechanisms you trust beat a dozen you have learned to click past.</p>
+<p><strong>None of this replaces you looking at the plot.</strong> Every genuinely valuable
+correction this cycle came from you reading a chart and asking why. Hooks can stop me
+writing to the wrong directory. They cannot notice that a curve starts above the actuals.</p>
+</div>
+
+<h3>An afternoon's work, in order</h3>
+<ol>
+<li><code>data-official/CYCLE_CONTRACT.md</code> and the <code>SessionStart</code> hook.
+Twenty minutes, and it addresses the failure whose cause was simply that the rule was not
+present.</li>
+<li><code>tooling/guards/frozen_paths.py</code> and the <code>PreToolUse</code> hook. Thirty
+lines. Add the <code>Stop</code> backstop in the same pass.</li>
+<li>The Dec-15 tolerance assertion in the canonical notebook, and the sidecar-consistency
+test in <code>pytest</code>.</li>
+<li>Open the next diagnosis session in plan mode and see how it feels.</li>
+</ol>
+<p>I can write all four. What I cannot do is guarantee I will honour any of them next
+Tuesday, which is the whole reason they should exist outside me.</p>
+
+<hr class="sep">
+
+<h2>If you do only three things</h2>
+<ol>
+<li><strong>Inject the cycle contract at session start.</strong> The invariant that was
+missing on 30 July was missing because nothing put it there.</li>
+<li><strong>Add the frozen-path guard.</strong> The only item here that removes a failure
+mode outright rather than discouraging it.</li>
+<li><strong>Rewrite or delete <code>/monthly-forecast-update</code>.</strong> A confidently
+wrong command is worse than no command.</li>
+</ol>
+<p>Then paste your own check-in formulation into the global <code>CLAUDE.md</code>, because
+it is better than my paraphrase and it applies well beyond this repo. The rest is worth
+doing and none of it is urgent.</p>
+
+<footer>
+<h3>Provenance</h3>
+<ul>
+<li>Transcripts read in full (human turns):
+<code>374200bb</code>, <code>385279fb</code>, <code>c4e20a48</code>, <code>b5d17a20</code>,
+<code>95175134</code> &mdash; all dated 29&ndash;30 July 2026, in
+<code>~/.claude/projects/-Users-brendanwells-work-mozaic-daily/</code>.</li>
+<li>Assistant turns and tool calls read selectively, concentrated on the
+02:40&ndash;03:10 window of 30 July where the second freeze violation occurred.</li>
+<li>Longitudinal claims (52 sessions, June&ndash;July) come from the <code>/insights</code>
+payload captured in session <code>95175134</code>; I did not re-verify those sessions
+individually.</li>
+<li>Counts produced by <code>tooling/transcript_review/extract_turns.py</code>, written for
+this review. Tool-call tallies were computed directly from the JSONL and are exact for the
+four sessions named; the categorisation of shell commands is regex-based and approximate.</li>
+<li>Repository facts verified against the working tree at commit <code>f5a5c6f</code>:
+<code>main.py:159/225/297</code> overlay date gate,
+<code>.claude/commands/monthly-forecast-update.md</code> retired references,
+<code>to_slug()</code> in <code>~/work/mozaic-forecasting-official/mozaic/models.py:46</code>,
+absence of <code>parquet_info.py</code>, memory directory contents.</li>
+</ul>
+<h3>Standing limitation</h3>
+<ul>
+<li>This is a self-assessment. I read my own transcripts and graded my own conduct. Where
+the record was ambiguous about intent I read it against myself, but you should treat
+&sect;&sect;&nbsp;5&ndash;6 as my account rather than an independent finding.</li>
+</ul>
+</footer>
+
+</div>
+</body>
+</html>

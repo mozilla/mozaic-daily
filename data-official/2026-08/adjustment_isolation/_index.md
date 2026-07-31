@@ -16,6 +16,14 @@ adjustment causes which effect" — consumed by `../desktop_adjustment_ladder.ip
 These are **diagnostics, not deliverables.** They are pre-headwind (`h` is display-layer) and carry the
 stale `o` curve, exactly like the canonical build they are compared against.
 
+⚠️ **These runs sit on a pre-200K LOL ceiling** (`l` spec sha1 `e23a6267`), and on the previous cycle's
+model parameters — not the canonical s01 config. Both were true when they were built; the curve was
+deleted 2026-07-30, so **these runs can no longer be reproduced from scratch**, only re-read. Their
+measured effects (verified 2026-07-30 by recomputing from the parquets: `l` **+166,188**, `o`
+**+431,907**, together **+582,505**, interaction **−15,590**) are therefore *not* config-matched to the
+canonical build. Isolating `l` and `o` on the canonical s01/200K build would need three fresh runs;
+nothing here provides that.
+
 ## Why separate runs are necessary
 
 `l` and `o` are *per-tile bidirectional*: each is subtracted from `modern_windows` training rows **before**

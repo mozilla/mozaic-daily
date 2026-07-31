@@ -15,10 +15,12 @@ Add a new topic cluster here when work spans more than one month or doesn't tie 
 
 | Topic | What it covers |
 |---|---|
-| `marketing-lift/` | Fenix Android paid-marketing DAU lift; **v2 real-data (current)**. (v1 convolution retired — archived.) |
+| `marketing-lift/` | Fenix Android paid-marketing DAU lift, the `m` overlay. **Superseded for mobile by `mobile-organic/` as of the 2026-08 cycle** — kept because July's and August's pre-swap `.adj-m.` artifacts are built on it. (v1 convolution retired — archived.) |
+| `mobile-organic/` | **The mobile paid/organic split (`p`), which replaced `m` from 2026-08.** Paid is measured from the client-level gclid flag, mozaic forecasts organic only, and marketing's curve is stacked on as a level. Holds the licensing probes, the reproduction against the external `mobile_organic_aug` prototype (passes; residual fully attributed), and the **open paid-seam decision**. |
 | `param-scans/` | Prophet param sensitivity exploration + `mobile-july/` grid search. Notebooks/tooling present; **the multi-GB sweep `results/` are archived to GCS** (regenerable). |
 | `headwinds/` | Linear-ramp profile explorations for the `h` (headwinds) adjustment |
 | `csv-vs-actuals/` | Validates exported forecast CSVs against actual DAU from BigQuery before release (per-cycle) |
+| `collaboration-review/` | Retrospectives on the human/agent *workflow* rather than the forecast — sourced from session transcripts via `tooling/transcript_review/`. Recommendations only; nothing applied. |
 | `ma-seam-turbulence/` | Diagnosis + backtest behind the `display_ma` seam work. Two fixes shipped: the v1 variance-matched transition (in the now-frozen `data-official/2026-06/export_canonical_curves.py`) and **Fix A**, the trend-estimator correction that moved the live implementation to `src/mozaic_daily/seam_ma.py` (test-locked in `tests/test_seam_ma.py`). See its `LOG.md` § Fix A. |
 
 ## Archived (GCS — pull back only for prior art)

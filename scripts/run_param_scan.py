@@ -36,8 +36,8 @@ Behavior
 3. If ``--raw-cache-dir`` is set, symlinks every ``mozaic_parts.raw.legacy.desktop.*.parquet``
    from that dir into the slug dir so BigQuery is not re-queried.
 4. Runs the desktop legacy DAU forecast (the run that produces the headline
-   world DAU number) via ``main()`` with the config injected through a small
-   patch of ``process_data_source``.
+   world DAU number) via ``main(model_configs={LEGACY_DESKTOP: config})``. The
+   ``l`` / ``o`` overlays are applied by ``main()`` itself.
 5. Writes the forecast parquet + the fitted mozaic pickle into the slug dir,
    plus a ``parameters.json`` capturing the exact config used.
 
@@ -66,9 +66,7 @@ import argparse
 import json
 import os
 import sys
-from dataclasses import asdict
 from pathlib import Path
-from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_PATH = REPO_ROOT / "src"
@@ -77,116 +75,18 @@ if str(SRC_PATH) not in sys.path:
 
 import importlib  # noqa: E402
 
-import pandas as pd  # noqa: E402
-
 from mozaic.models import DesktopModelConfig  # noqa: E402
 run_main_module = importlib.import_module("mozaic_daily.main")  # noqa: E402
 from mozaic_daily.adjustments import (  # noqa: E402
-    add_lift_to_forecast,
     build_adjustments_applied_list,
     insert_state_marker,
     write_meta,
 )
 from mozaic_daily.main import (  # noqa: E402
-    _apply_launch_on_login_pre_mozaic,
-    _apply_mozillaonline_pre_mozaic,
     _find_launch_on_login_spec_for_forecast,
     _find_mozillaonline_spec_for_forecast,
-    combine_tables,
-    get_format_function,
-    process_data_source as _original_process_data_source,
 )
-from mozaic_daily.forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs  # noqa: E402
-from mozaic_daily.queries import ADDITIONAL_HOLIDAYS, DataSource, Metric, Platform  # noqa: E402
-
-
-# ---------------------------------------------------------------------------
-# Config injection
-# ---------------------------------------------------------------------------
-
-def _make_process_data_source_with_config(desktop_config: DesktopModelConfig):
-    """Wrap ``process_data_source`` so the desktop forecast uses our config.
-
-    The stock ``process_data_source`` does not accept a config, so we replace it
-    in the ``mozaic_daily.main`` module for the duration of the run. Mobile (if
-    the filter ever lets it through) falls back to package defaults.
-    """
-
-    def patched(
-        data_source: DataSource,
-        datasets,
-        forecast_start,
-        forecast_end,
-        training_end_date=None,
-        marketing_spec_path=None,
-        lol_spec_path=None,
-        mozillaonline_spec_path=None,
-    ):
-        # Mirrors mozaic_daily.main.process_data_source but injects the scanned
-        # DesktopModelConfig into the desktop forecast. The launch-on-login (`l`)
-        # and MozillaOnline (`o`) desktop overlays ARE applied (bidirectional:
-        # subtract from modern_windows training pre-mozaic, add back post-mozaic)
-        # so each scanned config is comparable to the canonical adj-lo desktop.
-        # marketing_spec_path is accepted for signature parity (mobile-only; a
-        # desktop scan never triggers it).
-        platform = data_source.platform
-        source = data_source.telemetry_source
-        source_data = datasets[platform.value][source.value]
-        # Normalize x to datetime64 (matches main.process_data_source).
-        source_data = {
-            metric: (df.assign(x=pd.to_datetime(df["x"]))
-                     if isinstance(df, pd.DataFrame) and "x" in df.columns else df)
-            for metric, df in source_data.items()
-        }
-        additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
-
-        lol_context = None
-        if lol_spec_path is not None and data_source == DataSource.LEGACY_DESKTOP \
-                and Metric.DAU.value in source_data:
-            source_data, lol_context = _apply_launch_on_login_pre_mozaic(
-                source_data, lol_spec_path, training_end_date)
-        mozillaonline_context = None
-        if mozillaonline_spec_path is not None and data_source == DataSource.LEGACY_DESKTOP \
-                and Metric.DAU.value in source_data:
-            source_data, mozillaonline_context = _apply_mozillaonline_pre_mozaic(
-                source_data, mozillaonline_spec_path, training_end_date)
-
-        if platform == Platform.DESKTOP:
-            forecast_result = get_desktop_forecast_dfs(
-                source_data,
-                forecast_start,
-                forecast_end,
-                additional_holidays=additional_holidays,
-                data_source=data_source.value,
-                config=desktop_config,
-            )
-        else:
-            # We don't scan mobile here, but the contract should still work if
-            # someone passes a mobile filter — use package defaults.
-            forecast_result = get_mobile_forecast_dfs(
-                source_data,
-                forecast_start,
-                forecast_end,
-                additional_holidays=additional_holidays,
-                data_source=data_source.value,
-            )
-
-        df_combined = combine_tables(forecast_result.dfs)
-        for context in (lol_context, mozillaonline_context):
-            if context is not None and Metric.DAU.value in df_combined.columns:
-                df_combined = add_lift_to_forecast(
-                    df_combined,
-                    daily_lift_series=context["daily_lift_series"],
-                    country_shares=context["country_shares"],
-                    forecast_start=pd.Timestamp(forecast_start),
-                    metric_column=Metric.DAU.value,
-                    population_value=context["spec"]["allocation"]["flag_column"],
-                )
-        format_func = get_format_function(platform)
-        format_func(df_combined, data_source=data_source.value)
-        return df_combined, forecast_result.mozaics
-
-    return patched
+from mozaic_daily.queries import DataSource, Metric  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -442,20 +342,19 @@ def main_cli() -> None:
         if flag and spec is not None:
             print(f"  NOTE: `{code}` spec matched but was suppressed by --no-* flag.")
 
-    # Patch process_data_source to inject our config (overlays applied within).
-    run_main_module.process_data_source = _make_process_data_source_with_config(config)
-    try:
-        run_main_module.main(
-            checkpoints=True,
-            data_source_filter={DataSource.LEGACY_DESKTOP},
-            metric_filter={Metric.DAU},
-            forecast_start_date=args.forecast_start_date,
-            output_dir=str(slug_dir),
-            launch_on_login=not args.no_launch_on_login,
-            mozillaonline=not args.no_mozillaonline,
-        )
-    finally:
-        run_main_module.process_data_source = _original_process_data_source
+    # The config goes through main()'s supported model_configs channel; the overlays are
+    # applied by main() itself. This used to monkeypatch process_data_source with a hand-copied
+    # desktop branch, which had to be kept in sync with main.py by hand.
+    run_main_module.main(
+        checkpoints=True,
+        data_source_filter={DataSource.LEGACY_DESKTOP},
+        metric_filter={Metric.DAU},
+        forecast_start_date=args.forecast_start_date,
+        output_dir=str(slug_dir),
+        launch_on_login=not args.no_launch_on_login,
+        mozillaonline=not args.no_mozillaonline,
+        model_configs={DataSource.LEGACY_DESKTOP: config},
+    )
 
     out_path = stamp_marker_and_meta(
         slug_dir, args.forecast_start_date, config, applied_codes, code_to_spec_file)
