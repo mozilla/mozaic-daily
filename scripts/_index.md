@@ -34,6 +34,7 @@ One-off runners, backfill tools, and utilities for local development. Not part o
 | `run_mobile_param_scan.py` | One `glean_mobile` DAU forecast with a configurable `MobileModelConfig` — the mobile analog of `run_param_scan.py` |
 | `mobile_grid_search.py` | Round-1 one-at-a-time (OAT) sensitivity probe for the July mobile forecast, from the `MobileModelConfig` defaults + central-difference slopes |
 | `tile_corr_distribution.py` | Reports the per-tile level/volatility correlation behind desktop's `seasonality_regime="auto"` per-tile regime switch; used to place grid points |
+| `mobile_app_breakdown.py` | Per-app DAU split (Fenix / Firefox iOS / Focus Android / Focus iOS) of a mobile build, point-in-time and trailing-window, for actuals and forecast. Cross-checks `ALL MOBILE` against the sum of its parts and the training rows against the raw pull. Defaults are **cycle-scoped** |
 
 ## Where new code goes
 
