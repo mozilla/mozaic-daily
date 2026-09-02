@@ -22,6 +22,8 @@ tmp/
 *.parquet
 *.pkl
 *.csv
+# Hand-off example files are small and meant to be shared; keep them tracked.
+!templates/**/*.csv
 *.zip
 logs/*
 !logs/_index.md
