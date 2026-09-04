@@ -118,6 +118,10 @@ Per-cycle inputs that the pipeline *consumes* get their own subdirectory under `
 
 Each directory has an `_index.md` describing what's in it, what isn't, and where new code goes. Follow that convention when creating a new dir.
 
+**Ingesting a delivered curve is a skill: `.claude/skills/ingest-adjustment/SKILL.md`** (inventory existing
+adjustments → new or update → family in plain words → inspect and confirm columns/sign → allocation → code letter →
+draft prose → `scripts/ingest_adjustment.py build` → bookkeeping). Import only; the model rerun is a separate step.
+
 **Hand-off templates for external producers** live in `templates/` — currently `templates/tailwind/`, the
 three-column daily-DAU CSV contract (date, actuals/forecast flag, DAU) (plus a real example) to give anyone modelling a new tailwind curve.
 
