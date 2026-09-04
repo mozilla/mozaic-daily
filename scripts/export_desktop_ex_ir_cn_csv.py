@@ -33,7 +33,7 @@ Two consequences of the scope worth knowing before quoting these files
    per-tile at fixed ~93%-CN geo shares, so dropping CN drops it. These curves are not "world minus
    5.8%" — they are also curves with almost no MozillaOnline migration in them.
 2. **Excluding IR removes the counterfactual gap-fill from training and the shutdown crater from
-   actuals**, so the ex-IR/CN series is entirely real telemetry. `l` (launch-on-login) is allocated
+   actuals**, so the ex-IR/CN series is entirely real telemetry. `l` (launch at login for new users) is allocated
    by trailing-DAU share, so IR/CN's slice of it leaves automatically.
 
 Actuals come from the parquet's `training` rows (verified real telemetry — IR's rows carry the

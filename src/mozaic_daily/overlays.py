@@ -2,7 +2,7 @@
 
 An overlay is a daily DAU curve that is subtracted from one segment's training rows
 before mozaic runs and added back to the per-tile forecast afterwards, so the model
-does not extrapolate the effect implicitly. ``l`` (launch-on-login) and ``o``
+does not extrapolate the effect implicitly. ``l`` (launch at login for new users) and ``o``
 (MozillaOnline) are the references.
 
 Before this module existed, ``main.py`` hand-wired every overlay code through seven

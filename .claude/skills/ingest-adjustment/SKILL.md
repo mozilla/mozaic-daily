@@ -77,7 +77,7 @@ Ask in one question block (skip any the user already stated):
    - **Subtracted from training, then added back** (`per_tile_overlay`). The model learns history
      *without* the effect, so it does not extrapolate the effect on its own; the curve is then stacked
      back on as exactly its own value. Right when the effect has a hard start date. **Needs a model
-     rerun.** References: launch-on-login `l`, MozillaOnline `o`.
+     rerun.** References: launch at login for new users `l`, MozillaOnline `o`.
    - **Added on top of the published 28-day curve** (`display_layer`, `daily_file`). Never enters the
      training frame; its Dec-15 effect is exactly the curve's own 28-day mean. **No rerun.** Right for
      effects that are not in telemetry at all (a planned campaign, a planning judgement). Reference:
@@ -149,7 +149,7 @@ The curve is a world total; the pipeline splits it across country tiles. Ask:
 
 - **Is this effect spread in proportion to where Firefox users are, or localized to specific
   countries?** Proportional → `--allocation trailing_dau_share` (each country's share of the segment's
-  DAU over the last 28 days, like launch-on-login). Localized → `--allocation fixed_country_shares`
+  DAU over the last 28 days, like launch at login for new users). Localized → `--allocation fixed_country_shares`
   and ask for the shares as `{"JP": 1.0}`-style fractions summing to 1 (a single-country effect is
   `{"XX": 1.0}`, like the Japan and India September handoffs).
 - **Exclusions.** Default `--exclude IR` (Iran's curve is a counterfactual fill). Ask about **CN**

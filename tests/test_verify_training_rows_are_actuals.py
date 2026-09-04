@@ -51,7 +51,7 @@ class TestCompare:
     def test_realistic_overlay_contamination_fails(self):
         """The actual risk being guarded against: an overlay subtracted from training rows."""
         actuals = _series([47_000_000, 47_100_000, 47_200_000])
-        training = actuals - 180_000  # e.g. a launch-on-login-style subtraction
+        training = actuals - 180_000  # e.g. a Launch-at-Login-style subtraction
         failure = verify.compare("mobile", training, actuals)
         assert failure is not None
         assert "180,000" in failure

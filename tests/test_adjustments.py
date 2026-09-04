@@ -899,11 +899,11 @@ def test_marketing_code_in_registry():
     assert registry["m"]["name"] == "marketing_lift"
 
 
-# --- Desktop overlay applier (launch-on-login, code `l`) -------------------
+# --- Desktop overlay applier (launch at login for new users, code `l`) -------------------
 #
 # Exercises the generalized bidirectional appliers on the DESKTOP training
 # schema: boolean `modern_windows` / `winX` segment columns (rows with both
-# False are the "other" segment). The launch-on-login overlay lands entirely in
+# False are the "other" segment). The launch at login for new users overlay lands entirely in
 # modern_windows. MozillaOnline (`o`) will reuse the same generic functions.
 
 LOL_ROLLOUT = pd.Timestamp("2026-05-08")
@@ -940,7 +940,7 @@ def _make_desktop_training_fixture():
 
 
 def _make_lol_lift_series():
-    """Flat 15_000/day LOL curve from rollout (stand-in for the capped curve)."""
+    """Flat 15_000/day Launch at Login (new users) curve from rollout (stand-in for the capped curve)."""
     idx = pd.date_range("2026-02-01", "2026-12-31", freq="D")
     values = np.where(idx >= LOL_ROLLOUT, 15_000.0, 0.0)
     return pd.Series(values, index=idx, name="lol_lift_daily")

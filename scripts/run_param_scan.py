@@ -50,7 +50,7 @@ Outputs
     mozaic_daily_forecast.<date>.ld-D.adj-lo.parquet.meta.json (sidecar provenance)
     mozaic_objects.legacy_desktop.<date>.pkl
 
-The desktop launch-on-login (`l`) and MozillaOnline (`o`) overlays are applied
+The desktop launch at login for new users (`l`) and MozillaOnline (`o`) overlays are applied
 when their specs match the forecast start date (bidirectional: subtract from
 modern_windows training pre-mozaic, add back post-mozaic), so scanned configs are
 directly comparable to the canonical adj-lo desktop. The output parquet carries

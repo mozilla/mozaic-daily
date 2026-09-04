@@ -123,7 +123,7 @@ if __name__ == '__main__':
         action='store_false',
         default=True,
         help=(
-            'Disable the launch-on-login (`l`) desktop overlay for this run, even '
+            'Disable the launch at login for new users (`l`) desktop overlay for this run, even '
             'if a matching spec exists in data-official/{YYYY-MM}/launch_on_login/. '
             'Default is to apply it to legacy_desktop DAU when a spec matches '
             'forecast_start_date.'

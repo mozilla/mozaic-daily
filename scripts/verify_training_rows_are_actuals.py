@@ -8,7 +8,7 @@ only sound if the parquet's training rows for the reference year are untouched a
 
 They should be. Every training-row modification in the pipeline is confined to 2026:
   - Iran counterfactual fill  — 2026-03-01 .. 2026-05-25
-  - launch-on-login (`l`)     — feature launched 2026-05-08
+  - launch at login for new users (`l`)     — feature launched 2026-05-08
   - MozillaOnline (`o`)       — 2026 migration
   - marketing lift (`m`)      — campaign launched 2026-04-06
 This script asserts that rather than trusting it, by sampling date windows and diffing day-for-day

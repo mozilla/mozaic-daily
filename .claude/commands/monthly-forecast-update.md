@@ -39,7 +39,7 @@ answer on each. A harness timeout is not an answer.
      start moves to the new seam (August convention: yes).
    - `t` mobile tailwind (display layer, `adjustments/tailwind.json`) — carry, resize, or drop. It is a
      discretionary number; its `notes` say so and any change must be recorded there.
-   - `l` launch-on-login (baked into the desktop parquet, `launch_on_login/lol.json`) — ceiling is
+   - `l` launch at login for new users (baked into the desktop parquet, `launch_on_login/lol.json`) — ceiling is
      per-cycle; changing it needs a new curve from its producer **and** a model re-run.
    - `o` MozillaOnline (baked in, `mozillaonline/mozillaonline.json`) — August carried July's curve
      forward twice; the cycle index says rebuild.

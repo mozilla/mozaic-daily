@@ -2,7 +2,7 @@
 """Drive desktop July-2026 forecast parameter-search rounds (gradient + combinations).
 
 Each probe is one ``scripts/run_param_scan.py`` invocation (one config per process), so the
-desktop launch-on-login (``l``) and MozillaOnline (``o``) overlays are applied exactly as in the
+desktop launch at login for new users (``l``) and MozillaOnline (``o``) overlays are applied exactly as in the
 canonical adj-lo desktop forecast. The Win10 headwind (``h``) is a display-layer offset and is NOT
 applied here — it is added when the results are read (desktop_gradient_round<N>.ipynb).
 

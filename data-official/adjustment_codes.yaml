@@ -85,10 +85,10 @@ codes:
     name: launch_on_login_new_users
     applier: per_tile_overlay
     description: >
-      Launch-at-login desktop DAU tailwind for NEW USERS (retitled 2026-09-04 from
+      Launch at Login for new users desktop DAU tailwind (retitled 2026-09-04 from
       "launch_on_login"; a separate existing-users tailwind is expected later in the
       2026-09 cycle and will be its own code). Measured incremental DAU from the
-      launch-at-login feature (experiment long-term-holdback-2026-growth-desktop, 100%
+      launch at login for new users feature (experiment long-term-holdback-2026-growth-desktop, 100%
       rollout 2026-05-08), landing in the modern_windows segment. Per-tile overlay on
       legacy_desktop DAU: the measured historical rise is subtracted from modern_windows
       training rows before mozaic (so Prophet does not extrapolate a one-time step), then
@@ -183,7 +183,7 @@ codes:
       Feb 15 - Apr 15 anchor window); zero before onset. Holidays and India-only dips are bridged
       out of every year before measuring (mozaic's calendar lacks Diwali, Dussehra, Sankranti and
       Ambedkar Jayanti), for the ratio only -- the training frame keeps every dip. Already NET of
-      `l`: India carries 5.72% of the launch-on-login lift (11,450 DAU/day at the edge) and that
+      `l`: India carries 5.72% of the launch at login for new users lift (11,450 DAU/day at the edge) and that
       is subtracted here; do not net it again. Net 28-day level 43,286/day at the 2026-08-29 edge.
       Shipped path PROPORTIONAL: the excess held at 1.58% of India's typical level, so it follows
       the seasonal calendar -- 41,945 DAU/day on 2026-12-15, held to 2027-12-31. A planning

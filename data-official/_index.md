@@ -86,7 +86,7 @@ forecast.2026-05-13.ld-D.adj-h.plus_iran.parquet   # headwinds applied, Iran add
 forecast.2026-05-17.gm-D.adj-m.parquet             # marketing-lift applied (retired from 2026-08)
 forecast.2026-05-17.gm-D.adj-hm.parquet            # headwinds + marketing-lift
 forecast.2026-07-28.gm-D.adj-p.parquet             # paid/organic split — the current mobile treatment
-forecast.2026-07-28.ld-D.adj-lo.parquet            # launch-on-login + MozillaOnline (current desktop)
+forecast.2026-07-28.ld-D.adj-lo.parquet            # launch at login for new users + MozillaOnline (current desktop)
 ```
 
 Note that `h` and `t` are **display-layer**: they are applied to the 28-day MA after mozaic and are

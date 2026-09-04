@@ -475,7 +475,7 @@ def load_marketing_spec(spec_path: str | Path) -> dict:
 def load_overlay_spec(spec_path: str | Path) -> dict:
     """Load a ``desktop_overlay`` spec JSON and validate its required fields.
 
-    Desktop overlays (e.g. launch-on-login ``l``, MozillaOnline ``o``) share the
+    Desktop overlays (e.g. launch at login for new users ``l``, MozillaOnline ``o``) share the
     marketing-lift bidirectional machinery but key allocation off a generic
     ``allocation.flag_column`` (a boolean segment column such as
     ``modern_windows``) rather than the mobile-specific ``app_flag_column``.
@@ -527,7 +527,7 @@ def compute_country_shares(
     for rows where ``flag_column == True``, groups by ``country``, then
     normalizes so the result sums to 1.0. The ``flag_column`` is a boolean
     segment flag: ``fenix_android`` for mobile marketing-lift, ``modern_windows``
-    for the launch-on-login desktop overlay, etc.
+    for the launch at login for new users desktop overlay, etc.
 
     ``exclude_countries`` are dropped before normalizing, so none of the curve is
     allocated to them and the remaining countries still sum to 1.0 — the same
@@ -632,7 +632,7 @@ def subtract_lift_from_training(
     For each training row with ``flag_column == True``, subtracts
     ``daily_lift_series[date] * country_shares[country]`` (rounded) from ``y``.
     ``flag_column`` selects the segment: ``fenix_android`` (marketing-lift) or
-    ``modern_windows`` (launch-on-login desktop overlay).
+    ``modern_windows`` (launch at login for new users desktop overlay).
 
     - Rows outside the flagged segment are returned unchanged.
     - Rows whose date is not in ``daily_lift_series`` contribute zero (the
@@ -706,7 +706,7 @@ def add_lift_to_forecast(
     population column is still ``population`` with segment values like
     ``fenix_android`` / ``modern_windows`` and ``ALL``). ``population_value`` is
     the segment the overlay lands in: ``fenix_android`` (marketing-lift) or
-    ``modern_windows`` (launch-on-login desktop overlay).
+    ``modern_windows`` (launch at login for new users desktop overlay).
 
     Row patterns and add-values (``S`` = ``population_value``):
 

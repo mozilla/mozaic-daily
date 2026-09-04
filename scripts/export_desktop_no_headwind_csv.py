@@ -19,7 +19,7 @@ applied from **July's** seam. July's artifacts are read-only here; nothing froze
 
 What is NOT removed
 -------------------
-Only `headwind.json`. The desktop curve still carries `l` (launch-on-login) and `o` (MozillaOnline),
+Only `headwind.json`. The desktop curve still carries `l` (launch at login for new users) and `o` (MozillaOnline),
 which are per-tile bidirectional overlays baked into the parquet and not reversible at the display
 layer, and any other display-layer spec in the cycle's `adjustments/` dir that moves desktop — those
 are named on stdout when present.

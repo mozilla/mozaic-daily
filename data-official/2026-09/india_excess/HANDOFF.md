@@ -26,7 +26,7 @@ This component rests on Brendan's decision (2026-09-01) that a twelve-week run a
 four-year *maximum* is a real-world effect to carry forward, not noise to revert. Report it
 as "India above typical", never as an education effect.
 
-**It is already net of `l`.** Launch-on-login allocates its lift by trailing `modern_windows`
+**It is already net of `l`.** Launch at Login for new users allocates its lift by trailing `modern_windows`
 DAU share; India's share is **5.72%** (from the August cycle's own locked legacy training
 frame), i.e. **11,450 DAU/day** at the edge, 21% of the gross gap. That is subtracted here so
 the two overlays do not remove the same DAU twice. **Do not net it again.** `o` allocates
