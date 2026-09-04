@@ -1,384 +1,260 @@
 # Monthly Forecast Update
 
-Run a fresh forecast update using the no-Iran + modeled Iran workflow. This is the standard monthly refresh cadence — not a parameter-tuning exercise.
+Produce a new cycle's canonical forecast the way the July and August 2026 cycles were produced. This is
+the standard monthly refresh, not a parameter-tuning exercise. Rewritten 2026-09-04 against the August
+cycle; the previous version described the retired synthetic-Iran workflow (April–June 2026) and is
+superseded in full.
+
+**Read first:** `data-official/<YYYY-MM>/_index.md` for the cycle being built (opened by
+`/cycle-button-down` with the inherited to-do list), and `data-official/_index.md` for the retention
+window and naming rules. The end-of-cycle procedure is a separate skill: `/cycle-button-down`.
 
 ## Constants
 
 ```
-DATA_DIR        = data-official/<YYYY-MM>/          # e.g. data-official/2026-05/
-IRAN_DIR        = data-official/iran_synthetic/
-IRAN_DESKTOP    = data-official/iran_synthetic/iran_synthetic.parquet
-IRAN_MOBILE     = data-official/iran_synthetic/mobile/iran_synthetic.parquet
-IRAN_PARAMS     = data-official/iran_synthetic/parameters.json
-PARAMS_RECORD   = forecast-parameters/<DATE>.md     # committed; created during this run
+CYCLE        = <YYYY-MM>                              # e.g. 2026-09
+PREV         = <YYYY-MM of the delivered prior cycle>  # e.g. 2026-08
+DATA_DIR     = data-official/$CYCLE/
+PREV_DIR     = data-official/$PREV/
+SEAM         = <forecast_start_date, YYYY-MM-DD>       # training runs through SEAM - 1
+PREV_SEAM    = <prior cycle's forecast_start_date>     # read from PREV_DIR/_index.md (August: 2026-08-02)
 ```
+
+Every artifact this produces carries a `.raw.` / `.adj-<codes>.` state marker and a sidecar
+`.meta.json`; load only through `mozaic_daily.adjustments.load_forecast()`. Never `pd.read_parquet` a
+forecast directly.
+
+## Ask the user, before any run
+
+The five inputs below are decisions, not defaults. Present what the prior cycle used and wait for an
+answer on each. A harness timeout is not an answer.
+
+1. **Model parameters.** Show `PREV_DIR/desktop_*/<slug>/parameters.json` and `PREV_DIR/mobile_*/<slug>/parameters.json`
+   (August: desktop **g01** `cps 0.1649, cpr 0.814, ncp 40, recent 17, sps 0.00825, regime multiplicative`;
+   mobile `cps 0.035, cpr 0.725, ncp 25, recent 13, sps 0.1, regime auto, holiday_threshold −0.055`).
+   Same as last cycle, or a new lock from a completed parameter search? Holiday knobs are never tuned
+   (policy: local effects must not move whole-season KPIs); they stay at the recorded values.
+2. **Which overlays carry forward, and which are rebuilt.** Per code:
+   - `h` Win10 headwind (display layer, `adjustments/headwind.json`) — anchor value and whether the ramp
+     start moves to the new seam (August convention: yes).
+   - `t` mobile tailwind (display layer, `adjustments/tailwind.json`) — carry, resize, or drop. It is a
+     discretionary number; its `notes` say so and any change must be recorded there.
+   - `l` launch-on-login (baked into the desktop parquet, `launch_on_login/lol.json`) — ceiling is
+     per-cycle; changing it needs a new curve from its producer **and** a model re-run.
+   - `o` MozillaOnline (baked in, `mozillaonline/mozillaonline.json`) — August carried July's curve
+     forward twice; the cycle index says rebuild.
+   - `p` paid/organic split (baked into the mobile parquet, `organic/organic.json`) — the measured split
+     is **always** rebuilt for the new training window (Step 2); ask only whether the paid curve it
+     reads (`marketing/*.parquet`) is re-measured.
+   - Any candidate overlay sitting unwired in `DATA_DIR` (September: `j` japan_bot, `i` india_excess) —
+     wire or leave. Wiring is code work (register in `adjustment_codes.yaml`, distinct `sentinel_attr`,
+     tests) and out of scope for this command.
+   Change **one overlay per model run** so the Dec-15 delta stays attributable.
+3. **Seam.** Today − 1 is the default. Confirm the data has landed (the pre-flight check will say).
+4. **Whether the prior cycle's comparison curve is the published one.** It always should be:
+   `PREV_DIR/csv/<prev-month>_canonical_curves.csv` is the N-1 series and its Dec-15 numbers are
+   hardcoded into the notebook's reproduction check.
+5. **Cycle-scoped scripts.** `DATA_DIR/STALE_REFERENCES_from_<prev-month>_button_down.md` lists the
+   constants that still point at the prior cycle. Repoint them (or agree not to run them) before Step 5.
 
 ---
 
-## Decision: Parameters
+## Step 0 — Scaffold the cycle's spec directories
 
-Check whether this month uses the same model parameters as the last official run.
+Copy each spec directory from `PREV_DIR` that carries forward and **re-gate** it. Overlay specs match
+on exact string equality of `applies_to_forecast_start`; a run at a date no spec claims applies no
+overlays and silently writes `.raw.` (the notebook's `require_state=` loads catch this later, but do
+not rely on that).
 
-**"Same as last run?"**
-
-→ **YES** — Load the most recent file from `forecast-parameters/`. Use those values for `DESKTOP_CONFIG` and `MOBILE_CONFIG`. Proceed to **Decision: Iran Synthetic**.
-
-→ **NO** — Show the user the parameters from the most recent `forecast-parameters/` file as a suggested starting point.
-
-  **"Use last month's parameters?"**
-
-  → **YES** — Copy that file to `forecast-parameters/<DATE>.md`. Use those values. Proceed to **Decision: Iran Synthetic**.
-
-  → **NO** — Create a blank `forecast-parameters/<DATE>.md` from the template below. Ask the user to fill it in, then **EXIT**. Resume when the file is complete.
-
-  ```markdown
-  # Forecast Parameters — <DATE>
-
-  ## Desktop (legacy_desktop)
-  - prophet_recent_weeks:
-  - changepoint_prior_scale:
-  - holiday_threshold:
-  - holiday_max_radius:
-  - holiday_min_radius:
-  - holiday_effect_floor:
-
-  ## Mobile (glean_mobile)
-  - prophet_recent_weeks:
-  - changepoint_prior_scale:
-  - holiday_threshold:
-  - holiday_max_radius:
-  - holiday_min_radius:
-  - holiday_effect_floor:
-  ```
-
----
-
-## Decision: Adjustments
-
-Check whether this month's adjustment components carry over from last month.
-
-**"Carry over last month's adjustments?"**
-
-→ **YES** — Copy `data-official/<PREV-MM>/adjustments/` to `data-official/<YYYY-MM>/adjustments/`. Show the user the file list for confirmation. Proceed to **Decision: Iran Synthetic**.
-
-→ **NO** — Show the user last month's `adjustments/` file list and contents as a starting point.
-
-  **"Use last month's as a base?"**
-
-  → **YES** — Copy the directory. Ask the user to edit individual files as needed. Proceed once confirmed.
-
-  → **NO** — Create `data-official/<YYYY-MM>/adjustments/` and **EXIT**. Resume when populated.
-
-Each file in `adjustments/` is a single named component. Supported types:
-
-- `linear_ramp` — scales linearly from 0 at `start_date` to full value at `anchor_date`:
-  ```json
-  {"type": "linear_ramp", "start_date": "YYYY-MM-DD", "anchor_date": "YYYY-MM-DD", "desktop_dau": -1497870, "mobile_dau": -27162}
-  ```
-- `step` — constant delta from `start_date` (optional `end_date`):
-  ```json
-  {"type": "step", "start_date": "YYYY-MM-DD", "desktop_dau": 80000, "mobile_dau": 15000}
-  ```
-- `daily_series` — explicit per-date DAU delta (for marketing model outputs):
-  ```json
-  {"type": "daily_series", "series": {"YYYY-MM-DD": {"desktop_dau": 80000, "mobile_dau": 15000}, ...}}
-  ```
-
----
-
-## Decision: Iran Synthetic
-
-Compare `DESKTOP_CONFIG` and `MOBILE_CONFIG` against the parameters recorded in `IRAN_PARAMS` (if that file exists).
-
-**"Do both configs match the Iran synthetic parameters?"**
-
-→ **YES** — Reuse `IRAN_DESKTOP` and `IRAN_MOBILE`. Proceed to **Step 0**.
-
-→ **NO** (or `IRAN_PARAMS` doesn't exist yet) — Iran synthetic must be regenerated with the new parameters. Run:
-
-  ```bash
-  source .venv/bin/activate
-  python scripts/generate_iran_synthetic.py \
-    --output-dir data-official/iran_synthetic \
-    --data-sources legacy_desktop \
-    --desktop-config '{"prophet_changepoint_prior_scale": <CPS_D>, "prophet_recent_weeks": <RW_D>, "holiday_threshold": <HT_D>, "holiday_max_radius": <HMX_D>, "holiday_min_radius": <HMN_D>, "holiday_effect_floor": <HEF_D>}'
-
-  python scripts/generate_iran_synthetic.py \
-    --output-dir data-official/iran_synthetic/mobile \
-    --data-sources glean_mobile \
-    --mobile-config '{"prophet_changepoint_prior_scale": <CPS_M>, "prophet_recent_weeks": <RW_M>, "holiday_threshold": <HT_M>, "holiday_max_radius": <HMX_M>, "holiday_min_radius": <HMN_M>, "holiday_effect_floor": <HEF_M>}'
-  ```
-
-  Each run saves both a parquet and a `parameters.json` in its output directory. Confirm both exist, then proceed to **Step 0**.
-
----
-
-## Step 0 — Derive slugs and create output directories
-
-Compute each platform's slug using the `ModelConfig.to_slug()` format:
-
-```
-cps{changepoint_prior_scale}_thresh{int(abs(holiday_threshold)*1000)}_recent{prophet_recent_weeks}_clip{abs(holiday_effect_floor)}
-```
-
-Examples with current defaults (desktop threshold=-0.05, mobile threshold=-0.032):
-- Desktop → `cps0.15983_thresh50_recent13_clip0.6`
-- Mobile → `cps0.02_thresh32_recent13_clip0.6`
-
-Note: the April 2026 desktop output directory was named `thresh32` but actually used threshold=-0.05 (thresh50). The slug formula is authoritative; don't copy the April directory name.
-
-Set destination paths:
-```
-DEST_DESKTOP = data-official/<YYYY-MM>/desktop_<desktop_slug>/
-DEST_MOBILE  = data-official/<YYYY-MM>/mobile_<mobile_slug>/
-```
-
-Create directories:
 ```bash
-mkdir -p "$DEST_DESKTOP" "$DEST_MOBILE"
+for d in adjustments launch_on_login mozillaonline organic marketing; do
+  mkdir -p data-official/$CYCLE/$d && cp -R data-official/$PREV/$d/. data-official/$CYCLE/$d/
+done
+grep -l applies_to_forecast_start data-official/$CYCLE/*/*.json     # each must be edited to "$SEAM"
 ```
+
+- `adjustments/*.json` (`h`, `t`) have **no** gate — they are live by presence. `load_adjustments`
+  globs the directory and sums every spec it finds. Edit `start_date` to `SEAM` per the user's answer;
+  leave `anchor_date` at Dec-15. Delete `tailwind.json` here if the user dropped `t`.
+- `marketing/marketing.json` keeps `applies_to_forecast_start: null` (retired code `m`); it stays only
+  because `organic.json` reads its parquet as the paid level. Do not re-gate it — `main.py` raises if
+  `m` and `p` both claim the seam.
+- Each copied directory needs its `_index.md` updated to say what changed vs the prior cycle.
 
 ---
 
-## Step 1 — Run no-Iran desktop forecast
+## Step 1 — Raw mobile pull (breaks the `p` circularity)
 
-Write `tmp/run_desktop_<DATE>.py` with the confirmed desktop parameters:
+`build_fenix_organic_split.py` needs the cycle's raw mobile pull for its shredder-drift check, but the
+mobile scan will not run until `organic.json` is gated to `SEAM`, which needs the split. Fetch the pull
+alone first. Model-config independent; the scan reuses it via `--raw-cache-dir` with no re-query.
 
-```python
-import sys; sys.path.insert(0, 'src')
-import datetime
-from mozaic_daily.data import get_aggregate_data, get_queries
-from mozaic_daily.config import get_runtime_config, STATIC_CONFIG
-from mozaic_daily.forecast import get_desktop_forecast_dfs
-from mozaic_daily.tables import combine_tables, update_desktop_format, format_output_table
-from mozaic_daily.queries import DataSource
-from mozaic.models import DesktopModelConfig
-
-config = DesktopModelConfig(
-    prophet_recent_weeks=<RW_D>,
-    prophet_changepoint_prior_scale=<CPS_D>,
-    holiday_threshold=<HT_D>,
-    holiday_max_radius=<HMX_D>,
-    holiday_min_radius=<HMN_D>,
-    holiday_effect_floor=<HEF_D>,
-)
-
-runtime = get_runtime_config(forecast_start_date_override='<DATE>')
-datasets = get_aggregate_data(
-    get_queries(runtime['country_string'], data_source_filter={DataSource.LEGACY_DESKTOP}),
-    STATIC_CONFIG['default_project'],
-    checkpoints=True,
-    output_dir='tmp/run_desktop_<DATE>',
-)
-source_data = datasets['desktop']['legacy']
-result = get_desktop_forecast_dfs(
-    source_data, runtime['forecast_start_date'], runtime['forecast_end_date'], config=config,
-)
-combined = combine_tables(result.dfs)
-update_desktop_format(combined, data_source=DataSource.LEGACY_DESKTOP.value)
-df = format_output_table(combined, runtime['forecast_start_date'], runtime['forecast_run_dt'])
-df.to_parquet('<DEST_DESKTOP>/mozaic_daily_forecast.<DATE>.ld-D.parquet', index=False)
-print(f'Done. Shape: {df.shape}, dates: {df.target_date.min()} to {df.target_date.max()}')
-```
-
-Run it:
 ```bash
 source .venv/bin/activate
-python tmp/run_desktop_<DATE>.py
+python scripts/fetch_raw_pull.py --forecast-start-date $SEAM \
+    --data-source glean_mobile --metric DAU \
+    --output-dir data-official/$CYCLE/mobile_rawpull_$SEAM
 ```
 
-~20–30 minutes. Do not interrupt.
-
-**Verify:** Confirm the output parquet exists and print shape + date range (the script prints this on completion).
+Fails fast with a suggested `--forecast-start-date` if BigQuery has not landed `SEAM − 1` yet.
 
 ---
 
-## Step 2 — Run no-Iran mobile forecast
-
-Write `tmp/run_mobile_<DATE>.py` with the confirmed mobile parameters:
-
-```python
-import sys; sys.path.insert(0, 'src')
-import datetime
-from mozaic_daily.data import get_aggregate_data, get_queries
-from mozaic_daily.config import get_runtime_config, STATIC_CONFIG
-from mozaic_daily.forecast import get_mobile_forecast_dfs
-from mozaic_daily.tables import combine_tables, update_mobile_format, format_output_table
-from mozaic_daily.queries import DataSource
-from mozaic.models import MobileModelConfig
-
-config = MobileModelConfig(
-    prophet_recent_weeks=<RW_M>,
-    prophet_changepoint_prior_scale=<CPS_M>,
-    holiday_threshold=<HT_M>,
-    holiday_max_radius=<HMX_M>,
-    holiday_min_radius=<HMN_M>,
-    holiday_effect_floor=<HEF_M>,
-)
-
-runtime = get_runtime_config(forecast_start_date_override='<DATE>')
-datasets = get_aggregate_data(
-    get_queries(runtime['country_string'], data_source_filter={DataSource.GLEAN_MOBILE}),
-    STATIC_CONFIG['default_project'],
-    checkpoints=True,
-    output_dir='tmp/run_mobile_<DATE>',
-)
-source_data = datasets['mobile']['glean']
-result = get_mobile_forecast_dfs(
-    source_data, runtime['forecast_start_date'], runtime['forecast_end_date'], config=config,
-)
-combined = combine_tables(result.dfs)
-update_mobile_format(combined, data_source=DataSource.GLEAN_MOBILE.value)
-df = format_output_table(combined, runtime['forecast_start_date'], runtime['forecast_run_dt'])
-df.to_parquet('<DEST_MOBILE>/mozaic_daily_forecast.<DATE>.gm-D.parquet', index=False)
-print(f'Done. Shape: {df.shape}, dates: {df.target_date.min()} to {df.target_date.max()}')
-```
-
-Run it (can be started in a **separate terminal in parallel with Step 1** — the two runs share no state):
-```bash
-source .venv/bin/activate
-python tmp/run_mobile_<DATE>.py
-```
-
-**Verify:** Confirm the output parquet exists and review the shape + date range printout.
-
----
-
-## Step 3 — Save parameters to each output folder
-
-Write `parameters.json` into each destination so the run is self-documenting:
-
-```python
-import json
-
-desktop = {
-    "platform": "legacy_desktop",
-    "forecast_start_date": "<DATE>",
-    "prophet_recent_weeks": <RW_D>,
-    "changepoint_prior_scale": <CPS_D>,
-    "holiday_threshold": <HT_D>,
-    "holiday_max_radius": <HMX_D>,
-    "holiday_min_radius": <HMN_D>,
-    "holiday_effect_floor": <HEF_D>,
-}
-with open("<DEST_DESKTOP>/parameters.json", "w") as f:
-    json.dump(desktop, f, indent=2)
-
-mobile = {
-    "platform": "glean_mobile",
-    "forecast_start_date": "<DATE>",
-    "prophet_recent_weeks": <RW_M>,
-    "changepoint_prior_scale": <CPS_M>,
-    "holiday_threshold": <HT_M>,
-    "holiday_max_radius": <HMX_M>,
-    "holiday_min_radius": <HMN_M>,
-    "holiday_effect_floor": <HEF_M>,
-}
-with open("<DEST_MOBILE>/parameters.json", "w") as f:
-    json.dump(mobile, f, indent=2)
-```
-
-Confirm `data-official/<YYYY-MM>/adjustments/` exists and has at least one component file (from the adjustments decision above).
-
-Confirm `forecast-parameters/<DATE>.md` exists and is complete.
-
----
-
-## Step 4 — Add Iran back to each forecast
+## Step 2 — Rebuild the measured paid/organic split (`p`)
 
 ```bash
-python scripts/add_iran_to_forecast.py \
-  --input "$DEST_DESKTOP/mozaic_daily_forecast.<DATE>.ld-D.parquet" \
-  --synthetic data-official/iran_synthetic/iran_synthetic.parquet
-
-python scripts/add_iran_to_forecast.py \
-  --input "$DEST_MOBILE/mozaic_daily_forecast.<DATE>.gm-D.parquet" \
-  --synthetic data-official/iran_synthetic/mobile/iran_synthetic.parquet
+python scripts/build_fenix_organic_split.py --forecast-start-date $SEAM --dry-run   # cost preview (~141 GB, ~$0.70)
+python scripts/build_fenix_organic_split.py --forecast-start-date $SEAM \
+    --production-raw data-official/$CYCLE/mobile_rawpull_$SEAM/mozaic_parts.raw.glean.mobile.DAU.parquet \
+    --out-dir data-official/$CYCLE/organic
 ```
 
-Each script writes a `.plus_iran.parquet` alongside the input. **Verify:** confirm all four parquet files exist in their respective destination folders before continuing.
+**Always pass `--production-raw`** — the shredder-drift check against the real level source is the only
+thing that catches the mirror and production covering different Fenix populations. Four checks raise
+on failure; do not proceed past a failure. Then point `organic/organic.json` `data_file` at the new
+`fenix_paid_organic.$SEAM.parquet`, set `applies_to_forecast_start` to `SEAM`, and update `notes`.
+The parquet is tracked (gitignore exception) because the mirror it comes from expires 2027-04-01.
 
 ---
 
-## Step 5 — Create the analysis notebook
+## Step 3 — Run the two forecasts
 
-The notebook lives alongside the data in `DATA_DIR`. Identify the most recent `*_composite_forecast.ipynb` (anywhere in the project root), determine the current month name, and copy it:
+`run_main.py` **cannot** reproduce a tuned build — it has no parameter flags. The two param-scan
+runners are the real producers: each runs one forecast with an explicit config through
+`main(model_configs=...)`, applies whatever overlays are gated to `SEAM`, and writes the parquet +
+sidecar + `parameters.json` + fitted pickle into `<results-dir>/<slug>/`. Name the results dir by
+config and seam (August: `desktop_g01_2026-08-02/`, `mobile_cpr0725_2026-08-02/`). Run both in the
+background with logs under `logs/`; each takes 3–5 minutes plus the BigQuery pull; do not poll or
+re-run mid-flight.
 
 ```bash
-cp <PREV_MONTH>_composite_forecast.ipynb data-official/<YYYY-MM>/<MONTH>_composite_forecast.ipynb
+# Desktop (legacy_desktop DAU) — August's g01 values shown; substitute the confirmed lock
+python scripts/run_param_scan.py --forecast-start-date $SEAM \
+    --results-dir data-official/$CYCLE/desktop_<config>_$SEAM \
+    --changepoint-prior-scale 0.1649 --changepoint-range 0.814 --n-changepoints 40 \
+    --recent-weeks 17 --seasonality-prior-scale 0.00825 --seasonality-regime multiplicative \
+    --holiday-threshold -0.032 --holiday-max-radius 5 --holiday-min-radius 3 --holiday-effect-floor -0.6 \
+    > logs/<cycle>_desktop_$SEAM.log 2>&1
+
+# Mobile (glean_mobile DAU) — reuses Step 1's pull
+python scripts/run_mobile_param_scan.py --forecast-start-date $SEAM \
+    --raw-cache-dir data-official/$CYCLE/mobile_rawpull_$SEAM \
+    --results-dir data-official/$CYCLE/mobile_<config>_$SEAM \
+    --changepoint-prior-scale 0.035 --changepoint-range 0.725 --n-changepoints 25 \
+    --recent-weeks 13 --seasonality-prior-scale 0.1 \
+    --holiday-threshold -0.055 --holiday-effect-floor -0.6 \
+    > logs/<cycle>_mobile_$SEAM.log 2>&1
 ```
 
-Do not overwrite the previous month's notebook.
+**Verify each output before continuing:**
 
-Update the `setup` cell:
+- Filename carries the expected marker: desktop `.ld-D.adj-lo.parquet` (plus any newly wired desktop
+  codes, alphabetical), mobile `.gm-D.adj-p.parquet`. A `.raw.` file means a spec was mis-gated.
+- `load_forecast(path, require_state=[...])` succeeds.
+- `parameters.json` matches the confirmed lock field by field.
+- `python scripts/verify_training_rows_are_actuals.py <parquet>` exits 0 (the `p` add-back must leave
+  training rows byte-identical to actuals; the notebook relies on this to skip a ~1 TB actuals query).
+- Mobile only: `python scripts/mobile_app_breakdown.py` against the new build — `ALL MOBILE` equals the
+  sum of the four apps.
 
-- `MOBILE_NO_IRAN_PATH`        → `<DEST_MOBILE>/mozaic_daily_forecast.<DATE>.gm-D.parquet`
-- `MOBILE_PLUS_IRAN_PATH`      → `<DEST_MOBILE>/mozaic_daily_forecast.<DATE>.gm-D.plus_iran.parquet`
-- `DESKTOP_NO_IRAN_PATH`       → `<DEST_DESKTOP>/mozaic_daily_forecast.<DATE>.ld-D.parquet`
-- `DESKTOP_PLUS_IRAN_PATH`     → `<DEST_DESKTOP>/mozaic_daily_forecast.<DATE>.ld-D.plus_iran.parquet`
-- `PREV_FORECAST_DESKTOP_PLUS_IRAN_PATH` → the N-1 forecast's `ld-D.plus_iran.parquet`
-- `PREV_FORECAST_DESKTOP_NO_IRAN_PATH`   → the N-1 forecast's `ld-D.parquet`
-- `PREV_FORECAST_MOBILE_PLUS_IRAN_PATH`  → the N-1 forecast's `gm-D.plus_iran.parquet`
-- `PREV_FORECAST_MOBILE_NO_IRAN_PATH`    → the N-1 forecast's `gm-D.parquet`
-
-  The `compute-series` cell applies the **current** `net_adjustments` to the prior forecast series as well, so all four lines reflect the same headwinds. This isolates the change in the underlying model, not the headwind effect.
-- `FORECAST_START`             → forecast start date
-- `BQ_START`                   → 28 days before `DISPLAY_START`
-- `ADJUSTMENTS_DIR`            → `"data-official/<YYYY-MM>/adjustments"`
-- `csv_path`                   → `"data-official/<YYYY-MM>/<MONTH>_composite_forecast_28ma.csv"`
-
-Do not change `DISPLAY_END` or `MEASUREMENT_DATE` unless the user asks.
-
-**When copying from a notebook older than June 2026**, verify two additional things:
-- The `setup` cell calls `os.chdir(subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True).stdout.strip())` near the bottom. If it doesn't, add it — without this, nbconvert fails to resolve relative paths when the notebook lives in a subdirectory.
-- The `country-summary` cell uses `TABLE_START = COMPARE_START` and `TABLE_END = COMPARE_END` (set by `country-data`), not hardcoded dates. If it has hardcoded dates, update them.
+The Iran 2026 counterfactual fill is applied automatically inside mozaic (`populate_tiles` receives
+`data_source`); nothing to do. If the pipeline hangs on the BigQuery download, read the
+`[BQ-WATCHDOG]` heartbeat lines (CLAUDE.md § Troubleshooting).
 
 ---
 
-## Step 6 — Run the notebook and verify
+## Step 4 — Canonical notebook
 
-Run all cells in `data-official/<YYYY-MM>/<MONTH>_composite_forecast.ipynb`. Sanity check:
+Copy the prior cycle's producer notebook, keep its name pattern, never edit the prior copy:
 
-- `desktop-dec15` and `mobile-dec15` cells print reasonable Dec 15 28-day MA values (compare against previous month for plausibility)
-- `export-csv` writes `<MONTH>_composite_forecast_28ma.csv` to `data-official/<YYYY-MM>/` successfully
-- No cells error out
+```bash
+cp data-official/$PREV/<prev-month>_canonical_v<PREV_SEAM>.ipynb \
+   data-official/$CYCLE/<month>_canonical_v$SEAM.ipynb
+```
 
-Report the Dec 15 values to the user for review before calling the task done.
+Edit with `nb_cells.py` (`--file`, never heredoc). In the `setup` cell:
+
+| constant | set to |
+|---|---|
+| `DESKTOP_FORECAST_PATH`, `MOBILE_FORECAST_PATH` | the Step 3 parquets |
+| `PREV_FORECAST_DESKTOP_PATH`, `PREV_FORECAST_MOBILE_PATH` | `PREV_DIR`'s canonical parquets |
+| `ADJUSTMENTS_DIR`, `PREV_ADJUSTMENTS_DIR` | `data-official/$CYCLE/adjustments`, `data-official/$PREV/adjustments` |
+| `PLOTS_DIR` | `data-official/$CYCLE/plots` |
+| `FORECAST_START`, `MOBILE_FORECAST_START`, `PREV_FORECAST_START` | `SEAM`, `SEAM`, `PREV_SEAM` |
+
+Then, elsewhere in the notebook:
+
+- **Config lock assertion** — replace the hardcoded prior lock with the confirmed one; keep the check
+  that the four holiday knobs are at defaults.
+- **Prior-curve reproduction** — replace the hardcoded prior Dec-15 values with `PREV_DIR`'s published
+  numbers (August: desktop 48,703,443 / mobile 17,924,562 / ALL 66,628,005). The rebuilt prior curve
+  must match within 1,000 DAU or the notebook aborts; this is what licenses quoting a delta.
+- **`display_ma`** is imported from `mozaic_daily.seam_ma`, never from a cycle directory. The
+  `data-official/2026-06/export_canonical_curves.py` copy is frozen.
+- `[csv-export]` writes `csv/<month>_canonical_curves.csv` and `csv/<month>_dec15_summary.csv` and
+  round-trips them; add the two filenames to `.gitignore`'s `!data-official/*/csv/` exceptions.
+- Update the leading markdown cell: it is the cycle's narrative and is read by people.
+
+Execute headless and check for errors:
+
+```bash
+jupyter nbconvert --to notebook --execute --inplace data-official/$CYCLE/<month>_canonical_v$SEAM.ipynb \
+    > logs/<cycle>_notebook_exec.log 2>&1
+```
+
+---
+
+## Step 5 — Derived exports and checks
+
+```bash
+python scripts/export_desktop_no_headwind_csv.py    # DESKTOP_ONLY.WIN10_HEADWIND_REMOVED twins (from published CSVs + both headwind.json)
+python scripts/export_desktop_ex_ir_cn_csv.py       # DESKTOP_ONLY[.WIN10_HEADWIND_REMOVED].EX_IR_CN twins (reads the parquets)
+python scripts/verify_forecast_states.py            # filename marker <-> sidecar consistency, writes tmp/inventory.csv
+```
+
+Both exporters are **cycle-scoped**: repoint `CSV_DIR`, `CURRENT_/PRIOR_ADJUSTMENTS_DIR`,
+`FORECAST_START`, `PREV_FORECAST_START` first (Ask #5). Their `README.md` section in `csv/` must
+travel with the files — the ex-IR/CN delta has the opposite sign to the published one.
+
+Also update, or note as not done: `kpi_sheet/build_kpi_sheet_update.py` (the KPI workbook rows; August
+was a `FUTURE` draft, not a promotion — read its `_index.md` before reusing), and the `handoff/` bundle
+(`_index.md` there has the zip recipe).
+
+---
+
+## Step 6 — Report and record
+
+Report to the user, from the CSVs (never from memory): Dec-15 28d-MA per platform with the prior-cycle
+delta, the summer/near-horizon minimum and its date, and the seam step. State which overlays changed
+and which carried forward. Then:
+
+- `DATA_DIR/_index.md`: status line, "Current working set", attribution ledger of every change from the
+  prior cycle, "How the current build was produced" with the exact commands run.
+- Every new subdirectory gets an `_index.md`; every parquet has its sidecar.
+- Commit on the cycle branch (`<month>-forecast`). Parquets are gitignored except the tracked
+  overlay inputs and canonical CSVs.
+- Sanity-run `pytest -q`. The suite writes a `mozaic_daily_forecast.<today>.gd-D.parquet` at the repo
+  root; delete it.
+
+The forecast is **not** delivered until the user says so; `h` and `t` edits after this point are spec
+changes plus a notebook re-execution with no model re-run.
 
 ---
 
 ## Notes
 
-- Steps 1 and 2 can run simultaneously in separate terminals — they use separate output directories and share no state.
-- If a run fails mid-way, raw BigQuery data is checkpointed in `tmp/run_desktop_<DATE>/` or `tmp/run_mobile_<DATE>/`. Re-running the script resumes from checkpoints.
-- Run scripts in `tmp/` are single-use and not committed.
-- `parameters.json` files in each output folder and `forecast-parameters/<DATE>.md` are the durable record — these are committed (parquet files are not).
-
-### Pre-flight: verify GCP credentials before starting Steps 1–2
-
-```bash
-gcloud auth application-default print-access-token > /dev/null && echo "GCP credentials OK"
-```
-
-If this fails, run `gcloud auth application-default login` before proceeding. Catching an expired token here avoids a failed 20-minute run.
-
-### Notebook CWD
-
-`nbconvert` executes notebooks in the notebook's own directory. Since the composite notebook lives in `data-official/<YYYY-MM>/`, all `data-official/...` relative paths break unless the `setup` cell calls `os.chdir` to anchor at the git root. The June 2026 notebook and later already include this; earlier notebooks do not (see Step 5 verification note).
-
-### `apply_net_adjustment` reindex requirement
-
-The `helpers` cell builds `net_adjustments` from the desktop date index. Mobile has a shorter date range, so applying a desktop-indexed adjustment series to mobile with a boolean mask raises `IndexError: Boolean index has wrong length`. The fix — `.reindex(result.index, fill_value=0.0)` in `apply_net_adjustment` — is present in the June 2026 notebook and later. If copying from an April 2026 or earlier notebook, verify this line is there.
-
-### Upgrading `forecast-parameters/<DATE>.md` to a provenance record
-
-The file created during this run is a lightweight parameter spec. After the forecast is delivered and accepted, optionally upgrade it to a full provenance record (matching the style of `forecast-parameters/2026-04-01.md`) by adding:
-- The four official output file paths (no-iran and plus-iran parquets for desktop and mobile)
-- MD5 hashes of those files: `md5 <file>` on macOS
-- Any pkl-verified parameter values that differ from what the slug implies (see April 2026 note on `thresh32` vs actual `-0.05` threshold)
-
----
-
-## Follow-up items
-
-- **End-of-cycle GCS archive** (button down for storage) — large per-cycle artifacts (pkl, parquet, zip) are gitignored and live on GCS at `gs://moz-data-science-brwells-bucket/mozaic-daily-archive/{cycle-slug}/data-official/`. See CLAUDE.md "GCS archive" section in repo root for the exact commands. Cadence: push at the end of each forecast cycle once leadership review is done; before pushing, `gsutil ls -r` the target prefix to skip files that haven't changed. Requires `gcloud auth login` (not just ADC).
+- **Display layer vs baked in.** `h` and `t` are applied to the 28d MA after mozaic and live only in
+  the CSVs and charts, so their Dec-15 effect is exactly their anchor. `l`, `o`, `p` (and any wired
+  `j`/`i`) are baked into the parquet; changing them means a model re-run.
+- **The paid seam step** (`p`'s measured-vs-marketing disagreement at the seam) is seam-dependent and
+  must be re-measured after every refresh; derive the last-measured day from the seam, never hardcode.
+- **`forecast-parameters/`** is the April–June provenance record and is no longer updated; each build
+  directory's `parameters.json` + sidecar is the record now.
+- **Pre-flight credentials**: `gcloud auth application-default print-access-token > /dev/null`. If it
+  fails ask the user to run `! gcloud auth login`.
+- **Retired and gone**: synthetic-Iran generation and add-back (`generate_iran_synthetic.py`,
+  `add_iran_to_forecast.py`, `data-official/iran_synthetic/` — removed 2026-09-04, copies in GCS
+  `april-2026/`), the `m` marketing-lift overlay (superseded by `p`), `*_composite_forecast.ipynb`
+  notebooks and their `net_adjustments` helpers (superseded by the canonical notebook).
+- **End of cycle**: `/cycle-button-down` locks the branch, archives to GCS with verification, prunes to
+  the 3-month window, and opens the next cycle.
