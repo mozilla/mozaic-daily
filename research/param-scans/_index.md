@@ -14,6 +14,12 @@ Sweeps over `changepoint_prior_scale`, `recent_weeks`, `holiday_threshold`, `cha
   **`results/`** and `mobile-july/results/` forecast-output blobs. Regenerable via the scan drivers
   below, but re-running is compute-expensive — pull from GCS to reuse. Sidecar `.meta.json` +
   `parameters.json` for each config remain on disk so the search is still legible without the blobs.
+- **August searches archived to GCS (`gs://…/august-2026/param-scans/`), blobs removed from disk
+  2026-09-04:** `summer-trough-v2/` (426 objects, 68 probe pkls), `mobile-aug/` (230 objects, 33 probe
+  pkls) and `aug25-gap/` (2,003 objects, 390 probes) — probe pickles **and** probe parquets are in GCS,
+  verified by object count and pickle size list; every `parameters.json` / `*.meta.json` / scores CSV /
+  `FINDINGS.md` / notebook remains on disk. Scan symlinks to the shared raw pull were resolved on
+  upload, so each archived probe directory is self-contained. Regenerable report HTML was deleted.
 - **`aug22-retune/` is slimmed here:** only its summary artifacts (`_index.md`, `FINDINGS.md`,
   `*_scores.csv`, best-fit curve + notebook + plot, generators) are on this branch. Its ~197
   per-probe `run.log` / `parameters.json` / `*.meta.json` sidecars live on the `july-forecast`

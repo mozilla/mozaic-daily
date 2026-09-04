@@ -34,8 +34,9 @@ data-official/
     _index.md                                                  # START HERE for the cycle
 ```
 
-**Working-tree scope:** only the **current cycle + N-1** stay on disk in full; older cycles and all
-superseded/intermediate large artifacts are archived to GCS
+**Working-tree scope:** cycles from the **last 3 calendar months** stay on disk (canonical + superseded
+forecast parquets, sidecars, specs, CSVs, notebooks — but not fitted pickles, which are archived at each
+button-down); older cycles and all large artifacts are archived to GCS
 (`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/{cycle}/`) and recoverable from that
 cycle's branch history. See each cycle's `_index.md` "Present vs Archived" section.
 
@@ -47,6 +48,7 @@ cycle's branch history. See each cycle's `_index.md` "Present vs Archived" secti
 | `2026-07` | N-1, present in full. The prior-forecast comparison series for August comes from here |
 | `2026-06` | N-2, **retained deliberately** — see below. Its large artifacts already went to GCS `june-2026/` during the July button-down; only ~10 MB of specs, canonical CSVs, and sidecars remain |
 | `2026-04` | removed in an earlier roll-forward. GCS `april-2026/`, branch `april-forecasting` |
+| `iran_synthetic/`, `march_brad_forecast.csv` | April-era leftovers, removed 2026-09-04 after verifying the copies in GCS `april-2026/data-official/` |
 
 **Why 2026-06 is not pruned.** The rule is "current + N-1 in full", and June is N-2 — but its
 remaining tracked files are *load-bearing for the July cycle*, so deleting them would break

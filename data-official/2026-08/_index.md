@@ -617,28 +617,29 @@ commits are **not pushed** to that repo's origin — reproducing this needs the 
 ## Present vs Archived
 
 Cycle archived at the September button-down (2026-09-04) to
-`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/august-2026/` — `data-official/2026-08/` in
-full (198 files, 9.4 GB before verification; final counts recorded in the archive README), the three
-August parameter searches under `param-scans/` (`summer-trough-v2/` 40 GB incl. 68 probe pkls,
-`mobile-aug/` 26 GB incl. 33 probe pkls, `aug25-gap/` 1.7 GB), `research/headwinds/aug-post-seam-retune/`
-(586 MB refit pkl), and the repo-root `mozaic_daily_forecast.*.gd-D.parquet` intermediates. The full
-tree also remains in the `august-forecast` branch. **Fitted pickles are first-class artifacts** — every
-one, including per-probe scan pickles, is in the archive.
+`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/august-2026/` (79.0 GiB total, `README.md` at
+the prefix root). Verified on upload — object counts local/remote: `data-official/2026-08/` **210/210**,
+`param-scans/summer-trough-v2/` 426/426, `param-scans/mobile-aug/` 230/230, `param-scans/aug25-gap/`
+2,003/2,003, `research/headwinds/aug-post-seam-retune/` 13/13, `root_intermediates_2026-08/` 9/9; all
+119 fitted pickles present with byte-identical size lists. The full tree also remains in the
+`august-forecast` branch. **Fitted pickles are first-class artifacts** — every one, including per-probe
+scan pickles, is in the archive.
 
-- **Present (on disk, through the 3-month retention window):** the canonical parquets + sidecars
-  (`desktop_g01_2026-08-02/`, `mobile_cpr0725_2026-08-02/`), every `parameters.json` / `.meta.json`
-  sidecar of every build listed in the layout above, `csv/`, `plots/`, `kpi_sheet/`, `tailwind/`, all
-  wired specs (`adjustments/`, `organic/`, `launch_on_login/`, `mozillaonline/`, `marketing/*.json`),
-  the notebooks, `handoff/_index.md`, and the REVERT/RESTORE documents.
-- **Archived to GCS, removed from disk:** every `mozaic_objects.*.pkl`, every raw pull
-  (`mozaic_parts.raw.*`), the superseded and baseline build parquets (`desktop_locked/`,
-  `desktop_baseline_2026-07-28/`, `desktop_candidate_aug25/`, `desktop_s01_REVERT_2026-07-29/`,
-  `mobile_*_2026-07-28/`, `mobile_adjm_REVERT_2026-07-31/`), `adjustment_isolation/` run blobs,
-  the `marketing/experiment_july_methodology/forecast/` build blobs (the tracked lift-model parquets stay), `_backup_mobile_methodology_2026-07-31/` blobs,
-  and the `handoff/` zip + staging dir. The REVERT directories' revert window closed when September
-  became the live cycle; their READMEs stay so the record of what a revert meant is legible.
+- **Present (on disk, through the 3-month retention window):** **every forecast and raw-pull
+  `.parquet` of every build listed in the layout above** (36 files, ~25 MB — the June precedent; they
+  are what the cycle's notebooks, scan scripts and diagnostics read) with their `parameters.json` /
+  `.meta.json` sidecars, `csv/`, `plots/`, `kpi_sheet/` (incl. its CSVs), `tailwind/`, all wired specs
+  (`adjustments/`, `organic/`, `launch_on_login/`, `mozillaonline/`, `marketing/*.json` + the tracked
+  lift parquets), the notebooks, `handoff/_index.md`, and the REVERT/RESTORE documents.
+- **Archived to GCS, removed from disk (2026-09-04):** all 11 `mozaic_objects.*.pkl` (≈9.4 GB — the
+  canonical desktop/mobile fits, the 07-28 builds, the REVERT targets, `adjustment_isolation/`, and
+  `marketing/experiment_july_methodology/forecast/`), the `handoff/` zip + unzipped staging dir, and the
+  `_backup_mobile_methodology_2026-07-31/csv/` snapshot. The REVERT directories' revert window closed
+  when September became the live cycle; their parquets, sidecars and READMEs stay so a revert is still
+  legible and only the pickle would need pulling back.
 
-Pull a blob back with `gcloud storage cp -r gs://…/august-2026/data-official/2026-08/<dir> data-official/2026-08/`.
+Pull a pickle back with
+`gcloud storage cp gs://…/august-2026/data-official/2026-08/<build>/<slug>/mozaic_objects.*.pkl data-official/2026-08/<build>/<slug>/`.
 
 ## Where new files go
 

@@ -98,7 +98,9 @@ python research/forecast-vs-summer-actuals/seasonality_plots.py
 python research/forecast-vs-summer-actuals/build_report.py
 ```
 
-The seasonality pane needs both vintages' fitted-model pickles (~630 MB each, gitignored).
+The seasonality pane needs both vintages' fitted-model pickles (~630 MB each, gitignored). They are
+not kept on disk between cycles: pull the July one from `gs://…/july-2026/param-scans/aug22-retune/_rawcache/`
+and the August one from `gs://…/august-2026/data-official/2026-08/desktop_g01_2026-08-02/<slug>/`.
 August's is in the repo; **July's must be fetched**, and gsutil must be forced single-process or it
 hangs with a byte-complete but corrupt file (see `LOG.md` F14):
 

@@ -668,7 +668,11 @@ Large per-cycle artifacts (`.pkl` mozaic objects, `.parquet` forecasts and raw c
 ```
 gs://moz-data-science-brwells-bucket/mozaic-daily-archive/
 ├── april-2026/data-official/    # April 2026 forecast cycle
-└── june-2026/data-official/     # June 2026 forecast cycle
+├── june-2026/data-official/     # June 2026 forecast cycle
+├── july-2026/{data-official,param-scans,root_intermediates_2026-06-29}/
+├── august-2026/{data-official,param-scans,research,root_intermediates_2026-08}/  # + README.md
+├── research-superseded/         # retired research clusters
+└── {april,august}-2026-model-handoff/   # out-of-tree colleague handoff bundles
 ```
 
 Project: `moz-fx-data-bq-data-science`. Each cycle prefix mirrors `data-official/{YYYY-MM}/` under it, with a `README.md` at the cycle root explaining what's archived.

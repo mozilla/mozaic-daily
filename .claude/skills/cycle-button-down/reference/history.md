@@ -60,6 +60,22 @@ Project `moz-fx-data-bq-data-science`. Requires `gcloud auth login`.
   already in GCS.
 - `main` is at `6e13c2d` (February); no cycle branch has ever been merged into it.
 
+## August → September (2026-09-04), first run of this skill
+
+| commit | branch | what |
+|---|---|---|
+| `cb9b33f` | august-forecast | Button-down: 234 files, five build-dir `_index.md`s, Present vs Archived, skill added; 435 + 12 tests green; pushed |
+| (Phase 4) | clean-slate | Fast-forwarded to `cb9b33f`; prune + doc-pass commits (see `git log clean-slate`) |
+| (Phase 5) | september-forecast | Opened off clean-slate with the pre-work + stale-reference report |
+
+GCS `august-2026/`: 79.0 GiB, README present. Verified 210/210, 426/426, 230/230, 2,003/2,003, 13/13,
+9/9 objects; 119 pickles with identical size lists. Upload took 34 min via a detached `nohup` script.
+Prune: tree 80 GB → 1.2 GB. Kept all 36 August forecast/raw-pull parquets (June precedent), deleted
+11 pickles + zip + staging + backup; `git clean -Xfd` on the three scan dirs (69 GB) and two research
+blob dirs; removed `iran_synthetic/` (tracked) and `march_brad_forecast.csv` after confirming
+`april-2026/` copies. Stale-reference report: 129 refs in 46 code files →
+`data-official/2026-09/STALE_REFERENCES_from_august_button_down.md`.
+
 ## Decisions recorded for this skill (2026-09-04, user)
 
 - Retention: artifacts from the last **3 months** stay on disk "to answer questions and refer
@@ -69,3 +85,5 @@ Project `moz-fx-data-bq-data-science`. Requires `gcloud auth login`.
 - **Probe pickles are first-class** (used in August to compare the Win10 headwind against an
   alternate approach). Always archive before deleting, whatever the upload cost.
 - Stale references to archived paths are **flagged to a human**, not edited by this skill.
+- Keep the closing cycle's forecast/raw-pull parquets on disk (they are small); only pickles and
+  bundles leave (GATE 4a, August).
