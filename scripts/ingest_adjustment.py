@@ -86,6 +86,11 @@ def parse_args() -> argparse.Namespace:
     b.add_argument("--flag-column", default=None, help="segment flag column (default from data source)")
     b.add_argument("--description", default="", help="registry description")
     b.add_argument("--notes", default="", help="spec notes")
+    b.add_argument("--values-are-28d-ma", action="store_true",
+                   help="display_layer only: the value column is already a trailing 28-day series; use as-is, do not re-smooth")
+    b.add_argument("--rebase-to-seam", action="store_true",
+                   help="shift the curve so it reads 0 at --forecast-start (the pre-seam part is taken to be in the model's "
+                        "own fit); the delivered series is kept in the parquet and the offset recorded in the meta")
     b.add_argument("--replace", action="store_true", help="stash the live build for this code in a REVERT dir and overwrite")
     b.add_argument("--root", default=None, help=argparse.SUPPRESS)
 
@@ -135,7 +140,8 @@ def run_build(args: argparse.Namespace) -> int:
         shares=json.loads(args.shares) if args.shares else None,
         exclude_countries=[c.strip() for c in args.exclude.split(",") if c.strip()],
         flag_column=args.flag_column, description=args.description, notes=args.notes,
-        replace=args.replace, root=args.root,
+        replace=args.replace, root=args.root, values_are_28d_ma=args.values_are_28d_ma,
+        rebase_to_seam=args.rebase_to_seam,
     )
     # Re-check the contract with the confirmed mapping; refuse to build past an error.
     report = inspect_file(args.file, forecast_start=args.forecast_start, sheet=args.sheet, platform=args.platform,
@@ -158,12 +164,23 @@ def run_plot(args: argparse.Namespace) -> int:
                       data_source=args.data_source, forecast_start=args.forecast_start, cycle=args.cycle,
                       date_column="", value_column="", actuals_through=args.forecast_start)
     spec = json.loads(plan.spec_path.read_text())
-    parquet_path = (plan.spec_path.parent / spec["data_file"]).resolve()
-    horizon = pd.read_parquet(parquet_path)
-    horizon.index = pd.DatetimeIndex(horizon.index)
     dec15 = pd.Timestamp(year=pd.Timestamp(args.forecast_start).year, month=12, day=15)
+    if spec["type"] in ("linear_ramp", "step", "daily_series"):
+        # Two-number specs have no parquet: render the ramp through the package onto the horizon.
+        from mozaic_daily.adjustments import render_adjustment
+        index = pd.date_range(*plan.horizon, freq="D", name="target_date")
+        leg = render_adjustment(spec, index)[plan.platform]
+        seam = pd.Timestamp(args.forecast_start)
+        source = pd.Series("projected", index=index, dtype="object")
+        source[index < seam] = "pre-onset"
+        horizon = pd.DataFrame({f"{plan.name}_dau_daily": leg, f"{plan.name}_dau_ma": leg, "source": source})
+        stem = f"{plan.spec_path.stem}.{spec['type']}"
+    else:
+        parquet_path = (plan.spec_path.parent / spec["data_file"]).resolve()
+        horizon = pd.read_parquet(parquet_path)
+        horizon.index = pd.DatetimeIndex(horizon.index)
+        stem = parquet_path.name.removesuffix(".parquet")
     summary = {"dec15_ma28": float(horizon.loc[dec15, f"{plan.name}_dau_ma"]) if dec15 in horizon.index else float("nan")}
-    stem = parquet_path.name.removesuffix(".parquet")
     out = render_curve_plot(horizon, plan, summary, plan.curve_dir / "plots" / f"{stem}.curve.png")
     print(out)
     return 0

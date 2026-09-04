@@ -151,6 +151,17 @@ def test_render_linear_ramp_before_start_is_zero():
     assert (pre_start == 0).all()
 
 
+def test_render_linear_ramp_clamps_at_anchor_only_when_asked():
+    idx = pd.date_range("2026-09-02", "2027-12-31", freq="D")
+    unclamped = render_adjustment({**HEADWIND_SPEC, "start_date": "2026-09-02"}, idx)["desktop"]
+    clamped = render_adjustment({**HEADWIND_SPEC, "start_date": "2026-09-02", "clamp_at_anchor": True}, idx)["desktop"]
+    dec15, dec31 = pd.Timestamp("2026-12-15"), pd.Timestamp("2026-12-31")
+    assert unclamped[dec15] == clamped[dec15] == pytest.approx(HEADWIND_SPEC["desktop_dau"])
+    assert unclamped[dec31] < unclamped[dec15]                       # keeps falling (the published behaviour)
+    assert clamped[dec31] == clamped[pd.Timestamp("2027-12-31")] == pytest.approx(HEADWIND_SPEC["desktop_dau"])
+    assert (clamped[idx < dec15] > clamped[dec15]).all()
+
+
 def test_render_step():
     idx = pd.date_range("2026-01-01", "2026-12-31", freq="D")
     spec = {
@@ -1445,3 +1456,19 @@ def test_build_adjustments_applied_list_accepts_p(tmp_path):
     assert out[0]["code"] == "p"
     assert out[0]["name"] == "paid_organic_split"
     assert out[0]["spec_sha1"] == adjustment_spec_hash(spec_file)
+
+
+# --- committed September display-layer specs -----------------------------------
+
+def test_september_adjustments_dir_renders_h_and_u():
+    """2026-09/adjustments (2026-09-04): `h` is Brad's Dec-15 value -726,000 ramped from the seam and flat
+    after; `u` is the mobile -27,162 leg split out of headwind.json. Desktop and mobile legs stay separate."""
+    from pathlib import Path as _Path
+    repo = _Path(__file__).resolve().parents[1]
+    idx = pd.date_range("2026-08-01", "2027-12-31", freq="D")
+    net = load_adjustments_from_dir(repo / "data-official" / "2026-09" / "adjustments", idx, require_specs=True)
+    assert net["desktop"][pd.Timestamp("2026-09-02")] == 0.0
+    assert net["desktop"][pd.Timestamp("2026-12-15")] == pytest.approx(-726000.0)
+    assert net["desktop"][pd.Timestamp("2027-12-31")] == pytest.approx(-726000.0)   # clamped, unlike August
+    assert net["mobile"][pd.Timestamp("2026-09-02")] == 0.0
+    assert net["mobile"][pd.Timestamp("2026-12-15")] == pytest.approx(-27162.0)

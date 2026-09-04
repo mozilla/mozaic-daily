@@ -153,6 +153,13 @@ class TestContract:
                                                     horizon_end=HORIZON_END)}
         assert "hold_flat_tail" in codes
 
+    def test_file_boundary_offset_from_seam_is_informational(self, tmp_path):
+        """The producer's actuals may end before the forecast seam; that is allowed, only coverage matters."""
+        report = inspect_file(_write_csv(tmp_path, _daily(actuals_through="2026-08-30")), forecast_start=SEAM)
+        offset = [f for f in report.findings if f.code == "file_boundary_before_seam"]
+        assert len(offset) == 1 and offset[0].level == "info" and "2 day" in offset[0].message
+        assert not report.halts
+
     def test_actuals_after_forecast_is_an_error(self):
         idx = pd.date_range("2026-06-01", "2026-12-31", freq="D")
         types = pd.Series(np.where(idx <= "2026-08-30", "actuals", "forecast"))
@@ -223,6 +230,23 @@ class TestHorizon:
         horizon, summary = build_horizon_curve(curve, _plan(root, sign=-1))
         assert summary["dec15_ma28"] == -100.0
 
+    def test_rebase_to_seam_zeroes_the_seam_and_keeps_the_delivered_series(self, tmp_path):
+        """Brad's Win10 curve ramps from the August seam; September applies only the increment from its own seam."""
+        root = _repo(tmp_path)
+        idx = pd.date_range("2026-08-02", "2026-12-31", freq="D")
+        ramp = np.maximum(-726000.0 * np.asarray((idx - idx[0]).days) / (pd.Timestamp("2026-12-15") - idx[0]).days, -726000.0)
+        frame = pd.DataFrame({"submission_date": idx.strftime("%Y-%m-%d"), "dau_28ma": ramp.round()})
+        plan = _plan(root, family="display_layer", type_column=None, actuals_through="2026-08-01",
+                     value_column="dau_28ma", values_are_28d_ma=True, rebase_to_seam=True)
+        horizon, summary = build_horizon_curve(normalize_curve(frame, plan), plan)
+        daily = horizon["test_wind_dau_daily"]
+        assert daily[pd.Timestamp("2026-09-01")] == 0.0 and daily[pd.Timestamp(SEAM)] == 0.0
+        assert summary["rebase_offset_at_seam"] == pytest.approx(-166711.0, abs=1)
+        assert daily[pd.Timestamp("2026-12-15")] == pytest.approx(-726000.0 + 166711.0, abs=1)
+        assert daily[pd.Timestamp("2027-12-31")] == daily[pd.Timestamp("2026-12-15")]  # held at the final value
+        assert horizon["test_wind_dau_delivered"][pd.Timestamp("2026-12-15")] == pytest.approx(-726000.0, abs=1)
+        assert (horizon["test_wind_dau_ma"] == daily).all()  # already a 28-day series: not re-smoothed
+
     def test_actuals_through_replaces_a_missing_type_column(self, tmp_path):
         root = _repo(tmp_path)
         frame = _daily(noise=False).drop(columns="type")
@@ -242,6 +266,21 @@ class TestPlanAndRegistry:
             _plan(root, allocation="fixed_country_shares")
         with pytest.raises(ValueError, match="actuals_through"):
             _plan(root, type_column=None)
+
+    def test_update_of_a_registered_code_follows_its_spec_glob_layout(self, tmp_path):
+        """`o` is registered as mozillaonline_migration but lives in mozillaonline/mozillaonline.json;
+        a build keyed on the registry name would land where the dispatcher never looks."""
+        root = _repo(tmp_path)
+        registry = root / "data-official" / "adjustment_codes.yaml"
+        registry.write_text(registry.read_text() + (
+            "  o:\n    name: mozillaonline_migration\n    applier: per_tile_overlay\n"
+            "    description: >\n      x\n    spec_glob: \"data-official/*/mozillaonline/mozillaonline.json\"\n"))
+        plan = _plan(root, code="o", name="mozillaonline_migration")
+        assert plan.curve_dir == root / "data-official" / "2026-09" / "mozillaonline"
+        assert plan.spec_path.name == "mozillaonline.json"
+        assert plan.spec_glob == "data-official/*/mozillaonline/mozillaonline.json"
+        fresh = _plan(root)  # unregistered code: <name>/<name>.json
+        assert fresh.curve_dir.name == "test_wind" and fresh.spec_path.name == "test_wind.json"
 
     def test_registry_status_and_collisions(self, tmp_path):
         root = _repo(tmp_path)
@@ -289,6 +328,11 @@ class TestBuildEndToEnd:
         meta = json.loads(Path(summary["files"]["meta"]).read_text())
         assert meta["adjustment_code"] == "q" and meta["source_sha1"] and meta["coverage"]["hold_flat_from"] == "2027-01-01"
         assert (root / "data-official" / "2026-09" / "test_wind" / "source_data" / "curve.csv").read_bytes() == (root / "curve.csv").read_bytes()
+
+    def test_display_layer_gitignore_exceptions_name_the_curve_dir_not_adjustments(self, tmp_path):
+        root = _repo(tmp_path)
+        plan = _plan(root, family="display_layer")
+        assert ensure_gitignore_exceptions(plan) == ["!data-official/*/test_wind/*.parquet", "!data-official/*/test_wind/source_data/*"]
 
     def test_second_build_needs_replace_and_stashes_a_revert_dir(self, tmp_path):
         root = _repo(tmp_path)

@@ -72,6 +72,10 @@ class IngestPlan:
     notes: str = ""
     replace: bool = False                  # required to overwrite an existing spec for this code
     root: Optional[str] = None             # repo root override (tests)
+    values_are_28d_ma: bool = False        # display_layer only: the file already carries the 28-day series
+    rebase_to_seam: bool = False           # shift the curve so it is 0 at forecast_start (pre-seam effect assumed in the base model)
+    dir_name: Optional[str] = None         # directory under the cycle; defaults to name, or to the registered layout
+    spec_filename: Optional[str] = None    # spec JSON filename; defaults to <name>.json, or to the registered layout
 
     def __post_init__(self):
         if self.family not in FAMILIES:
@@ -92,6 +96,10 @@ class IngestPlan:
             raise ValueError("either type_column or actuals_through is required")
         if self.flag_column is None:
             self.flag_column = SEGMENT_FLAG_BY_DATA_SOURCE.get(self.data_source, "modern_windows")
+        if self.dir_name is None or self.spec_filename is None:
+            registered = registered_layout(self.code, self.repo_root)
+            self.dir_name = self.dir_name or (registered[0] if registered else self.name)
+            self.spec_filename = self.spec_filename or (registered[1] if registered else f"{self.name}.json")
 
     @property
     def repo_root(self) -> Path:
@@ -103,24 +111,47 @@ class IngestPlan:
 
     @property
     def curve_dir(self) -> Path:
-        return self.cycle_dir / self.name
+        # Display-layer specs live in adjustments/ (live by presence), but their curve, source and
+        # plot get the code's own directory so adjustments/ stays a directory of specs only.
+        if self.family == DISPLAY_LAYER:
+            return self.cycle_dir / self.name
+        return self.cycle_dir / self.dir_name
 
     @property
     def spec_path(self) -> Path:
         if self.family == DISPLAY_LAYER:
-            return self.cycle_dir / "adjustments" / f"{self.name}.json"
-        return self.curve_dir / f"{self.name}.json"
+            return self.cycle_dir / "adjustments" / self.spec_filename
+        return self.curve_dir / self.spec_filename
 
     @property
     def spec_glob(self) -> str:
         if self.family == DISPLAY_LAYER:
-            return f"data-official/*/adjustments/{self.name}.json"
-        return f"data-official/*/{self.name}/{self.name}.json"
+            return f"data-official/*/adjustments/{self.spec_filename}"
+        return f"data-official/*/{self.dir_name}/{self.spec_filename}"
 
     @property
     def horizon(self) -> tuple[pd.Timestamp, pd.Timestamp]:
         seam = pd.Timestamp(self.forecast_start)
         return pd.Timestamp(year=seam.year, month=1, day=1), pd.Timestamp(year=seam.year + 1, month=12, day=31)
+
+
+def registered_layout(code: str, root: Path) -> Optional[tuple[str, str]]:
+    """``(dir_name, spec_filename)`` an already-registered code uses, read off its ``spec_glob``.
+
+    Older codes predate the ``<name>/<name>.json`` convention (``o`` is ``mozillaonline_migration``
+    but lives in ``mozillaonline/mozillaonline.json``), so an update must follow the glob the
+    dispatcher actually searches, not the registry name. ``None`` for an unregistered code.
+    """
+    registry_path = root / "data-official" / "adjustment_codes.yaml"
+    if not registry_path.exists():
+        return None
+    entry = load_code_registry(registry_path).get(code)
+    if entry is None or "spec_glob" not in entry:
+        return None
+    parts = entry["spec_glob"].split("/")
+    if len(parts) < 4 or parts[0] != "data-official":
+        raise ValueError(f"unexpected spec_glob for code {code!r}: {entry['spec_glob']!r}")
+    return parts[-2], parts[-1]
 
 
 # --- curve -----------------------------------------------------------------------------
@@ -158,14 +189,30 @@ def build_horizon_curve(curve: pd.DataFrame, plan: IngestPlan) -> tuple[pd.DataF
     daily.loc[covered] = curve.loc[covered, "dau"]
     source.loc[covered] = curve.loc[covered, "type"].map({"actuals": "measured", "forecast": "projected"})
 
+    delivered = daily.copy()
+    rebase_offset = None
+    if plan.rebase_to_seam:
+        # The part of the effect accrued before the seam is taken to be inside the model's own
+        # fit of the actuals, so only the increment from the seam on is applied.
+        seam = pd.Timestamp(plan.forecast_start)
+        if seam not in curve.index:
+            raise ValueError(f"--rebase-to-seam needs the file to cover the seam {seam.date()}")
+        rebase_offset = float(curve.loc[seam, "dau"])
+        daily = (daily - rebase_offset).where(index >= seam, 0.0)
+        source.loc[index < seam] = "pre-seam (in base model)"
+
     last_delivered = curve.index.max()
-    hold_value = float(curve["dau"].tail(MA_WINDOW_DAYS).mean())
+    in_file = daily[index <= last_delivered]
+    hold_value = float(in_file.iloc[-1]) if plan.values_are_28d_ma else float(in_file.tail(MA_WINDOW_DAYS).mean())
     tail = index > last_delivered
     daily.loc[tail] = hold_value
+    delivered.loc[tail] = hold_value + (rebase_offset or 0.0)
     source.loc[tail] = "held"
 
-    ma = daily.rolling(MA_WINDOW_DAYS, min_periods=1).mean()
+    ma = daily.copy() if plan.values_are_28d_ma else daily.rolling(MA_WINDOW_DAYS, min_periods=1).mean()
     out = pd.DataFrame({f"{plan.name}_dau_daily": daily, f"{plan.name}_dau_ma": ma, "source": source})
+    if plan.rebase_to_seam:
+        out[f"{plan.name}_dau_delivered"] = delivered  # the producer's series before the shift, for the record
     measured = curve.index[curve["type"] == "actuals"]
     summary = {
         "delivered_start": str(curve.index.min().date()),
@@ -173,9 +220,12 @@ def build_horizon_curve(curve: pd.DataFrame, plan: IngestPlan) -> tuple[pd.DataF
         "actuals_through": str(measured.max().date()) if len(measured) else None,
         "hold_flat_from": str((last_delivered + pd.Timedelta(days=1)).date()) if tail.any() else None,
         "hold_flat_value": hold_value if tail.any() else None,
-        "hold_flat_basis": f"mean of the final {MA_WINDOW_DAYS} delivered daily values",
+        "hold_flat_basis": ("final delivered value (file is already a 28-day series)" if plan.values_are_28d_ma
+                            else f"mean of the final {MA_WINDOW_DAYS} delivered daily values"),
         "horizon": [str(horizon_start.date()), str(horizon_end.date())],
         "sign_applied": plan.sign,
+        "rebase_to_seam": plan.rebase_to_seam,
+        "rebase_offset_at_seam": rebase_offset,
     }
     dec15 = pd.Timestamp(year=pd.Timestamp(plan.forecast_start).year, month=12, day=15)
     if dec15 in out.index:
@@ -211,6 +261,7 @@ def display_spec(plan: IngestPlan, data_file_relative: str) -> dict:
         "platform": plan.platform,
         "data_file": data_file_relative,
         "value_column": f"{plan.name}_dau_daily",
+        "values_are_28d_ma": plan.values_are_28d_ma,
         "adjustment_code": plan.code,
         "notes": plan.notes,
     }
@@ -252,10 +303,11 @@ def ensure_gitignore_exceptions(plan: IngestPlan) -> list[str]:
     """Track the curve parquet and the delivered source file despite the global ignores."""
     path = plan.repo_root / ".gitignore"
     lines = path.read_text().splitlines() if path.exists() else []
-    wanted = [f"!data-official/*/{plan.name}/*.parquet", f"!data-official/*/{plan.name}/source_data/*"]
+    curve_dir_name = plan.curve_dir.name  # the directory the parquet and source actually land in
+    wanted = [f"!data-official/*/{curve_dir_name}/*.parquet", f"!data-official/*/{curve_dir_name}/source_data/*"]
     added = [w for w in wanted if w not in lines]
     if added:
-        block = [f"# {plan.name} (`{plan.code}`): curve parquet + delivered source, ingested {date.today().isoformat()}"] + added
+        block = [f"# {curve_dir_name} (`{plan.code}`): curve parquet + delivered source, ingested {date.today().isoformat()}"] + added
         path.write_text("\n".join(lines + [""] + block) + "\n")
     return added
 
@@ -315,7 +367,7 @@ A refreshed curve for this cycle: re-run the ingest with `--replace`; the previo
 PLOT_DAILY_COLOR = "#2a78d6"
 PLOT_MA_COLOR = "#eb6834"
 PLOT_SURFACE = "#fcfcfb"
-PLOT_REGION_SHADES = {"measured": "#e6e5e1", "projected": "#f3f2ee", "held": "#faf9f6"}
+PLOT_REGION_SHADES = {"pre-seam (in base model)": "#dcdbd6", "measured": "#e6e5e1", "projected": "#f3f2ee", "held": "#faf9f6"}
 
 
 def render_curve_plot(horizon: pd.DataFrame, plan: IngestPlan, summary: dict, out_path: Path) -> Path:
@@ -332,7 +384,10 @@ def render_curve_plot(horizon: pd.DataFrame, plan: IngestPlan, summary: dict, ou
     daily = horizon[f"{plan.name}_dau_daily"]
     ma = horizon[f"{plan.name}_dau_ma"]
     source = horizon["source"]
-    first_nonzero = daily[daily != 0].index.min()
+    delivered_column = f"{plan.name}_dau_delivered"
+    delivered = horizon[delivered_column] if delivered_column in horizon.columns else None
+    reference = delivered if delivered is not None else daily
+    first_nonzero = reference[reference != 0].index.min()
     plot_from = min(first_nonzero, pd.Timestamp(plan.forecast_start)) - pd.Timedelta(days=14) if pd.notna(first_nonzero) else horizon.index.min()
     shown = horizon.index >= plot_from
 
@@ -344,6 +399,9 @@ def render_curve_plot(horizon: pd.DataFrame, plan: IngestPlan, summary: dict, ou
             ax.axvspan(block.min(), block.max() + pd.Timedelta(days=1), color=shade, lw=0, zorder=0)
             ax.text(block.min() + (block.max() - block.min()) / 2, 0.09, label, transform=ax.get_xaxis_transform(),
                     ha="center", va="bottom", fontsize=9, color="#52514e", style="italic")
+    if delivered is not None:
+        ax.plot(delivered.index[shown], delivered[shown], color="#52514e", lw=1.2, ls="--",
+                label="as delivered, before the shift to the seam")
     ax.plot(daily.index[shown], daily[shown], color=PLOT_DAILY_COLOR, lw=1.2, label="daily (what the pipeline subtracts / adds)")
     ax.plot(ma.index[shown], ma[shown], color=PLOT_MA_COLOR, lw=2, label="trailing 28-day mean (display layer)")
     seam = pd.Timestamp(plan.forecast_start)

@@ -242,10 +242,11 @@ def render_adjustment(spec: dict, date_index, spec_dir: str | Path | None = None
     Supports spec types: ``linear_ramp``, ``step``, ``daily_series``, ``daily_file``.
     Returns ``{"desktop": Series, "mobile": Series}`` indexed by date.
 
-    ``daily_file`` reads a daily curve from a parquet next to the spec (``data_file``,
+    ``daily_file`` reads a curve from a parquet next to the spec (``data_file``,
     ``value_column``, ``platform``) and applies its trailing 28-day mean, because the
-    display layer these adjustments land on is itself a 28-day MA. ``spec_dir`` is
-    required for that type and ignored by the others.
+    display layer these adjustments land on is itself a 28-day MA. A producer who already
+    delivered the 28-day series sets ``values_are_28d_ma: true`` and the values are used
+    as-is. ``spec_dir`` is required for that type and ignored by the others.
     """
     idx = pd.DatetimeIndex(date_index)
     desktop = pd.Series(0.0, index=idx)
@@ -256,6 +257,10 @@ def render_adjustment(spec: dict, date_index, spec_dir: str | Path | None = None
         anchor = pd.Timestamp(spec["anchor_date"])
         total_days = (anchor - start).days
         elapsed = np.maximum(0, (idx - start).days)
+        if spec.get("clamp_at_anchor", False):
+            # Hold at the anchor value past anchor_date. Off by default: every cycle through
+            # 2026-08 published the unclamped ramp, and their specs must keep rendering as they did.
+            elapsed = np.minimum(elapsed, total_days)
         desktop[:] = spec.get("desktop_dau", 0) * elapsed / total_days
         mobile[:] = spec.get("mobile_dau", 0) * elapsed / total_days
 
@@ -304,9 +309,11 @@ def _render_daily_file_curve(spec: dict, idx: pd.DatetimeIndex, spec_dir: str | 
         raise ValueError(
             f"daily_file spec platform={platform!r}; expected one of {DAILY_FILE_PLATFORMS}"
         )
-    daily = load_lift_series(spec, spec_dir)
-    smoothed = daily.rolling(DISPLAY_MA_WINDOW_DAYS, min_periods=1).mean()
-    return smoothed.reindex(idx).ffill().fillna(0.0)
+    series = load_lift_series(spec, spec_dir)
+    if not spec.get("values_are_28d_ma", False):
+        # A daily curve: the display layer is a 28d MA, so smooth it the same way.
+        series = series.rolling(DISPLAY_MA_WINDOW_DAYS, min_periods=1).mean()
+    return series.reindex(idx).ffill().fillna(0.0)
 
 
 def load_adjustments_from_dir(

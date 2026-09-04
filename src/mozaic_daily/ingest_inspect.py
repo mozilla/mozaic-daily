@@ -87,8 +87,33 @@ def read_source_table(path: str | Path, sheet: str | None = None) -> tuple[pd.Da
         sheet_used = sheet if sheet is not None else book.sheet_names[0]
         return book.parse(sheet_used), sheet_used
     if suffix in (".csv", ".tsv", ".txt"):
-        return pd.read_csv(path, sep=None, engine="python", thousands=","), None
+        preamble = count_preamble_lines(path)
+        return pd.read_csv(path, sep=None, engine="python", thousands=",", skiprows=preamble), None
     raise ValueError(f"unsupported input type {suffix!r} for {path}; expected .csv, .parquet or .xlsx")
+
+
+def count_preamble_lines(path: Path, max_scan: int = 20) -> int:
+    """Lines before the header: producers sometimes put a title sentence above the CSV.
+
+    The header is the first line whose first field is *not* a date or number while the next
+    line's first field *is* one. Returns 0 for a normal file.
+    """
+    with open(path, encoding="utf-8-sig") as handle:
+        lines = [handle.readline().rstrip("\n") for _ in range(max_scan + 2)]
+    lines = [line for line in lines if line.strip() != ""]
+
+    def first_field_is_data(line: str) -> bool:
+        field = line.split(",")[0].strip().strip('"')
+        if field == "":
+            return False
+        if pd.to_datetime(pd.Series([field]), errors="coerce").notna().iloc[0]:
+            return True
+        return pd.to_numeric(pd.Series([field.replace(",", "")]), errors="coerce").notna().iloc[0]
+
+    for i in range(min(max_scan, len(lines) - 1)):
+        if not first_field_is_data(lines[i]) and first_field_is_data(lines[i + 1]):
+            return i
+    return 0
 
 
 # --- guessing ---------------------------------------------------------------------
@@ -258,6 +283,17 @@ def contract_findings(
         findings.append(Finding("info", "beyond_horizon", f"{int((dates > horizon_end).sum())} rows past {horizon_end.date()} are dropped"))
 
     if types is not None:
+        measured = dates[(types == "actuals").to_numpy()]
+        if len(measured):
+            boundary = measured.max()
+            offset_days = (forecast_start - boundary).days - 1
+            if offset_days > 0:
+                findings.append(Finding("info", "file_boundary_before_seam", f"the file's own actuals end {boundary.date()}, "
+                                        f"{offset_days} day(s) before the seam; its modelled values cover those days, which is fine — "
+                                        f"the two boundaries need not coincide, only the coverage matters"))
+            elif offset_days < 0:
+                findings.append(Finding("info", "file_boundary_after_seam", f"the file's actuals run to {boundary.date()}, "
+                                        f"{-offset_days} day(s) past the seam; the forecast rows there will carry measured values"))
         unknown = sorted(set(types.dropna().unique()) - {"actuals", "forecast"})
         if unknown:
             findings.append(Finding("error", "unknown_type_labels", f"type labels {unknown} are neither actuals nor forecast"))
