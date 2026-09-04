@@ -41,9 +41,7 @@ registration and bookkeeping.
 - Re-check the **data-refresh sign** (−64,769 then +100,840 on consecutive refreshes).
 - **Summer-trough overlay** go/no-go (`research/param-scans/aug22-retune/`, target shape
   `research/summer-slump/`). Not implemented; nothing tuned toward the trough.
-- Mobile: the **`t` tailwind** (+299,000) is a discretionary, partly calibrated number carried in its
-  own spec so it cannot hide in the headwind line; the paid curve `p` reads is worth re-measuring
-  (`../2026-08/organic/_index.md`). **Done 2026-09-04 for the paid curve**: re-pulled from the GMIO feed into `marketing/` (Dec-15 level 1,891,002, +331,525 vs August). Split rebuild still pending.
+- Mobile: the **`t` tailwind** (+299,000, the August calibration tailwind — not terms-of-use, which is `u`) **carried forward unchanged 2026-09-04** (`tailwind/`); revisit once the rebuilt `p` (paid level +331,525 at Dec-15) has been run, since it may cover part of what `t` was sized for. The paid curve `p` reads was re-pulled the same day (`marketing/`).
 - Start `TODO_factors.md` as a diff against `../2026-07/TODO_factors.md`.
 - **`../2026-06/` is retained under the 3-month rule until the October roll-forward.** `_archive/` and
   `research/ma-seam-turbulence/` import its frozen `export_canonical_curves.py`, and July code reads its
@@ -73,7 +71,7 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
 |---|--:|--:|--:|
 | August delivered (`h` mobile −27,162 + `t` +299,000 + `p`) | | | 17,924,562 |
 | `u` tou_mobile_headwind: the −27,162 mobile leg moved out of `headwind.json`, anchor unchanged | 0 | 0 (exact) | |
-| `t` mobile tailwind carry-forward | decision pending | | |
+| `t` mobile calibration tailwind carried forward unchanged (+299,000) | 0 vs August | 0 (exact) | |
 | `p` paid level: August curve 1,559,477 → GMIO curve 1,891,002 at Dec-15 (anchor 800,831); split rebuilt + wired | +331,525 | pending rerun | |
 
 ## Read this before quoting the headline
@@ -97,7 +95,8 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
   headwinds/                         # present — h delivered file + value-read meta + plot + rationale
   adjustments/tou_mobile_headwind.json  # present — u (display layer): the mobile -27,162 leg split out of headwind.json 2026-09-04
   tou_mobile_headwind/               # present — u rationale
-  adjustments/tailwind.json          # t (display layer) — decide whether it carries forward
+  adjustments/tailwind.json          # present — t carried forward unchanged 2026-09-04 (+299,000 mobile at Dec-15, ramp from the seam)
+  tailwind/                          # present — t September rationale record
   marketing/                         # present — paid-DAU curve for `p` from the GMIO feed, BUILT + WIRED 2026-09-04
   organic/                           # present — p REBUILT 2026-09-04 (split through 2026-09-01, four checks PASS) and pointed at marketing/ (anchor 800,831)
   launch_on_login/                   # present — `l` re-gated 2026-09-04, retitled 'launch at login for NEW users'; 200K curve carried unchanged

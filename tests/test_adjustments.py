@@ -1460,9 +1460,9 @@ def test_build_adjustments_applied_list_accepts_p(tmp_path):
 
 # --- committed September display-layer specs -----------------------------------
 
-def test_september_adjustments_dir_renders_h_and_u():
+def test_september_adjustments_dir_renders_h_u_and_t():
     """2026-09/adjustments (2026-09-04): `h` is Brad's Dec-15 value -726,000 ramped from the seam and flat
-    after; `u` is the mobile -27,162 leg split out of headwind.json. Desktop and mobile legs stay separate."""
+    after; `u` (-27,162) and `t` (+299,000) are the mobile legs, netting +271,838 as August did."""
     from pathlib import Path as _Path
     repo = _Path(__file__).resolve().parents[1]
     idx = pd.date_range("2026-08-01", "2027-12-31", freq="D")
@@ -1471,4 +1471,4 @@ def test_september_adjustments_dir_renders_h_and_u():
     assert net["desktop"][pd.Timestamp("2026-12-15")] == pytest.approx(-726000.0)
     assert net["desktop"][pd.Timestamp("2027-12-31")] == pytest.approx(-726000.0)   # clamped, unlike August
     assert net["mobile"][pd.Timestamp("2026-09-02")] == 0.0
-    assert net["mobile"][pd.Timestamp("2026-12-15")] == pytest.approx(-27162.0)
+    assert net["mobile"][pd.Timestamp("2026-12-15")] == pytest.approx(-27162.0 + 299000.0)  # `u` + `t`, netting +271,838 as August did

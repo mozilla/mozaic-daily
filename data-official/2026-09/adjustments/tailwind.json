@@ -1,0 +1,9 @@
+{
+  "type": "linear_ramp",
+  "start_date": "2026-09-02",
+  "anchor_date": "2026-12-15",
+  "desktop_dau": 0,
+  "mobile_dau": 299000,
+  "adjustment_code": "t",
+  "notes": "September 2026 cycle, seam 2026-09-02. Mobile calibration tailwind (code `t`) CARRIED FORWARD UNCHANGED from August: +299,000 at 2026-12-15, ramped from 0 at this cycle's seam, mobile only. Not re-measured or re-sized this cycle (decision 2026-09-04). It is NOT the terms-of-use headwind \u2014 that is code `u`. Basis as adopted 2026-08-03: ~47% the measured excess of an independent mobile implementation, ~45% a planning decision, ~8% calibration so August landed within 1,000 DAU of July's published mobile number; it carried the remainder of the 322,714 the m->p swap removed from mobile Dec-15 after a 33-probe parameter search found no config recovers it. Unclamped past the anchor, as August published it (h is clamped from September; t was left as-is to be a pure carry-forward). Rationale: 2026-08/tailwind/_index.md; September record: 2026-09/tailwind/_index.md."
+}
