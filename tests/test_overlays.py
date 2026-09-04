@@ -279,5 +279,14 @@ class TestCommittedRegistryAndSpecs:
         assert by_code["i"].spec["allocation"]["shares"] == {"IN": 1.0}
         assert "proportional" in by_code["i"].spec["notes"].lower()
 
+    def test_september_seam_resolves_refreshed_mozillaonline(self):
+        """`o` was refreshed for September (2026-09-04); August's frozen curve must still gate on 2026-08-02."""
+        sep = {o.code: o for o in resolve_overlays("2026-09-02")}
+        aug = {o.code: o for o in resolve_overlays("2026-08-02")}
+        assert sep["o"].spec["data_file"] == "mozillaonline_migration.2026-08-31.parquet"
+        assert sep["o"].spec_path.parent.name == "mozillaonline"
+        assert aug["o"].spec["data_file"] == "mozillaonline_migration_model.official.2026-06-29.parquet"
+        assert sep["o"].spec["allocation"]["shares"]["CN"] == 0.9277
+
     def test_repo_root_points_at_the_checkout(self):
         assert (overlays.repo_root() / "data-official" / "adjustment_codes.yaml").exists()

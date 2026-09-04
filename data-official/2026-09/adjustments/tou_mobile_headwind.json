@@ -1,0 +1,9 @@
+{
+  "type": "linear_ramp",
+  "start_date": "2026-09-02",
+  "anchor_date": "2026-12-15",
+  "desktop_dau": 0,
+  "mobile_dau": -27162,
+  "adjustment_code": "u",
+  "notes": "September 2026 cycle, seam 2026-09-02. Mobile headwind from the risk attached to the terms-of-use acceptance requirement applied in 2025 (code `u`). Linear ramp 0 at the seam to -27,162 at 2026-12-15, mobile only. This is the mobile leg that lived inside headwind.json through August 2026 (same -27,162 anchor, unchanged since June); split out on 2026-09-04 because the Win10 desktop headwind became a producer's model curve and the two are different sources. Display layer: summed onto the 28d MA after mozaic, so its Dec-15 effect is exactly its anchor. Note the package renderer does not clamp a linear_ramp past its anchor (1.1185x at Dec-31), same as `h` and `t` were."
+}

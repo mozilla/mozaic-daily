@@ -35,18 +35,15 @@ registration and bookkeeping.
 
 ## Inherited from August (`../2026-08/_index.md` § Next up)
 
-- Re-measure and swap the **`o` MozillaOnline curve** — a stale carry-forward since July, the last stale
-  overlay, and the main reason August desktop was flagged "not the number to publish".
-- The **Win10 headwind `h` anchor** sits at −1,315,000 after nine values across three cycles;
-  `research/headwinds/WIN10_ANCHOR_FINDINGS.md` retired the old attenuation rationale. Do not move it
-  on that rationale.
+- ~~Re-measure and swap the **`o` MozillaOnline curve**~~ **Done 2026-09-04**: rebuilt in `mozillaonline/` from the 2026-09-02 official export (Dec-15 28d-MA 668,839 vs the stale 567,549). Rerun pending.
+- ~~The **Win10 headwind `h` anchor** sits at −1,315,000~~ **Replaced 2026-09-04** by the Dec-15 value of Brad's model curve: −726,000, applied as a linear ramp from the September seam, flat after Dec-15 (`headwinds/`). A DRAFT; the producer may revise.
 - Decide how the **summer trough is scored** now that it fell inside the `display_ma` splice zone.
 - Re-check the **data-refresh sign** (−64,769 then +100,840 on consecutive refreshes).
 - **Summer-trough overlay** go/no-go (`research/param-scans/aug22-retune/`, target shape
   `research/summer-slump/`). Not implemented; nothing tuned toward the trough.
 - Mobile: the **`t` tailwind** (+299,000) is a discretionary, partly calibrated number carried in its
   own spec so it cannot hide in the headwind line; the paid curve `p` reads is worth re-measuring
-  (`../2026-08/organic/_index.md`).
+  (`../2026-08/organic/_index.md`). **Done 2026-09-04 for the paid curve**: re-pulled from the GMIO feed into `marketing/` (Dec-15 level 1,891,002, +331,525 vs August). Split rebuild still pending.
 - Start `TODO_factors.md` as a diff against `../2026-07/TODO_factors.md`.
 - **`../2026-06/` is retained under the 3-month rule until the October roll-forward.** `_archive/` and
   `research/ma-seam-turbulence/` import its frozen `export_canonical_curves.py`, and July code reads its
@@ -66,20 +63,43 @@ Dec-15 28d-MA and are what the rerun is checked against (pass-through in a 0.5�
 | September data refresh + re-gated `l`/`o`/`h` | — | pending rerun | |
 | `j` japan_bot MIDDLE add-back | +67,094 | pending rerun | |
 | `i` india_excess PROPORTIONAL add-back | +41,945 | pending rerun | |
+| `o` MozillaOnline curve refreshed (Dec-15 28d-MA 567,549 → 668,839) | curve +101,290; realised effect empirical | pending rerun | |
+| `h` Win10 headwind: August ramp −1,315,000 → Brad's Dec-15 value −726,000, ramped from the seam, flat after (display layer, exact) | +589,000 | +589,000 (no rerun needed) | |
+
+Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
+
+| step | expected | realised | running |
+|---|--:|--:|--:|
+| August delivered (`h` mobile −27,162 + `t` +299,000 + `p`) | | | 17,924,562 |
+| `u` tou_mobile_headwind: the −27,162 mobile leg moved out of `headwind.json`, anchor unchanged | 0 | 0 (exact) | |
+| `t` mobile tailwind carry-forward | decision pending | | |
+| `p` paid level: August curve 1,559,477 → GMIO curve 1,891,002 at Dec-15 (anchor 800,831) | +331,525 | pending split rebuild + rerun | |
+
+## Read this before quoting the headline
+
+| lever | change | Dec-15 effect | basis |
+|---|---|---|---|
+| `h` Win10 headwind | anchor −1,315,000 → −726,000, ramp re-anchored at the September seam, flat after Dec-15 | +589,000 on desktop vs August | producer's draft model curve, Dec-15 value only; the shape is our convention |
 
 ## Expected layout (populate as the cycle progresses)
 
 ```
 2026-09/
-  september_canonical_v<date>.ipynb  # producer/review notebook
+  september_canonical_v2026-09-04.ipynb  # present — plots + numeric tables only (targets restored, ex-Iran kept, ladder cell added;
+                                         #   caveats/benchmark prose dropped). [setup] raises until DESKTOP_FORECAST_PATH / MOBILE_FORECAST_PATH are set
+  adjustment_ladder/                 # ladder_manifest.json + cached per-rung desktop runs from scripts/build_adjustment_ladder.py (parquet/pkl gitignored)
   desktop_<config>_<seam>/           # canonical desktop build: .adj-lo(.j.i.)? parquet + sidecar + parameters.json + pkl (gitignored)
   mobile_<config>_<seam>/            # canonical mobile build: .adj-p. parquet + sidecar + parameters.json + pkl
   mobile_rawpull_<seam>/             # raw BQ mobile pull for the `p` split's shredder-drift check (fetch_raw_pull.py)
-  adjustments/headwind.json          # h (display layer) — copy from ../2026-08 and re-gate applies_to_forecast_start
+  adjustments/headwind.json          # present — h re-anchored 2026-09-04: linear ramp 0 at seam → −726,000 (Brad's Dec-15) flat after; desktop only; DRAFT
+  headwinds/                         # present — h delivered file + value-read meta + plot + rationale
+  adjustments/tou_mobile_headwind.json  # present — u (display layer): the mobile -27,162 leg split out of headwind.json 2026-09-04
+  tou_mobile_headwind/               # present — u rationale
   adjustments/tailwind.json          # t (display layer) — decide whether it carries forward
-  organic/                           # p spec + measured split rebuilt for the new training window
+  marketing/                         # present — paid-DAU curve for `p` from the GMIO feed, BUILT 2026-09-04, awaiting organic.json (see marketing/_index.md § Wiring)
+  organic/                           # NOT YET — p spec + measured split rebuilt for the new training window; must point paid_forecast at marketing/
   launch_on_login/lol.json           # l (200K ceiling; re-gate)
-  mozillaonline/mozillaonline.json   # o — REBUILD, do not carry forward again
+  mozillaonline/                     # present — `o` REBUILT 2026-09-04 from the 2026-09-02 official export via /ingest-adjustment; rerun pending
   japan_bot/                         # present — `j` WIRED 2026-09-04 (registry + spec + curve + source_data/); rerun pending
   japan_bot_REVERT_2026-09-04/       # present — the handoff's original spec/parquet; revert target, keep while cycle is live
   india_excess/                      # present — `i` WIRED 2026-09-04 (PROPORTIONAL; hold/linger/settle/fade alternates kept); rerun pending

@@ -1,0 +1,11 @@
+{
+  "type": "linear_ramp",
+  "start_date": "2026-09-02",
+  "anchor_date": "2026-12-15",
+  "desktop_dau": -726000,
+  "mobile_dau": 0,
+  "clamp_at_anchor": true,
+  "adjustment_code": "h",
+  "source_file": "../headwinds/source_data/win10_headwinds_2026-09-02.csv",
+  "notes": "September 2026 cycle, seam 2026-09-02. Win10 modern-Windows desktop headwind (code `h`). Anchor -726,000 at 2026-12-15 is the Dec-15 value of Brad's model curve (win10_headwinds_2026-09-02.csv, 'August 2026 forecast vintage', a 28d-MA ramp from 0 at 2026-08-02 to -726,000 at 2026-12-15 then flat). Applied as August's shape re-anchored: a linear ramp from 0 at THIS cycle's seam to the full -726,000 at Dec-15, then FLAT (clamp_at_anchor) as in Brad's file. Decision 2026-09-04: an earlier attempt to apply Brad's curve as delivered but shifted to the seam lost 166,711 of headwind and was reverted the same day. Replaces August's -1,315,000 (+589,000 on the published desktop Dec-15). Desktop only: the mobile -27,162 leg that shared this file through August is a different source and is now code `u`. DRAFT - the producer may revise."
+}

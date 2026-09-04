@@ -658,3 +658,19 @@ def test_mobile_app_name_set_is_unchanged_by_the_split():
     assert _APP_NAMES_BY_DATA_SOURCE[DataSource.GLEAN_MOBILE] == {
         "fenix_android", "firefox_ios", "focus_android", "focus_ios", "ALL MOBILE",
     }
+
+
+def test_september_gmio_paid_curve_is_a_lift_whose_anchor_recovers_the_level():
+    """data-official/2026-09/marketing (2026-09-04): the parquet is a lift in August's framing, the meta
+    carries the anchor, and lift + anchor reproduces the level column. organic.json must copy that anchor."""
+    import json
+    marketing = REAL_SPEC.parent.parent.parent / "2026-09" / "marketing"
+    df = pd.read_parquet(marketing / "marketing_lift_model.gmio_uac_meta_total.2026-09-02.parquet")
+    meta = json.loads((marketing / "marketing_lift_model.gmio_uac_meta_total.2026-09-02.meta.json").read_text())
+    anchor = meta["key_values"]["anchor_paid_dau"]
+    assert df.loc["2026-03-30", "marketing_lift_daily"] == 0.0
+    assert (df.loc[:"2026-03-29", "marketing_lift_daily"] == 0.0).all()
+    recovered = df["marketing_lift_daily"].loc["2026-03-30":] + anchor
+    pd.testing.assert_series_equal(recovered, df["paid_dau_level_daily"].loc["2026-03-30":], check_names=False)
+    assert df.loc["2026-12-15", "paid_dau_level_daily"] == pytest.approx(1891001.857142857, abs=1.0)
+    assert df.loc["2026-12-31", "paid_dau_level_daily"] == df.loc["2026-12-21", "paid_dau_level_daily"]  # forward-filled tail

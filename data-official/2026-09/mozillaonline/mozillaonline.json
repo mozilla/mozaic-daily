@@ -1,0 +1,32 @@
+{
+  "type": "desktop_overlay",
+  "platform": "desktop",
+  "data_file": "mozillaonline_migration.2026-08-31.parquet",
+  "value_column": "mozillaonline_migration_dau_daily",
+  "allocation": {
+    "key": "fixed_country_shares",
+    "flag_column": "modern_windows",
+    "window_days": 28,
+    "shares": {
+      "CN": 0.9277,
+      "HK": 0.0225,
+      "US": 0.0152,
+      "JP": 0.0098,
+      "SG": 0.0083,
+      "TW": 0.0041,
+      "DE": 0.0011,
+      "AU": 0.001,
+      "ROW": 0.0103
+    }
+  },
+  "scope": {
+    "exclude_countries": [
+      "IR"
+    ]
+  },
+  "model_meta_file": "mozillaonline_migration.2026-08-31.meta.json",
+  "applies_to_forecast_start": "2026-09-02",
+  "applies_to_data_source": "legacy_desktop",
+  "placeholder": false,
+  "notes": "September 2026 cycle, seam 2026-09-02. MozillaOnline -> canonical Firefox desktop migration tailwind (code `o`): the China distribution partner migrating users onto mainline Firefox, who flip app_name and newly count as Firefox Desktop. Official model export delivered 2026-09-02 (mozilla_online_forecast_2026-09-02.csv): daily actuals 2026-06-01 to 2026-08-31, forecast through 2026-12-31; held flat from 2027-01-01 at the final 28-day mean (~644,000/day) so the component does not vanish on 1 January. Dec-15 28d-MA 668,839, up from the stale July curve August carried (567,549). Allocation is the fixed geo footprint carried from August (CN 92.77%, HK, US, JP, SG, TW, DE, AU, ROW), IR excluded, renormalized over training-present countries; modern_windows by measurement. Subtracted from modern_windows training rows before mozaic and added back after. Ingested 2026-09-04 through scripts/ingest_adjustment.py via /ingest-adjustment; the 2026-08 build is untouched and stays gated to 2026-08-02."
+}

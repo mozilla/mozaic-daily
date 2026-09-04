@@ -141,3 +141,14 @@ data-official/*/handoff/*_handoff/
 
 # india_excess (`i`): curve parquet + delivered source, ingested 2026-09-04
 !data-official/*/india_excess/source_data/*
+
+# mozillaonline (`o`): curve parquet + delivered source, ingested 2026-09-04
+!data-official/*/mozillaonline/source_data/*
+
+# headwinds (`h`): curve parquet + delivered source, ingested 2026-09-04
+!data-official/*/headwinds/*.parquet
+!data-official/*/headwinds/source_data/*
+
+# 2026-09 marketing: the GMIO query output + workbook that the `p` paid curve is built from
+!data-official/*/marketing/source_data/*
+!data-official/*/marketing/*.xlsx

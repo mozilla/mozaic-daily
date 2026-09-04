@@ -1,0 +1,56 @@
+{
+  "adjustment_code": "o",
+  "adjustment_name": "mozillaonline_migration",
+  "adjustments_applied": [],
+  "allocation": {
+    "exclude_countries": [
+      "IR"
+    ],
+    "key": "fixed_country_shares",
+    "shares": {
+      "AU": 0.001,
+      "CN": 0.9277,
+      "DE": 0.0011,
+      "HK": 0.0225,
+      "JP": 0.0098,
+      "ROW": 0.0103,
+      "SG": 0.0083,
+      "TW": 0.0041,
+      "US": 0.0152
+    }
+  },
+  "artifact_sha1": "e70de6ecb43cd50fed5c48696e02d1dd16cd3bcc",
+  "artifact_type": "adjustment_curve",
+  "column_mapping": {
+    "date": "submission_date",
+    "ma_validated_not_used": "dau_28ma",
+    "type": "type",
+    "value": "dau"
+  },
+  "coverage": {
+    "actuals_through": "2026-08-31",
+    "dec15_daily": 760177.0,
+    "dec15_ma28": 668839.25,
+    "delivered_end": "2026-12-31",
+    "delivered_start": "2026-06-01",
+    "hold_flat_basis": "mean of the final 28 delivered daily values",
+    "hold_flat_from": "2027-01-01",
+    "hold_flat_value": 644169.4285714285,
+    "horizon": [
+      "2026-01-01",
+      "2027-12-31"
+    ],
+    "sign_applied": 1
+  },
+  "data_source": "legacy_desktop",
+  "family": "per_tile_overlay",
+  "forecast_start_date": "2026-09-02",
+  "model_config": null,
+  "mozaic_daily_commit": "0161296b91c1bbc62de4bbc39c6bf1a3078f993c",
+  "platform": "desktop",
+  "produced_at": "2026-09-04T21:16:43.868778+00:00Z",
+  "produced_by": "scripts/ingest_adjustment.py",
+  "source_file": "data-official/2026-09/mozillaonline/source_data/mozilla_online_forecast_2026-09-02.csv",
+  "source_sha1": "280cc517a46b66468524988357481d9b9b21d0b8",
+  "source_sheet": null
+}

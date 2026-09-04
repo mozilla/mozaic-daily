@@ -31,10 +31,15 @@ codes:
     name: headwinds
     applier: display_layer
     description: >
-      Linear ramp adjustment over the forecast period, anchored at a target
-      date. Captures expected DAU pressure from known headwinds (e.g.
-      competitive shifts, regulatory changes). Per-month spec lives in
-      data-official/{YYYY-MM}/adjustments/headwind.json.
+      The Win10 desktop headwind: DAU pressure from the Windows 10 end-of-support
+      cohort, applied at the display layer (summed onto the 28d MA after mozaic, so
+      its Dec-15 effect is exact and needs no rerun). Per-cycle spec at
+      data-official/{YYYY-MM}/adjustments/headwind.json: a two-number linear_ramp from
+      0 at the cycle's seam to the anchor at Dec-15. Through 2026-08 the anchor was
+      -1,315,000 (with mobile -27,162 in the same file). From 2026-09 the anchor is the
+      Dec-15 value of Brad's Win10 model curve, -726,000, flat after Dec-15
+      (clamp_at_anchor), desktop only - the mobile leg is code `u`. Delivered file and
+      value-read meta in data-official/2026-09/headwinds/. DRAFT as of 2026-09-04.
     spec_glob: "data-official/*/adjustments/headwind.json"
   m:
     name: marketing_lift
@@ -187,3 +192,17 @@ codes:
       scratch/brwells/regional-story/india_forecast/deliver.py; evidence page
       site/india_forecast.html, DECISIONS D92-D97.
     spec_glob: "data-official/*/india_excess/india_excess.json"
+  u:
+    name: tou_mobile_headwind
+    applier: display_layer
+    description: >
+      Mobile headwind from the risk attached to the terms-of-use acceptance
+      requirement applied in 2025. Linear ramp, 0 at the seam to -27,162 at Dec-15,
+      mobile only. Through 2026-08 this was the mobile leg inside
+      adjustments/headwind.json (`h`); split out on 2026-09-04 when the Win10 desktop
+      headwind became a producer's model curve, because the two are different
+      sources and must be sized independently. Display layer: applied to the 28d MA
+      after mozaic, exact at Dec-15, no rerun. Spec per cycle at
+      data-official/{YYYY-MM}/adjustments/tou_mobile_headwind.json; rationale in
+      data-official/{YYYY-MM}/tou_mobile_headwind/_index.md.
+    spec_glob: "data-official/*/adjustments/tou_mobile_headwind.json"
