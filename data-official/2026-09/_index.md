@@ -3,7 +3,30 @@
 Active cycle (branch `september-forecast`, off `clean-slate` @ `a59d04f`, which carries every August
 tooling change). Opened 2026-09-04 by the button-down skill.
 
-## Status: EMPTY CYCLE — `../2026-08/` remains authoritative until this branch produces output
+## Status: DRAFT BUILDS at the 2026-09-02 seam (2026-09-04) — not locked
+
+Canonical builds made 2026-09-04 with August's locked configs (desktop g01 → `desktop_g01_2026-09-02/`, `.adj-ijlo.`;
+mobile cpr 0.725 → `mobile_cpr0725_2026-09-02/`, `.adj-p.`). Dec-15 28d-MA, display layer applied (`h` −726,000 draft,
+`t` +299,000, `u` −27,162): desktop **49,545,790** (+842,347 vs August), mobile **18,258,010** (+333,448), ALL
+**67,803,800** (+1,175,795). Desktop sits +32,633 above the Baseline target. Review notebook
+`september_canonical_v2026-09-04.ipynb`; CSVs in `csv/`; plots (DRAFT-watermarked) in `plots/`.
+
+**Desktop adjustment ladder** (`adjustment_ladder/ladder_manifest.json`, 7 cached isolation runs, built 2026-09-04): raw model
+50,209,027 → +h −726,000 → +o −100,781 → +j +144,187 → +l −20,577 → +i +39,934 = 49,545,790. Single-overlay effects vs
+raw were o −100,781, j +71,355, l +64,265, i −48,263: for `o` and `i` the training-row subtraction lowers Prophet's trend by
+more than the curve adds back, so wiring them LOWERS Dec-15 despite positive curves; cumulative steps differ from single
+effects because overlays interact through the fit. Rebuilding the ladder needs explicit approval (the script prompts).
+
+**Desktop Dec-15 waterfalls** (`september_desktop_waterfalls.ipynb`, built 2026-09-04): 2025 actual 51,846,238 → 2026 published
+49,545,790 (−2,300,447) decomposed three ways from the canonical parquet's tiles, bars by absolute magnitude, closing exactly.
+By OS: modern Windows −1,611,048 (holds the whole `h` −726,000), older Windows −1,125,336, Mac + Linux + other +435,937 (the
+forecast has no Mac/Linux split). By market: ROW −988,740, CN +920,370 (MozillaOnline), US −485,799, DE −432,890 … IR +6,678;
+`h` allocated to countries by 2026 modern-Windows share, no separate `h` bar. By market group (member-labelled, deliberately
+NOT called regions because ROW is a third of DAU): ROW −988,740, DE + FR + IT −865,165, CN + JP + ID +710,295, US + CA −528,427,
+PL + RU −364,306, BR + MX + AR −167,374, IN −103,410, IR +6,678. Plots `plots/desktop_waterfall_{os,country,country_groups}.png`
+(DRAFT-watermarked), table `csv/september_desktop_waterfall_steps.csv`.
+
+## Previous status: EMPTY CYCLE — `../2026-08/` remains authoritative until this branch produces output
 
 Published August numbers (Dec-15 28d-MA, `h` + `t` applied): desktop **48,703,443** · mobile
 **17,924,562** · ALL **66,628,005**, at the 2026-08-02 seam. Those are the N-1 comparison series for
@@ -105,7 +128,8 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
   japan_bot_REVERT_2026-09-04/       # present — the handoff's original spec/parquet; revert target, keep while cycle is live
   india_excess/                      # present — `i` WIRED 2026-09-04 (PROPORTIONAL; hold/linger/settle/fade alternates kept); rerun pending
   india_excess_REVERT_2026-09-04/    # present — pre-ingest spec/parquet; revert target, keep while cycle is live
-  csv/september_canonical_curves.csv # + september_dec15_summary.csv (add .gitignore exceptions)
+  september_desktop_waterfalls.ipynb     # present — Dec-15 2025→2026 desktop waterfalls (OS / market / market group); `h` placed in modern Windows
+  csv/september_canonical_curves.csv # + september_dec15_summary.csv + september_desktop_waterfall_steps.csv (add .gitignore exceptions)
   plots/  kpi_sheet/  handoff/
   TODO_factors.md
 ```
