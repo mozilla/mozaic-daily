@@ -19,8 +19,10 @@ applied from **July's** seam. July's artifacts are read-only here; nothing froze
 
 What is NOT removed
 -------------------
-Only `h`. The desktop curve still carries `l` (launch-on-login) and `o` (MozillaOnline), which are
-per-tile bidirectional overlays baked into the parquet and not reversible at the display layer.
+Only `headwind.json`. The desktop curve still carries `l` (launch-on-login) and `o` (MozillaOnline),
+which are per-tile bidirectional overlays baked into the parquet and not reversible at the display
+layer, and any other display-layer spec in the cycle's `adjustments/` dir that moves desktop — those
+are named on stdout when present.
 
 Precision
 ---------
@@ -39,10 +41,15 @@ import argparse
 import glob
 import json
 import os
+import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from mozaic_daily.adjustments import render_adjustment  # noqa: E402
 
 # --- Cycle-scoped configuration (repoint at each roll-forward) -------------------------------
 CSV_DIR = "data-official/2026-08/csv"
@@ -57,8 +64,9 @@ PREV_FORECAST_START = pd.Timestamp("2026-07-06")  # July's seam
 MEASUREMENT_DATE = pd.Timestamp("2026-12-15")
 TROUGH_WINDOW_END = pd.Timestamp("2026-10-15")
 
-# The one spec in an adjustments dir that IS the Win10 headwind. Any other spec that moves desktop
-# is a hard error: this script must never quietly strip something else and call it the headwind.
+# The one spec in an adjustments dir that IS the Win10 headwind. Only this spec is stripped. Any
+# other spec that moves desktop is left in place and named on stdout, so the output is exactly
+# "published minus the Win10 headwind" whatever else the cycle's display layer carries.
 WIN10_SPEC_FILENAME = "headwind.json"
 
 # Loud, unmissable labels. The whole point of this artifact is that it can never be mistaken for
@@ -68,25 +76,23 @@ FILE_MARKER = "DESKTOP_ONLY.WIN10_HEADWIND_REMOVED"
 
 
 def render_desktop_linear_ramp(spec: dict, index: pd.DatetimeIndex) -> pd.Series:
-    """Desktop leg of a `linear_ramp` spec, matching the canonical notebook's `render_adjustment`.
+    """Desktop leg of a display-layer spec, rendered by the package's `render_adjustment`.
 
-    Deliberately unclamped past `anchor_date`, because the published file it reverses is unclamped
-    there too. See `data-official/2026-08/adjustments/_index.md` on the five diverging ramp
-    implementations.
+    The package renderer is the single source for the ramp math (unclamped past `anchor_date`),
+    so this cannot drift from what the canonical notebook applies. Kept as a named helper because
+    `export_desktop_ex_ir_cn_csv.py` reuses it.
     """
-    start = pd.Timestamp(spec["start_date"])
-    anchor = pd.Timestamp(spec["anchor_date"])
-    elapsed = np.maximum(0, (index - start).days)
-    return pd.Series(spec.get("desktop_dau", 0) * elapsed / (anchor - start).days, index=index)
+    return render_adjustment(spec, index)["desktop"]
 
 
 def load_desktop_headwind_ramp(
     adjustments_dir: str, index: pd.DatetimeIndex, forecast_start: pd.Timestamp
 ) -> pd.Series:
-    """Signed desktop headwind series for one cycle, zeroed before that cycle's seam.
+    """Signed desktop Win10-headwind series for one cycle, zeroed before that cycle's seam.
 
-    Raises if the directory holds any spec that moves desktop other than the headwind, or any spec
-    type whose reversal is not defined here.
+    Only `headwind.json` is stripped. Every other spec in the directory is rendered too, and any
+    that moves desktop is reported on stdout with its Dec-15 value so the reader knows the output
+    still carries it. Raises on an empty directory or a missing headwind spec.
     """
     spec_paths = sorted(glob.glob(f"{adjustments_dir}/*.json"))
     if not spec_paths:
@@ -95,31 +101,22 @@ def load_desktop_headwind_ramp(
             f"would make this file identical to the published one while still claiming to differ."
         )
 
-    total = pd.Series(0.0, index=index)
     win10_ramp = None
     for path in spec_paths:
         with open(path) as f:
             spec = json.load(f)
-        if spec["type"] != "linear_ramp":
-            raise ValueError(
-                f"{path} has type={spec['type']!r}; this script only reverses 'linear_ramp'. "
-                f"Add an explicit reversal before trusting the output."
-            )
-        leg = render_desktop_linear_ramp(spec, index)
-        total += leg
+        leg = render_adjustment(spec, index, spec_dir=os.path.dirname(path))["desktop"]
         if os.path.basename(path) == WIN10_SPEC_FILENAME:
             win10_ramp = leg
+        elif leg.abs().max() != 0:
+            at_measurement = leg.get(MEASUREMENT_DATE, float("nan"))
+            print(
+                f"NOTE: {path} also moves desktop ({at_measurement:+,.0f} DAU at "
+                f"{MEASUREMENT_DATE.date()}); it is LEFT IN the {LABEL} output."
+            )
 
     if win10_ramp is None:
         raise FileNotFoundError(f"{adjustments_dir} has no {WIN10_SPEC_FILENAME}; nothing to strip.")
-
-    other_desktop = (total - win10_ramp).abs().max()
-    if other_desktop != 0:
-        raise ValueError(
-            f"{adjustments_dir} holds a non-headwind spec that moves desktop by up to "
-            f"{other_desktop:,.0f} DAU. Removing only {WIN10_SPEC_FILENAME} would leave this file "
-            f"mislabelled. Extend this script to name each stripped component."
-        )
 
     win10_ramp[index < forecast_start] = 0.0  # history is actuals; the ramp applies from the seam
     return win10_ramp

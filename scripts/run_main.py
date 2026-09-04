@@ -32,6 +32,9 @@ Usage:
 
     # Write checkpoints to a specific directory
     python scripts/run_main.py --output-dir /tmp/my-run
+
+    # Force an adjustment off even though its spec gates on this cycle (any registered code)
+    python scripts/run_main.py --disable-adjustment o
 """
 
 import sys
@@ -89,6 +92,19 @@ if __name__ == '__main__':
         type=str,
         default=None,
         help='Directory to write checkpoint files to (default: current directory)'
+    )
+    parser.add_argument(
+        '--disable-adjustment',
+        action='append',
+        default=[],
+        metavar='CODE',
+        help=(
+            'Force one adjustment code off for this run even if its spec matches '
+            'forecast_start_date (repeatable, e.g. --disable-adjustment l '
+            '--disable-adjustment o). Works for every code in '
+            'data-official/adjustment_codes.yaml, including overlays added later. '
+            'The --no-* flags below are aliases for the original four codes.'
+        )
     )
     parser.add_argument(
         '--no-marketing-lift',
@@ -163,4 +179,5 @@ if __name__ == '__main__':
         launch_on_login=args.launch_on_login,
         mozillaonline=args.mozillaonline,
         organic_split=args.organic_split,
+        disabled_adjustments=args.disable_adjustment,
     )

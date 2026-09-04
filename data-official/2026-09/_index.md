@@ -22,9 +22,11 @@ and **neither wired into the pipeline**. Each directory has a `HANDOFF.md` — r
 | `japan_bot/` | `j` | Japan's non-organic automated desktop traffic since late June 2026, to subtract before training and add back after. Three scenarios (low / **middle** / high plateau). A masking effect, not growth | MIDDLE | 2026-08-30 |
 | `india_excess/` | `i` | India desktop DAU running above the 2022–25 typical curve since late May 2026, carried forward as real. **Already net of `l`** — do not net again. Five scenarios | SETTLE | 2026-08-29 |
 
-Wiring either means: register the code in `../adjustment_codes.yaml`, a `sentinel_attr` of its own in
-`adjustments.py`, tests, and a model re-run — a spec-only change moves nothing because the curve is
-subtracted from training rows. Change one overlay per run so the Dec-15 delta stays interpretable.
+Wiring either is now registry-only (since 2026-09-04, `src/mozaic_daily/overlays.py`): add the code to
+`../adjustment_codes.yaml` with `applier: per_tile_overlay` and a `spec_glob`, then a model re-run — a
+spec-only change moves nothing because the curve is subtracted from training rows. No `main.py` edits.
+Change one overlay per run so the Dec-15 delta stays interpretable. The `/ingest-adjustment` skill does the
+registration and bookkeeping.
 
 - **`STALE_REFERENCES_from_august_button_down.md`** — every script/notebook that still hardcodes an
   August path whose blobs were archived, plus the six cycle-scoped scripts whose constants

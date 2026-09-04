@@ -17,11 +17,12 @@ Two applier styles live here:
    Example: ``h`` (headwinds). Spec types: ``linear_ramp``, ``step``,
    ``daily_series``; rendered via ``render_adjustment()``.
 
-2. **Per-tile bidirectional applier** (``subtract_marketing_lift_from_training``
-   + ``add_marketing_lift_to_forecast``) — mutates the long-format training
-   ``DataFrame`` before mozaic runs and the long-format granular forecast
-   ``DataFrame`` after mozaic runs, so the model itself learns the no-adjustment
-   dynamic. Example: ``m`` (marketing-lift).
+2. **Per-tile bidirectional applier** (``subtract_lift_from_training`` +
+   ``add_lift_to_forecast``) — mutates the long-format training ``DataFrame``
+   before mozaic runs and the long-format granular forecast ``DataFrame`` after
+   mozaic runs, so the model itself learns the no-adjustment dynamic. Examples:
+   ``l``, ``o`` (``desktop_overlay`` specs, dispatched from the registry by
+   ``overlays.py``) and the retired ``m`` (marketing-lift).
 
 Every artifact also has a sidecar ``<name>.meta.json`` recording full provenance
 (model config, adjustments applied with hashes, parent file, git commit). Use
@@ -42,7 +43,8 @@ import pandas as pd
 import yaml
 
 
-_REGISTRY_PATH_DEFAULT = Path("data-official/adjustment_codes.yaml")
+# Anchored to the checkout, not the cwd: main() is run from scan dirs and temp dirs.
+_REGISTRY_PATH_DEFAULT = Path(__file__).resolve().parents[2] / "data-official" / "adjustment_codes.yaml"
 _MARKER_RAW = "raw"
 _MARKER_ADJ_PREFIX = "adj-"
 
@@ -229,11 +231,21 @@ def load_forecast(
 
 # --- Adjustment rendering --------------------------------------------------
 
-def render_adjustment(spec: dict, date_index) -> dict[str, pd.Series]:
+DISPLAY_LAYER_SPEC_TYPES = ("linear_ramp", "step", "daily_series", "daily_file")
+DAILY_FILE_PLATFORMS = ("desktop", "mobile")
+DISPLAY_MA_WINDOW_DAYS = 28
+
+
+def render_adjustment(spec: dict, date_index, spec_dir: str | Path | None = None) -> dict[str, pd.Series]:
     """Convert a single adjustment spec to net DAU Series for desktop and mobile.
 
-    Supports spec types: ``linear_ramp``, ``step``, ``daily_series``.
+    Supports spec types: ``linear_ramp``, ``step``, ``daily_series``, ``daily_file``.
     Returns ``{"desktop": Series, "mobile": Series}`` indexed by date.
+
+    ``daily_file`` reads a daily curve from a parquet next to the spec (``data_file``,
+    ``value_column``, ``platform``) and applies its trailing 28-day mean, because the
+    display layer these adjustments land on is itself a 28-day MA. ``spec_dir`` is
+    required for that type and ignored by the others.
     """
     idx = pd.DatetimeIndex(date_index)
     desktop = pd.Series(0.0, index=idx)
@@ -262,21 +274,66 @@ def render_adjustment(spec: dict, date_index) -> dict[str, pd.Series]:
                 desktop.iloc[loc] = values.get("desktop_dau", 0)
                 mobile.iloc[loc] = values.get("mobile_dau", 0)
 
+    elif spec["type"] == "daily_file":
+        curve = _render_daily_file_curve(spec, idx, spec_dir)
+        if spec["platform"] == "desktop":
+            desktop[:] = curve.values
+        else:
+            mobile[:] = curve.values
+
     else:
         raise ValueError(f"Unknown adjustment spec type: {spec['type']}")
 
     return {"desktop": desktop, "mobile": mobile}
 
 
-def load_adjustments_from_dir(adjustments_dir: str | Path, date_index) -> dict[str, pd.Series]:
-    """Sum every ``*.json`` adjustment spec in ``adjustments_dir`` into net DAU series."""
+def _render_daily_file_curve(spec: dict, idx: pd.DatetimeIndex, spec_dir: str | Path | None) -> pd.Series:
+    """Trailing 28-day mean of a ``daily_file`` spec's curve, aligned to ``idx``.
+
+    Dates before the file starts contribute zero; dates after it ends hold the last
+    value (the ingest step already extends every curve to the forecast horizon, so
+    this only matters for an index that outruns the file).
+    """
+    if spec_dir is None:
+        raise ValueError(
+            "daily_file adjustment specs need spec_dir so data_file can be resolved; "
+            "pass the directory the spec JSON lives in"
+        )
+    platform = spec.get("platform")
+    if platform not in DAILY_FILE_PLATFORMS:
+        raise ValueError(
+            f"daily_file spec platform={platform!r}; expected one of {DAILY_FILE_PLATFORMS}"
+        )
+    daily = load_lift_series(spec, spec_dir)
+    smoothed = daily.rolling(DISPLAY_MA_WINDOW_DAYS, min_periods=1).mean()
+    return smoothed.reindex(idx).ffill().fillna(0.0)
+
+
+def load_adjustments_from_dir(
+    adjustments_dir: str | Path,
+    date_index,
+    *,
+    require_specs: bool = False,
+) -> dict[str, pd.Series]:
+    """Sum every ``*.json`` adjustment spec in ``adjustments_dir`` into net DAU series.
+
+    Specs here are live by presence — there is no date gate. ``require_specs=True``
+    raises on an empty directory instead of returning zeros; the canonical notebook
+    wants that, because an empty ``adjustments/`` would silently publish a
+    pre-headwind number.
+    """
     idx = pd.DatetimeIndex(date_index)
     desktop_total = pd.Series(0.0, index=idx)
     mobile_total = pd.Series(0.0, index=idx)
-    for path in sorted(_glob.glob(f"{adjustments_dir}/*.json")):
+    spec_paths = sorted(_glob.glob(f"{adjustments_dir}/*.json"))
+    if require_specs and not spec_paths:
+        raise FileNotFoundError(
+            f"No adjustment specs in {adjustments_dir}; refusing to render a zero adjustment"
+        )
+    for path in spec_paths:
         with open(path) as f:
             spec = json.load(f)
-        rendered = render_adjustment(spec, idx)
+        rendered = render_adjustment(spec, idx, spec_dir=Path(path).parent)
         desktop_total += rendered["desktop"]
         mobile_total += rendered["mobile"]
     return {"desktop": desktop_total, "mobile": mobile_total}
@@ -455,6 +512,7 @@ def compute_country_shares(
     training_end_date: pd.Timestamp,
     window_days: int,
     flag_column: str = "fenix_android",
+    exclude_countries: Iterable[str] = (),
 ) -> pd.Series:
     """Compute per-country share of a segment's DAU in a trailing window.
 
@@ -463,6 +521,10 @@ def compute_country_shares(
     normalizes so the result sums to 1.0. The ``flag_column`` is a boolean
     segment flag: ``fenix_android`` for mobile marketing-lift, ``modern_windows``
     for the launch-on-login desktop overlay, etc.
+
+    ``exclude_countries`` are dropped before normalizing, so none of the curve is
+    allocated to them and the remaining countries still sum to 1.0 — the same
+    contract :func:`fixed_country_shares_from_spec` gives ``scope.exclude_countries``.
 
     Returned Series is indexed by country code. Countries with zero DAU in
     the window are dropped.
@@ -475,10 +537,12 @@ def compute_country_shares(
     sub = dau_training.loc[in_window & flag_only, ["country", "y"]]
     totals = sub.groupby("country")["y"].sum().astype("float64")
     totals = totals[totals > 0]
+    totals = totals.drop(index=[c for c in exclude_countries if c in totals.index])
     if totals.empty:
         raise ValueError(
             f"No {flag_column} DAU found in window "
-            f"{start_date.date()} → {end_date.date()}; cannot compute shares."
+            f"{start_date.date()} → {end_date.date()} after excluding "
+            f"{sorted(exclude_countries)}; cannot compute shares."
         )
     shares = totals / totals.sum()
     shares.name = "country_share"

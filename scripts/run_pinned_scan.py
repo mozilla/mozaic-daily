@@ -265,6 +265,7 @@ def _make_process_data_source(pinned_factory):
         forecast_end,
         training_end_date=None,
         marketing_spec_path=None,
+        **ignored_adjustment_kwargs,  # overlays / organic / model_configs — this probe fits raw tiles
     ):
         platform = data_source.platform
         source = data_source.telemetry_source

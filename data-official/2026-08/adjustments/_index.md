@@ -110,6 +110,8 @@ disagree past `anchor_date`:
 | `scripts/score_near_horizon.py` (`_headwind_ramp`) | yes |
 | `scripts/mobile_scoring.py` (`headwind_ramp`) | yes |
 
+*2026-09-04:* `scripts/export_desktop_no_headwind_csv.py` (and `export_desktop_ex_ir_cn_csv.py` through it) now render via the package `render_adjustment` instead of a sixth copy, so they inherit the **no** row.
+
 Seam-anchoring shortens the ramp 258 → 140 → 135 days, so it is steeper and the unclamped overshoot past
 the anchor is larger. At 2026-12-31 (**151/135 = 1.1185×** the anchor, since the ramp start moved to
 2026-08-02) the unclamped implementations give:

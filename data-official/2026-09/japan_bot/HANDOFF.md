@@ -43,27 +43,20 @@ The parquet carries the date as its **index**, not a column — `load_lift_serie
 and every lookup would miss. Columns match `l` and `o`: `japan_bot_dau_daily` +
 `japan_bot_dau_ma`, plus the MAU pair and a `source` column marking measured vs projected.
 
-## 3. Wiring it — seven touch points in `main.py`, plus the registry
+## 3. Wiring it — registry entry only (updated 2026-09-04)
 
-`main.py` hand-wires every adjustment code; there is no generic registry path. **Copy the
-`o` (MozillaOnline) pattern, not the `l` one** — `j` uses fixed country shares, and `l`
-computes them from a trailing DAU window.
+The seven `main.py` touch points this section used to list are gone: `src/mozaic_daily/overlays.py`
+now dispatches every code registered with `applier: per_tile_overlay`, finds its spec by
+`spec_glob`, gates on `applies_to_forecast_start`, applies it to `applies_to_data_source`, and
+derives a distinct sentinel (`japan_bot_subtracted`) from the registry `name`. Fixed vs trailing
+country shares is chosen by the spec's `allocation.key`, so "copy the `o` pattern" no longer means
+copying code. So:
 
-1. `_find_japan_bot_spec_for_forecast()` — mirror `_find_mozillaonline_spec_for_forecast`
-   (~line 392); glob `data-official/*/japan_bot/japan_bot.json`.
-2. `_apply_japan_bot_pre_mozaic()` — mirror `_apply_mozillaonline_pre_mozaic` (~line 419).
-   Use `fixed_country_shares_from_spec`, and a **distinct** `sentinel_attr`
-   (`"japan_bot_subtracted"`). Two overlays on one training frame need distinct sentinels
-   or the idempotency guard misfires.
-3. `process_data_source(...)` — add `japan_bot_spec_path` (~line 471) and its docstring
-   entry (~line 506).
-4. Pre-mozaic call (~line 575), gated on `data_source == DataSource.LEGACY_DESKTOP`.
-5. Add-back via `add_lift_to_forecast` (~line 668), `population_value` taken from
-   `spec["allocation"]["flag_column"]`, before the format function.
-6. The wrapper at ~line 697/746 that threads the path through.
-7. `main()` resolves it at ~line 897 and passes it at ~line 928.
-
-Then `data-official/adjustment_codes.yaml`, and a case in `tests/test_adjustments.py`.
+1. `data-official/adjustment_codes.yaml` — add `j` with `applier: per_tile_overlay`,
+   `spec_glob: "data-official/*/japan_bot/japan_bot.json"`.
+2. Nothing in `main.py`.
+3. `tests/test_overlays.py::TestCommittedRegistryAndSpecs` — pin what the September seam resolves to.
+4. A model re-run.
 
 **The code must stay a single letter.** `parse_state_from_path` splits the filename marker
 into characters, so `adj-hjb` parses to `['b','h','j']` against meta `['h','jb']` and

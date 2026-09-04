@@ -81,9 +81,9 @@ from mozaic_daily.adjustments import (  # noqa: E402
     insert_state_marker,
     write_meta,
 )
-from mozaic_daily.main import (  # noqa: E402
-    _find_launch_on_login_spec_for_forecast,
-    _find_mozillaonline_spec_for_forecast,
+from mozaic_daily.overlays import (  # noqa: E402
+    registered_overlay_codes,
+    resolve_overlays,
 )
 from mozaic_daily.queries import DataSource, Metric  # noqa: E402
 
@@ -266,12 +266,14 @@ def parse_args() -> argparse.Namespace:
                    help="DesktopModelConfig.holiday_effect_floor (default -0.6)")
 
     g = parser.add_argument_group("Overlay toggles (for isolating one overlay's effect)")
+    g.add_argument("--disable-adjustment", action="append", default=[], metavar="CODE",
+                   help="Disable one adjustment code even if its spec matches (repeatable). "
+                        "Works for every registered overlay; the output is stamped without "
+                        "that code so the filename describes what is baked into the parquet.")
     g.add_argument("--no-launch-on-login", action="store_true",
-                   help="Disable the launch-on-login (`l`) overlay even if a spec matches. "
-                        "Output is stamped without the `l` code.")
+                   help="Alias for --disable-adjustment l.")
     g.add_argument("--no-mozillaonline", action="store_true",
-                   help="Disable the MozillaOnline (`o`) overlay even if a spec matches. "
-                        "Output is stamped without the `o` code.")
+                   help="Alias for --disable-adjustment o.")
 
     return parser.parse_args()
 
@@ -319,27 +321,31 @@ def main_cli() -> None:
         print("\n[dry-run] Skipping actual forecast.")
         return
 
-    # Determine which desktop overlays apply for this forecast start (l / o).
-    # main() applies them by default when their spec matches; we mirror that here
-    # to stamp the output marker + meta correctly. The --no-* toggles suppress an
-    # overlay even when its spec matches, so a single overlay's effect can be
-    # isolated by differencing runs; the suppressed code is left off the marker so
+    # Determine which desktop overlays apply for this forecast start. main() applies every
+    # registry-resolved overlay whose spec gates on this date; we resolve the same set here
+    # to stamp the output marker + meta correctly. A disabled code is left off the marker so
     # the filename always describes what is actually baked into the parquet.
-    applied_codes: list[str] = []
-    code_to_spec_file: dict[str, Path] = {}
-    lol_spec = _find_launch_on_login_spec_for_forecast(args.forecast_start_date)
-    if lol_spec is not None and not args.no_launch_on_login:
-        applied_codes.append("l")
-        code_to_spec_file["l"] = lol_spec
-    mo_spec = _find_mozillaonline_spec_for_forecast(args.forecast_start_date)
-    if mo_spec is not None and not args.no_mozillaonline:
-        applied_codes.append("o")
-        code_to_spec_file["o"] = mo_spec
+    disabled = set(args.disable_adjustment)
+    if args.no_launch_on_login:
+        disabled.add("l")
+    if args.no_mozillaonline:
+        disabled.add("o")
+    desktop_overlays = [
+        o for o in resolve_overlays(args.forecast_start_date, disabled_codes=disabled)
+        if o.data_source == DataSource.LEGACY_DESKTOP
+    ]
+    applied_codes: list[str] = [o.code for o in desktop_overlays]
+    code_to_spec_file: dict[str, Path] = {o.code: o.spec_path for o in desktop_overlays}
     print(f"Desktop overlays applied this scan: {applied_codes or 'none (raw)'}")
-    for flag, code, spec in [(args.no_launch_on_login, "l", lol_spec),
-                             (args.no_mozillaonline, "o", mo_spec)]:
-        if flag and spec is not None:
-            print(f"  NOTE: `{code}` spec matched but was suppressed by --no-* flag.")
+    suppressed = [
+        o.code for o in resolve_overlays(args.forecast_start_date)
+        if o.code in disabled and o.data_source == DataSource.LEGACY_DESKTOP
+    ]
+    for code in suppressed:
+        print(f"  NOTE: `{code}` spec matched but was suppressed by --disable-adjustment.")
+    unknown = disabled - set(registered_overlay_codes()) - {"m", "p"}
+    if unknown:
+        raise SystemExit(f"--disable-adjustment names unregistered code(s): {sorted(unknown)}")
 
     # The config goes through main()'s supported model_configs channel; the overlays are
     # applied by main() itself. This used to monkeypatch process_data_source with a hand-copied
@@ -350,8 +356,7 @@ def main_cli() -> None:
         metric_filter={Metric.DAU},
         forecast_start_date=args.forecast_start_date,
         output_dir=str(slug_dir),
-        launch_on_login=not args.no_launch_on_login,
-        mozillaonline=not args.no_mozillaonline,
+        disabled_adjustments=disabled,
         model_configs={DataSource.LEGACY_DESKTOP: config},
     )
 

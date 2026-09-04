@@ -36,8 +36,8 @@ the curve is subtracted from training rows, so a spec-only change moves nothing 
 
 ## Not wired
 
-`main.py` hand-wires each adjustment code. `j` still needs a
-`_find_japan_bot_spec_for_forecast` / `_apply_japan_bot_pre_mozaic` pair, an
-`add_lift_to_forecast` call, and an entry in `data-official/adjustment_codes.yaml`.
-Single-letter codes only — `parse_state_from_path` splits the filename marker into
-characters, so a two-letter code makes every artifact raise `State drift`.
+Registering `j` in `data-official/adjustment_codes.yaml` with `applier: per_tile_overlay` and
+`spec_glob: "data-official/*/japan_bot/japan_bot.json"` is the whole wiring — `src/mozaic_daily/overlays.py`
+dispatches from the registry (2026-09-04), so the finder/applier pair the original handoff describes is no
+longer needed. Single-letter codes only — `parse_state_from_path` splits the filename marker into
+characters. Then a model re-run.

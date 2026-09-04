@@ -49,7 +49,8 @@ the curve is subtracted from training rows, so a spec-only change moves nothing 
 
 ## Not wired
 
-`main.py` hand-wires each adjustment code. `i` still needs a
-`_find_india_excess_spec_for_forecast` / `_apply_india_excess_pre_mozaic` pair (copy the
-`o` pattern — fixed shares — with a distinct sentinel), an `add_lift_to_forecast` call, and
-an entry in `data-official/adjustment_codes.yaml`. Single-letter codes only.
+Registering `i` in `data-official/adjustment_codes.yaml` with `applier: per_tile_overlay` and
+`spec_glob: "data-official/*/india_excess/india_excess.json"` is the whole wiring — `src/mozaic_daily/overlays.py`
+dispatches from the registry (2026-09-04), so the finder/applier pair the original handoff describes is no
+longer needed. Single-letter codes only — `parse_state_from_path` splits the filename marker into
+characters. Then a model re-run.

@@ -119,19 +119,21 @@ The sidecar is canonical; the filename marker must match it. Loaders enforce thi
 
 Adding a new adjustment:
 
-1. Pick an unused one-letter code, add it to `adjustment_codes.yaml`.
-2. Register the applier. **Where depends on the applier style** (see
-   `src/mozaic_daily/_index.md` for the full comparison):
-   - *Composite post-forecast* (`h`, `t`) — `adjustments.py`. These need no per-code wiring at all:
-     `load_adjustments_from_dir()` globs `*.json` and sums every spec it finds, so a display-layer
-     adjustment goes live the moment its spec file lands in a cycle's `adjustments/` directory.
-   - *Per-tile bidirectional* (`l`, `o`) — `adjustments.py`, reusing `load_overlay_spec()` and the
-     generic subtract/add-back helpers. Each overlay needs a **distinct `sentinel_attr`** so several
-     can stack on one training frame.
-   - *Measured split* (`p`) — its own module pair, **not** `adjustments.py`: `organic_source.py`
-     (producer) and `organic.py` (consumer).
-3. Add unit tests. `tests/test_adjustments.py` for the first two styles; a dedicated module for the
-   third (`tests/test_organic.py` is the reference).
+1. Pick an unused one-letter code, add it to `adjustment_codes.yaml` with `name`, **`applier`**,
+   `description`, `spec_glob`. `applier` and `spec_glob` are load-bearing.
+2. Wire it — **where depends on the applier** (see `src/mozaic_daily/_index.md` for the comparison):
+   - `display_layer` (`h`, `t`) — nothing to wire: `load_adjustments_from_dir()` globs `*.json` and sums
+     every spec in a cycle's `adjustments/` directory, so the adjustment is live the moment its spec lands.
+     A curve from a file uses `type: daily_file` with the parquet beside the spec.
+   - `per_tile_overlay` (`l`, `o`) — nothing to wire either: `src/mozaic_daily/overlays.py` reads the
+     registry, finds the spec via `spec_glob`, gates on `applies_to_forecast_start`, applies it to
+     `applies_to_data_source`, and derives a distinct sentinel from `name`. The cycle dir holds
+     `<name>.json`, the curve parquet, its meta, `source_data/`, and an `_index.md`.
+   - `paid_organic_split` (`p`) — its own module pair, `organic_source.py` (producer) and `organic.py`
+     (consumer). A new mechanism of this kind is the only case that needs Python.
+3. Add unit tests. `tests/test_adjustments.py` for display-layer math; `tests/test_overlays.py` for a
+   per-tile overlay (its `TestCommittedRegistryAndSpecs` pins what the live seam resolves to); a
+   dedicated module for a new mechanism (`tests/test_organic.py` is the reference).
 
 **Codes are never unregistered.** A retired adjustment (currently `m`) must stay in
 `adjustment_codes.yaml` so that historical artifacts carrying its marker keep loading and reproducing.

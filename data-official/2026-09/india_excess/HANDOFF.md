@@ -47,23 +47,21 @@ The parquet carries the date as its **index**, not a column — `load_lift_serie
 `df[value_column]` then reads `.index`. Columns: `india_excess_dau_daily`,
 `india_excess_dau_ma` (trailing 28), `source` (`pre-onset` / `measured` / `projected`).
 
-## 3. Wiring it — the same seven touch points as `j`
+## 3. Wiring it — registry entry only (updated 2026-09-04)
 
-`main.py` hand-wires every adjustment code. **Copy the `o` (MozillaOnline) pattern** — fixed
-country shares — with a **distinct** `sentinel_attr` (`"india_excess_subtracted"`). Two
-overlays on one training frame need distinct sentinels or the idempotency guard misfires.
+The seven `main.py` touch points this section used to list are gone: `src/mozaic_daily/overlays.py`
+now dispatches every code registered with `applier: per_tile_overlay`, finds its spec by
+`spec_glob`, gates on `applies_to_forecast_start`, applies it to `applies_to_data_source`, and
+derives a distinct sentinel (`india_excess_subtracted`) from the registry `name`. So:
 
-1. `_find_india_excess_spec_for_forecast()` — glob `data-official/*/india_excess/india_excess.json`,
-   exact match on `applies_to_forecast_start` (**2026-09-02**, read from the `j` spec so both load in the same run).
-2. `_apply_india_excess_pre_mozaic()` — `fixed_country_shares_from_spec`, distinct sentinel.
-3. `process_data_source(...)` — add `india_excess_spec_path` and its docstring entry.
-4. Pre-mozaic call, gated on `data_source == DataSource.LEGACY_DESKTOP`.
-5. Add-back via `add_lift_to_forecast`, `population_value` from `spec["allocation"]["flag_column"]`.
-6. The wrapper that threads the path through.
-7. `main()` resolves and passes it.
+1. `data-official/adjustment_codes.yaml` — add `i` with `applier: per_tile_overlay`,
+   `spec_glob: "data-official/*/india_excess/india_excess.json"`.
+2. Nothing in `main.py`. Fixed country shares are chosen by the spec's `allocation.key`.
+3. `tests/test_overlays.py::TestCommittedRegistryAndSpecs` — pin that the September seam resolves to
+   the intended set.
+4. A model re-run.
 
-Then `data-official/adjustment_codes.yaml` (single letter — `parse_state_from_path` splits
-the marker into characters) and a case in `tests/test_adjustments.py`.
+Single letter only — `parse_state_from_path` splits the marker into characters.
 
 ## 4. Scenarios — which path persists is a planning choice, judged at 15 Dec 2026
 

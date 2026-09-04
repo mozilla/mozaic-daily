@@ -182,6 +182,70 @@ def test_render_daily_series():
     assert rendered["desktop"].loc["2026-05-05"] == 0
 
 
+def _write_daily_file_spec(tmp_path, *, platform="desktop", value=1400.0, start="2026-06-01", end="2027-12-31"):
+    idx = pd.date_range(start, end, freq="D", name="target_date")
+    pd.DataFrame({"curve_dau_daily": pd.Series(value, index=idx)}).to_parquet(tmp_path / "curve.parquet")
+    spec = {"type": "daily_file", "platform": platform, "data_file": "curve.parquet",
+            "value_column": "curve_dau_daily"}
+    (tmp_path / "curve.json").write_text(json.dumps(spec))
+    return spec
+
+
+def test_render_daily_file_applies_trailing_28d_mean_to_one_platform(tmp_path):
+    spec = _write_daily_file_spec(tmp_path, platform="mobile", value=1400.0)
+    idx = pd.date_range("2026-05-01", "2026-12-31", freq="D")
+    rendered = render_adjustment(spec, idx, spec_dir=tmp_path)
+    assert (rendered["desktop"] == 0).all()
+    assert rendered["mobile"][pd.Timestamp("2026-05-31")] == 0.0          # before the file starts
+    assert rendered["mobile"][pd.Timestamp("2026-06-01")] == 1400.0       # min_periods=1: first day is itself
+    assert rendered["mobile"][pd.Timestamp("2026-12-15")] == 1400.0       # flat curve → flat MA
+
+
+def test_render_daily_file_smooths_a_step_over_28_days(tmp_path):
+    idx_file = pd.date_range("2026-06-01", "2027-12-31", freq="D", name="target_date")
+    daily = pd.Series(0.0, index=idx_file)
+    daily[idx_file >= "2026-07-01"] = 2800.0
+    pd.DataFrame({"curve_dau_daily": daily}).to_parquet(tmp_path / "curve.parquet")
+    spec = {"type": "daily_file", "platform": "desktop", "data_file": "curve.parquet", "value_column": "curve_dau_daily"}
+    idx = pd.date_range("2026-06-01", "2026-12-31", freq="D")
+    rendered = render_adjustment(spec, idx, spec_dir=tmp_path)["desktop"]
+    assert rendered[pd.Timestamp("2026-07-14")] == pytest.approx(2800.0 * 14 / 28)  # half the window in
+    assert rendered[pd.Timestamp("2026-07-28")] == pytest.approx(2800.0)
+
+
+def test_render_daily_file_holds_last_value_past_the_file_end(tmp_path):
+    spec = _write_daily_file_spec(tmp_path, value=900.0, end="2026-10-31")
+    idx = pd.date_range("2026-10-01", "2026-12-31", freq="D")
+    rendered = render_adjustment(spec, idx, spec_dir=tmp_path)["desktop"]
+    assert rendered[pd.Timestamp("2026-12-31")] == 900.0
+
+
+def test_render_daily_file_requires_spec_dir_and_platform(tmp_path):
+    spec = _write_daily_file_spec(tmp_path)
+    idx = pd.date_range("2026-06-01", "2026-06-10", freq="D")
+    with pytest.raises(ValueError, match="spec_dir"):
+        render_adjustment(spec, idx)
+    with pytest.raises(ValueError, match="platform='tablet'"):
+        render_adjustment({**spec, "platform": "tablet"}, idx, spec_dir=tmp_path)
+
+
+def test_load_adjustments_from_dir_renders_daily_file_next_to_ramp(tmp_path):
+    _write_daily_file_spec(tmp_path, platform="desktop", value=1000.0)
+    (tmp_path / "headwind.json").write_text(json.dumps(HEADWIND_SPEC))
+    idx = pd.date_range("2026-04-01", "2026-12-15", freq="D")
+    net = load_adjustments_from_dir(tmp_path, idx)
+    ramp_only = render_adjustment(HEADWIND_SPEC, idx)["desktop"]
+    assert net["desktop"][pd.Timestamp("2026-12-15")] == pytest.approx(ramp_only.iloc[-1] + 1000.0)
+    assert net["mobile"][pd.Timestamp("2026-12-15")] == pytest.approx(-27162.0)
+
+
+def test_load_adjustments_from_dir_empty_returns_zero_unless_required(tmp_path):
+    idx = pd.date_range("2026-04-01", "2026-04-10", freq="D")
+    assert (load_adjustments_from_dir(tmp_path, idx)["desktop"] == 0).all()
+    with pytest.raises(FileNotFoundError, match="No adjustment specs"):
+        load_adjustments_from_dir(tmp_path, idx, require_specs=True)
+
+
 def test_render_unknown_type_raises():
     with pytest.raises(ValueError, match="Unknown adjustment spec type"):
         render_adjustment({"type": "bogus"}, pd.date_range("2026-01-01", "2026-01-10"))
@@ -963,6 +1027,24 @@ def test_mw_shares_match_baseline_proportions(mw_country_shares):
     assert mw_country_shares.loc["US"] == pytest.approx(0.80)
     assert mw_country_shares.loc["DE"] == pytest.approx(0.15)
     assert mw_country_shares.loc["BR"] == pytest.approx(0.05)
+
+
+def test_mw_shares_exclude_countries_and_renormalize(desktop_training_df):
+    shares = compute_country_shares(
+        desktop_training_df, training_end_date=TEST_DATES[-1], window_days=28,
+        flag_column="modern_windows", exclude_countries=["US"],
+    )
+    assert "US" not in shares.index
+    assert shares.sum() == pytest.approx(1.0)
+    assert shares["DE"] == pytest.approx(MW_BASELINE["DE"] / (MW_BASELINE["DE"] + MW_BASELINE["BR"]))
+
+
+def test_mw_shares_excluding_everything_raises(desktop_training_df):
+    with pytest.raises(ValueError, match="after excluding"):
+        compute_country_shares(
+            desktop_training_df, training_end_date=TEST_DATES[-1], window_days=28,
+            flag_column="modern_windows", exclude_countries=TEST_COUNTRIES,
+        )
 
 
 def test_mw_shares_ignore_other_segments(desktop_training_df):

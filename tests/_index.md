@@ -6,7 +6,8 @@ Unit and integration tests for `mozaic_daily`. Mirrors the package structure: on
 
 | File | Tests |
 |---|---|
-| `test_adjustments.py` | Filename markers, sidecar meta round-trip, composite adjustment math (`linear_ramp`, `step`, `daily_series`), and the per-tile bidirectional appliers used by `l` / `o` (spec validation, country shares — both trailing-DAU and fixed-from-spec, subtract from training, add-back to forecast, per-overlay sentinels so two overlays stack) |
+| `test_overlays.py` | Registry-driven overlay dispatch (`overlays.py`): `applier` selection and the raise on a missing/unknown applier, the exact-date spec gate (null never matches, two claimants raise), disabled codes skipped, data-source and allocation-key validation, trailing-share exclusions and fixed-share dispatch, two overlays stacking with distinct sentinels and round-tripping at the world row, and — against the committed repo — that the 2026-08-02 seam still resolves to exactly `l` + `o` |
+| `test_adjustments.py` | Filename markers, sidecar meta round-trip, composite adjustment math (`linear_ramp`, `step`, `daily_series`, `daily_file` incl. the 28d smoothing and hold-past-end), `load_adjustments_from_dir(require_specs=)`, and the per-tile bidirectional appliers used by `l` / `o` (spec validation, country shares — both trailing-DAU (with `exclude_countries`) and fixed-from-spec, subtract from training, add-back to forecast, per-overlay sentinels so two overlays stack) |
 | `test_validation.py` | All validation rules: schema, string formats, row counts, nulls, duplicates |
 | `test_forecasting.py` | `get_forecast_dfs`, `get_desktop_forecast_dfs`, `get_mobile_forecast_dfs` |
 | `test_config.py` | `get_runtime_config`, date logic, `DateConstraints` |

@@ -78,6 +78,7 @@ src/mozaic_daily/
 ├── organic.py        # Mobile paid/organic split `p` — CONSUMER: split training, stack paid back
 ├── organic_source.py # Mobile paid/organic split `p` — PRODUCER: build the measured split + checks
 ├── seam_ma.py        # Display-layer 28d MAs; variance-matched actuals→forecast seam transition
+├── overlays.py       # Registry-driven dispatch of per-tile overlays (`l`, `o`, any `per_tile_overlay` code)
 └── main.py           # Main entry point
 ```
 
@@ -205,7 +206,11 @@ The `scripts/` directory contains helper scripts for common tasks:
   than `desktop_dau`) and selects on mobile's `"{}"` segment rather than `'{"os": "ALL"}'`. Actuals come from
   the parquet's `training` rows, which `p` guarantees are byte-identical to raw actuals. **Cycle-scoped** —
   repoint `FORECAST_START`, `DEFAULT_HEADWIND`, `TARGET_DEC15` each roll-forward
-- `verify_lol_overlay.py` / `verify_mozillaonline_overlay.py` - End-to-end checks of the `l` and `o` overlays
+- `verify_overlay.py` - End-to-end three-curve isolation check for **any** per-tile overlay code
+  (`--code j --cycle 2026-09`): raw vs subtract-only vs subtract+add, Dec-15 deltas, pass-through ratio
+  against a 0.5–1.5× band, plot + numbers JSON in the spec dir's `plots/`. Replaced the per-code
+  `verify_lol_overlay.py` / `verify_mozillaonline_overlay.py` on 2026-09-04. Forecasts twice; the
+  ingest skill prints the invocation and leaves running it to you
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
   sampled date windows. Run before using training rows as a stand-in for an actuals query (e.g. the canonical
@@ -557,12 +562,13 @@ df, meta = load_forecast(path, require_state=["h"])  # raises if filename codes 
 
 **Auditing on-disk files**: `scripts/verify_forecast_states.py` reproduces composite CSVs from raw parquets and writes `tmp/inventory.csv` with verified state per file. Run this whenever you suspect adjustment state drift.
 
-**Adding a new adjustment type**: add the one-letter code to `data-official/adjustment_codes.yaml`, register its applier in `src/mozaic_daily/adjustments.py`, and extend `tests/test_adjustments.py`. Two applier styles exist:
-- *Composite post-forecast* (mutates a 28d-MA Series after mozaic — cheap, low-impact). Reference: `h` (headwinds).
-- *Per-tile bidirectional* (subtracts from training before mozaic, adds back after — required when the adjustment should shift the *model's view of recent history* so it doesn't extrapolate the adjustment forward implicitly). Reference: `l` (launch-on-login), `o` (MozillaOnline).
-- *Measured split* (scales training rows by a measured share pre-mozaic, adds a separately-forecast level back post-mozaic). Use this when the thing being removed can be *measured* rather than modelled and has no meaningful start date. Reference: `p` (paid/organic). Lives in its own module pair (`organic_source.py` / `organic.py`), not in `adjustments.py`.
+**Adding a new adjustment type**: add the one-letter code to `data-official/adjustment_codes.yaml` with an `applier` field, and extend the tests. The `applier` value is load-bearing — it selects the machinery, and for the two common styles **no Python is needed**:
+- *Display layer* (`applier: display_layer`; `h`, `t`) — a spec in the cycle's `adjustments/` dir, summed onto the 28d MA after mozaic. Live by presence, no date gate. Spec types: `linear_ramp`, `step`, `daily_series`, and `daily_file` (a parquet curve next to the spec, applied as its trailing 28d mean to one platform). Dec-15 effect is exactly the spec's value, no model re-run.
+- *Per-tile overlay* (`applier: per_tile_overlay`; `l`, `o`) — a `desktop_overlay` spec + curve parquet. `src/mozaic_daily/overlays.py` discovers every such code from the registry, finds its spec via `spec_glob`, gates on `applies_to_forecast_start`, applies it to the data source named in `applies_to_data_source`, subtracts the curve from training rows before mozaic and adds it back after. Sentinel is derived from the registry `name`, so overlays stack without collisions. Use when the effect has a hard start date so "incremental since launch" is well defined; requires a model re-run.
+- *Measured split* (`applier: paid_organic_split`; `p`) — scales training rows by a measured share pre-mozaic, adds a separately-forecast level back post-mozaic, for effects that can be *measured* and have no start date. Its own module pair (`organic_source.py` / `organic.py`). A new mechanism of this kind is the only case that still needs code.
+- `applier: marketing_lift` is the retired `m` path, kept so pre-swap artifacts reproduce.
 
-**Bidirectional overlay machinery (generalized).** The per-tile bidirectional appliers are model-agnostic: `compute_country_shares(training_df, flag_column=...)`, `subtract_lift_from_training(df, flag_column=..., sentinel_attr=...)`, and `add_lift_to_forecast(df, population_value=...)`. They key off a boolean segment column (`modern_windows` for desktop `l` and `o`; `fenix_android` for the retired mobile `m`) and allocate a single daily aggregate series across country tiles by either trailing DAU share (`compute_country_shares`, e.g. `l`) or fixed spec shares (`fixed_country_shares_from_spec`, e.g. `o` — drops `scope.exclude_countries` and renormalizes over training-present countries). **The desktop `desktop_overlay` spec type (`load_overlay_spec`) is the reuse path for desktop tailwinds** — `l` (launch-on-login) and `o` (MozillaOnline migration) both use it. Each overlay must pass a distinct `sentinel_attr` (`launch_on_login_subtracted`, `mozillaonline_subtracted`) so they stack on the same desktop training frame.
+**Overlay machinery (generalized).** The per-tile appliers are model-agnostic: `compute_country_shares(training_df, flag_column=..., exclude_countries=...)`, `fixed_country_shares_from_spec(spec, present)`, `subtract_lift_from_training(df, flag_column=..., sentinel_attr=...)`, and `add_lift_to_forecast(df, population_value=...)`. They key off a boolean segment column (`modern_windows` for desktop `l` and `o`; `fenix_android` for the retired mobile `m`) and split one world-total daily series across country tiles by `allocation.key`: `trailing_dau_share` (**proportional to population** — each country's recent DAU in the segment, e.g. `l`) or `fixed_country_shares` (**localized** — an explicit per-country dict in the spec, e.g. `o` at ~93% CN). Both drop `scope.exclude_countries` and renormalize over training-present countries, so none of the curve lands in an excluded country and the world total is preserved. `overlays.py` dispatches on the key; `main.py` never inspects it.
 
 **Desktop keeps this pattern; mobile no longer uses it.** It is sound for desktop precisely because `l` and `o` have hard start dates, so "incremental since launch" is a well-defined quantity. It was never sound for mobile, where paid acquisition has run continuously and there is a client-level attribution flag we can measure instead — see `p` below.
 
@@ -575,7 +581,7 @@ Three things about `p` that are easy to get wrong:
 2. **Allocation is by measured-paid share, not total-DAU share.** Paid intensity ranges from 0.2% of Fenix DAU in RU to 27.6% in ID, so a total-DAU key (what `m` used) pushes paid into markets that have none.
 3. **The share is only measured from 2024-06-01** (client-level retention limit) while mobile DAU trains from 2020-12-31, so the earliest per-country share is **held flat backwards** over ~3.5 years. Bounded at ~1.1pp — paid was only 1.10% of Fenix DAU ex-IR at the oldest measured month. Masking instead is not available: mozaic requires one common date grid across tiles, so NaN-ing Fenix pre-2024-06 would corrupt the published `ALL MOBILE` training rows.
 
-**Disabling an overlay for a one-off run**: `python scripts/run_main.py --no-organic-split ...` (mobile `p`), `--no-launch-on-login ...` (desktop `l`), `--no-mozillaonline ...` (desktop `o`), or `--no-marketing-lift ...` (retired mobile `m`). Default behavior is to apply an overlay whenever its spec (`.../organic/organic.json`, `.../launch_on_login/lol.json`, `.../mozillaonline/mozillaonline.json`, `.../marketing/marketing.json`) has `applies_to_forecast_start == forecast_start_date`. Note `--no-organic-split` yields a **total**-DAU mobile forecast with no paid treatment at all, not an organic one.
+**Disabling an adjustment for a one-off run**: `python scripts/run_main.py --disable-adjustment CODE` (repeatable) forces any registered code off even when its spec gates on this cycle; `run_param_scan.py` takes the same flag and leaves the code off the output marker. The older `--no-organic-split` (`p`), `--no-launch-on-login` (`l`), `--no-mozillaonline` (`o`) and `--no-marketing-lift` (`m`) flags remain as aliases. Default behavior is to apply every adjustment whose spec has `applies_to_forecast_start == forecast_start_date`; `main()` prints one resolution line per registered code. Note `--no-organic-split` yields a **total**-DAU mobile forecast with no paid treatment at all, not an organic one.
 
 **Running a tuned build**: pass `main(model_configs={DataSource.LEGACY_DESKTOP: cfg})`. This is how `run_param_scan.py` / `run_mobile_param_scan.py` inject their config; they used to monkeypatch `process_data_source` with a hand-copied platform branch, which had to be kept in sync with `main.py` by hand. **Do not reintroduce that pattern.** `run_main.py` still exposes no parameter flags, so a plain `run_main.py` run uses package defaults and cannot reproduce a tuned build.
 

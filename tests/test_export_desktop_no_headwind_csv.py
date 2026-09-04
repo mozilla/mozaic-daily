@@ -6,7 +6,8 @@ failure modes worth testing are the ones that would ship a *wrong* or *mislabell
 - the ramp being reconstructed with different semantics than the notebook that produced the
   published file (clamping past the anchor, or not starting at zero at `start_date`);
 - the ramp being applied before the seam, which would move history;
-- the script stripping something that is not the Win10 headwind and still labelling it as one;
+- the script stripping something that is not the Win10 headwind and still labelling it as one
+  (other desktop-moving specs must be left in and reported, not folded in);
 - the summary's ledger columns not actually recovering the published figures.
 
 All of these are exercised against hand-built specs and series — no parquets, no BigQuery, and no
@@ -106,22 +107,34 @@ class TestLoadDesktopHeadwindRamp:
         with_tailwind = export.load_desktop_headwind_ramp(str(tmp_path), _index(), RAMP_START)
         assert with_tailwind[ANCHOR] == pytest.approx(-1315000.0)
 
-    def test_raises_when_another_spec_moves_desktop(self, tmp_path):
-        """Stripping only headwind.json while a second spec also moved desktop would mislabel
-        the file as 'the Win10 headwind removed' when more, or less, had been removed."""
+    def test_strips_only_headwind_json_and_reports_other_desktop_specs(self, tmp_path, capsys):
+        """A second desktop-moving spec (e.g. a display-layer tailwind curve) must be left in
+        the output and named on stdout, never silently folded into 'the Win10 headwind'."""
         _write_specs(tmp_path, {
             "headwind.json": HEADWIND_SPEC,
             "other.json": {**HEADWIND_SPEC, "desktop_dau": -50000},
         })
-        with pytest.raises(ValueError, match="non-headwind spec that moves desktop"):
-            export.load_desktop_headwind_ramp(str(tmp_path), _index(), RAMP_START)
+        ramp = export.load_desktop_headwind_ramp(str(tmp_path), _index(), RAMP_START)
+        assert ramp[ANCHOR] == pytest.approx(-1315000.0)
+        out = capsys.readouterr().out
+        assert "other.json" in out and "LEFT IN" in out and "-50,000" in out
 
-    def test_raises_on_an_unsupported_spec_type(self, tmp_path):
+    def test_reports_nothing_when_other_specs_do_not_move_desktop(self, tmp_path, capsys):
+        _write_specs(tmp_path, {
+            "headwind.json": HEADWIND_SPEC,
+            "tailwind.json": {**HEADWIND_SPEC, "desktop_dau": 0, "mobile_dau": 299000},
+        })
+        export.load_desktop_headwind_ramp(str(tmp_path), _index(), RAMP_START)
+        assert "LEFT IN" not in capsys.readouterr().out
+
+    def test_step_headwind_renders_through_the_package(self, tmp_path):
+        """Any display-layer spec type the package can render is reversible here."""
         _write_specs(tmp_path, {"headwind.json": {
             "type": "step", "start_date": "2026-08-02", "desktop_dau": -1315000,
         }})
-        with pytest.raises(ValueError, match="only reverses 'linear_ramp'"):
-            export.load_desktop_headwind_ramp(str(tmp_path), _index(), RAMP_START)
+        ramp = export.load_desktop_headwind_ramp(str(tmp_path), _index(), RAMP_START)
+        assert ramp[ANCHOR] == -1315000.0
+        assert ramp[RAMP_START - pd.Timedelta(days=1)] == 0.0
 
     def test_raises_on_an_empty_directory(self, tmp_path):
         """An empty dir would make the output identical to the published file while its filename

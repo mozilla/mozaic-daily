@@ -15,9 +15,7 @@ Usage:
     python -m mozaic_daily.main
 """
 
-from typing import Optional, Set
-import glob
-import json
+from typing import Iterable, Optional, Set
 import pandas as pd
 from pathlib import Path
 import os
@@ -33,17 +31,19 @@ from .organic import (
     split_training_to_organic,
 )
 from .adjustments import (
-    add_lift_to_forecast,
     add_marketing_lift_to_forecast,
-    compute_country_shares,
     compute_fenix_country_shares,
-    fixed_country_shares_from_spec,
-    load_lift_series,
     load_marketing_lift_series,
     load_marketing_spec,
-    load_overlay_spec,
-    subtract_lift_from_training,
     subtract_marketing_lift_from_training,
+)
+from .overlays import (
+    ResolvedOverlay,
+    add_overlays_post_mozaic,
+    find_spec_for_forecast,
+    registered_overlay_codes,
+    resolve_overlays,
+    subtract_overlays_pre_mozaic,
 )
 from .config import get_runtime_config, STATIC_CONFIG, build_filter_code
 from .data import get_queries, get_aggregate_data, check_training_data_availability
@@ -149,40 +149,12 @@ def save_checkpoint(df: pd.DataFrame, filename: str) -> None:
     df.to_parquet(filename)
 
 
-def _find_spec_for_forecast(pattern: str, forecast_start_date: str, label: str) -> Optional[Path]:
-    """Locate the single spec under ``data-official/`` whose date gate matches.
-
-    ``pattern`` is a glob relative to the repo root. Returns ``None`` when nothing matches —
-    the "this adjustment does not apply to this cycle" path, which is not an error — and raises
-    when more than one spec claims the same ``forecast_start_date``.
-
-    The exact string match is deliberate and is the safety gate for the whole overlay system: a
-    run at a date no spec claims applies *no* overlays and emits ``.raw.``, which the canonical
-    notebook then rejects via ``load_forecast(..., require_state=[...])``.
-    """
-    repo_root = Path(__file__).resolve().parents[2]
-    matches = []
-    for candidate in sorted(glob.glob(str(repo_root / pattern))):
-        with open(candidate) as f:
-            spec = json.load(f)
-        if spec.get("applies_to_forecast_start") == forecast_start_date:
-            matches.append(Path(candidate))
-    if not matches:
-        return None
-    if len(matches) > 1:
-        raise ValueError(
-            f"Multiple {label} specs claim applies_to_forecast_start="
-            f"{forecast_start_date!r}: {[str(m) for m in matches]}"
-        )
-    return matches[0]
-
-
 def _find_organic_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
     """Locate the organic/organic.json spec whose applies_to_forecast_start matches.
 
     Mirrors the other overlay finders for the mobile paid/organic split (code ``p``).
     """
-    return _find_spec_for_forecast(
+    return find_spec_for_forecast(
         "data-official/*/organic/organic.json", forecast_start_date, "organic/organic.json"
     )
 
@@ -250,32 +222,15 @@ def _apply_organic_split_pre_mozaic(
 
 
 def _find_marketing_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
-    """Locate the marketing.json spec whose applies_to_forecast_start matches.
+    """Locate the marketing.json spec whose applies_to_forecast_start matches (retired ``m``).
 
-    Globs ``data-official/*/marketing/marketing.json`` (relative to repo root) and
-    returns the spec whose ``applies_to_forecast_start`` equals
-    ``forecast_start_date``. Returns ``None`` if no spec matches — this is the
-    "no marketing-lift adjustment for this forecast cycle" path and is not an
-    error.
+    Kept on its own path rather than the overlay registry because ``m`` uses the
+    ``marketing_lift`` spec type and must keep reproducing July's and August's
+    pre-swap artifacts. Returns ``None`` when no spec matches.
     """
-    repo_root = Path(__file__).resolve().parents[2]
-    candidates = sorted(
-        glob.glob(str(repo_root / "data-official" / "*" / "marketing" / "marketing.json"))
+    return find_spec_for_forecast(
+        "data-official/*/marketing/marketing.json", forecast_start_date, "marketing/marketing.json"
     )
-    matches = []
-    for candidate in candidates:
-        with open(candidate) as f:
-            spec = json.load(f)
-        if spec.get("applies_to_forecast_start") == forecast_start_date:
-            matches.append(Path(candidate))
-    if not matches:
-        return None
-    if len(matches) > 1:
-        raise ValueError(
-            f"Multiple marketing.json specs claim applies_to_forecast_start="
-            f"{forecast_start_date!r}: {[str(m) for m in matches]}"
-        )
-    return matches[0]
 
 
 def _apply_marketing_lift_pre_mozaic(
@@ -317,149 +272,6 @@ def _apply_marketing_lift_pre_mozaic(
     }
 
 
-def _find_launch_on_login_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
-    """Locate the launch_on_login/lol.json spec whose applies_to_forecast_start matches.
-
-    Mirrors ``_find_marketing_spec_for_forecast`` for the desktop LOL overlay (code
-    ``l``). Returns ``None`` if no spec matches — the "no LOL overlay for this cycle"
-    path, which is not an error.
-    """
-    repo_root = Path(__file__).resolve().parents[2]
-    candidates = sorted(
-        glob.glob(str(repo_root / "data-official" / "*" / "launch_on_login" / "lol.json"))
-    )
-    matches = []
-    for candidate in candidates:
-        with open(candidate) as f:
-            spec = json.load(f)
-        if spec.get("applies_to_forecast_start") == forecast_start_date:
-            matches.append(Path(candidate))
-    if not matches:
-        return None
-    if len(matches) > 1:
-        raise ValueError(
-            f"Multiple launch_on_login/lol.json specs claim applies_to_forecast_start="
-            f"{forecast_start_date!r}: {[str(m) for m in matches]}"
-        )
-    return matches[0]
-
-
-def _apply_launch_on_login_pre_mozaic(
-    source_data: dict,
-    spec_path: Path,
-    training_end_date: str,
-) -> tuple[dict, dict]:
-    """Subtract the LOL desktop tailwind from DAU training before mozaic runs.
-
-    Structurally identical to ``_apply_marketing_lift_pre_mozaic`` but for the
-    desktop ``desktop_overlay`` spec: allocation keys off the boolean
-    ``modern_windows`` segment column instead of ``app_flag_column``.
-
-    Returns ``(modified_source_data, lol_context)`` where ``lol_context`` carries
-    ``{daily_lift_series, country_shares, spec}`` so the symmetric add-back uses
-    byte-identical inputs.
-    """
-    spec = load_overlay_spec(spec_path)
-    daily_lift_series = load_lift_series(spec, spec_path.parent)
-    flag_column = spec["allocation"]["flag_column"]
-    metric_key = Metric.DAU.value
-    training_df = source_data[metric_key]
-    country_shares = compute_country_shares(
-        training_df,
-        training_end_date=pd.Timestamp(training_end_date),
-        window_days=spec["allocation"]["window_days"],
-        flag_column=flag_column,
-    )
-    print(
-        f'Launch-on-login: subtracting from {metric_key} training data '
-        f'({len(country_shares)} countries, {(training_df[flag_column] == True).sum()} {flag_column} rows)'  # noqa: E712
-    )
-    modified_source_data = dict(source_data)
-    modified_source_data[metric_key] = subtract_lift_from_training(
-        training_df,
-        daily_lift_series=daily_lift_series,
-        country_shares=country_shares,
-        flag_column=flag_column,
-        sentinel_attr="launch_on_login_subtracted",
-    )
-    return modified_source_data, {
-        "daily_lift_series": daily_lift_series,
-        "country_shares": country_shares,
-        "spec": spec,
-    }
-
-
-def _find_mozillaonline_spec_for_forecast(forecast_start_date: str) -> Optional[Path]:
-    """Locate the mozillaonline/mozillaonline.json spec whose applies_to_forecast_start matches.
-
-    Mirrors ``_find_launch_on_login_spec_for_forecast`` for the desktop MozillaOnline
-    migration overlay (code ``o``). Returns ``None`` if no spec matches — the "no
-    MozillaOnline overlay for this cycle" path, which is not an error.
-    """
-    repo_root = Path(__file__).resolve().parents[2]
-    candidates = sorted(
-        glob.glob(str(repo_root / "data-official" / "*" / "mozillaonline" / "mozillaonline.json"))
-    )
-    matches = []
-    for candidate in candidates:
-        with open(candidate) as f:
-            spec = json.load(f)
-        if spec.get("applies_to_forecast_start") == forecast_start_date:
-            matches.append(Path(candidate))
-    if not matches:
-        return None
-    if len(matches) > 1:
-        raise ValueError(
-            f"Multiple mozillaonline/mozillaonline.json specs claim applies_to_forecast_start="
-            f"{forecast_start_date!r}: {[str(m) for m in matches]}"
-        )
-    return matches[0]
-
-
-def _apply_mozillaonline_pre_mozaic(
-    source_data: dict,
-    spec_path: Path,
-    training_end_date: str,
-) -> tuple[dict, dict]:
-    """Subtract the MozillaOnline migration from DAU training before mozaic runs.
-
-    Structurally identical to ``_apply_launch_on_login_pre_mozaic`` but the country
-    shares are FIXED (from the spec's geo allocation, IR excluded, renormalized over
-    training-present countries) rather than computed from a trailing DAU window,
-    because MozillaOnline is a China-distribution product with a fixed geo footprint.
-    Allocation keys off the boolean ``modern_windows`` segment column (the migration
-    both originates from and lands in modern_windows — see the spec's os_scope).
-
-    Returns ``(modified_source_data, mozillaonline_context)`` where the context
-    carries ``{daily_lift_series, country_shares, spec}`` so the symmetric add-back
-    uses byte-identical inputs.
-    """
-    spec = load_overlay_spec(spec_path)
-    daily_lift_series = load_lift_series(spec, spec_path.parent)
-    flag_column = spec["allocation"]["flag_column"]
-    metric_key = Metric.DAU.value
-    training_df = source_data[metric_key]
-    present_countries = training_df.loc[training_df[flag_column] == True, "country"].unique()  # noqa: E712
-    country_shares = fixed_country_shares_from_spec(spec, present_countries)
-    print(
-        f'MozillaOnline: subtracting from {metric_key} training data '
-        f'({len(country_shares)} countries, {(training_df[flag_column] == True).sum()} {flag_column} rows)'  # noqa: E712
-    )
-    modified_source_data = dict(source_data)
-    modified_source_data[metric_key] = subtract_lift_from_training(
-        training_df,
-        daily_lift_series=daily_lift_series,
-        country_shares=country_shares,
-        flag_column=flag_column,
-        sentinel_attr="mozillaonline_subtracted",
-    )
-    return modified_source_data, {
-        "daily_lift_series": daily_lift_series,
-        "country_shares": country_shares,
-        "spec": spec,
-    }
-
-
 def process_data_source(
     data_source: DataSource,
     datasets: dict,
@@ -467,8 +279,7 @@ def process_data_source(
     forecast_end: str,
     training_end_date: Optional[str] = None,
     marketing_spec_path: Optional[Path] = None,
-    lol_spec_path: Optional[Path] = None,
-    mozillaonline_spec_path: Optional[Path] = None,
+    overlays: Optional[list[ResolvedOverlay]] = None,
     organic_spec_path: Optional[Path] = None,
     model_configs: Optional[dict] = None,
 ) -> pd.DataFrame:
@@ -481,7 +292,13 @@ def process_data_source(
         forecast_end: End date for forecast period
         training_end_date: Last date of training data (used by the bidirectional
             overlay allocation-key windows). Required when ``marketing_spec_path``
-            or ``lol_spec_path`` is set.
+            or ``overlays`` is set.
+        overlays: Registry-resolved per-tile overlays (``l``, ``o``, and any code
+            registered with ``applier: per_tile_overlay``). Only those whose spec
+            names this ``data_source`` in ``applies_to_data_source`` are applied:
+            each curve is subtracted from the DAU training rows before mozaic and
+            added back to the per-tile forecast after. Overlays stack because each
+            carries a distinct idempotency sentinel.
         organic_spec_path: If set and ``data_source == GLEAN_MOBILE``, applies the
             paid/organic split `p` adjustment: scales Fenix DAU training rows down
             to their measured organic component before mozaic, then stacks paid
@@ -498,17 +315,6 @@ def process_data_source(
             training rows before mozaic and adds it back to the per-tile
             forecast after mozaic. No-op for other data sources.
             RETIRED for mobile as of the 2026-08 cycle — see ``organic_spec_path``.
-        lol_spec_path: If set and ``data_source == LEGACY_DESKTOP``, applies the
-            launch-on-login `l` desktop overlay: subtracts the measured LOL rise
-            from the modern_windows DAU training rows before mozaic and adds the
-            capped curve back to the per-tile forecast after mozaic. No-op for
-            other data sources.
-        mozillaonline_spec_path: If set and ``data_source == LEGACY_DESKTOP``,
-            applies the MozillaOnline `o` desktop overlay: subtracts the migration
-            DAU from the modern_windows DAU training rows before mozaic (allocated
-            by fixed geo shares) and adds it back to the per-tile forecast after
-            mozaic. Stacks with `l` (distinct idempotency sentinel). No-op for
-            other data sources.
 
     Returns:
         Tuple of (DataFrame with forecasts, dict of metric -> fitted Mozaic objects)
@@ -560,26 +366,13 @@ def process_data_source(
             source_data, marketing_spec_path, training_end_date
         )
 
-    lol_context = None
-    if lol_spec_path is not None and data_source == DataSource.LEGACY_DESKTOP \
-            and Metric.DAU.value in source_data:
+    overlay_contexts: list[dict] = []
+    overlays_for_source = [o for o in (overlays or []) if o.data_source == data_source]
+    if overlays_for_source and Metric.DAU.value in source_data:
         if training_end_date is None:
-            raise ValueError(
-                "training_end_date is required when lol_spec_path is set"
-            )
-        source_data, lol_context = _apply_launch_on_login_pre_mozaic(
-            source_data, lol_spec_path, training_end_date
-        )
-
-    mozillaonline_context = None
-    if mozillaonline_spec_path is not None and data_source == DataSource.LEGACY_DESKTOP \
-            and Metric.DAU.value in source_data:
-        if training_end_date is None:
-            raise ValueError(
-                "training_end_date is required when mozillaonline_spec_path is set"
-            )
-        source_data, mozillaonline_context = _apply_mozillaonline_pre_mozaic(
-            source_data, mozillaonline_spec_path, training_end_date
+            raise ValueError("training_end_date is required when overlays are set")
+        source_data, overlay_contexts = subtract_overlays_pre_mozaic(
+            source_data, overlays_for_source, training_end_date
         )
 
     # Generate forecasts
@@ -649,35 +442,10 @@ def process_data_source(
         print(f'Marketing-lift: added back across {n_total} rows '
               f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
 
-    # Launch-on-login add-back (same timing/rationale as marketing-lift above).
-    if lol_context is not None and Metric.DAU.value in df_combined.columns:
-        df_combined = add_lift_to_forecast(
-            df_combined,
-            daily_lift_series=lol_context["daily_lift_series"],
-            country_shares=lol_context["country_shares"],
-            forecast_start=pd.Timestamp(forecast_start),
-            metric_column=Metric.DAU.value,
-            population_value=lol_context["spec"]["allocation"]["flag_column"],
-        )
-        n_total = len(df_combined)
-        n_forecast = (df_combined["source"] == "forecast").sum()
-        print(f'Launch-on-login: added back across {n_total} rows '
-              f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
-
-    # MozillaOnline add-back (same timing/rationale as the overlays above).
-    if mozillaonline_context is not None and Metric.DAU.value in df_combined.columns:
-        df_combined = add_lift_to_forecast(
-            df_combined,
-            daily_lift_series=mozillaonline_context["daily_lift_series"],
-            country_shares=mozillaonline_context["country_shares"],
-            forecast_start=pd.Timestamp(forecast_start),
-            metric_column=Metric.DAU.value,
-            population_value=mozillaonline_context["spec"]["allocation"]["flag_column"],
-        )
-        n_total = len(df_combined)
-        n_forecast = (df_combined["source"] == "forecast").sum()
-        print(f'MozillaOnline: added back across {n_total} rows '
-              f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
+    # Overlay add-backs (same timing/rationale as marketing-lift above), in code order.
+    df_combined = add_overlays_post_mozaic(
+        df_combined, overlay_contexts, forecast_start=pd.Timestamp(forecast_start)
+    )
 
     # Format
     format_func = get_format_function(platform)
@@ -693,8 +461,7 @@ def generate_forecasts(
     checkpoints: bool = False,
     output_dir: str = ".",
     marketing_spec_path: Optional[Path] = None,
-    lol_spec_path: Optional[Path] = None,
-    mozillaonline_spec_path: Optional[Path] = None,
+    overlays: Optional[list[ResolvedOverlay]] = None,
     organic_spec_path: Optional[Path] = None,
     model_configs: Optional[dict] = None,
 ) -> pd.DataFrame:
@@ -714,12 +481,8 @@ def generate_forecasts(
         marketing_spec_path: If set, the marketing-lift `m` adjustment is applied
             to glean_mobile DAU (subtract pre-mozaic, add back post-mozaic).
             Other data sources are unaffected. Retired for mobile as of 2026-08.
-        lol_spec_path: If set, the launch-on-login `l` desktop overlay is applied
-            to legacy_desktop DAU (subtract pre-mozaic, add back post-mozaic).
-            Other data sources are unaffected.
-        mozillaonline_spec_path: If set, the MozillaOnline `o` desktop overlay is
-            applied to legacy_desktop DAU (subtract pre-mozaic, add back
-            post-mozaic). Stacks with `l`. Other data sources are unaffected.
+        overlays: Registry-resolved per-tile overlays (see ``resolve_overlays``);
+            each is applied only to the data source its spec names.
 
     Returns:
         Combined DataFrame with all forecasts
@@ -742,8 +505,7 @@ def generate_forecasts(
             runtime_config['forecast_end_date'],
             training_end_date=runtime_config['training_end_date'],
             marketing_spec_path=marketing_spec_path,
-            lol_spec_path=lol_spec_path,
-            mozillaonline_spec_path=mozillaonline_spec_path,
+            overlays=overlays,
             organic_spec_path=organic_spec_path,
             model_configs=model_configs,
         )
@@ -769,6 +531,68 @@ def generate_forecasts(
 
 
 # =============================================================================
+# ADJUSTMENT RESOLUTION
+# =============================================================================
+
+# Boolean aliases on main() and their adjustment codes.
+LEGACY_FLAG_CODES = {
+    "marketing_lift": "m",
+    "launch_on_login": "l",
+    "mozillaonline": "o",
+    "organic_split": "p",
+}
+
+
+def _resolve_disabled_adjustments(disabled_adjustments: Optional[Iterable[str]], **legacy_flags: bool) -> set[str]:
+    """Union of explicitly disabled codes and the codes whose boolean alias is False."""
+    disabled = set(disabled_adjustments or ())
+    for flag_name, enabled in legacy_flags.items():
+        if not enabled:
+            disabled.add(LEGACY_FLAG_CODES[flag_name])
+    return disabled
+
+
+def _resolve_cycle_adjustments(
+    forecast_start_date: str, disabled: set[str]
+) -> tuple[Optional[Path], Optional[Path], list[ResolvedOverlay]]:
+    """Find every adjustment spec that gates on this forecast start and log the outcome.
+
+    Returns ``(marketing_spec_path, organic_spec_path, overlays)``. ``m`` and ``p``
+    keep their own loaders; every ``per_tile_overlay`` code comes from the registry.
+    """
+    marketing_spec_path = (
+        _find_marketing_spec_for_forecast(forecast_start_date) if "m" not in disabled else None
+    )
+    _log_spec_resolution("Marketing-lift `m`", marketing_spec_path, forecast_start_date, "m" in disabled)
+
+    organic_spec_path = (
+        _find_organic_spec_for_forecast(forecast_start_date) if "p" not in disabled else None
+    )
+    _log_spec_resolution("Paid/organic split `p`", organic_spec_path, forecast_start_date, "p" in disabled)
+
+    overlays = resolve_overlays(forecast_start_date, disabled_codes=disabled)
+    resolved_by_code = {o.code: o for o in overlays}
+    for code, entry in sorted(registered_overlay_codes().items()):
+        overlay = resolved_by_code.get(code)
+        _log_spec_resolution(
+            f"Overlay `{code}` ({entry['name']})",
+            overlay.spec_path if overlay else None,
+            forecast_start_date,
+            code in disabled,
+        )
+    return marketing_spec_path, organic_spec_path, overlays
+
+
+def _log_spec_resolution(label: str, spec_path: Optional[Path], forecast_start_date: str, is_disabled: bool) -> None:
+    if is_disabled:
+        print(f'{label}: disabled for this run by flag.')
+    elif spec_path is None:
+        print(f'{label}: no spec found for forecast_start={forecast_start_date}; not applied this cycle.')
+    else:
+        print(f'{label}: using spec {spec_path}')
+
+
+# =============================================================================
 # MAIN FUNCTION
 # =============================================================================
 
@@ -784,6 +608,7 @@ def main(
     launch_on_login: bool = True,
     mozillaonline: bool = True,
     organic_split: bool = True,
+    disabled_adjustments: Optional[Iterable[str]] = None,
     model_configs: Optional[dict] = None,
 ) -> pd.DataFrame:
     """Run the full forecasting pipeline.
@@ -799,23 +624,17 @@ def main(
             Simulates running the forecast on this date.
         output_dir: Directory to write checkpoint files to (defaults to current directory).
             Created automatically if it doesn't exist.
-        marketing_lift: If True (default), look for a marketing-lift spec
-            matching this forecast cycle's start date and apply the `m`
-            adjustment to glean_mobile DAU. If False, force the adjustment off
-            even if a matching spec exists.
-        launch_on_login: If True (default), look for a launch-on-login spec
-            matching this forecast cycle's start date and apply the `l`
-            desktop overlay to legacy_desktop DAU. If False, force it off even
-            if a matching spec exists.
-        mozillaonline: If True (default), look for a MozillaOnline spec matching
-            this forecast cycle's start date and apply the `o` desktop overlay to
-            legacy_desktop DAU. If False, force it off even if a matching spec
-            exists.
-        organic_split: If True (default), look for an organic/organic.json spec
-            matching this forecast cycle's start date and apply the `p` paid/organic
-            split to glean_mobile DAU. If False, force it off even if a matching
-            spec exists — which yields a *total*-DAU mobile forecast with no paid
-            treatment at all, not an organic one.
+        disabled_adjustments: Adjustment codes to force off for this run even
+            when a spec matches the forecast start (e.g. ``{"l", "o"}``). This is
+            the general switch; the four boolean flags below are aliases kept for
+            existing callers and map onto it (``m``, ``l``, ``o``, ``p``).
+        marketing_lift: Alias for keeping `m` enabled (default True). False adds
+            ``m`` to ``disabled_adjustments``.
+        launch_on_login: Alias for keeping `l` enabled (default True).
+        mozillaonline: Alias for keeping `o` enabled (default True).
+        organic_split: Alias for keeping `p` enabled (default True). Disabling it
+            yields a *total*-DAU mobile forecast with no paid treatment at all,
+            not an organic one.
         model_configs: Optional ``{DataSource: ModelConfig}`` for tuned runs. The
             CLI does not expose this; the param-scan runners pass it directly.
 
@@ -870,53 +689,16 @@ def main(
         df = load_checkpoint_if_exists(checkpoint_filename)
 
     if df is None:
-        marketing_spec_path = (
-            _find_marketing_spec_for_forecast(config['forecast_start_date'])
-            if marketing_lift else None
+        disabled = _resolve_disabled_adjustments(
+            disabled_adjustments,
+            marketing_lift=marketing_lift,
+            launch_on_login=launch_on_login,
+            mozillaonline=mozillaonline,
+            organic_split=organic_split,
         )
-        if marketing_lift and marketing_spec_path is None:
-            print(
-                f'Marketing-lift: no spec found for forecast_start='
-                f'{config["forecast_start_date"]}; adjustment disabled for this cycle.'
-            )
-        elif marketing_spec_path is not None:
-            print(f'Marketing-lift: using spec {marketing_spec_path}')
-
-        lol_spec_path = (
-            _find_launch_on_login_spec_for_forecast(config['forecast_start_date'])
-            if launch_on_login else None
+        marketing_spec_path, organic_spec_path, overlays = _resolve_cycle_adjustments(
+            config['forecast_start_date'], disabled
         )
-        if launch_on_login and lol_spec_path is None:
-            print(
-                f'Launch-on-login: no spec found for forecast_start='
-                f'{config["forecast_start_date"]}; overlay disabled for this cycle.'
-            )
-        elif lol_spec_path is not None:
-            print(f'Launch-on-login: using spec {lol_spec_path}')
-
-        mozillaonline_spec_path = (
-            _find_mozillaonline_spec_for_forecast(config['forecast_start_date'])
-            if mozillaonline else None
-        )
-        if mozillaonline and mozillaonline_spec_path is None:
-            print(
-                f'MozillaOnline: no spec found for forecast_start='
-                f'{config["forecast_start_date"]}; overlay disabled for this cycle.'
-            )
-        elif mozillaonline_spec_path is not None:
-            print(f'MozillaOnline: using spec {mozillaonline_spec_path}')
-
-        organic_spec_path = (
-            _find_organic_spec_for_forecast(config['forecast_start_date'])
-            if organic_split else None
-        )
-        if organic_split and organic_spec_path is None:
-            print(
-                f'Paid/organic split: no spec found for forecast_start='
-                f'{config["forecast_start_date"]}; adjustment disabled for this cycle.'
-            )
-        elif organic_spec_path is not None:
-            print(f'Paid/organic split: using spec {organic_spec_path}')
 
         df = generate_forecasts(
             datasets, config,
@@ -924,8 +706,7 @@ def main(
             checkpoints=checkpoints,
             output_dir=resolved_output_dir,
             marketing_spec_path=marketing_spec_path,
-            lol_spec_path=lol_spec_path,
-            mozillaonline_spec_path=mozillaonline_spec_path,
+            overlays=overlays,
             organic_spec_path=organic_spec_path,
             model_configs=model_configs,
         )
