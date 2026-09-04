@@ -193,9 +193,9 @@ Qualify ambiguous fragments with the cycle (`2026-08/desktop_locked`, not `deskt
 prior cycle has a directory of the same name that is *retained*). Write the result to
 `data-official/<NEXT>/STALE_REFERENCES_from_<month>_button_down.md` so it travels to the new branch as
 the repointing to-do list, with two tables: the cycle-scoped script constants, and file (lines) per
-referenced path with its post-prune status (archived / deleted / retained). **Do not edit any of
-these files.** Updating them is a separate task for a
-human; this skill only flags candidates. Two known standing dependencies to state every time:
+referenced path with its post-prune status (archived / deleted / retained). **Phase 3 edits nothing** — it is the
+inventory. Phase 5 step 5 edits the unambiguous cycle-scoped constants once the new cycle's
+directories exist, and flags the rest for a human. Two known standing dependencies to state every time:
 
 - `_archive/` and `research/ma-seam-turbulence/` import the frozen
   `data-official/2026-06/export_canonical_curves.py`. Pruning 2026-06 breaks them.
@@ -267,14 +267,59 @@ commits as before (prune; doc pass) and push.
    tooling and the cycle-scoped constants from Phase 3 that need repointing). If `PRE_WORK`
    already exists, index what is there and whether it is wired (August's `japan_bot` and
    `india_excess` handoffs were explicitly **not** wired).
-3. Update the cycle-window table in `data-official/_index.md` (`NEXT` current, `CYCLE` N-1, …).
-4. `git add data-official/$NEXT` and commit the pre-work plus scaffold: "Open the <Month> <year>
-   forecast cycle".
-5. Push the branch.
+3. **Provisionally roll every adjustment forward, unmodified.** The base assumption is that each
+   head- and tailwind carries into the new cycle as-is; the monthly update changes what it changes.
+   Enumerate the set from `data-official/adjustment_codes.yaml`: for every registered code whose
+   `spec_glob` resolves inside `data-official/$CYCLE/`, copy that directory (spec, curve parquet,
+   `model_meta`, `_index.md`, `source_data/`) to the same path under `data-official/$NEXT/`, plus
+   `adjustments/` (the display-layer specs — `h`, `t`, `u`, …), `marketing/` (`p` reads its
+   parquet), and any rationale directories the specs point at (`tailwind/`, `headwinds/`,
+   `tou_mobile_headwind/`). Skip build directories, raw pulls, notebooks, CSVs and plots. Then:
+   - Leave every `applies_to_forecast_start` and every ramp `start_date` **at the prior cycle's
+     seam** and append to each spec's `notes`: `PROVISIONAL carry-forward from <CYCLE> at the
+     <YYYY-MM-DD> roll-forward; seam not yet set — re-gate before any forecast run.` A run at an
+     unclaimed date silently writes `.raw.`, so the warning matters, but **do not block** — the
+     user decides the seam.
+   - `p` is included even though its measured split (`organic/fenix_paid_organic.*.parquet`) is
+     always rebuilt for the new training window; say so in its `notes` and in the cycle index.
+   - Write one line per carried code into the cycle `_index.md` under "Carried forward
+     provisionally", with the value that matters (`h` anchor, `t` anchor, `l` ceiling, `o` curve
+     date, `p` split date) so a reader sees the inherited assumptions at a glance.
+4. **Canonical notebook.** Copy the closing cycle's producer notebook as the template and name it
+   without a seam: `data-official/$NEXT/<month>_canonical.ipynb` (the September design — plots and
+   numeric tables only, narrative in `_index.md` and spec `notes` — is the template from 2026-09 on).
+   With `nb_cells.py --file`, repoint the `setup` constants (`DESKTOP_/MOBILE_FORECAST_PATH` to a
+   `TODO` placeholder under `data-official/$NEXT/`, `PREV_*` to the closing cycle's canonical
+   parquets, `ADJUSTMENTS_DIR`/`PREV_ADJUSTMENTS_DIR`, `PLOTS_DIR`, `PREV_FORECAST_START` to the
+   closing seam, `FORECAST_START` left as a visible `TODO`), replace the hardcoded prior Dec-15
+   numbers in the reproduction check with the closing cycle's published values, and rewrite the
+   header cell to "no build yet; `[setup]` fails until the canonical parquets exist". Do not
+   execute it.
+5. **Reference audit — edit the unambiguous, flag the rest.** Run the audit over `scripts/`,
+   `src/`, `tests/` for literal `data-official/<CYCLE>/` paths, the closing seam date, and the
+   prior seam date (a checker script is the right tool if one exists; otherwise the Phase 3 grep
+   scoped to those three trees). Split the hits:
+   - **Unambiguous → edit now**: a module-level constant in a script CLAUDE.md marks
+     **cycle-scoped**, where the `NEXT` target already exists on disk after step 3 (adjustment
+     dirs, CSV dir, `PREV_*` paths that now point at the closing cycle). Change the literal, nothing
+     else, and list every edit in the commit message.
+   - **Ambiguous → flag only**: any reference whose `NEXT` target does not exist yet (canonical
+     build dirs, raw-pull dirs, seam dates that depend on the not-yet-chosen seam), anything in
+     tests fixtures, research code, notebooks, or a script that is not cycle-scoped. These go in
+     `data-official/$NEXT/STALE_REFERENCES_from_<month>_button_down.md` (Phase 3 output) with a
+     "needs human" marker, and the report is the to-do list for the monthly update.
+   Re-run `pytest -q` after the edits; a test pinned to the closing cycle that now fails is itself
+   ambiguous — revert the edit that broke it and flag.
+6. Update the cycle-window table in `data-official/_index.md` (`NEXT` current, `CYCLE` N-1, …).
+7. `git add data-official/$NEXT` plus the edited scripts and commit: "Open the <Month> <year>
+   forecast cycle" — body lists the carried codes, the notebook template, and every repointed
+   constant.
+8. Push the branch.
 
 **GATE 5** before the push. Finish with a report: the three branches and their tips at origin,
-`PREFIX` contents with verified sizes, the local tree size before/after, the stale-reference
-table, and the retention window now in force.
+`PREFIX` contents with verified sizes, the local tree size before/after, the carried-forward
+adjustment table with the seam warning, the repointed constants, the flagged references, and the
+retention window now in force.
 
 ---
 
@@ -291,3 +336,5 @@ table, and the retention window now in force.
 - The test suite writing a forecast parquet at the repo root mid-button-down (August 2026).
 - A Bash-tool background upload dying at the 10-minute tool timeout; `setsid` absent on macOS.
 - Fragment-only greps (`desktop_locked`) matching the retained prior cycle's directory of the same name.
+- Opening the next cycle with an empty `data-official/<NEXT>/`, so `l`, `o`, `p`, `h`, `t` had to be
+  rebuilt by hand in separate sessions (September 2026). Steps 3–5 above exist because of this.

@@ -87,3 +87,9 @@ blob dirs; removed `iran_synthetic/` (tracked) and `march_brad_forecast.csv` aft
 - Stale references to archived paths are **flagged to a human**, not edited by this skill.
 - Keep the closing cycle's forecast/raw-pull parquets on disk (they are small); only pickles and
   bundles leave (GATE 4a, August).
+- Roll-forward additions (user, 2026-09-04, after the first run left `2026-09/` nearly empty):
+  copy the closing cycle's canonical notebook as the template, named without a seam; copy every
+  registered adjustment (incl. `p`) forward unmodified with a **seam warning in `notes`, not a
+  block**; audit script references and **edit the unambiguous cycle-scoped constants**, flag the
+  ambiguous ones. Raw pulls and the `p` split rebuild stay in the monthly update — the skill does
+  not pull data.
