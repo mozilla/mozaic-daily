@@ -187,6 +187,14 @@ as the rationale record (model on `data-official/2026-08/tailwind/_index.md`).
 Read the build's JSON summary back to the user: files written, coverage table, Dec-15 28d-MA of the
 curve, hold-flat value, whether the registry entry was new, and the `.gitignore` lines added.
 
+**Open the shape plot** the build wrote (`files.plot`, under `<name>/plots/`) with `code <path>` and
+name the path in the message. It shows the daily curve and its 28-day mean over measured / projected /
+held stretches with the seam and Dec-15 marked. Look at it and say what you see in one sentence: a
+wrong sign, a moving average passed off as daily, a cliff where the file ends, or a plateau that
+starts before the seam are all visible here and nowhere else before the rerun. For a re-render
+later: `python scripts/ingest_adjustment.py plot --name … --code … --cycle … --family … --platform …
+--forecast-start …`.
+
 ---
 
 ## Phase 6 — Alternates and superseded files
