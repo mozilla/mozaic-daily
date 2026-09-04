@@ -82,6 +82,8 @@ research/param-scans/*/*_report.html
 !data-official/*/csv/july_dec15_summary.csv
 !data-official/*/csv/august_canonical_curves.csv
 !data-official/*/csv/august_dec15_summary.csv
+!data-official/*/csv/september_canonical_curves.csv
+!data-official/*/csv/september_dec15_summary.csv
 # Desktop-only, `h`-removed counterfactual twins of the pair above (produced by
 # scripts/export_desktop_no_headwind_csv.py). Tracked so the two files always travel with
 # the README section that says they are NOT the published forecast -- shipping the loud
