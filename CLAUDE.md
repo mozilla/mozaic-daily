@@ -109,11 +109,14 @@ the frozen copy was left alone, so June's and July's delivered curves cannot mov
 Analysis and supporting work splits along two axes:
 
 - **Month-scoped artifact** (the composite producer notebook, a sanity check tied to one month's data, that month's adjusted CSV) → `data-official/{YYYY-MM}/`. The directory already holds the production parquets, sidecar `.meta.json` files, adjustment specs, and parameters.json — keep the producer + diagnostic notebooks alongside them.
-- **Cross-month or topic-anchored work** (mechanism diagnostics, model exploration, validation against actuals over time, version-spanning approaches) → `research/{topic}/`. Topics so far: `iran/`, `marketing-lift/`, `mobile-organic/`, `april-vs-june-mechanism/`, `param-scans/`, `headwinds/`, `csv-vs-actuals/`.
+- **Cross-month or topic-anchored work** (mechanism diagnostics, model exploration, validation against actuals over time, version-spanning approaches) → `research/{topic}/`. Topics **currently on disk**: `param-scans/`, `mobile-organic/`, `marketing-lift/`, `headwinds/`, `ma-seam-turbulence/`, `csv-vs-actuals/`, `summer-slump/`, `autumn-decoupling/`, `collaboration-review/`, `forecast-vs-summer-actuals/`. Archived to GCS and removed from the tree at the July button-down (do **not** treat these paths as live): `iran/`, `april-vs-june-mechanism/`, `marketing-lift/v1-convolution/`, `desktop-gap-decomp/`, `country-overrides/`. See `research/_index.md`.
 
 Per-cycle inputs that the pipeline *consumes* get their own subdirectory under `data-official/{YYYY-MM}/`, each with a spec JSON gated by `applies_to_forecast_start`, a data file, a sidecar `.meta.json`, and an `_index.md`: `adjustments/` (`h`), `marketing/` (`m`, retired), `launch_on_login/` (`l`), `mozillaonline/` (`o`), `organic/` (`p`).
 
 Each directory has an `_index.md` describing what's in it, what isn't, and where new code goes. Follow that convention when creating a new dir.
+
+**Hand-off templates for external producers** live in `templates/` — currently `templates/tailwind/`, the
+three-column daily-DAU CSV contract (date, actuals/forecast flag, DAU) (plus a real example) to give anyone modelling a new tailwind curve.
 
 ### Revert targets: `*_REVERT_{date}/` directories
 
@@ -136,7 +139,7 @@ Two things changed together and revert as one unit:
 | | from | to |
 |---|---|---|
 | desktop model config | s01 (`cps 0.1849, cpr 0.734, ncp 35, recent 17`) | g01 (`cps 0.1649, cpr 0.814, ncp 40, recent 17`) |
-| `h` Win10 desktop anchor | −1,245,000 | −1,220,000 |
+| `h` Win10 desktop anchor | −1,245,000 | −1,220,000 → −1,295,000 (2026-08-03) → **−1,315,000** (2026-08-04) |
 
 A revert is a real possibility because **g01 is an isolated optimum** — the deepest cell of a 243-cell
 factorial, with all seven measured one-step neighbours 52,092–165,860 shallower at Aug-25. It is
@@ -182,9 +185,26 @@ The `scripts/` directory contains helper scripts for common tasks:
   reproduce a locked parameter config — `run_main.py` has no parameter flags. Injects via
   `main(model_configs=...)`; it no longer monkeypatches `process_data_source`. Scan drivers
   (`run_s01_gradient.py`, `run_summer_trough_grid.py`, `run_trend_only_grid.py`, `run_desktop_gradient.py`,
-  `run_aug_trough_gradient.py`, `run_mobile_param_scan.py`, `mobile_grid_search.py`) each wrap it
-- `score_near_horizon.py` - Score a build at the near-horizon trough and Dec-15. **Scores are not comparable
-  across the 2026-07-29 `Fix A` boundary** — its window overlaps the seam transition
+  `run_aug_trough_gradient.py`) each wrap it
+- `run_mobile_param_scan.py` - The mobile analog: one `glean_mobile` DAU forecast with a configurable
+  `MobileModelConfig`. Exposes **all seven non-holiday knobs** — the three seasonality flags were added
+  2026-07-31, and before that a mobile scan silently could not vary them, which is why no mobile build has
+  ever left `seasonality_regime='auto'`. Two mobile-specific facts: `seasonality_corr_threshold` is
+  **desktop-only** (`MobileModelConfig` raises on non-zero — the regime switch is volume-driven), and
+  `seasonality_regime` sets `seasonality_mode` only, with `auto` resolving to **additive** for tiles above
+  2e6 DAU. Wrapped by `run_mobile_gradient.py`
+- `run_mobile_gradient.py` - August mobile round-1 central-difference gradient: center + 5 numeric axes × ±δ,
+  first **and second** derivatives of Dec-15. `--regime` re-runs the whole set under a different
+  `seasonality_regime`, giving both that regime's own effect and the local gradient at the new center;
+  probes share one results dir because `to_slug()` appends `_regime<value>`. Holiday knobs excluded by policy
+- `score_near_horizon.py` - Score a **desktop** build at the near-horizon trough and Dec-15. **Scores are not
+  comparable across the 2026-07-29 `Fix A` boundary** — its window overlaps the seam transition
+- `mobile_scoring.py` - The **mobile** scorer (August `adj-p` builds). Scored KPI is the ALL-MOBILE world
+  Dec-15 28d-MA post-headwind; seam step, slope kink and YoY are **reported, never scored**. Not
+  interchangeable with `score_near_horizon.py`: it reads `mobile_dau` from the headwind spec (~45× smaller
+  than `desktop_dau`) and selects on mobile's `"{}"` segment rather than `'{"os": "ALL"}'`. Actuals come from
+  the parquet's `training` rows, which `p` guarantees are byte-identical to raw actuals. **Cycle-scoped** —
+  repoint `FORECAST_START`, `DEFAULT_HEADWIND`, `TARGET_DEC15` each roll-forward
 - `verify_lol_overlay.py` / `verify_mozillaonline_overlay.py` - End-to-end checks of the `l` and `o` overlays
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
@@ -194,6 +214,36 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `regenerate_composites.py` - Reproduce composite CSVs from raw parquets via `mozaic_daily.adjustments`; diffs against on-disk
 - `mobile_app_breakdown.py` - Per-app DAU split of a mobile build (point-in-time + trailing window, actuals + forecast).
   Cross-checks `ALL MOBILE` against the sum of its parts. Defaults are **cycle-scoped** — repoint at each roll-forward
+- `fetch_raw_pull.py` - Fetch + checkpoint one data source's raw BQ pull with **no forecasting**. Needed at
+  roll-forward: the `p` split producer wants the new cycle's raw mobile pull, but the mobile scan won't run
+  until a paid spec is gated to the new date, which needs the split. The raw pull is model-config
+  independent, so a later scan reuses it via `--raw-cache-dir` with no re-query
+- `export_desktop_no_headwind_csv.py` - Write the **desktop-only, `h`-removed** counterfactual twins of a
+  cycle's canonical CSVs, beside the published pair. Works by pure arithmetic on the **published CSVs**
+  plus the current and prior `headwind.json`: because `h` is display-layer, `published − ramp` is exact,
+  needing no model re-run and no parquet. The prior-July column is stripped with **July's own frozen
+  spec** (read-only). Every value column is suffixed `_NO_WIN10_HEADWIND`, so code written against the
+  canonical schema `KeyError`s instead of silently reading the counterfactual. Only `h` is removed —
+  `l`/`o` are baked into the parquet. **Cycle-scoped**
+- `export_desktop_ex_ir_cn_csv.py` - Write the **desktop-only, ex-Iran/ex-China** twins of a cycle's
+  canonical CSVs — four files, `h`-applied and `h`-removed. Unlike the no-headwind exporter this **reads
+  the parquets**: the published CSVs hold only world totals, and subtracting per-country 28d MAs is
+  invalid because `display_ma`'s splice is **non-linear** (~2,900 DAU in the splice window). Differences
+  the daily series, then recomputes `display_ma`. Exactness rests on `ALL == sum(country tiles)`,
+  asserted with a documented float tolerance. `h` applied at its **full unscaled anchor** (the Win10
+  mechanism was measured ex-IR/CN to begin with). Note **excluding CN also removes ~93% of the `o`
+  MozillaOnline tailwind** — the scope is not "world minus 5.8%". Actuals come from `training` rows, so
+  they end one day earlier than the published files. **Cycle-scoped**
+- `plot_forecast_set.py` - Generate the canonical plot set (`global_<platform>.png` etc.) from a forecast checkpoint
+- `seam_bridge.py` - Seam kink diagnostic (`kink_score`) + daily-level bridge helpers; platform-agnostic
+- `tile_corr_distribution.py` - Reports the per-tile level/volatility correlation behind desktop's
+  `seasonality_regime="auto"` switch; used to place grid points. Desktop-only — mobile's regime switch is
+  volume-driven, so `seasonality_corr_threshold` does not exist there
+- `run_pinned_scan.py` - Desktop forecast with per-tile Prophet changepoints pinned to April's locations;
+  built to test whether changepoint placement explained the April↔June trend gap
+
+**`scripts/_index.md` is the complete, authoritative inventory** (including `scripts/sql/`); the list
+above is the LLM-facing summary and may lag it. Add new scripts to both.
 
 The `docker/` directory contains Docker management scripts:
 - `build_and_push.sh` - Build and push Docker images for local (arm64) or remote (amd64)
@@ -476,6 +526,7 @@ Adjustment codes are registered in `data-official/adjustment_codes.yaml`. Curren
 | `p`  | paid_organic_split | **The mobile paid treatment from 2026-08 on.** Paid DAU is *measured*, not modelled: Fenix training rows are multiplied by `organic_share(date, country)` from the client-level growth-source mirror, so mozaic forecasts **organic** DAU only. Paid is then stacked back on as a **level** — measured paid for training rows (which keeps them byte-identical to raw actuals), marketing's paid level (`lift + anchor`) allocated by trailing-28d **measured-paid** share for forecast rows. Because the add-back is additive and post-mozaic, paid contributes **exactly its own value** with no Prophet interaction, the way `h` does. Spec + measured split live in `data-official/{YYYY-MM}/organic/`; producer is `scripts/build_fenix_organic_split.py`. Share comes from the mirror but the **level comes from the production query** — the mirror loses ~2.9% to shredder attrition over 26 months, so using it for the level reads as +3.3pp of fake growth. IR excluded (98.8% organic; marketing's curve is ex-IR). Non-Fenix mobile apps are 100% organic — Firefox iOS has no paid signal at all. **Mutually exclusive with `m`**: `main.process_data_source` raises if both specs claim the same `applies_to_forecast_start`. |
 | `l`  | launch_on_login | Launch-on-login desktop DAU tailwind (feature launched 2026-05-08); spec + curve live in `data-official/{YYYY-MM}/launch_on_login/`. Same per-tile bidirectional applier as `m` but on `legacy_desktop` DAU, `modern_windows` segment: subtracts the measured historical rise from modern_windows training rows before mozaic, then adds the capped/flat curve back. Spec type is the generic `desktop_overlay`. **The ceiling is per-cycle, not a constant** — July 2026 shipped 125K, August 2026 shipped **200K**. Never assume a value: read `data-official/{YYYY-MM}/launch_on_login/lol.json` for which curve is active, then `cap_dau_daily` from that curve's `model_meta.json`. Changing a ceiling is a spec edit **plus a model re-run** (the curve is baked into the parquet), and the realised Dec-15 effect is config-dependent — never model it as a level shift. **Keep exactly one curve per cycle on disk.** August accumulated four (125K/165K/180K/200K) and they were deleted on 2026-07-30 because superseded alternates were being cited as if they were live options; build variants while deciding, then delete the losers and record the decision in the cycle's `_index.md`. The choice is unfalsifiable by construction — the measurement window closed permanently on 2026-06-23 when the holdback control received the feature, so every cycle's curve is measured to that date and extrapolated after it, and deleting alternates removes the menu but not the uncertainty. |
 | `o`  | mozillaonline_migration | MozillaOnline → canonical Firefox desktop migration tailwind (China distribution partner migrating users onto mainline Firefox; migrating users flip `app_name` and newly count as `Firefox Desktop`); spec + curve live in `data-official/{YYYY-MM}/mozillaonline/`. Same per-tile bidirectional `desktop_overlay` applier as `l`, on `legacy_desktop` DAU `modern_windows` segment, but with **fixed geo shares** (CN ~93%, IR excluded, renormalized over training-present countries) instead of trailing-DAU shares. modern_windows-only by measurement (older-Windows users are pinned on Firefox too old to receive the migrating build). Distinct sentinel `mozillaonline_subtracted` so it stacks with `l`. |
+| `t`  | mobile_tailwind | **The mobile calibration tailwind, adopted 2026-08-03.** Linear ramp, 0 at the seam (2026-08-02) to **+299,000** at the 2026-12-15 anchor, mobile only. Adopted at +276,000, raised to +299,000 the same day so published mobile lands within 1,000 DAU of July's delivered figure — **that last +23,000 is calibration to a prior published number, not a measurement.** **Sign is POSITIVE** — unlike `h`, whose `mobile_dau` is −27,162. Registered as its own code rather than an edit to `headwind.json` precisely so a discretionary upward judgement cannot hide inside the headwind line. Composite-style display-layer applier like `h`: applied to the 28d MA after mozaic, so no model re-run and no Prophet interaction — its Dec-15 effect is exactly its anchor. Exists because the `m`→`p` swap cost 322,714 at Dec-15 and a 33-probe search across three seasonality regimes showed no exposed non-holiday parameter combination recovers it (whole envelope 63,539) — mozaic reconciles **top-down**, so the mobile headline is effectively one Prophet fit on the aggregate and per-tile knobs cancel. ~47% of it is the measured excess of an independent implementation; ~45% is a planning decision; ~8% is calibration to July's published number. Spec `data-official/{YYYY-MM}/adjustments/tailwind.json`; rationale `data-official/2026-08/tailwind/_index.md`. |
 
 Combined with existing markers, filenames look like:
 
@@ -489,6 +540,7 @@ mozaic_daily_forecast.2026-06-29.ld-D.adj-l.parquet             # launch-on-logi
 mozaic_daily_forecast.2026-06-29.ld-D.adj-lo.parquet            # launch-on-login + MozillaOnline (desktop)
 mozaic_daily_forecast.2026-06-29.gm+ld-D+NP.adj-lmo.parquet     # desktop l+o + mobile marketing (combined)
 june_composite_forecast_28ma.adj-hm.csv                         # headwinds + marketing-lift
+august canonical curves (display layer)                         # h + t: net mobile +271,838 at Dec-15
 ```
 
 **Every artifact has a sidecar `<name>.meta.json`** with full provenance: model config, list of `adjustments_applied` (with code + spec_file + spec_sha1), parent files, mozaic-daily commit hash. The sidecar is the source of truth for adjustment state; the filename marker is required to match it.
@@ -519,7 +571,7 @@ df, meta = load_forecast(path, require_state=["h"])  # raises if filename codes 
 - `src/mozaic_daily/organic.py` — **consumer**: `split_training_to_organic` (pre-mozaic), `marketing_paid_level` (lift + anchor, held flat past the curve's end), `add_paid_to_forecast` (post-mozaic), `paid_seam_step` (diagnostic).
 
 Three things about `p` that are easy to get wrong:
-1. **The add-back is two-piece.** Training rows get the **measured** paid back so they return to raw actuals exactly (`scripts/verify_training_rows_are_actuals.py` enforces this); forecast rows get **marketing's** level. They disagree at the seam by ~+0.24% of total, and that step is reported, not smoothed.
+1. **The add-back is two-piece.** Training rows get the **measured** paid back so they return to raw actuals exactly (`scripts/verify_training_rows_are_actuals.py` enforces this); forecast rows get **marketing's** level. They disagree at the seam by an amount that is **seam-dependent and must be re-measured after every refresh** — at the 2026-07-28 seam it was ~+0.24% of total, at the refreshed 2026-08-02 seam it is **+1,903 (+0.01%)**. That step is reported, not smoothed. **Derive the last-measured day from the seam, never hardcode it**: a hardcoded date survived the 2026-08-03 refresh and turned the one-day step into a six-day-offset comparison, reporting −41,798 instead of +1,903.
 2. **Allocation is by measured-paid share, not total-DAU share.** Paid intensity ranges from 0.2% of Fenix DAU in RU to 27.6% in ID, so a total-DAU key (what `m` used) pushes paid into markets that have none.
 3. **The share is only measured from 2024-06-01** (client-level retention limit) while mobile DAU trains from 2020-12-31, so the earliest per-country share is **held flat backwards** over ~3.5 years. Bounded at ~1.1pp — paid was only 1.10% of Fenix DAU ex-IR at the oldest measured month. Masking instead is not available: mozaic requires one common date grid across tiles, so NaN-ing Fenix pre-2024-06 would corrupt the published `ALL MOBILE` training rows.
 
@@ -622,6 +674,8 @@ gs://moz-data-science-brwells-bucket/mozaic-daily-archive/
 Project: `moz-fx-data-bq-data-science`. Each cycle prefix mirrors `data-official/{YYYY-MM}/` under it, with a `README.md` at the cycle root explaining what's archived.
 
 **When to push:** at the end of each forecast cycle ("button down for storage"), upload everything under that month's `data-official/{YYYY-MM}/` directory. For mid-cycle additions, do an incremental upload.
+
+**The end-of-cycle procedure is a skill: `.claude/skills/cycle-button-down/SKILL.md`** (lock the cycle branch → archive + verify → flag stale references → prune on `clean-slate` → roll forward). Retention is the last 3 months on disk; fitted pickles, including per-probe scan pickles, are first-class and are always archived before deletion. Prefer `gcloud storage cp -r` over `gsutil` for transfers.
 
 **How to push** (single-process — do NOT use `gsutil -m`, see "gsutil on macOS" in `~/.claude/CLAUDE.md`):
 

@@ -7,7 +7,6 @@ Tests Mozaic integration and forecast DataFrame generation.
 🔒 SECURITY: Uses synthetic test data only.
 """
 
-import holidays
 import pandas as pd
 from unittest.mock import MagicMock
 

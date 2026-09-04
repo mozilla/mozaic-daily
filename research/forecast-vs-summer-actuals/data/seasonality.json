@@ -1,0 +1,187 @@
+{
+  "anchor": "02-15 to 04-15",
+  "model_cycle_year": 2027,
+  "periodicity_drift_pp": 0.59,
+  "vintages": {
+    "august": {
+      "seam": "2026-08-02",
+      "provenance": "published build, on disk",
+      "trend_drift": {
+        "max_abs_in_window": 0.003968463813426637,
+        "at_seam": -0.003968463813426637,
+        "at_report_end": 0.00038379734979065994,
+        "at_horizon_end": 0.0202378550616531
+      },
+      "is_published": {
+        "overlay_residual_mean": 763385.2688588005,
+        "overlay_residual_std": 62931.80326740779,
+        "roughness": 0.0824378015068142,
+        "days": 517
+      },
+      "tracks": {
+        "all": {
+          "seam_anchored": {
+            "anchor_day": "08-05",
+            "anchor_dau": 46029858.571428575,
+            "window_days": 7,
+            "model_trough": 44435274.47707015,
+            "history_trough": 44040096.18574325,
+            "realised_trough": 45016782.28571428,
+            "model_vs_history": 395178.2913269028,
+            "realised_vs_history": 976686.0999710336,
+            "share_of_gap_closed": 0.40461136012749943
+          },
+          "reference_dau": 49806471.06607142,
+          "model_trough": 44214312.84351723,
+          "model_trough_day": "08-20",
+          "history_trough": 43627337.95246938,
+          "history_trough_day": "08-21",
+          "realised_trough": 45980566.821428575,
+          "realised_trough_day": "08-21",
+          "model_vs_history": 586974.8910478503,
+          "realised_vs_history": 2353228.868959196,
+          "model_vs_realised": -1766253.9779113457,
+          "share_of_gap_closed": 0.24943383059356314,
+          "pre_recon_vs_history": 809962.0910408795,
+          "reconciliation_effect": -222987.19999302924,
+          "caveats": {
+            "periodicity_drift_pp": 0.59,
+            "holiday_drift_pp": 3.95,
+            "anchor_holiday_drag": -0.02763228810831204,
+            "anchor_holiday_worst_day": -0.05120284138021379,
+            "anchor_days_with_holiday": 60,
+            "anchor_days": 60,
+            "reference_dau": 49806471.06607142,
+            "anchor_iran_contaminated": true
+          }
+        },
+        "ex_ir_cn": {
+          "seam_anchored": {
+            "anchor_day": "08-05",
+            "anchor_dau": 43384482.428571425,
+            "window_days": 7,
+            "model_trough": 41860135.02758099,
+            "history_trough": 41362708.49952474,
+            "realised_trough": 42389950.28571428,
+            "model_vs_history": 497426.528056249,
+            "realised_vs_history": 1027241.7861895412,
+            "share_of_gap_closed": 0.484235099023188
+          },
+          "reference_dau": 48411332.6,
+          "model_trough": 42886353.20851447,
+          "model_trough_day": "08-21",
+          "history_trough": 42167357.07117017,
+          "history_trough_day": "08-21",
+          "realised_trough": 43288224.53571428,
+          "realised_trough_day": "08-21",
+          "model_vs_history": 718996.1373442933,
+          "realised_vs_history": 1120867.46454411,
+          "model_vs_realised": -401871.3271998167,
+          "share_of_gap_closed": 0.6414640089823023,
+          "pre_recon_vs_history": 530256.7861722186,
+          "reconciliation_effect": 188739.35117207468,
+          "caveats": {
+            "periodicity_drift_pp": 0.59,
+            "holiday_drift_pp": 3.95,
+            "anchor_holiday_drag": -0.022944367862587082,
+            "anchor_holiday_worst_day": -0.04879927906053959,
+            "anchor_days_with_holiday": 60,
+            "anchor_days": 60,
+            "reference_dau": 48411332.6,
+            "anchor_iran_contaminated": false
+          }
+        }
+      }
+    },
+    "july": {
+      "seam": "2026-07-06",
+      "provenance": "aug22-retune round1/center from GCS; verified to reproduce July's published parquet to 0 DAU across 198,696 rows",
+      "trend_drift": {
+        "max_abs_in_window": 0.018011872129126694,
+        "at_seam": 0.007103149424304123,
+        "at_report_end": 0.018011872129126694,
+        "at_horizon_end": 0.04888127852998059
+      },
+      "is_published": {
+        "overlay_residual_mean": 694627.0661764711,
+        "overlay_residual_std": 70491.66290588476,
+        "roughness": 0.10148130750778468,
+        "days": 544
+      },
+      "tracks": {
+        "all": {
+          "seam_anchored": {
+            "anchor_day": "07-09",
+            "anchor_dau": 47469707.0,
+            "window_days": 7,
+            "model_trough": 43687922.63188177,
+            "history_trough": 44136830.23881525,
+            "realised_trough": 45016782.28571428,
+            "model_vs_history": -448907.60693347454,
+            "realised_vs_history": 879952.0468990356,
+            "share_of_gap_closed": -0.5101500797860881
+          },
+          "reference_dau": 49806471.06607142,
+          "model_trough": 42097257.03548046,
+          "model_trough_day": "08-20",
+          "history_trough": 43627337.95246938,
+          "history_trough_day": "08-21",
+          "realised_trough": 45980566.821428575,
+          "realised_trough_day": "08-21",
+          "model_vs_history": -1530080.9169889167,
+          "realised_vs_history": 2353228.868959196,
+          "model_vs_realised": -3883309.7859481126,
+          "share_of_gap_closed": -0.6502048896185999,
+          "pre_recon_vs_history": 287146.73428667337,
+          "reconciliation_effect": -1817227.65127559,
+          "caveats": {
+            "periodicity_drift_pp": 0.59,
+            "holiday_drift_pp": 3.95,
+            "anchor_holiday_drag": -0.02763228810831204,
+            "anchor_holiday_worst_day": -0.05120284138021379,
+            "anchor_days_with_holiday": 60,
+            "anchor_days": 60,
+            "reference_dau": 49806471.06607142,
+            "anchor_iran_contaminated": true
+          }
+        },
+        "ex_ir_cn": {
+          "seam_anchored": {
+            "anchor_day": "07-09",
+            "anchor_dau": 44744830.71428572,
+            "window_days": 7,
+            "model_trough": 41221915.95155279,
+            "history_trough": 41397784.957550526,
+            "realised_trough": 42389950.28571428,
+            "model_vs_history": -175869.00599773228,
+            "realised_vs_history": 992165.3281637579,
+            "share_of_gap_closed": -0.1772577623965357
+          },
+          "reference_dau": 48411332.6,
+          "model_trough": 40635013.0975314,
+          "model_trough_day": "08-21",
+          "history_trough": 42167357.07117017,
+          "history_trough_day": "08-21",
+          "realised_trough": 43288224.53571428,
+          "realised_trough_day": "08-21",
+          "model_vs_history": -1532343.973638773,
+          "realised_vs_history": 1120867.46454411,
+          "model_vs_realised": -2653211.438182883,
+          "share_of_gap_closed": -1.3671054090788715,
+          "pre_recon_vs_history": 119609.31662278622,
+          "reconciliation_effect": -1651953.2902615592,
+          "caveats": {
+            "periodicity_drift_pp": 0.59,
+            "holiday_drift_pp": 3.95,
+            "anchor_holiday_drag": -0.022944367862587082,
+            "anchor_holiday_worst_day": -0.04879927906053959,
+            "anchor_days_with_holiday": 60,
+            "anchor_days": 60,
+            "reference_dau": 48411332.6,
+            "anchor_iran_contaminated": false
+          }
+        }
+      }
+    }
+  }
+}

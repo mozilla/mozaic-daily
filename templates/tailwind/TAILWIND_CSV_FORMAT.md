@@ -35,7 +35,10 @@ submission_date,type,dau
   change.
 - **Count DAU on the KPI's own population**, Firefox Desktop DAU or Firefox mobile DAU. Do not
   count clients, installs, or sessions.
-- **Cover every day through 31 December of the current forecast year.**
+- **Cover every day through 31 December of the current forecast year.** Only the end date is
+  fixed. Start wherever your series starts: the first day the effect is non-zero is enough, and we
+  treat every earlier day as zero. You do not need leading `0` rows, and the example's June 1 start
+  is just where that model happened to begin.
 
 ## Nice to have
 
@@ -50,7 +53,8 @@ submission_date,type,dau
 ## The example
 
 `example_daily_tailwind.mozillaonline_2026-07.csv` covers 2026-06-01 to 2026-12-31, 214 rows.
-The series starts at 0, ramps as MozillaOnline users migrate onto mainline Firefox, peaks near
+The start date is incidental: the model began on June 1, so the file does. A file starting on the
+first non-zero day would have been just as good. The series starts at 0, ramps as MozillaOnline users migrate onto mainline Firefox, peaks near
 985K on 2026-06-25, and decays to about 570K by year end. The `actuals` rows run from 2026-06-01
 to 2026-06-28; every later row is `forecast`.
 
@@ -61,5 +65,7 @@ to 2026-06-28; every later row is `forecast`.
   period is still `forecast`.
 - Never write a moving average into `dau`. If the source produces only a smoothed series, say so
   rather than pass it off as daily.
+- Do not pad the start back to a round date or to the example's start date. Only the end date is
+  constrained.
 - If the series ends before 31 December of the following year, deliver what the model produced
   and state the end date. Do not extrapolate unless asked.

@@ -16,11 +16,10 @@ import pytest
 import pandas as pd
 import json
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from mozaic_daily.validation import (
     validate_output_dataframe,
-    _get_bigquery_fields,
     _check_column_presence,
     _check_column_type,
     _validate_string_column_formats,

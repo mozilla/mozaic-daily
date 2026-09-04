@@ -1,0 +1,8 @@
+{
+  "type": "linear_ramp",
+  "start_date": "2026-08-02",
+  "anchor_date": "2026-12-15",
+  "desktop_dau": 0,
+  "mobile_dau": 299000,
+  "notes": "Adjustment code `t` (mobile_tailwind), adopted 2026-08-03 at +276,000 and RAISED to +299,000 later the same day, after the 2026-08-02 data refresh, so that published mobile Dec-15 lands within 1,000 DAU of July's delivered 17,923,869 (it reads 17,924,562, +693). That sizing rule is explicitly a CALIBRATION TO A PRIOR PUBLISHED NUMBER, not a measurement: the +23,000 increment has no evidence behind it beyond the target itself, and it lowers the evidence-backed share of this overlay from ~51% to ~47%. POSITIVE by design -- raises the mobile curve. Kept as a separate spec from headwind.json so it lands on the attribution ledger under its own name instead of being absorbed into the Win10 headwind line. Ramps from the seam rather than the 2026-08-03 adoption date, matching the convention this cycle adopted for `h` to remove a seam discontinuity; Dec-15 is unaffected either way since the ramp is anchored there. start_date moved 2026-07-28 -> 2026-08-02 with the data refresh, so it continues to ramp from the live seam (135-day ramp, was 140). Rationale, evidence base, and the judgement/evidence split: ../tailwind/_index.md."
+}

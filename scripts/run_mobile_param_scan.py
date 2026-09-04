@@ -19,6 +19,20 @@ The pre-flight BigQuery data-availability check is still patched to a no-op: whe
 symlinked in, the training data was already fetched when that cache was built, so the check is
 redundant (and would otherwise require live gcloud creds for every scan cell).
 
+Exposed knob surface
+--------------------
+All **seven non-holiday** ``MobileModelConfig`` fields are flags, matching ``run_param_scan.py``:
+``changepoint_prior_scale``, ``changepoint_range``, ``n_changepoints``, ``recent_weeks``,
+``seasonality_prior_scale``, ``seasonality_regime``, ``seasonality_corr_threshold``. The last three
+were added 2026-07-31 for the August mobile gradient — before that a mobile scan silently could not
+vary them, which is why no mobile build has ever moved off ``seasonality_regime='auto'``.
+
+Of the holiday knobs only ``threshold`` and ``effect_floor`` are exposed, and ``max_radius`` /
+``min_radius`` deliberately are not: holiday parameters are excluded from tuning by policy (strictly
+local effects must not be used to move whole-season quantities). The two that exist are kept because
+the shipped August mobile config carries ``holiday_threshold=-0.055``, inherited from July's search,
+and it must remain reproducible.
+
 Usage
 -----
     source .venv/bin/activate
@@ -159,6 +173,12 @@ def build_config(args: argparse.Namespace) -> MobileModelConfig:
         overrides["prophet_n_changepoints"] = args.n_changepoints
     if args.recent_weeks is not None:
         overrides["prophet_recent_weeks"] = args.recent_weeks
+    if args.seasonality_prior_scale is not None:
+        overrides["prophet_seasonality_prior_scale"] = args.seasonality_prior_scale
+    if args.seasonality_regime is not None:
+        overrides["seasonality_regime"] = args.seasonality_regime
+    if args.seasonality_corr_threshold is not None:
+        overrides["seasonality_corr_threshold"] = args.seasonality_corr_threshold
     if args.holiday_threshold is not None:
         overrides["holiday_threshold"] = args.holiday_threshold
     if args.holiday_effect_floor is not None:
@@ -190,6 +210,19 @@ def parse_args() -> argparse.Namespace:
                    help="MobileModelConfig.prophet_n_changepoints (default 25)")
     g.add_argument("--recent-weeks", type=int, default=None,
                    help="MobileModelConfig.prophet_recent_weeks (default 13)")
+    g.add_argument("--seasonality-prior-scale", type=float, default=None,
+                   help="MobileModelConfig.prophet_seasonality_prior_scale (default 0.1)")
+    g.add_argument("--seasonality-regime", type=str, default=None,
+                   choices=["auto", "additive", "multiplicative"],
+                   help="MobileModelConfig.seasonality_regime (default 'auto'). On mobile this sets "
+                        "seasonality_mode ONLY -- growth stays volume-driven, unlike desktop where "
+                        "the regime also picks linear/logistic. Under 'auto' a tile is "
+                        "multiplicative iff max(DAU) <= 2e6, so the large tiles are additive.")
+    g.add_argument("--seasonality-corr-threshold", type=float, default=None,
+                   help="MobileModelConfig.seasonality_corr_threshold. DESKTOP-ONLY: mobile's regime "
+                        "switch is volume-driven, so MobileModelConfig raises on any value other "
+                        "than 0.0. Exposed only so that error surfaces instead of the flag "
+                        "silently not existing.")
 
     g = parser.add_argument_group("Holiday knobs")
     g.add_argument("--holiday-threshold", type=float, default=None,

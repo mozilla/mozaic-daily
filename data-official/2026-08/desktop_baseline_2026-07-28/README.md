@@ -54,6 +54,13 @@ built-in counterfactual fill.
 
 ## Result (Dec-15 2026, 28d-MA, headwind applied)
 
+> **⚠️ SUPERSEDED — this is not the cycle's published number.** This build is **FROZEN** (July's
+> parameters, an LOL curve that no longer exists on disk). The canonical August desktop build is
+> `../desktop_locked/` at **48,697,603** (g01 params, LOL 200K, headwind −1,220,000). This
+> directory is kept for exactly two reasons: its raw BQ pull is the shared cache every scan and
+> isolation run symlinks, and its Dec-15 below is the anchor the canonical notebook's retune step is
+> pinned from. **Never re-run or rebuild it.**
+
 **48,672,970** — **+87,487 (+0.18%)** vs July's delivered 48,585,483.
 
 Aug-22 summer trough: **43,921,488** (post-headwind, seam-anchored ramp; it was 43,453,752 under the superseded 2026-04-01 ramp start).
@@ -65,7 +72,11 @@ Attribution ledger:
 | July delivered (July's LOL ceiling, hw −1,345,000, 07-06 anchor) | 48,585,483 | — |
 | Aug baseline (July's ceiling, hw −1,345,000) — superseded | 48,520,714 | −64,769 data refresh |
 | Aug, raised ceiling (hw −1,345,000) — implied | 48,572,970 | +52,256 LOL ceiling |
-| **Aug current (this build, hw −1,245,000)** | **48,672,970** | +100,000 headwind |
+| **This build, as of 2026-07-29 (hw −1,245,000)** | **48,672,970** | +100,000 headwind |
+
+The cycle then moved past this build: the ceiling was raised again to 200,000, the headwind attenuated a
+third time to −1,220,000, and the model retuned to s01 and then g01, ending at **48,697,603** in
+`../desktop_locked/`. The full six-step chain is in `../_index.md` § Attribution ledger.
 
 **Only the LOL step involved this parquet.** Raising the ceiling required rebuilding it (`l` is baked in);
 neither headwind change did — `h` is applied to the 28-day MA in the canonical notebook, never to the

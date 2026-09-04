@@ -29,6 +29,7 @@ code they call cannot change.
 | `research/param-scans/mobile-july/mobile_july_sensitivity.ipynb` | July mobile round-1 sensitivity. Bound the frozen copy via a path list (`REPO / "data-official/2026-06"`), which a narrower grep missed on the first pass; also imports the archived `mobile_sensitivity.py` |
 | `research/param-scans/aug22-retune/{desktop_bestfit_vs_july.ipynb,export_bestfit_curve.py,make_notebook.py}` | the Aug-22 retune exporter and report; scores are pre-fix |
 | `scripts/mobile_sensitivity.py` + `tests/test_mobile_sensitivity.py` | July-cycle tooling by construction — hardcodes `FORECAST_START = 2026-06-29` and June's delivered baseline constant, so it is not a general-purpose tool to repoint |
+| `scripts/mobile_grid_search.py` (**moved 2026-07-31**) | July's mobile round-1/round-2 driver. Followed `mobile_sensitivity.py` here: it imported that module, so it had been **unrunnable** since the 2026-07-29 move. Also July-scoped throughout — hardcodes `FORECAST_START = 2026-06-29`, `.adj-m.` parquet names (mobile ships `.adj-p.` from August on), and a June baseline. Replaced for August by `scripts/run_mobile_gradient.py` + `scripts/mobile_scoring.py` |
 | `tests/test_export_canonical_curves.py` | tested the frozen 2026-06 file. Nothing in that file can regress, so this is documentation of frozen behaviour; superseded by `tests/test_seam_ma.py` |
 
 ## What is NOT here, and why

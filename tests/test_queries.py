@@ -331,7 +331,6 @@ def test_get_queries_includes_country_filter():
 
     Failure indicates country filtering not applied.
     """
-    config = get_runtime_config()
     country_string = "'US', 'DE', 'FR'"
     queries = get_queries(country_string)
 

@@ -28,13 +28,35 @@ trough**, and they pull in *opposite directions* — do not read one's results i
 `scripts/score_near_horizon.py` is shared by all three and still prints a `target band : 45M-46M`
 line belonging to the *upward* objective. It is meaningless for `aug25-gap/`.
 
+Note that `score_near_horizon.py` is **desktop-only**. The mobile searches use
+`scripts/mobile_scoring.py`, which is not interchangeable with it: it reads `mobile_dau` from the
+headwind spec (~45× smaller than `desktop_dau`) and selects on mobile's `"{}"` segment rather than
+`'{"os": "ALL"}'`. Also: desktop scores are **not comparable across the 2026-07-29 `Fix A` boundary**,
+because that scorer's window overlaps the seam transition.
+
+## Standing policy: holiday knobs are excluded from every search
+
+**All four holiday parameters** (`holiday_threshold`, `holiday_max_radius`, `holiday_min_radius`,
+`holiday_effect_floor`) are permanently excluded from parameter searches, on principle: they govern
+**strictly local** effects, and a local effect must never be used to move a whole-season quantity like
+the Dec-15 headline or the summer trough. Do not re-propose them on the grounds that their measured
+slope is large — a large slope on a whole-season KPI is precisely the symptom that makes them
+inadmissible. `scripts/run_trend_only_grid.py` refuses holiday overrides by design, and the canonical
+notebook asserts desktop's four holiday knobs sit at package defaults.
+
+One documented exception, which is a *pin* rather than a tuning: mobile carries
+`holiday_threshold = −0.055` (off-default, inherited from July's `grad_moderate` search, which predates
+this policy). It is held fixed so the search centre equals the build actually in production; resetting
+it to the −0.032 default was considered and declined on 2026-07-31.
+
 ## Files
 
 | File | Purpose |
 |---|---|
 | `param_scan_exploration.ipynb` | Desktop analysis notebook |
-| `summer-trough-v2/` | August desktop s01 lock. `s01_canonical_desktop.ipynb` was **repointed at `mozaic_daily.seam_ma`** on 2026-07-29, so its early-horizon curves differ from when it was first run. |
+| `summer-trough-v2/` | August desktop **s01** retune (later superseded by **g01** — see `aug25-gap/`). `s01_canonical_desktop.ipynb` was **repointed at `mozaic_daily.seam_ma`** on 2026-07-29, so its early-horizon curves differ from when it was first run. Its like-for-like s01 measurement is deliberately made on a LOL curve that is no longer active — that is *what isolates the config* — so do not repoint it at the canonical build. |
 | `mobile-july/` | July mobile grid search (notebooks + sidecars present; `results/` blobs archived) |
+| `mobile-aug/` | **August mobile search** (`glean_mobile` DAU): calibrating the new `p` paid/organic build back toward July's delivered Dec-15. 33 probes across three `seasonality_regime` values. Concluded **parameters cannot close the gap** — the whole envelope spans 63,539 against a 322,714 gap — and established the structural reason: **mozaic reconciles top-down, so the mobile world headline is effectively one Prophet fit on the aggregate and per-tile knobs largely cancel.** Outcome: base locked at `cpr 0.725`, remainder carried by the explicit `t` overlay. Start here for any future mobile parameter work. |
 | `aug25-gap/` | **Downward** near-horizon search (opened 2026-07-30): close 10% of the Aug-25 August-vs-July gap (−196,183 to 45,027,066) on Prophet params only, holding Dec-15 within ±50,000. Side-folder work; `data-official/2026-08/desktop_locked/` stays canonical. See its `_index.md` and `PLAN.md`. |
 | `aug22-retune/` | Near-horizon (Aug-22 trough) desktop retune — 3 rounds + LHS sampling. Concluded params **can't** hit Aug without breaking Dec; recommends a summer-trough overlay. Summary artifacts present; per-probe sidecars on `july-forecast` only. See its `_index.md`. |
 | `results/`, `pinned/` | Output of `scripts/run_param_scan.py` / `run_pinned_scan.py`. **Archived to GCS; regenerable.** |
@@ -62,5 +84,6 @@ Pinning the April changepoints (the second command) is the key trick — it isol
 
 ## Related
 
-- The mechanism investigation that motivated these scans: `../april-vs-june-mechanism/`
+- The mechanism investigation that motivated these scans: `april-vs-june-mechanism/` — **archived to GCS
+  and no longer on disk** (`gs://…/research-superseded/`, or the `july-forecast` branch history)
 - Production-validated param sets feed `data-official/{YYYY-MM}/desktop_*/parameters.json`

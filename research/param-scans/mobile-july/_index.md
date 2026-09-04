@@ -47,7 +47,7 @@ tailwind (`m`) and headwind (`h`) both applied.
 
 - `scripts/run_mobile_param_scan.py` — one mobile forecast for one `MobileModelConfig`
   (marketing applied in-pipeline, native Iran fill, raw-cached, `.adj-m.` stamped).
-- `scripts/mobile_grid_search.py` — round-1 OAT orchestrator (center + 2×6 perturbations)
+- `_archive/scripts/mobile_grid_search.py` (**moved 2026-07-29**) — round-1 OAT orchestrator (center + 2×6 perturbations)
   + central-difference slopes; writes `round1_results.csv`.
 - `_archive/scripts/mobile_sensitivity.py` (**moved 2026-07-29**) — pure scorer (extraction → canonical `display_ma`
   seam MA → headwind daily-anchor convention → net vs baseline). Tested in

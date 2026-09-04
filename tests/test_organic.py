@@ -612,9 +612,17 @@ def test_real_august_spec_loads_and_its_data_file_exists():
     not 20 minutes into a forecast run."""
     spec = load_organic_spec(REAL_SPEC)
     split = load_split_frame(spec, REAL_SPEC.parent)
-    assert spec["applies_to_forecast_start"] == "2026-07-28"
+    # Cycle-scoped pins: both moved with the 2026-08-03 data refresh (seam 2026-07-28 -> 2026-08-02,
+    # training end 2026-07-27 -> 2026-08-01). Repoint them on every refresh, and keep the invariant
+    # below them -- the split must cover training exactly through the day before the seam, or the
+    # applier silently falls back to a held-flat share for the uncovered tail.
+    assert spec["applies_to_forecast_start"] == "2026-08-02"
     assert spec["scope"]["exclude_countries"] == ["IR"]
-    assert split["submission_date"].max() == pd.Timestamp("2026-07-27")
+    assert split["submission_date"].max() == pd.Timestamp("2026-08-01")
+    assert split["submission_date"].max() == pd.Timestamp(
+        spec["applies_to_forecast_start"]) - pd.Timedelta(days=1), (
+        "the split must cover training through the day before the seam"
+    )
     assert split["organic_share"].between(0, 1, inclusive="right").all()
 
 
@@ -624,7 +632,8 @@ def test_real_august_marketing_level_matches_the_published_anchor_and_lift():
     637,226.74 = 1,559,477. A silent re-vendor of the marketing curve trips this."""
     spec = load_organic_spec(REAL_SPEC)
     level = marketing_paid_level(spec, REAL_SPEC.parent,
-                                 forecast_start="2026-07-28", forecast_end="2027-12-31")
+                                 forecast_start=spec["applies_to_forecast_start"],
+                                 forecast_end="2027-12-31")
     assert level.loc[pd.Timestamp("2026-12-15")] == pytest.approx(1_559_477.2, abs=1.0)
     # And the 2027 tail holds rather than collapsing.
     assert level.loc[pd.Timestamp("2027-06-01")] == pytest.approx(

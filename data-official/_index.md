@@ -83,9 +83,15 @@ Combined with the Iran composition marker:
 forecast.2026-05-13.ld-D.raw.parquet               # raw, no-Iran
 forecast.2026-05-13.ld-D.raw.plus_iran.parquet     # raw, Iran added back
 forecast.2026-05-13.ld-D.adj-h.plus_iran.parquet   # headwinds applied, Iran added
-forecast.2026-05-17.gm-D.adj-m.parquet             # marketing-lift applied
+forecast.2026-05-17.gm-D.adj-m.parquet             # marketing-lift applied (retired from 2026-08)
 forecast.2026-05-17.gm-D.adj-hm.parquet            # headwinds + marketing-lift
+forecast.2026-07-28.gm-D.adj-p.parquet             # paid/organic split — the current mobile treatment
+forecast.2026-07-28.ld-D.adj-lo.parquet            # launch-on-login + MozillaOnline (current desktop)
 ```
+
+Note that `h` and `t` are **display-layer**: they are applied to the 28-day MA after mozaic and are
+never baked into a parquet. So a current-cycle forecast parquet carries `adj-lo` (desktop) or `adj-p`
+(mobile), and the `h`/`t` contribution exists only in the published CSVs and charts.
 
 **Scratch files** under `comparisons/` and `param_scan_results/` are not held to this convention — they are all raw model output by directory convention. The scripts that produce them do not apply adjustments.
 
@@ -114,8 +120,22 @@ The sidecar is canonical; the filename marker must match it. Loaders enforce thi
 Adding a new adjustment:
 
 1. Pick an unused one-letter code, add it to `adjustment_codes.yaml`.
-2. Register the applier in `src/mozaic_daily/adjustments.py`.
-3. Add unit tests in `tests/test_adjustments.py`.
+2. Register the applier. **Where depends on the applier style** (see
+   `src/mozaic_daily/_index.md` for the full comparison):
+   - *Composite post-forecast* (`h`, `t`) — `adjustments.py`. These need no per-code wiring at all:
+     `load_adjustments_from_dir()` globs `*.json` and sums every spec it finds, so a display-layer
+     adjustment goes live the moment its spec file lands in a cycle's `adjustments/` directory.
+   - *Per-tile bidirectional* (`l`, `o`) — `adjustments.py`, reusing `load_overlay_spec()` and the
+     generic subtract/add-back helpers. Each overlay needs a **distinct `sentinel_attr`** so several
+     can stack on one training frame.
+   - *Measured split* (`p`) — its own module pair, **not** `adjustments.py`: `organic_source.py`
+     (producer) and `organic.py` (consumer).
+3. Add unit tests. `tests/test_adjustments.py` for the first two styles; a dedicated module for the
+   third (`tests/test_organic.py` is the reference).
+
+**Codes are never unregistered.** A retired adjustment (currently `m`) must stay in
+`adjustment_codes.yaml` so that historical artifacts carrying its marker keep loading and reproducing.
+Retirement is done by clearing the spec's date gate, not by deleting the code.
 
 ## Producing files
 

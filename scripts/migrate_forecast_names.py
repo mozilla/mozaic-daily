@@ -34,7 +34,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from mozaic_daily.adjustments import (  # noqa: E402
-    adjustment_spec_hash,
     build_adjustments_applied_list,
     insert_state_marker,
     load_code_registry,

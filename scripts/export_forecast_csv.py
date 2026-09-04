@@ -2,7 +2,9 @@
 """Export forecast values for a data_source/metric combo from a parquet file as CSV.
 
 Filters to the aggregate row (country=ALL, segment={"os": "ALL"}, and app_name=ALL MOBILE
-for mobile data sources). Outputs two columns: date and the metric value.
+for mobile data sources). Outputs three columns: date, the metric value, and its 28-day
+trailing moving average (computed over training+forecast so the window is continuous, then
+restricted to forecast rows).
 
 Usage:
     python scripts/export_forecast_csv.py <parquet_file> <data_source> <metric> [output.csv]
@@ -40,14 +42,26 @@ def parse_args():
     parser.add_argument("parquet_file", help="Path to the forecast parquet file")
     parser.add_argument("data_source", choices=sorted(VALID_DATA_SOURCES), help="Data source to filter to")
     parser.add_argument("metric", choices=sorted(VALID_METRICS), help="Metric column to export")
-    parser.add_argument("output_csv", nargs="?", default=None, help="Output CSV path (default: stdout)")
+    parser.add_argument(
+        "output_csv",
+        nargs="?",
+        default=None,
+        help="Output CSV path (default: alongside the parquet as .{data_source}.{metric}.csv)",
+    )
     return parser.parse_args()
 
 
-def select_aggregate_rows(df, data_source):
+def aggregate_keys(data_source):
+    """Return the (app_name, segment) pair identifying the aggregate row for a data source."""
     is_mobile = data_source == "glean_mobile"
-    app_name = MOBILE_APP_NAME if is_mobile else DESKTOP_APP_NAME
-    segment = MOBILE_AGGREGATE_SEGMENT if is_mobile else DESKTOP_AGGREGATE_SEGMENT
+    return (
+        MOBILE_APP_NAME if is_mobile else DESKTOP_APP_NAME,
+        MOBILE_AGGREGATE_SEGMENT if is_mobile else DESKTOP_AGGREGATE_SEGMENT,
+    )
+
+
+def select_aggregate_rows(df, data_source):
+    app_name, segment = aggregate_keys(data_source)
     mask = (
         (df["data_source"] == data_source)
         & (df["country"] == AGGREGATE_COUNTRY)
@@ -68,9 +82,10 @@ def main():
     filtered = select_aggregate_rows(df, args.data_source)
 
     if filtered.empty:
+        app_name, segment = aggregate_keys(args.data_source)
         print(
-            f"Error: no rows found for data_source={args.data_source!r} "
-            f"with country={AGGREGATE_COUNTRY!r}, segment={AGGREGATE_SEGMENT!r}",
+            f"Error: no rows found for data_source={args.data_source!r} with "
+            f"country={AGGREGATE_COUNTRY!r}, app_name={app_name!r}, segment={segment!r}",
             file=sys.stderr,
         )
         sys.exit(1)

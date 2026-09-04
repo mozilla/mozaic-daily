@@ -1,0 +1,14 @@
+{
+  "source_table": "moz-fx-data-shared-prod.telemetry.active_users_aggregates",
+  "filter": "app_name = \"Firefox Desktop\", country IS NOT NULL, no channel filter",
+  "rows": 423002,
+  "date_min": "2021-12-01",
+  "date_max": "2026-08-23",
+  "countries": 251,
+  "seed": "/Users/brendanwells/work/product-data-science-core/scratch/brwells/regional-story/data/dau_mau.parquet",
+  "seed_through": "2026-08-23",
+  "bq_window": [
+    "2026-08-24",
+    "CURRENT_DATE(LA)-2"
+  ]
+}

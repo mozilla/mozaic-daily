@@ -23,12 +23,9 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import sys
 from pathlib import Path
-from typing import Iterable
 
-import numpy as np
 import pandas as pd
 
 # Make the package importable when running from repo root

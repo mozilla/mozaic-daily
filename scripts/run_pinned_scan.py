@@ -78,7 +78,7 @@ from mozaic_daily.main import (  # noqa: E402
     combine_tables,
     get_format_function,
 )
-from mozaic_daily.forecast import get_desktop_forecast_dfs, get_mobile_forecast_dfs  # noqa: E402
+from mozaic_daily.forecast import get_mobile_forecast_dfs  # noqa: E402
 from mozaic_daily.queries import ADDITIONAL_HOLIDAYS, DataSource, Metric, Platform  # noqa: E402
 
 run_main_module = importlib.import_module("mozaic_daily.main")

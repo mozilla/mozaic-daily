@@ -1,5 +1,25 @@
 # s01 — REVERT TARGET (not an archive)
 
+> ## ⛔ DO NOT FOLLOW STEP 2 AS WRITTEN — the coupling it assumes was broken on 2026-08-03
+>
+> This kit was written on 2026-07-30, when the g01 retune and a +25,000 headwind attenuation were
+> applied **as one unit**, so reverting meant undoing both. **Two things have happened since, and both
+> invalidate the headwind half of these instructions:**
+>
+> 1. **2026-08-02 data refresh.** The canonical desktop build is no longer this build's successor —
+>    it is `../desktop_g01_2026-08-02/`, trained through 2026-08-01 at the 2026-08-02 seam. Reverting
+>    the *config* now means rebuilding s01 **at the new seam**, not restoring the 07-28 parquet.
+> 2. **2026-08-03 headwind reversal.** The anchor was moved −1,220,000 → **−1,295,000**, independently
+>    of the model config and for an unrelated reason (giving back 75,000 of the refresh's +100,840).
+>    So the anchor is now *below* the −1,245,000 this kit tells you to restore. **Following step 2
+>    would attenuate the headwind by 50,000 while reverting a model change — the opposite of the
+>    compensation it was written to preserve, and it would publish a number no build has produced.**
+>
+> **What to do instead:** treat step 1 (the config) as the only revertable item here, rebuild s01 at
+> the live seam with `run_param_scan.py`, and **leave `adjustments/headwind.json` alone** unless there
+> is a separate, stated reason to move it. The numbers below remain a correct record of the
+> 2026-07-30 comparison and nothing else. See `../adjustments/_index.md` § attenuation history.
+
 **This directory exists so the August desktop forecast can be put back the way it was.** It is not
 a historical curiosity; a revert was considered a real possibility at the time of the swap
 (2026-07-30) and nothing here should be deleted while the August cycle is live.

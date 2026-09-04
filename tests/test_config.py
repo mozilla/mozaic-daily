@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Tests for configuration module (date override functionality)."""
 
-import pytest
 from datetime import datetime
 from mozaic_daily.config import get_runtime_config
 

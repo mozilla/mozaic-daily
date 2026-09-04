@@ -98,3 +98,35 @@ codes:
       migration parquet (Brad Ochocki Szasz's official model, ingested via
       build_official_series.py).
     spec_glob: "data-official/*/mozillaonline/mozillaonline.json"
+  t:
+    name: mobile_tailwind
+    description: >
+      August 2026 mobile calibration tailwind. Linear ramp, 0 at the seam
+      (2026-08-02, moved with the 2026-08-03 data refresh) to +299,000 at the
+      2026-12-15 anchor, mobile only. Adopted at +276,000 and raised to
+      +299,000 the same day so published mobile lands within 1,000 DAU of
+      July's delivered 17,923,869 -- that last +23,000 is calibration to a
+      prior published number, NOT a measurement. SIGN IS
+      POSITIVE -- this raises the curve, unlike `h`, whose mobile_dau is
+      -27,162. It is a SEPARATE code from `h` on purpose: folding a
+      discretionary upward judgement into the headwind line would hide it from
+      the attribution ledger.
+      Why it exists: the 2026-07-31 `m` -> `p` methodology swap moved mobile
+      Dec-15 down 322,714, and a 33-probe parameter search across three
+      seasonality regimes established that no exposed non-holiday parameter
+      combination recovers it -- the whole probe envelope spans only 63,539,
+      because mozaic reconciles top-down and the mobile headline is effectively
+      a single Prophet fit on the aggregate organic series. So the remainder is
+      carried by this explicit overlay rather than laundered through the model
+      config, where it would be invisible.
+      Basis: ~47% (+141,637) is the measured excess of an independent
+      implementation (scratch/brwells/mobile_organic_aug, 0.77% MAPE / 180-day
+      backtest, -1.4% recent bias); the rest is a planning decision. Two
+      identified production defects bias the same direction but are unmeasured:
+      untreated Farsi-locale shutdown craters in ROW tiles, and 3.5 years of
+      backfilled Fenix organic share. See
+      data-official/2026-08/tailwind/_index.md.
+      Composite-style applier: display-layer, applied to the 28-day MA after
+      mozaic, exactly like `h`. Needs no model re-run and has no Prophet
+      interaction, so its Dec-15 effect is exactly its anchor.
+    spec_glob: "data-official/*/adjustments/tailwind.json"

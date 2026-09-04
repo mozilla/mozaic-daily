@@ -51,7 +51,8 @@ Its 6-app headline (17,769,730) differs by only −224 — Klar is 37 DAU/day an
 claims.** The prototype's `fit_organic_forecast` never forwards `holiday_threshold` /
 `holiday_max_radius` / `holiday_min_radius` to `populate_tiles`, nor `holiday_effect_floor` to
 `Mozaic`; production forwards all four. Its reported "holiday_threshold effect = 0.00%" is
-therefore tautological. `reproduction.ipynb` runs a bug-for-bug arm and a plumbed arm.
+therefore tautological. `reproduce_prototype.py` runs a bug-for-bug arm and a plumbed arm, writing
+`reproduction_results.json`.
 
 ## Phase 0 probe results (2026-07-31)
 
@@ -243,7 +244,9 @@ total, well inside the 0.25% bar.
   attribution between them is wrong for ~21.5% of mobile DAU.
 - **The paid seam — DECISION REQUIRED.** Training rows get the *measured* paid added back (so they
   stay equal to raw actuals); forecast rows get *marketing's modelled* level. They disagree by
-  **−36,674 (−0.21% of total)** at the seam. `paid_seam_methods.ipynb` contrasts three treatments
+  **−36,674 (−0.21% of total)** at the 2026-07-28 seam. ⚠️ **Re-measured at the refreshed 2026-08-02
+  seam this collapses to +1,903 (+0.01% of total)** — see the note at the end of this section, which
+  changes how urgent this decision is. `paid_seam_methods.ipynb` contrasts three treatments
   and **recommends method 1 (the honest splice, what ships today)** — but this is a recommendation,
   not a decision, and it is waiting on you.
 
@@ -257,7 +260,8 @@ total, well inside the 0.25% bar.
   **The step does not wash out of the 28-day MA** — it ramps in over 28 days and then persists at
   full size for the rest of the horizon, Dec-15 included. So this is a headline decision worth
   36,674, not a cosmetic one: methods 1 and 3 keep marketing's level and land on the same Dec-15,
-  method 2 substitutes a continuation of our own measurement and lands 36,674 lower. Plot:
+  method 2 substitutes a continuation of our own measurement and lands 36,674 lower (all at the
+  2026-07-28 seam). Plot:
   `plots/paid_seam_three_methods.png`, `plots/paid_measured_vs_marketing_overlap.png`.
 - **Productionize the mirror.** It is a scratch table expiring 2027-04-01. The pinned per-cycle
   parquet insulates the pipeline, but the *producer* still depends on it.
@@ -300,3 +304,20 @@ paid to recent training rows. It is the extrapolated slope that flattens, not th
 Re-runnable machinery → `src/mozaic_daily/organic.py` (with a test in `tests/test_organic.py`).
 Per-cycle data artifacts → `data-official/{YYYY-MM}/organic/`. Analysis narrative and anything
 that argues for a choice → a notebook here.
+
+### ⚠️ Re-measured at the 2026-08-02 seam: the step is now ~zero (2026-08-03)
+
+The 2026-08-03 data refresh moved the seam 2026-07-28 → 2026-08-02 and rebuilt the measured split
+for the new training window. The paid seam step — marketing's first forecast day minus our last
+measured day — is now **+1,903 DAU, +0.01% of total mobile DAU**, down from −36,674 / −0.21%.
+
+**This substantially de-risks the open decision.** The three treatments differ by roughly the size of
+the step, so at +1,903 they are all within noise of each other and none of them can move Dec-15
+materially. The decision should stay open on principle — a future refresh could widen the gap again,
+and the *mechanism* (our measurement handing over to marketing's model) is unchanged — but it is no
+longer a blocker on publishing mobile.
+
+**The step must be re-measured every refresh, and the measurement must be seam-derived.** A
+hardcoded `2026-07-27` in the canonical notebook survived the refresh and silently reported
+−41,798 (a six-day-offset comparison) instead of the true one-day step. Fixed 2026-08-03 by deriving
+`LAST_MEASURED_DAY = MOBILE_FORECAST_START - 1 day`.

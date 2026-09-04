@@ -34,7 +34,7 @@ import pandas as pd
 from google.cloud import bigquery
 from .config import STATIC_CONFIG
 from .queries import (
-    QUERY_SPECS, Platform, Metric, TelemetrySource, DataSource, QuerySpec,
+    QUERY_SPECS, Metric, DataSource, QuerySpec,
     get_availability_check_queries,
 )
 

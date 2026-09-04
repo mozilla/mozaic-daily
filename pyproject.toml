@@ -18,3 +18,7 @@ pythonpath = ["src"]
 # part of the live suite -- collecting them would report on code that is not allowed to change.
 # Run them explicitly by path if you want to confirm frozen behaviour still holds.
 norecursedirs = ["_archive", ".venv", "data-official", "build", "dist"]
+markers = [
+    "smoke: end-to-end pipeline tests that mock only BigQuery and mozaic (tests/test_smoke.py)",
+    "integration: tests that reach a real external service (BigQuery); gate on credentials",
+]

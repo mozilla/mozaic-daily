@@ -1,7 +1,8 @@
 {
   "type": "linear_ramp",
-  "start_date": "2026-07-28",
+  "start_date": "2026-08-02",
   "anchor_date": "2026-12-15",
-  "desktop_dau": -1220000,
-  "mobile_dau": -27162
+  "desktop_dau": -1315000,
+  "mobile_dau": -27162,
+  "notes": "Windows 10 migration headwind (code `h`). Desktop anchor -1,295,000 -> -1,314,000 -> -1,315,000 on 2026-08-04: the headwind was INCREASED IN MAGNITUDE by 19,000 and then a further 1,000, lowering desktop Dec-15 by exactly 20,000 in total. Cumulative attenuation vs July's -1,345,000 is now +30,000; vs June's -1,420,000 it is +105,000. NOTE ON GRANULARITY: the final 1,000 step is far below any resolution the evidence supports -- research/headwinds/WIN10_ANCHOR_FINDINGS.md found candidate anchors spanning 21,705 DAU indistinguishable against a 1,488,293-wide specification envelope (~69:1 noise to signal). A 1,000 DAU step is ~0.002% of desktop DAU and should be read as dialling in a presentation number, not as calibration. (Recorded for auditability: this landed in two steps the same day -- the anchor was first moved to -1,276,000, which was the wrong direction, then corrected by -38,000 to -1,314,000. Nothing was distributed at -1,276,000.) Prior step, for context: the anchor moved -1,220,000 -> -1,295,000 on 2026-08-03, REDUCING the cumulative attenuation vs July from +125,000 to +50,000. This is the FIRST DOWNWARD move in the run: the anchor had been attenuated five times in a row, each step raising the reported number. Reason: the 2026-08-02 data refresh lifted desktop Dec-15 by +100,840, and this gives back 75,000 of that so the August-vs-July gap returns closer to the pre-refresh +112,120 (it now reads +137,960 rather than +212,960). -1,295,000 is the value August's first pass used, so this is a return, not a new number. NOTE ON COUPLING: the +25,000 step from -1,245,000 -> -1,220,000 was originally applied as one unit with the g01 model retune (to absorb most of its -31,357). That pairing is now BROKEN -- the headwind has moved without g01 moving -- so ../desktop_s01_REVERT_2026-07-29/REVERT.md must not be followed as-written; see the note added there. Mobile amplitude unchanged at -27,162."
 }

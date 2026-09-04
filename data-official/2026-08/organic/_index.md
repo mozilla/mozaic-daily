@@ -8,8 +8,8 @@ top.
 | file | role |
 |---|---|
 | `organic.json` | the spec — gated to `applies_to_forecast_start: 2026-07-28` |
-| `fenix_paid_organic.2026-07-28.parquet` | measured split, `date × country` (787 days × 16 countries = 12,592 rows) |
-| `fenix_paid_organic.2026-07-28.parquet.meta.json` | sidecar: definition, sources, coverage, all four build checks |
+| `fenix_paid_organic.2026-08-02.parquet` | measured split, `date × country` (787 days × 16 countries = 12,592 rows) |
+| `fenix_paid_organic.2026-08-02.parquet.meta.json` | sidecar: definition, sources, coverage, all four build checks |
 
 Produced by `scripts/build_fenix_organic_split.py` (~141 GB scan, ~$0.70). Rerun per cycle:
 
@@ -131,7 +131,8 @@ extrapolated slope a recent-history quantity, this is small. The alternative —
 mobile training to 2024-06-01 — would cost Firefox iOS and Focus 3.5 years of history and land
 only ~55 days above Prophet's 730-observation yearly-seasonality gate.
 
-Quantified as a sensitivity arm in `research/mobile-organic/reproduction.ipynb`.
+Quantified as a sensitivity arm in `research/mobile-organic/reproduce_prototype.py` (results in
+`research/mobile-organic/reproduction_results.json`).
 
 ## Scope decisions
 

@@ -76,6 +76,17 @@ research/param-scans/*/*_report.html
 !data-official/*/csv/july_dec15_summary.csv
 !data-official/*/csv/august_canonical_curves.csv
 !data-official/*/csv/august_dec15_summary.csv
+# Desktop-only, `h`-removed counterfactual twins of the pair above (produced by
+# scripts/export_desktop_no_headwind_csv.py). Tracked so the two files always travel with
+# the README section that says they are NOT the published forecast -- shipping the loud
+# filename without that context is the failure mode worth spending 30KB to avoid.
+!data-official/*/csv/*.DESKTOP_ONLY.WIN10_HEADWIND_REMOVED.csv
+# Desktop-only ex-Iran/ex-China scope, in both headwind states (produced by
+# scripts/export_desktop_ex_ir_cn_csv.py). Tracked for the same reason: the ex-IR/CN
+# August-vs-July delta is NEGATIVE where the published one is positive, so these must
+# travel with the README section that explains the scope rather than circulate bare.
+!data-official/*/csv/*.DESKTOP_ONLY.EX_IR_CN.csv
+!data-official/*/csv/*.DESKTOP_ONLY.WIN10_HEADWIND_REMOVED.EX_IR_CN.csv
 !data-official/*/csv/per_country/*.no-headwinds.csv
 !data-official/*/june_canonical_curves.csv
 !data-official/*/april_composite_forecast_28ma.adj-h.csv
@@ -84,6 +95,14 @@ research/param-scans/*/*_report.html
 !research/headwinds/extracts/*.csv
 !data-official/*/stakeholder_scenarios_*.zip
 data/
+# Provenance + computed results for the forecast-vs-summer-actuals audit: small JSON, and the
+# record of how that report's numbers were produced. The directory itself must be un-ignored first
+# -- git does not descend into an excluded directory, so a bare `!.../data/*.json` would be inert.
+# The 1.9 MB actuals parquet beside them is re-ignored: it is regenerable by `fetch_actuals.py`.
+!research/forecast-vs-summer-actuals/data/
+research/forecast-vs-summer-actuals/data/*.parquet
+# Fitted-model pickles are ~630 MB each and are fetched from the GCS archive on demand.
+research/forecast-vs-summer-actuals/data/pkl/
 data-mozaic/
 april-by-hand/
 remote-logs/

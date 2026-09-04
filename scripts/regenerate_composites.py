@@ -34,7 +34,6 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from mozaic_daily.adjustments import (  # noqa: E402
     apply_net_adjustment_to_series,
     build_adjustments_applied_list,
-    canonical_codes,
     insert_state_marker,
     load_adjustments_from_dir,
     load_code_registry,

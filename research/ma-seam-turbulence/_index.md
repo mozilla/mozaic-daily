@@ -112,5 +112,5 @@ forecast for its first 27 points, and a weekly-pattern discontinuity at the seam
 prevents the 4-week MA from cancelling the weekly cycle during the transition. Steady-state MA
 and Dec-15 are unaffected; US/CA are correctly smooth. Fix is display-side.
 
-Related: `csv-vs-actuals/`, `april-vs-june-mechanism/`, and the memory notes
+Related: `csv-vs-actuals/`, `april-vs-june-mechanism/` (**archived to GCS, not on disk**), and the memory notes
 `[[project_actuals_vs_april_overlap]]`, `[[project_april_vs_june_mechanism]]`.

@@ -1,0 +1,79 @@
+August mobile round-1 gradient [regime=multiplicative]: 11 probes (5 axes x 2, plus the center)
+  center  : {'changepoint-prior-scale': 0.035, 'changepoint-range': 0.75, 'n-changepoints': 25, 'recent-weeks': 13, 'seasonality-prior-scale': 0.1, 'seasonality-regime': 'multiplicative', 'holiday-threshold': -0.055, 'holiday-effect-floor': -0.6}
+  raw     : /Users/brendanwells/work/mozaic-daily/data-official/2026-08/mobile_uac_meta_2026-07-28/cps0.035_thresh055_recent13_cpr0.75_ncp25_clip0.6_sps0.1
+  results : /Users/brendanwells/work/mozaic-daily/research/param-scans/mobile-aug/results
+
+  [ 1/11] center                             (center)
+  [ 2/11] changepoint-prior-scale__minus     changepoint-prior-scale=0.0315
+  [ 3/11] changepoint-prior-scale__plus      changepoint-prior-scale=0.0385
+  [ 4/11] changepoint-range__minus           changepoint-range=0.725
+  [ 5/11] changepoint-range__plus            changepoint-range=0.775
+  [ 6/11] n-changepoints__minus              n-changepoints=22
+  [ 7/11] n-changepoints__plus               n-changepoints=28
+  [ 8/11] recent-weeks__minus                recent-weeks=11
+  [ 9/11] recent-weeks__plus                 recent-weeks=15
+  [10/11] seasonality-prior-scale__minus     seasonality-prior-scale=0.09
+  [11/11] seasonality-prior-scale__plus      seasonality-prior-scale=0.11
+
+running 11 of 11 at 3 workers
+
+[1/11] ok   2.2m  changepoint-prior-scale__plus
+    elapsed 2.3m | mean 2.3m/probe | ETA 22.5m
+[2/11] ok   2.2m  center
+    elapsed 2.3m | mean 1.1m/probe | ETA 10.1m
+[3/11] ok   2.2m  changepoint-prior-scale__minus
+    elapsed 2.3m | mean 0.8m/probe | ETA 6.0m
+[4/11] ok   2.2m  changepoint-range__minus
+    elapsed 4.5m | mean 1.1m/probe | ETA 7.9m
+[5/11] ok   2.3m  changepoint-range__plus
+    elapsed 4.5m | mean 0.9m/probe | ETA 5.4m
+[6/11] ok   2.3m  n-changepoints__minus
+    elapsed 4.5m | mean 0.8m/probe | ETA 3.8m
+[7/11] ok   2.3m  recent-weeks__minus
+    elapsed 6.8m | mean 1.0m/probe | ETA 3.9m
+[8/11] ok   2.3m  n-changepoints__plus
+    elapsed 6.8m | mean 0.9m/probe | ETA 2.6m
+[9/11] ok   2.3m  recent-weeks__plus
+    elapsed 6.8m | mean 0.8m/probe | ETA 1.5m
+[10/11] ok   2.2m  seasonality-prior-scale__plus
+    elapsed 9.1m | mean 0.9m/probe | ETA 0.9m
+[11/11] ok   2.2m  seasonality-prior-scale__minus
+    elapsed 9.1m | mean 0.8m/probe | ETA 0.0m
+
+done in 9.1m
+
+Scoring...
+
+====================================================================================================
+Center Dec-15 (post-headwind): 17,618,697    target 17,923,869 +-50,000    gap +305,172
+====================================================================================================
+axis                                 f(-d)         f(+d)        d1 /unit        d2 /unit^2   effect @10%
+changepoint-range               17,647,560    17,605,443        -842,350           2.5e+07       -63,176
+changepoint-prior-scale         17,624,822    17,613,820      -1,571,829          1.02e+08        -5,501
+n-changepoints                  17,606,819    17,616,359           1,590         -1.58e+03        +3,975
+seasonality-prior-scale         17,618,460    17,624,277         290,817          5.34e+07        +2,908
+recent-weeks                    17,619,750    17,618,728            -256               271          -332
+
+Single-knob linear extrapolation to close the gap (round-2 starting points, NOT predictions):
+  changepoint-prior-scale           0.035 ->      -0.1592
+  changepoint-range                  0.75 ->       0.3877
+  n-changepoints                     25.0 ->     216.9218
+  recent-weeks                       13.0 ->  -1,181.2085
+  seasonality-prior-scale             0.1 ->       1.1494
+
+Seam handoff per probe (reported, NOT scored):
+label                                 dec15_post   seam step      kink    YoY %
+center                                17,618,697     -10,719    -3,956    12.46
+changepoint-prior-scale__minus        17,624,822     -10,868    -4,120    12.50
+changepoint-prior-scale__plus         17,613,820     -10,575    -3,800    12.43
+changepoint-range__minus              17,647,560      -8,941    -1,823    12.64
+changepoint-range__plus               17,605,443     -11,400    -4,765    12.38
+n-changepoints__minus                 17,606,819     -10,247    -3,567    12.38
+n-changepoints__plus                  17,616,359      -9,987    -3,156    12.45
+recent-weeks__minus                   17,619,750     -10,655    -3,881    12.47
+recent-weeks__plus                    17,618,728     -10,688    -3,927    12.46
+seasonality-prior-scale__minus        17,618,460     -10,663    -3,887    12.46
+seasonality-prior-scale__plus         17,624,277     -10,630    -3,833    12.50
+
+Wrote /Users/brendanwells/work/mozaic-daily/research/param-scans/mobile-aug/round1_mult_scores.csv
+      /Users/brendanwells/work/mozaic-daily/research/param-scans/mobile-aug/round1_mult_derivatives.csv

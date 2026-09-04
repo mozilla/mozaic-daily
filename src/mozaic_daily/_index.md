@@ -12,7 +12,9 @@ Core forecasting package for Mozilla Firefox metrics. Each module has a single r
 | `forecast.py` | `get_forecast_dfs()`, `get_desktop_forecast_dfs()`, `get_mobile_forecast_dfs()`; `ForecastResult` dataclass; `ModelConfig`/`DesktopModelConfig`/`MobileModelConfig` usage | Data fetching, output formatting |
 | `tables.py` | `format_output_table()` — combines Desktop/Mobile, creates ALL rows, renames columns, sets data_source values | BigQuery upload, validation |
 | `validation.py` | `validate_output_dataframe()` — schema, format, row counts, nulls, duplicates | Data fetching, formatting |
-| `adjustments.py` | Adjustment-state filename markers (`.raw.` / `.adj-{codes}.`), sidecar `.meta.json` write/read, `load_forecast()` state-validating loader, **composite appliers** (`apply_net_adjustment_to_series`, `render_adjustment`, `load_adjustments_from_dir` — e.g. `h` headwinds), **per-tile appliers** (`load_marketing_spec`, `load_marketing_lift_series`, `compute_fenix_country_shares`, `subtract_marketing_lift_from_training`, `add_marketing_lift_to_forecast` — e.g. `m` marketing-lift) | Forecast generation, BigQuery I/O |
+| `adjustments.py` | Adjustment-state filename markers (`.raw.` / `.adj-{codes}.`), sidecar `.meta.json` write/read, `load_forecast()` state-validating loader, **composite appliers** (`apply_net_adjustment_to_series`, `render_adjustment`, `load_adjustments_from_dir` — e.g. `h` headwinds, `t` mobile tailwind), **per-tile bidirectional appliers** (`load_overlay_spec`, `load_lift_series`, `compute_country_shares`, `fixed_country_shares_from_spec`, `subtract_lift_from_training`, `add_lift_to_forecast` — e.g. `l`, `o`) | Forecast generation, BigQuery I/O, the mobile paid/organic split (`organic*.py`) |
+| `organic.py` | **CONSUMER** side of the mobile paid/organic split `p`: `split_training_to_organic()` (pre-mozaic, scales Fenix training rows by the measured organic share), `marketing_paid_level()` (lift + anchor, held flat past the curve's end), `add_paid_to_forecast()` (post-mozaic level add-back), `paid_seam_step()` (diagnostic) | BigQuery I/O, producing the split itself |
+| `organic_source.py` | **PRODUCER** side of `p`: pure transforms turning raw growth-source rows into the per-cycle measured split, plus four checks that raise (partition identity, tail overlap, split coverage, shredder drift). Called only by `scripts/build_fenix_organic_split.py` | BigQuery I/O (the script owns it), consuming the split |
 | `seam_ma.py` | Display-layer moving averages: `display_ma()` (variance-matched actuals→forecast seam transition), `reconstruct_matched_daily()`, `daily_to_28ma()`. **The home for seam-MA logic going forward** | Forecast generation, plotting, BigQuery I/O, any cycle-specific paths |
 | `main.py` | Pipeline entry point; ties together fetch → forecast → format → validate; `save_mozaic_objects()` | Individual step logic |
 | `__init__.py` | Public surface: `main`, `validate_output_dataframe`, `get_git_commit_hash`, `display_ma`, `reconstruct_matched_daily`, `daily_to_28ma` | |
@@ -25,9 +27,10 @@ Core forecasting package for Mozilla Firefox metrics. Each module has a single r
 - **New output column**: `tables.py` (`format_output_table`) and `validation.py` (schema check)
 - **New validation rule**: `validation.py` alongside existing checks; add a test to `tests/test_validation.py`
 - **New pipeline step**: `main.py`, with heavy logic in its own module
-- **New adjustment type** (e.g., tailwinds, regulatory shifts): register a one-letter code in `data-official/adjustment_codes.yaml`, add the applier to `adjustments.py`, extend `tests/test_adjustments.py`. The filename marker is derived automatically via `state_marker()`. Two applier styles exist:
-  - **Composite post-forecast** — mutates a 28d-MA `Series` after mozaic is done. Cheap to add. Use for adjustments whose effect is well-described at the world rollup level (e.g. `h` headwinds).
-  - **Per-tile bidirectional** — subtracts from training rows before mozaic, adds back after. Use when the adjustment should actually shift the *model's view of recent history* so it doesn't extrapolate the adjustment forward implicitly (e.g. `m` marketing-lift, which would otherwise be baked into Prophet's trend). Requires care: dtype preservation on `y`, idempotency sentinel on `attrs`, and matching row patterns in the post-mozaic forecast. The `m` implementation is the reference.
+- **New adjustment type** (e.g., tailwinds, regulatory shifts): register a one-letter code in `data-official/adjustment_codes.yaml`, add the applier to `adjustments.py`, extend `tests/test_adjustments.py`. The filename marker is derived automatically via `state_marker()`. Three applier styles exist:
+  - **Composite post-forecast** — mutates a 28d-MA `Series` after mozaic is done. Cheap to add. Use for adjustments whose effect is well-described at the world rollup level (e.g. `h` headwinds, `t` mobile tailwind). Because it never enters the training frame, its Dec-15 effect is *exactly* its anchor, with no Prophet interaction and no model re-run. Note these specs are **live by presence**: `load_adjustments_from_dir()` globs `*.json` and sums everything it finds, with no date gate.
+  - **Per-tile bidirectional** — subtracts from training rows before mozaic, adds back after. Use when the adjustment should actually shift the *model's view of recent history* so it doesn't extrapolate the adjustment forward implicitly. Requires care: dtype preservation on `y`, idempotency sentinel on `attrs` (each overlay needs a distinct `sentinel_attr` so several can stack on one training frame), and matching row patterns in the post-mozaic forecast. **`l` (launch-on-login) and `o` (MozillaOnline) are the references**; both use the generic `desktop_overlay` spec type via `load_overlay_spec()`. Sound only when the adjustment has a hard start date, so "incremental since launch" is well defined.
+  - **Measured split** — scales training rows by a *measured* share pre-mozaic, then adds a separately-forecast level back post-mozaic. Use when the thing being removed can be measured rather than modelled and has no meaningful start date. Reference: `p` (mobile paid/organic), which lives in its own module pair (`organic_source.py` producer / `organic.py` consumer), **not** in `adjustments.py`. This is why the retired `m` overlay was replaced: paid acquisition has no start date, so a bidirectional anchor was an accounting choice, and the overlay absorbed 58% of any change to the curve.
 
 ## Key data flow
 
@@ -44,15 +47,25 @@ main.py             → orchestrates all of the above
 ## Configurable forecast parameters
 
 `forecast.py` accepts a `config` argument (`DesktopModelConfig` or `MobileModelConfig`) that controls:
-- `prophet_changepoint_prior_scale` — Prophet trend flexibility
-- `prophet_changepoint_range` — fraction of history where changepoints are placed (desktop default 0.7, mobile 0.82)
-- `prophet_n_changepoints` — number of potential changepoints (default 25)
-- `prophet_recent_weeks` — window size for conditional weekly seasonality
-- `holiday_threshold` — holiday impact detection cutoff (forwarded to `populate_tiles`)
-- `holiday_max_radius` / `holiday_min_radius` — holiday smoothing window (forwarded to `populate_tiles`)
-- `holiday_effect_floor` — lower bound on proportional holiday effects (forwarded to `curate_mozaics`)
 
-Default `None` uses hardcoded defaults from the mozaic package.
+| knob | desktop default | mobile default | notes |
+|---|--:|--:|---|
+| `prophet_changepoint_prior_scale` | 0.15983 | 0.02 | Prophet trend flexibility |
+| `prophet_changepoint_range` | 0.7 | 0.82 | fraction of history where changepoints may be placed |
+| `prophet_n_changepoints` | 25 | 25 | number of potential changepoints |
+| `prophet_recent_weeks` | 13 | 13 | window for conditional weekly seasonality |
+| `prophet_seasonality_prior_scale` | 0.00825 | 0.1 | exposed 2026-07-31; the defaults reproduce the values previously hardcoded |
+| `seasonality_regime` | `'auto'` | `'auto'` | exposed 2026-07-31. **Platform-asymmetric**: on desktop it also flips growth linear↔logistic; on mobile it sets `seasonality_mode` only, and `auto` resolves to *additive* for tiles above 2e6 DAU |
+| `seasonality_corr_threshold` | 0.0 | **unavailable** | **desktop-only** — `MobileModelConfig` raises on any non-zero value, because mobile's regime switch is volume-driven, not correlation-driven |
+| `holiday_threshold` | −0.032 | −0.032 | holiday impact detection cutoff (forwarded to `populate_tiles`) |
+| `holiday_max_radius` / `holiday_min_radius` | 5 / 3 | 5 / 3 | holiday smoothing window (forwarded to `populate_tiles`) |
+| `holiday_effect_floor` | −0.6 | −0.6 | lower bound on proportional holiday effects (forwarded to `curate_mozaics`) |
+
+Default `None` uses hardcoded defaults from the mozaic package. `config.to_slug()` renders a compact
+label used for scan result directories.
+
+**The four holiday knobs are excluded from parameter searches by standing policy** — strictly local
+effects must not be used to move a whole-season quantity. See `research/param-scans/_index.md`.
 
 ## Loading forecast artifacts
 
