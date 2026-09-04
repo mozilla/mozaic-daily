@@ -1,0 +1,46 @@
+{
+  "adjustment_code": "j",
+  "adjustment_name": "japan_bot",
+  "adjustments_applied": [],
+  "allocation": {
+    "exclude_countries": [],
+    "key": "fixed_country_shares",
+    "shares": {
+      "JP": 1.0
+    }
+  },
+  "artifact_sha1": "4d1bde724076526555c00291bfb37e4a0d817322",
+  "artifact_type": "adjustment_curve",
+  "column_mapping": {
+    "date": "date",
+    "ma_validated_not_used": "japan_bot_dau_ma",
+    "type": "source",
+    "value": "japan_bot_dau_daily"
+  },
+  "coverage": {
+    "actuals_through": "2026-08-30",
+    "dec15_daily": 67101.02,
+    "dec15_ma28": 67094.35464285714,
+    "delivered_end": "2027-12-31",
+    "delivered_start": "2026-04-01",
+    "hold_flat_basis": "mean of the final 28 delivered daily values",
+    "hold_flat_from": null,
+    "hold_flat_value": null,
+    "horizon": [
+      "2026-01-01",
+      "2027-12-31"
+    ],
+    "sign_applied": 1
+  },
+  "data_source": "legacy_desktop",
+  "family": "per_tile_overlay",
+  "forecast_start_date": "2026-09-02",
+  "model_config": null,
+  "mozaic_daily_commit": "a2981a61039929daed7e7cc769d06964a5ad3de8",
+  "platform": "desktop",
+  "produced_at": "2026-09-04T20:44:23.481430+00:00Z",
+  "produced_by": "scripts/ingest_adjustment.py",
+  "source_file": "data-official/2026-09/japan_bot/source_data/japan_bot.middle.2026-08-30.csv",
+  "source_sha1": "2139736584ffe2cb4a6d1258ca4dd9510151110d",
+  "source_sheet": null
+}

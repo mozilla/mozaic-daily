@@ -1,7 +1,7 @@
 {
   "type": "desktop_overlay",
   "platform": "desktop",
-  "data_file": "japan_bot.middle.2026-08-30.parquet",
+  "data_file": "japan_bot.2026-08-30.parquet",
   "value_column": "japan_bot_dau_daily",
   "allocation": {
     "key": "fixed_country_shares",
@@ -14,10 +14,9 @@
   "scope": {
     "exclude_countries": []
   },
-  "model_meta_file": "japan_bot.middle.2026-08-30.meta.json",
+  "model_meta_file": "japan_bot.2026-08-30.meta.json",
   "applies_to_forecast_start": "2026-09-02",
   "applies_to_data_source": "legacy_desktop",
-  "telemetry_source": "legacy",
   "placeholder": false,
-  "notes": "September 2026 cycle. Japan bot traffic (adjustment code `j`), MIDDLE scenario, plateau 67,101 DAU/day = 6.19% of Japan. Population is defined by a four-clause behavioural conjunction (hours=under-1min, uri=0-2/3-10, is_default=false, age=0-6d/7-27d) which contains NO channel term -- ESR is an outcome (95.1% of the flagged population) rather than an input, so the finding is not circular. Baseline is flat at 1,876 +/- 265 DAU/day across 2025-01-01..2026-05-15, so the component is a subtraction and not a fitted residual; an independent construction (ESR channel minus a fitted pre-onset trend) agrees to 2.3%. Onset detected 2026-06-24. Curve is measured raw daily excess through 2026-08-30, then an arrival-rate projection convolved with a measured per-cohort kernel (4.94 active days per profile for projected arrivals), held flat to 2027-12-31 -- NOT zero-filled, which would drop the component on 2027-01-01. History is DELIBERATELY UNSMOOTHED: the daily swing is real contamination, not measurement error, so a smoothed subtraction would leave a synthetic oscillation in the training frame. Allocation is 100% Japan, fixed. modern_windows by measurement (99.2% Windows_NT, 97% NT 10.0, 78% build 26200). NO DOUBLE-COUNT with `o`: the flagged population is 95.1% ESR and the MozillaOnline migration is entirely non-ESR (zh x ESR moved -23 DAU/day year on year); `o` already allocates 0.98% of its curve to JP and that is a different population. NOT WIRED: main.py hand-wires each overlay code, so `j` needs a _find_japan_bot_spec_for_forecast / _apply_japan_bot_pre_mozaic pair plus an add_lift_to_forecast call, and a registry entry in adjustment_codes.yaml. Two-letter codes are NOT available -- parse_state_from_path splits the marker into characters. Producer: scratch/brwells/regional-story/forecast, evidence page site/forecast.html."
+  "notes": "September 2026 cycle, seam 2026-09-02. Japan bot traffic, MIDDLE scenario (plateau 67,101 DAU/day = 6.19% of Japan, reached 2026-11-28). Measured raw daily excess 2026-06-24 to 2026-08-30, projected after, held flat to 2027-12-31, deliberately unsmoothed. Allocation 100% JP, fixed; modern_windows by measurement (99.2% Windows_NT). Alternates LOW (33,551) and HIGH (108,423) were delivered alongside and are recorded in _index.md. Re-ingested 2026-09-04 through scripts/ingest_adjustment.py from the handoff's own CSV; the handoff's original spec and parquet are in japan_bot_REVERT_2026-09-04/."
 }
