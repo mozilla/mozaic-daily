@@ -3,8 +3,8 @@
 The write half of the ingest step. Given a confirmed :class:`IngestPlan` it produces,
 under ``data-official/{cycle}/{name}/``: a byte-for-byte copy of the delivered file in
 ``source_data/``, the horizon-spanning curve parquet the pipeline loads, its sidecar
-meta, the spec JSON, an ``_index.md`` skeleton for the skill to finish, plus the
-registry entry in ``adjustment_codes.yaml`` and the ``.gitignore`` exception that
+meta, the spec JSON, a shape plot under ``plots/``, an ``_index.md`` skeleton for the
+skill to finish, plus the registry entry in ``adjustment_codes.yaml`` and the ``.gitignore`` exception that
 keeps the parquet tracked. It never runs the model.
 
 Two families share this path and differ only in where the spec goes:
@@ -25,6 +25,7 @@ import hashlib
 import json
 import re
 import shutil
+import textwrap
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
@@ -36,6 +37,7 @@ from .adjustments import load_code_registry, write_meta
 from .ingest_inspect import coerce_numeric, normalize_type_labels
 
 MA_WINDOW_DAYS = 28
+REGISTRY_WRAP_WIDTH = 92  # folded-scalar line width in adjustment_codes.yaml
 PER_TILE_OVERLAY = "per_tile_overlay"
 DISPLAY_LAYER = "display_layer"
 FAMILIES = (PER_TILE_OVERLAY, DISPLAY_LAYER)
@@ -218,7 +220,8 @@ def display_spec(plan: IngestPlan, data_file_relative: str) -> dict:
 
 def registry_entry_text(plan: IngestPlan) -> str:
     description = plan.description.strip() or f"{plan.name} ({plan.family}) ingested {date.today().isoformat()}."
-    indented = "\n".join(f"      {line}" for line in description.splitlines())
+    wrapped = "\n".join(textwrap.fill(paragraph, width=REGISTRY_WRAP_WIDTH) for paragraph in description.splitlines())
+    indented = "\n".join(f"      {line}" for line in wrapped.splitlines())
     return (f"  {plan.code}:\n    name: {plan.name}\n    applier: {plan.family}\n"
             f"    description: >\n{indented}\n    spec_glob: \"{plan.spec_glob}\"\n")
 
@@ -280,6 +283,7 @@ def render_index_md(plan: IngestPlan, summary: dict, files: dict) -> str:
 | `{Path(files["parquet"]).name}` | what the pipeline loads: `{plan.name}_dau_daily` on a `target_date` DatetimeIndex, `{plan.name}_dau_ma`, `source` |
 | `{Path(files["meta"]).name}` | provenance: source sha1, column mapping, coverage, hold-flat rule, checks |
 | `source_data/{Path(files["source_copy"]).name}` | the delivered file, byte for byte |
+| `plots/{Path(files["plot"]).name}` | the curve's shape: daily + 28d mean, measured / projected / held, seam and Dec-15 marked |
 
 ## Coverage
 
@@ -287,7 +291,7 @@ def render_index_md(plan: IngestPlan, summary: dict, files: dict) -> str:
 |---|---|
 | delivered | {summary["delivered_start"]} → {summary["delivered_end"]} |
 | actuals through | {summary["actuals_through"] or "not flagged"} |
-| held flat from | {summary["hold_flat_from"] or "not needed"} at {f'{summary["hold_flat_value"]:,.0f}' if summary["hold_flat_value"] is not None else "—"}/day ({summary["hold_flat_basis"]}) |
+| held flat from | {f'{summary["hold_flat_from"]} at {summary["hold_flat_value"]:,.0f}/day ({summary["hold_flat_basis"]})' if summary["hold_flat_from"] else "not needed — the delivered file already reaches the horizon"} |
 | horizon | {summary["horizon"][0]} → {summary["horizon"][1]} |
 | Dec-15 28d MA | {dec15_text} |
 
@@ -303,6 +307,71 @@ _Fill in: which part of the curve is telemetry, which is a model, which is a pla
 
 A refreshed curve for this cycle: re-run the ingest with `--replace`; the previous build moves to `{plan.name}_REVERT_<date>/`. Cross-cycle analysis of this effect goes to `research/`.
 """
+
+
+# --- plot -----------------------------------------------------------------------------------
+
+# Slots 1 and 2 of the validated categorical palette (dataviz skill, light surface).
+PLOT_DAILY_COLOR = "#2a78d6"
+PLOT_MA_COLOR = "#eb6834"
+PLOT_SURFACE = "#fcfcfb"
+PLOT_REGION_SHADES = {"measured": "#e6e5e1", "projected": "#f3f2ee", "held": "#faf9f6"}
+
+
+def render_curve_plot(horizon: pd.DataFrame, plan: IngestPlan, summary: dict, out_path: Path) -> Path:
+    """One picture of the curve's shape: daily values, trailing 28d mean, and which stretch is
+    measured / projected / held flat, with the seam and Dec-15 marked. Opened during validation
+    so a wrong sign, a moving average passed off as daily, or a cliff at the file's end is seen
+    before the model runs.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import FuncFormatter
+
+    daily = horizon[f"{plan.name}_dau_daily"]
+    ma = horizon[f"{plan.name}_dau_ma"]
+    source = horizon["source"]
+    first_nonzero = daily[daily != 0].index.min()
+    plot_from = min(first_nonzero, pd.Timestamp(plan.forecast_start)) - pd.Timedelta(days=14) if pd.notna(first_nonzero) else horizon.index.min()
+    shown = horizon.index >= plot_from
+
+    fig, ax = plt.subplots(figsize=(12, 5.5), facecolor=PLOT_SURFACE)
+    ax.set_facecolor(PLOT_SURFACE)
+    for label, shade in PLOT_REGION_SHADES.items():
+        block = horizon.index[(source == label) & shown]
+        if len(block):
+            ax.axvspan(block.min(), block.max() + pd.Timedelta(days=1), color=shade, lw=0, zorder=0)
+            ax.text(block.min() + (block.max() - block.min()) / 2, 0.09, label, transform=ax.get_xaxis_transform(),
+                    ha="center", va="bottom", fontsize=9, color="#52514e", style="italic")
+    ax.plot(daily.index[shown], daily[shown], color=PLOT_DAILY_COLOR, lw=1.2, label="daily (what the pipeline subtracts / adds)")
+    ax.plot(ma.index[shown], ma[shown], color=PLOT_MA_COLOR, lw=2, label="trailing 28-day mean (display layer)")
+    seam = pd.Timestamp(plan.forecast_start)
+    dec15 = pd.Timestamp(year=seam.year, month=12, day=15)
+    for when, text in ((seam, f"seam {seam.date()}"), (dec15, f"Dec-15: {summary.get('dec15_ma28', float('nan')):,.0f}")):
+        ax.axvline(when, color="#52514e", ls=":", lw=1)
+        ax.text(when, 0.02, f" {text}", transform=ax.get_xaxis_transform(), fontsize=9, color="#52514e", va="bottom")
+    ax.axhline(0, color="#52514e", lw=0.8)
+    ax.yaxis.set_major_formatter(FuncFormatter(_thousands_formatter(daily[shown])))
+    ax.set_ylabel(f"incremental {plan.platform} DAU")
+    sign_word = "tailwind (+)" if daily[shown].sum() >= 0 else "headwind (−)"
+    ax.set_title(f"`{plan.code}` {plan.name} — {sign_word}, {plan.family.replace('_', ' ')}, {plan.data_source}", loc="left", fontsize=12)
+    ax.legend(loc="upper left", fontsize=9, frameon=False)
+    ax.grid(alpha=0.25)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=130, facecolor=PLOT_SURFACE)
+    plt.close(fig)
+    return out_path
+
+
+def _thousands_formatter(values: pd.Series):
+    """Tick labels with enough digits to differ from each other (45.10K, not 45K / 45K / 45K)."""
+    span = float(values.max() - values.min()) if len(values) else 0.0
+    decimals = 0 if span >= 20_000 else (1 if span >= 2_000 else 2)
+    return lambda v, _pos: f"{v / 1e3:,.{decimals}f}K"
 
 
 # --- revert ------------------------------------------------------------------------------
@@ -322,6 +391,9 @@ def stash_previous_build(plan: IngestPlan) -> Optional[Path]:
                 moved.append(candidate)
     for src in moved:
         shutil.move(str(src), str(revert_dir / src.name))
+    previous_index = plan.curve_dir / "_index.md"
+    if previous_index.exists():  # the build rewrites _index.md; keep the previous wording with the revert target
+        shutil.copyfile(previous_index, revert_dir / "_index.previous.md")
     (revert_dir / "REVERT.md").write_text(
         f"# Revert target for `{plan.code}` ({plan.name}), stashed {date.today().isoformat()}\n\n"
         f"The build that was live before the {date.today().isoformat()} re-ingest. Not an archive: delete only after the cycle closes.\n\n"
@@ -390,8 +462,9 @@ def build(plan: IngestPlan, frame: pd.DataFrame) -> dict:
         append_registry_entry(plan)
     gitignore_added = ensure_gitignore_exceptions(plan)
 
+    plot_path = render_curve_plot(horizon, plan, summary, plan.curve_dir / "plots" / f"{plan.name}.{edge}.curve.png")
     files = {"spec": str(plan.spec_path), "parquet": str(parquet_path), "csv": str(parquet_path.with_suffix(".csv")),
-             "meta": str(meta_path), "source_copy": str(source_copy)}
+             "meta": str(meta_path), "source_copy": str(source_copy), "plot": str(plot_path)}
     index_path = plan.curve_dir / "_index.md"
     if not index_path.exists() or plan.replace:
         index_path.write_text(render_index_md(plan, summary, files))

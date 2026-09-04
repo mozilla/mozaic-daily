@@ -11,6 +11,8 @@ Weekly files stop here on purpose. Interpreting them needs a plot and a conversa
 """
 from __future__ import annotations
 
+import os
+import re
 import warnings
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -21,7 +23,8 @@ import pandas as pd
 
 ACTUALS_TOKENS = {"actual", "actuals", "measured", "observed", "history", "historical", "pre-onset"}
 FORECAST_TOKENS = {"forecast", "forecasted", "projected", "projection", "model", "modelled", "modeled", "predicted"}
-MA_NAME_HINTS = ("ma", "28", "rolling", "avg", "average", "smooth", "trailing")
+# Matched as whole tokens between underscores/edges, so "mau" does not read as a moving average.
+MA_NAME_HINT_PATTERN = re.compile(r"(^|_)(ma|ma28|28ma|28d|28|rolling|avg|average|mean|smooth|smoothed|trailing)(_|$)")
 DATE_NAME_HINTS = ("date", "day", "ds", "time")
 WEEKLY_MEDIAN_GAP_DAYS = 7
 SMOOTHNESS_MA_THRESHOLD = 0.03   # mean |Δ| / mean |value| below this looks like a moving average
@@ -152,15 +155,34 @@ def guess_value_columns(frame: pd.DataFrame, exclude: set[str]) -> tuple[ColumnG
     def series(column):
         return coerced[column] if column in coerced else frame[column]
 
-    named_ma = [c for c in numeric if any(h in str(c).lower() for h in MA_NAME_HINTS)]
-    others = [c for c in numeric if c not in named_ma]
-    if len(named_ma) == 1 and len(others) == 1:
-        return (ColumnGuess(str(others[0]), f"numeric and not named like a moving average (unlike {named_ma[0]!r})", "high"),
-                ColumnGuess(str(named_ma[0]), "name suggests a moving average; validated but not used", "high"))
-    # Fall back to roughness: the daily series is the rougher of the two.
-    by_roughness = sorted(numeric, key=lambda c: -(_smoothness(series(c)) or 0))
-    return (ColumnGuess(str(by_roughness[0]), f"roughest of {len(numeric)} numeric columns {list(map(str, numeric))}", "medium"),
-            ColumnGuess(str(by_roughness[1]), "smoother numeric twin; possibly a moving average", "low"))
+    named_ma = [c for c in numeric if MA_NAME_HINT_PATTERN.search(str(c).lower())]
+    candidates = [c for c in numeric if c not in named_ma] or numeric
+    dau_named = [c for c in candidates if re.search(r"(^|_)dau(_|$)", str(c).lower())]
+    if len(candidates) == 1:
+        value = ColumnGuess(str(candidates[0]), f"numeric and not named like a moving average (unlike {named_ma})", "high")
+    elif len(dau_named) == 1:
+        value = ColumnGuess(str(dau_named[0]), f"the numeric column named for DAU among {list(map(str, candidates))}", "high")
+    else:
+        # Fall back to roughness: the daily series is the rougher of the candidates.
+        by_roughness = sorted(candidates, key=lambda c: -(_smoothness(series(c)) or 0))
+        value = ColumnGuess(str(by_roughness[0]), f"roughest of {len(candidates)} numeric columns {list(map(str, candidates))}", "medium")
+    ma = _pair_ma_twin(value.column, named_ma, [c for c in numeric if c != value.column], series)
+    return value, ma
+
+
+def _pair_ma_twin(value_column: str, named_ma: list, remaining: list, series) -> ColumnGuess:
+    """The moving-average column that belongs to ``value_column``: the named-MA column sharing the
+    longest name prefix with it (``foo_dau_daily`` ↔ ``foo_dau_ma``), else the smoothest other numeric."""
+    if named_ma:
+        def shared_prefix(column):
+            a, b = str(column).lower(), str(value_column).lower()
+            return len(os.path.commonprefix([a, b]))
+        best = max(named_ma, key=shared_prefix)
+        return ColumnGuess(str(best), "name suggests a moving average and shares its prefix with the value column; validated but not used", "high")
+    if not remaining:
+        return ColumnGuess(None, "no second numeric column", "none")
+    smoothest = min(remaining, key=lambda c: _smoothness(series(c)) if _smoothness(series(c)) == _smoothness(series(c)) else float("inf"))
+    return ColumnGuess(str(smoothest), "smoother numeric twin; possibly a moving average", "low")
 
 
 # --- cadence and contract checks -------------------------------------------------------
@@ -252,7 +274,10 @@ def contract_findings(
         if 0.05 < share_positive < 0.95:
             findings.append(Finding("warning", "mixed_sign", f"{share_positive:.0%} of non-zero values are positive; a headwind or "
                                     "tailwind normally has one sign"))
-    smooth = _smoothness(values)
+    # Judge smoothness on the measured block only: a long pre-onset zero run or a held-flat
+    # projection would otherwise make a genuinely daily series look like a moving average.
+    measured_values = values[(types == "actuals").to_numpy()] if types is not None else values
+    smooth = _smoothness(measured_values if len(measured_values) > 60 else values)
     if smooth == smooth and smooth < SMOOTHNESS_MA_THRESHOLD and len(values) > 60:
         findings.append(Finding("warning", "looks_like_moving_average", f"day-to-day change is {smooth:.1%} of level; this "
                                 "may be a moving average rather than a daily series"))

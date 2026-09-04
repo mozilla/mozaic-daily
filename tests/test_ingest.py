@@ -100,6 +100,16 @@ class TestReadAndGuess:
         value, ma = guess_value_columns(frame, exclude={"submission_date", "type"})
         assert value.column == "value" and ma.column == "smoothed"
 
+    def test_mau_column_is_not_mistaken_for_a_moving_average(self):
+        """Seen on the japan_bot handoff: 'ma' inside 'mau' matched the old substring hint."""
+        frame = _daily().rename(columns={"dau": "japan_bot_dau_daily"})
+        frame["japan_bot_dau_ma"] = frame["japan_bot_dau_daily"].rolling(28, min_periods=1).mean()
+        frame["japan_bot_mau_daily"] = frame["japan_bot_dau_daily"] * 4
+        frame["japan_bot_mau_ma"] = frame["japan_bot_mau_daily"].rolling(28, min_periods=1).mean()
+        value, ma = guess_value_columns(frame, exclude={"submission_date", "type"})
+        assert value.column == "japan_bot_dau_daily"
+        assert ma.column == "japan_bot_dau_ma"
+
     def test_type_labels_are_normalised_and_odd_labels_rejected(self, tmp_path):
         frame = _daily()
         frame["type"] = frame["type"].map({"actuals": "Measured", "forecast": "Projected"})
@@ -160,6 +170,15 @@ class TestContract:
         cumulative["dau"] = cumulative["dau"].cumsum()
         report = inspect_file(_write_csv(tmp_path, cumulative), forecast_start=SEAM)
         assert any(f.code == "monotone_increasing" for f in report.findings)
+
+    def test_flat_tails_do_not_make_a_daily_measured_block_look_smoothed(self, tmp_path):
+        """Seen on the japan_bot handoff: 84 zero days + 365 held-flat days dominated the smoothness ratio."""
+        frame = _daily(start="2026-04-01", end="2027-12-31", actuals_through="2026-08-30")
+        dates = pd.to_datetime(frame["submission_date"])
+        frame.loc[dates < "2026-06-24", "dau"] = 0.0
+        frame.loc[dates > "2026-08-30", "dau"] = 67101.0
+        report = inspect_file(_write_csv(tmp_path, frame), forecast_start=SEAM)
+        assert not any(f.code == "looks_like_moving_average" for f in report.findings)
 
     def test_mixed_sign_warns_and_negative_file_guesses_headwind(self, tmp_path):
         frame = _daily()
@@ -265,7 +284,8 @@ class TestBuildEndToEnd:
 
         files = {Path(p).name for p in summary["files"].values()}
         assert {"test_wind.json", "test_wind.2026-08-30.parquet", "test_wind.2026-08-30.csv",
-                "test_wind.2026-08-30.meta.json", "curve.csv", "_index.md"} <= files
+                "test_wind.2026-08-30.meta.json", "curve.csv", "_index.md", "test_wind.2026-08-30.curve.png"} <= files
+        assert Path(summary["files"]["plot"]).stat().st_size > 10_000  # a rendered PNG, not an empty file
         meta = json.loads(Path(summary["files"]["meta"]).read_text())
         assert meta["adjustment_code"] == "q" and meta["source_sha1"] and meta["coverage"]["hold_flat_from"] == "2027-01-01"
         assert (root / "data-official" / "2026-09" / "test_wind" / "source_data" / "curve.csv").read_bytes() == (root / "curve.csv").read_bytes()

@@ -8,6 +8,9 @@ Two subcommands, run in order by the `/ingest-adjustment` skill (or by hand):
               finding is an error — a weekly file, a start after the seam, an end before
               31 December of the forecast year — so the halt is machine-readable.
 
+    plot      re-render the shape plot (daily + 28d mean, measured/projected/held, seam and
+              Dec-15) for an adjustment already on disk, into <name>/plots/.
+
     build     given the confirmed column mapping and decisions, write everything under
               data-official/<cycle>/<name>/: the source copy, the horizon curve parquet
               (+ csv twin + meta), the spec, an _index.md skeleton, the registry entry in
@@ -41,7 +44,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from mozaic_daily.ingest_build import ALLOCATIONS, FAMILIES, IngestPlan, build  # noqa: E402
+from mozaic_daily.ingest_build import ALLOCATIONS, FAMILIES, IngestPlan, build, render_curve_plot  # noqa: E402
 from mozaic_daily.ingest_inspect import inspect_file, read_source_table  # noqa: E402
 
 EXIT_HALT = 2
@@ -85,6 +88,15 @@ def parse_args() -> argparse.Namespace:
     b.add_argument("--notes", default="", help="spec notes")
     b.add_argument("--replace", action="store_true", help="stash the live build for this code in a REVERT dir and overwrite")
     b.add_argument("--root", default=None, help=argparse.SUPPRESS)
+
+    pl = sub.add_parser("plot", help="re-render the shape plot for an adjustment already on disk")
+    pl.add_argument("--name", required=True)
+    pl.add_argument("--code", required=True)
+    pl.add_argument("--cycle", required=True)
+    pl.add_argument("--family", required=True, choices=FAMILIES)
+    pl.add_argument("--platform", required=True, choices=("desktop", "mobile"))
+    pl.add_argument("--data-source", default="legacy_desktop")
+    pl.add_argument("--forecast-start", required=True)
     return parser.parse_args()
 
 
@@ -139,9 +151,31 @@ def run_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_plot(args: argparse.Namespace) -> int:
+    """Re-render the shape plot from the parquet the current spec points at."""
+    import pandas as pd
+    plan = IngestPlan(source_path="", name=args.name, code=args.code, family=args.family, platform=args.platform,
+                      data_source=args.data_source, forecast_start=args.forecast_start, cycle=args.cycle,
+                      date_column="", value_column="", actuals_through=args.forecast_start)
+    spec = json.loads(plan.spec_path.read_text())
+    parquet_path = (plan.spec_path.parent / spec["data_file"]).resolve()
+    horizon = pd.read_parquet(parquet_path)
+    horizon.index = pd.DatetimeIndex(horizon.index)
+    dec15 = pd.Timestamp(year=pd.Timestamp(args.forecast_start).year, month=12, day=15)
+    summary = {"dec15_ma28": float(horizon.loc[dec15, f"{plan.name}_dau_ma"]) if dec15 in horizon.index else float("nan")}
+    stem = parquet_path.name.removesuffix(".parquet")
+    out = render_curve_plot(horizon, plan, summary, plan.curve_dir / "plots" / f"{stem}.curve.png")
+    print(out)
+    return 0
+
+
 def main() -> int:
     args = parse_args()
-    return run_inspect(args) if args.command == "inspect" else run_build(args)
+    if args.command == "inspect":
+        return run_inspect(args)
+    if args.command == "plot":
+        return run_plot(args)
+    return run_build(args)
 
 
 if __name__ == "__main__":
