@@ -61,6 +61,7 @@ Dec-15 28d-MA and are what the rerun is checked against (pass-through in a 0.5�
 |---|--:|--:|--:|
 | August delivered (`h` + `l` + `o`) | | | 48,703,443 |
 | September data refresh + re-gated `l`/`o`/`h` | — | pending rerun | |
+| `l` launch at login (new users) carried forward unchanged (200K ceiling) | 0 vs August | pending rerun (config-dependent) | |
 | `j` japan_bot MIDDLE add-back | +67,094 | pending rerun | |
 | `i` india_excess PROPORTIONAL add-back | +41,945 | pending rerun | |
 | `o` MozillaOnline curve refreshed (Dec-15 28d-MA 567,549 → 668,839) | curve +101,290; realised effect empirical | pending rerun | |
@@ -73,7 +74,7 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
 | August delivered (`h` mobile −27,162 + `t` +299,000 + `p`) | | | 17,924,562 |
 | `u` tou_mobile_headwind: the −27,162 mobile leg moved out of `headwind.json`, anchor unchanged | 0 | 0 (exact) | |
 | `t` mobile tailwind carry-forward | decision pending | | |
-| `p` paid level: August curve 1,559,477 → GMIO curve 1,891,002 at Dec-15 (anchor 800,831) | +331,525 | pending split rebuild + rerun | |
+| `p` paid level: August curve 1,559,477 → GMIO curve 1,891,002 at Dec-15 (anchor 800,831); split rebuilt + wired | +331,525 | pending rerun | |
 
 ## Read this before quoting the headline
 
@@ -90,15 +91,16 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
   adjustment_ladder/                 # ladder_manifest.json + cached per-rung desktop runs from scripts/build_adjustment_ladder.py (parquet/pkl gitignored)
   desktop_<config>_<seam>/           # canonical desktop build: .adj-lo(.j.i.)? parquet + sidecar + parameters.json + pkl (gitignored)
   mobile_<config>_<seam>/            # canonical mobile build: .adj-p. parquet + sidecar + parameters.json + pkl
-  mobile_rawpull_<seam>/             # raw BQ mobile pull for the `p` split's shredder-drift check (fetch_raw_pull.py)
+  mobile_rawpull_2026-09-02/         # present — raw BQ mobile pull (fetch_raw_pull.py, 2026-09-04); reuse via --raw-cache-dir
+  desktop_rawpull_2026-09-02/        # present — raw BQ legacy_desktop pull (2026-09-04); the ladder and scans reuse it
   adjustments/headwind.json          # present — h re-anchored 2026-09-04: linear ramp 0 at seam → −726,000 (Brad's Dec-15) flat after; desktop only; DRAFT
   headwinds/                         # present — h delivered file + value-read meta + plot + rationale
   adjustments/tou_mobile_headwind.json  # present — u (display layer): the mobile -27,162 leg split out of headwind.json 2026-09-04
   tou_mobile_headwind/               # present — u rationale
   adjustments/tailwind.json          # t (display layer) — decide whether it carries forward
-  marketing/                         # present — paid-DAU curve for `p` from the GMIO feed, BUILT 2026-09-04, awaiting organic.json (see marketing/_index.md § Wiring)
-  organic/                           # NOT YET — p spec + measured split rebuilt for the new training window; must point paid_forecast at marketing/
-  launch_on_login/lol.json           # l (200K ceiling; re-gate)
+  marketing/                         # present — paid-DAU curve for `p` from the GMIO feed, BUILT + WIRED 2026-09-04
+  organic/                           # present — p REBUILT 2026-09-04 (split through 2026-09-01, four checks PASS) and pointed at marketing/ (anchor 800,831)
+  launch_on_login/                   # present — `l` re-gated 2026-09-04, retitled 'launch at login for NEW users'; 200K curve carried unchanged
   mozillaonline/                     # present — `o` REBUILT 2026-09-04 from the 2026-09-02 official export via /ingest-adjustment; rerun pending
   japan_bot/                         # present — `j` WIRED 2026-09-04 (registry + spec + curve + source_data/); rerun pending
   japan_bot_REVERT_2026-09-04/       # present — the handoff's original spec/parquet; revert target, keep while cycle is live

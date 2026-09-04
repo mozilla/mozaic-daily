@@ -63,7 +63,7 @@ from mozaic_daily.seam_ma import display_ma  # noqa: E402
 # zone and reads ~41K apart under the two conventions.
 DEFAULT_TARGET_DATE = "2026-08-25"
 DEFAULT_DEC15 = "2026-12-15"
-DEFAULT_HEADWIND = REPO_ROOT / "data-official/2026-08/adjustments/headwind.json"
+DEFAULT_HEADWIND = REPO_ROOT / "data-official/2026-09/adjustments/headwind.json"  # repointed 2026-09-04; now a clamped ramp, desktop-only
 # August target is a BAND, not a bullseye: "around 45M to 46M, exact target depends on
 # what's possible" (2026-07-29). July's 45.06M bullseye is retired -- it was the most
 # achievable value under July data, not an external benchmark.

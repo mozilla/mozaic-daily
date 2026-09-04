@@ -1,8 +1,8 @@
 # `data-official/2026-09/marketing/` — the paid-DAU curve `p` consumes (September 2026)
 
-**Status: BUILT 2026-09-04, NOT YET WIRED.** `p` reads its paid forecast from `../organic/organic.json`
-(`paid_forecast.data_file` + `anchor_paid_dau`), and `../organic/` does not exist yet for September: the
-measured paid/organic split must be rebuilt for the new training window first. See "Wiring" below.
+**Status: BUILT AND WIRED 2026-09-04.** `../organic/organic.json` points `paid_forecast` at the parquet below with
+`anchor_paid_dau` copied from the meta; the split was rebuilt for the September window the same day (see `../organic/`).
+The "Wiring" section below is kept as the procedure for the next re-pull.
 
 `m` (marketing_lift) stays retired; there is no `marketing.json` here. This directory holds the paid **level**
 input to `p`, in the lift-plus-anchor framing August settled on.

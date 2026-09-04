@@ -1,0 +1,38 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+forecast_start : 2026-09-02
+training_end   : 2026-09-01
+data_source    : glean_mobile  metric: DAU
+output_dir     : data-official/2026-09/mobile_rawpull_2026-09-02
+Pre-flight check: verifying training data is available through 2026-09-01...
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates' done 4s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.firefox_desktop.new_profiles_aggregates' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.active_users_aggregates' done 3s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.desktop_new_profiles' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.desktop_engagement' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates' done 3s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.mobile_new_profiles' done 3s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.mobile_engagement' done 2s.
+Pre-flight check passed: all tables have data through 2026-09-01.
+[1/1] Querying Mobile Glean DAU
+
+    SELECT submission_date AS x,
+           IF(country IN ('AR', 'BR', 'CA', 'CN', 'DE', 'FR', 'ID', 'IN', 'IR', 'IT', 'JP', 'MX', 'PL', 'RU', 'US'), country, 'ROW') AS country,
+           IFNULL(LOWER(app_name) LIKE '%fenix%', FALSE) AS fenix_android,
+           IFNULL(LOWER(app_name) LIKE '%firefox ios%', FALSE) AS firefox_ios,
+           IFNULL(LOWER(app_name) LIKE '%focus android%', FALSE) AS focus_android,
+           IFNULL(LOWER(app_name) LIKE '%focus ios%', FALSE) AS focus_ios,
+           SUM(dau) AS y,
+     FROM `moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates`
+    WHERE app_name IN ("Fenix", "Firefox iOS", "Focus Android", "Focus iOS") AND submission_date >= "2020-12-31"
+    GROUP BY ALL
+    ORDER BY 1, 2 ASC
+    
+[BQ-WATCHDOG] 'Mobile Glean DAU' done 19s.
+
+Wrote:
+  data-official/2026-09/mobile_rawpull_2026-09-02/mozaic_parts.raw.glean.mobile.DAU.parquet  (639,757 bytes)
+exit 0

@@ -242,7 +242,15 @@ class TestCommittedRegistryAndSpecs:
         resolved = resolve_overlays("2026-08-02")
         assert [o.code for o in resolved] == ["l", "o"]
         assert {o.data_source for o in resolved} == {DataSource.LEGACY_DESKTOP}
-        assert resolved[0].sentinel_attr == "launch_on_login_subtracted"
+        assert resolved[0].sentinel_attr == "launch_on_login_new_users_subtracted"  # renamed 2026-09-04; code + layout unchanged
+
+    def test_september_seam_carries_launch_at_login_forward(self):
+        """`l` was re-gated to 2026-09-02 on 2026-09-04 with August's 200K curve unchanged (retitled 'new users')."""
+        sep = {o.code: o for o in resolve_overlays("2026-09-02")}
+        aug = {o.code: o for o in resolve_overlays("2026-08-02")}
+        assert sep["l"].name == "launch_on_login_new_users"
+        assert sep["l"].spec["data_file"] == aug["l"].spec["data_file"] == "lol_tailwind.2026-07-29.cap200k.parquet"
+        assert sep["l"].spec_path.parent.name == "launch_on_login"
 
     def test_september_seam_resolves_japan_bot(self):
         """`j` was the first code wired purely through the registry (2026-09-04)."""

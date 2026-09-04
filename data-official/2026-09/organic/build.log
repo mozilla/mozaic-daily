@@ -1,0 +1,27 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+Fenix paid/organic split — forecast_start 2026-09-02, training_end 2026-09-01
+  mirror:   moz-fx-data-bq-data-science.brwells.fenix_dau_growth_source_v1
+  out:      data-official/2026-09/organic
+
+--- Query
+  [mirror snapshot] 0.02 GB (~$0.00)
+  snapshot covers through 2026-07-01; tail 2026-06-25 → 2026-09-01
+  [mirror tail] 268.33 GB (~$1.34)
+
+--- Checks
+       check  days  median_rel_diff  max_abs_rel_diff status
+tail overlap     7        -0.003304           0.00347   PASS
+             check  growth_sources  days status
+partition identity               3   823   PASS
+         check  days  countries  rows  null_shares  min_share  max_share status
+split coverage   823         16 13168            0   0.684823        1.0   PASS
+         check  days oldest_day  oldest_rel_gap  newest_rel_gap  edge_max_abs_rel_gap  rank_corr status
+shredder drift   823 2024-06-01       -0.028554             0.0                   0.0   0.997233   PASS
+
+--- Write
+  wrote data-official/2026-09/organic/fenix_paid_organic.2026-09-02.parquet
+  wrote data-official/2026-09/organic/fenix_paid_organic.2026-09-02.parquet.meta.json
+exit 0

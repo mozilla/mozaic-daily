@@ -82,19 +82,22 @@ codes:
       applies_to_forecast_start.
     spec_glob: "data-official/*/organic/organic.json"
   l:
-    name: launch_on_login
+    name: launch_on_login_new_users
     applier: per_tile_overlay
     description: >
-      Launch-on-login desktop DAU tailwind. Measured incremental DAU from the
-      launch-on-login feature (experiment long-term-holdback-2026-growth-desktop,
-      100% rollout 2026-05-08), landing in the modern_windows segment. Applied
-      bidirectionally like marketing_lift `m` but on legacy_desktop DAU: the
-      measured historical rise is subtracted from modern_windows training rows
-      before mozaic (so Prophet doesn't extrapolate a one-time step), then the
-      capped/flat curve is added back to the per-country forecast. Spec type is
-      the generic `desktop_overlay`; per-month spec lives in
-      data-official/{YYYY-MM}/launch_on_login/lol.json with a sidecar daily
-      curve parquet from ~/work/launch-on-login/build_lol_tailwind.py.
+      Launch-at-login desktop DAU tailwind for NEW USERS (retitled 2026-09-04 from
+      "launch_on_login"; a separate existing-users tailwind is expected later in the
+      2026-09 cycle and will be its own code). Measured incremental DAU from the
+      launch-at-login feature (experiment long-term-holdback-2026-growth-desktop, 100%
+      rollout 2026-05-08), landing in the modern_windows segment. Per-tile overlay on
+      legacy_desktop DAU: the measured historical rise is subtracted from modern_windows
+      training rows before mozaic (so Prophet does not extrapolate a one-time step), then
+      the capped/flat curve is added back to the per-country forecast, allocated
+      proportionally to trailing-28d modern_windows DAU. The ceiling is a per-cycle
+      judgement (July 125K, August 200K, September carried 200K unchanged). Spec type
+      is the generic desktop_overlay; the per-cycle spec keeps the historical layout
+      data-official/{YYYY-MM}/launch_on_login/lol.json with a sidecar daily curve
+      parquet from ~/work/launch-on-login/build_lol_tailwind.py.
     spec_glob: "data-official/*/launch_on_login/lol.json"
   o:
     name: mozillaonline_migration

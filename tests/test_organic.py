@@ -674,3 +674,17 @@ def test_september_gmio_paid_curve_is_a_lift_whose_anchor_recovers_the_level():
     pd.testing.assert_series_equal(recovered, df["paid_dau_level_daily"].loc["2026-03-30":], check_names=False)
     assert df.loc["2026-12-15", "paid_dau_level_daily"] == pytest.approx(1891001.857142857, abs=1.0)
     assert df.loc["2026-12-31", "paid_dau_level_daily"] == df.loc["2026-12-21", "paid_dau_level_daily"]  # forward-filled tail
+
+
+def test_real_september_organic_spec_points_at_the_gmio_curve_with_its_own_anchor():
+    """September (2026-09-04): organic.json must carry the anchor from the marketing curve's meta, and
+    lift + anchor must give the composed level (1,891,002 at Dec-15), held flat into 2027."""
+    import json
+    sept = REPO_ROOT / "data-official" / "2026-09" / "organic" / "organic.json"
+    spec = load_organic_spec(sept)
+    assert spec["applies_to_forecast_start"] == "2026-09-02"
+    meta = json.loads((sept.parent / "../marketing/marketing_lift_model.gmio_uac_meta_total.2026-09-02.meta.json").read_text())
+    assert spec["paid_forecast"]["anchor_paid_dau"] == meta["key_values"]["anchor_paid_dau"]
+    level = marketing_paid_level(spec, sept.parent, forecast_start="2026-09-02", forecast_end="2027-12-31")
+    assert level.loc[pd.Timestamp("2026-12-15")] == pytest.approx(1891001.857142857, abs=1.0)
+    assert level.loc[pd.Timestamp("2027-06-01")] == pytest.approx(level.loc[pd.Timestamp("2026-12-31")])

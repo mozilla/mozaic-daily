@@ -34,7 +34,9 @@ number minus the documented adjustment, which is the property a reader will chec
 Usage:
     python scripts/export_desktop_no_headwind_csv.py [--csv-dir DIR] [--dry-run]
 
-Cycle-scoped: the constants below point at the August 2026 cycle. Repoint them at roll-forward.
+Cycle-scoped: the constants below point at the September 2026 cycle (repointed 2026-09-04). Repoint them at roll-forward.
+NOTE: the published-column stems (CURRENT_COLUMN / PRIOR_COLUMN) must match the canonical notebook's CSV schema;
+they are set to the August naming pattern shifted one cycle and must be checked against the first September export.
 """
 
 import argparse
@@ -52,15 +54,15 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from mozaic_daily.adjustments import render_adjustment  # noqa: E402
 
 # --- Cycle-scoped configuration (repoint at each roll-forward) -------------------------------
-CSV_DIR = "data-official/2026-08/csv"
-PUBLISHED_CURVES = "august_canonical_curves.csv"
-PUBLISHED_SUMMARY = "august_dec15_summary.csv"
+CSV_DIR = "data-official/2026-09/csv"
+PUBLISHED_CURVES = "september_canonical_curves.csv"
+PUBLISHED_SUMMARY = "september_dec15_summary.csv"
 
-CURRENT_ADJUSTMENTS_DIR = "data-official/2026-08/adjustments"
-PRIOR_ADJUSTMENTS_DIR = "data-official/2026-07/adjustments"
+CURRENT_ADJUSTMENTS_DIR = "data-official/2026-09/adjustments"
+PRIOR_ADJUSTMENTS_DIR = "data-official/2026-08/adjustments"
 
-FORECAST_START = pd.Timestamp("2026-08-02")       # August desktop seam
-PREV_FORECAST_START = pd.Timestamp("2026-07-06")  # July's seam
+FORECAST_START = pd.Timestamp("2026-09-02")       # September desktop seam
+PREV_FORECAST_START = pd.Timestamp("2026-08-02")  # August's seam
 MEASUREMENT_DATE = pd.Timestamp("2026-12-15")
 TROUGH_WINDOW_END = pd.Timestamp("2026-10-15")
 
@@ -68,6 +70,11 @@ TROUGH_WINDOW_END = pd.Timestamp("2026-10-15")
 # other spec that moves desktop is left in place and named on stdout, so the output is exactly
 # "published minus the Win10 headwind" whatever else the cycle's display layer carries.
 WIN10_SPEC_FILENAME = "headwind.json"
+
+# Published CSV column stems for the current and prior cycle (check against the notebook's export).
+CURRENT_COLUMN = "desktop_current_september"
+PRIOR_COLUMN = "desktop_prior_august"
+CURRENT_KEY, PRIOR_KEY = "september", "august"
 
 # Loud, unmissable labels. The whole point of this artifact is that it can never be mistaken for
 # the published canonical file, so the marker appears in the filename AND every value column.
@@ -131,41 +138,37 @@ def build_curves(published: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, pd.Se
     """Desktop-only, headwind-free curve frame plus the ramps that were removed."""
     index = published.index
     ramps = {
-        "august": load_desktop_headwind_ramp(CURRENT_ADJUSTMENTS_DIR, index, FORECAST_START),
-        "july": load_desktop_headwind_ramp(PRIOR_ADJUSTMENTS_DIR, index, PREV_FORECAST_START),
+        CURRENT_KEY: load_desktop_headwind_ramp(CURRENT_ADJUSTMENTS_DIR, index, FORECAST_START),
+        PRIOR_KEY: load_desktop_headwind_ramp(PRIOR_ADJUSTMENTS_DIR, index, PREV_FORECAST_START),
     }
     frame = pd.DataFrame({"date": index.strftime("%Y-%m-%d")})
     # Actuals are telemetry and carry no adjustment, so they pass through untouched.
     frame["desktop_actuals"] = published["desktop_actuals"].values
-    frame[f"desktop_prior_july_{LABEL}"] = strip_headwind(
-        published["desktop_prior_july"], ramps["july"]
-    ).values
-    frame[f"desktop_current_august_{LABEL}"] = strip_headwind(
-        published["desktop_current_august"], ramps["august"]
-    ).values
+    frame[f"{PRIOR_COLUMN}_{LABEL}"] = strip_headwind(published[PRIOR_COLUMN], ramps[PRIOR_KEY]).values
+    frame[f"{CURRENT_COLUMN}_{LABEL}"] = strip_headwind(published[CURRENT_COLUMN], ramps[CURRENT_KEY]).values
     return frame, ramps
 
 
 def build_summary(curves: pd.DataFrame, ramps: dict[str, pd.Series]) -> pd.DataFrame:
     """Dec-15 headline + summer trough, read back off the published-rounded curve columns."""
     indexed = curves.assign(date=pd.to_datetime(curves["date"])).set_index("date")
-    current = indexed.loc[MEASUREMENT_DATE, f"desktop_current_august_{LABEL}"]
-    prior = indexed.loc[MEASUREMENT_DATE, f"desktop_prior_july_{LABEL}"]
+    current = indexed.loc[MEASUREMENT_DATE, f"{CURRENT_COLUMN}_{LABEL}"]
+    prior = indexed.loc[MEASUREMENT_DATE, f"{PRIOR_COLUMN}_{LABEL}"]
     window = indexed.loc[
-        FORECAST_START:TROUGH_WINDOW_END, f"desktop_current_august_{LABEL}"
+        FORECAST_START:TROUGH_WINDOW_END, f"{CURRENT_COLUMN}_{LABEL}"
     ].dropna()
     return pd.DataFrame([{
         "series": "Desktop",
         "measurement_date": MEASUREMENT_DATE.strftime("%Y-%m-%d"),
-        f"current_august_{LABEL}": int(current),
-        f"prior_july_{LABEL}": int(prior),
-        f"delta_vs_july_{LABEL}": int(current - prior),
-        f"delta_pct_vs_july_{LABEL}": round((current / prior - 1) * 100, 3),
+        f"current_{CURRENT_KEY}_{LABEL}": int(current),
+        f"prior_{PRIOR_KEY}_{LABEL}": int(prior),
+        f"delta_vs_{PRIOR_KEY}_{LABEL}": int(current - prior),
+        f"delta_pct_vs_{PRIOR_KEY}_{LABEL}": round((current / prior - 1) * 100, 3),
         f"summer_trough_min_{LABEL}": int(window.min()),
         f"summer_trough_date_{LABEL}": window.idxmin().strftime("%Y-%m-%d"),
         # Add these back to recover the published canonical figures exactly.
-        "win10_headwind_added_back_august": int(-ramps["august"][MEASUREMENT_DATE]),
-        "win10_headwind_added_back_july": int(-ramps["july"][MEASUREMENT_DATE]),
+        f"win10_headwind_added_back_{CURRENT_KEY}": int(-ramps[CURRENT_KEY][MEASUREMENT_DATE]),
+        f"win10_headwind_added_back_{PRIOR_KEY}": int(-ramps[PRIOR_KEY][MEASUREMENT_DATE]),
     }])
 
 
@@ -176,7 +179,7 @@ def verify(curves_path: Path, summary_path: Path, published: pd.DataFrame,
     written_summary = pd.read_csv(summary_path).set_index("series")
 
     assert list(written.columns) == [
-        "desktop_actuals", f"desktop_prior_july_{LABEL}", f"desktop_current_august_{LABEL}"
+        "desktop_actuals", f"{PRIOR_COLUMN}_{LABEL}", f"{CURRENT_COLUMN}_{LABEL}"
     ], f"unexpected columns {list(written.columns)} -- mobile/ALL must not appear in this file"
 
     # 1. Actuals passed through unmodified.
@@ -186,8 +189,8 @@ def verify(curves_path: Path, summary_path: Path, published: pd.DataFrame,
 
     # 2. Round-trip: adding each ramp back reproduces the published column to <=1 DAU.
     for column, ramp_key, source in [
-        (f"desktop_current_august_{LABEL}", "august", "desktop_current_august"),
-        (f"desktop_prior_july_{LABEL}", "july", "desktop_prior_july"),
+        (f"{CURRENT_COLUMN}_{LABEL}", CURRENT_KEY, CURRENT_COLUMN),
+        (f"{PRIOR_COLUMN}_{LABEL}", PRIOR_KEY, PRIOR_COLUMN),
     ]:
         residual = (written[column] + ramps[ramp_key] - published[source]).abs().max()
         assert residual <= 1, (
@@ -197,11 +200,11 @@ def verify(curves_path: Path, summary_path: Path, published: pd.DataFrame,
 
     # 3. Pre-seam rows are untouched by construction; assert it rather than trust it.
     pre_seam = written.index < PREV_FORECAST_START
-    residual = (written.loc[pre_seam, f"desktop_prior_july_{LABEL}"]
-                - published.loc[pre_seam, "desktop_prior_july"]).abs().max()
+    residual = (written.loc[pre_seam, f"{PRIOR_COLUMN}_{LABEL}"]
+                - published.loc[pre_seam, PRIOR_COLUMN]).abs().max()
     assert residual == 0, f"prior-July column moved before July's seam by {residual:,.0f} DAU"
-    assert written[f"desktop_current_august_{LABEL}"].first_valid_index() == FORECAST_START, (
-        f"August column starts at {written[f'desktop_current_august_{LABEL}'].first_valid_index()}, "
+    assert written[f"{CURRENT_COLUMN}_{LABEL}"].first_valid_index() == FORECAST_START, (
+        f"Current column starts at {written[f'{CURRENT_COLUMN}_{LABEL}'].first_valid_index()}, "
         f"not the seam"
     )
 
@@ -209,10 +212,10 @@ def verify(curves_path: Path, summary_path: Path, published: pd.DataFrame,
     row = written_summary.loc["Desktop"]
     expected = published_summary.set_index("series").loc["Desktop"]
     for label, reconstructed, published_value in [
-        ("current_august", row[f"current_august_{LABEL}"] - row["win10_headwind_added_back_august"],
-         expected["current_august"]),
-        ("prior_july", row[f"prior_july_{LABEL}"] - row["win10_headwind_added_back_july"],
-         expected["prior_july"]),
+        (f"current_{CURRENT_KEY}", row[f"current_{CURRENT_KEY}_{LABEL}"] - row[f"win10_headwind_added_back_{CURRENT_KEY}"],
+         expected[f"current_{CURRENT_KEY}"]),
+        (f"prior_{PRIOR_KEY}", row[f"prior_{PRIOR_KEY}_{LABEL}"] - row[f"win10_headwind_added_back_{PRIOR_KEY}"],
+         expected[f"prior_{PRIOR_KEY}"]),
     ]:
         assert reconstructed == published_value, (
             f"{label}: subtracting the ledger column gives {reconstructed:,.0f}, but "
@@ -220,12 +223,12 @@ def verify(curves_path: Path, summary_path: Path, published: pd.DataFrame,
         )
 
     # 5. Summary re-derives from the curves file alone.
-    curve_current = written.loc[MEASUREMENT_DATE, f"desktop_current_august_{LABEL}"]
-    curve_prior = written.loc[MEASUREMENT_DATE, f"desktop_prior_july_{LABEL}"]
-    assert row[f"current_august_{LABEL}"] == curve_current, "summary disagrees with the curves file"
-    assert row[f"prior_july_{LABEL}"] == curve_prior, "summary disagrees with the curves file"
-    assert row[f"delta_vs_july_{LABEL}"] == curve_current - curve_prior, (
-        f"delta is {row[f'delta_vs_july_{LABEL}']:,.0f} but the two published columns differ by "
+    curve_current = written.loc[MEASUREMENT_DATE, f"{CURRENT_COLUMN}_{LABEL}"]
+    curve_prior = written.loc[MEASUREMENT_DATE, f"{PRIOR_COLUMN}_{LABEL}"]
+    assert row[f"current_{CURRENT_KEY}_{LABEL}"] == curve_current, "summary disagrees with the curves file"
+    assert row[f"prior_{PRIOR_KEY}_{LABEL}"] == curve_prior, "summary disagrees with the curves file"
+    assert row[f"delta_vs_{PRIOR_KEY}_{LABEL}"] == curve_current - curve_prior, (
+        f"delta is {row[f'delta_vs_{PRIOR_KEY}_{LABEL}']:,.0f} but the two published columns differ by "
         f"{curve_current - curve_prior:,.0f} -- a reader subtracting them would get another answer."
     )
 

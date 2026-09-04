@@ -64,21 +64,22 @@ from mozaic_daily.seam_ma import daily_to_28ma, display_ma  # noqa: E402
 from export_desktop_no_headwind_csv import load_desktop_headwind_ramp  # noqa: E402
 
 # --- Cycle-scoped configuration (repoint at each roll-forward) -------------------------------
-CSV_DIR = "data-official/2026-08/csv"
-PUBLISHED_CURVES = "august_canonical_curves.csv"
-PUBLISHED_SUMMARY = "august_dec15_summary.csv"
+CSV_DIR = "data-official/2026-09/csv"
+PUBLISHED_CURVES = "september_canonical_curves.csv"
+PUBLISHED_SUMMARY = "september_dec15_summary.csv"
 
+# TODO (2026-09-04 repoint): replace <config>/<slug> with the September canonical desktop build once it exists.
 DESKTOP_FORECAST_PATH = (
+    "data-official/2026-09/desktop_<config>_2026-09-02/<slug>/"
+    "mozaic_daily_forecast.2026-09-02.ld-D.adj-ijlo.parquet"
+)
+PREV_DESKTOP_FORECAST_PATH = (
     "data-official/2026-08/desktop_g01_2026-08-02/"
     "cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/"
     "mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet"
 )
-PREV_DESKTOP_FORECAST_PATH = (
-    "data-official/2026-07/desktop_locked/"
-    "mozaic_daily_forecast.2026-07-06.ld-D.adj-lo.parquet"
-)
-CURRENT_ADJUSTMENTS_DIR = "data-official/2026-08/adjustments"
-PRIOR_ADJUSTMENTS_DIR = "data-official/2026-07/adjustments"
+CURRENT_ADJUSTMENTS_DIR = "data-official/2026-09/adjustments"
+PRIOR_ADJUSTMENTS_DIR = "data-official/2026-08/adjustments"
 
 FORECAST_START = pd.Timestamp("2026-08-02")       # August desktop seam
 PREV_FORECAST_START = pd.Timestamp("2026-07-06")  # July's seam

@@ -1,0 +1,15 @@
+{
+  "type": "desktop_overlay",
+  "platform": "desktop",
+  "data_file": "lol_tailwind.2026-07-29.cap200k.parquet",
+  "value_column": "lol_lift_daily",
+  "allocation": {
+    "flag_column": "modern_windows",
+    "key": "trailing_dau_share",
+    "window_days": 28
+  },
+  "model_meta_file": "lol_tailwind.2026-07-29.cap200k.model_meta.json",
+  "applies_to_forecast_start": "2026-09-02",
+  "applies_to_data_source": "legacy_desktop",
+  "notes": "September 2026 cycle, seam 2026-09-02. Launch-at-login for NEW USERS desktop DAU tailwind (adjustment code `l`, retitled 2026-09-04 from 'launch-on-login': a separate 'launch at login for existing users' tailwind is expected later in this cycle and will be its own code). Curve and ceiling CARRIED FORWARD UNCHANGED from August: 200,000 DAU/day ceiling selected 2026-07-29, measured 7d-trailing excess to 2026-06-23 then a linear ramp at 2,714/day to the ceiling, flat through 2027-12-31. The measurement window closed permanently on 2026-06-23 when the holdback control received the feature, so this cycle's curve is the same measurement extrapolated; nothing was re-measured. Bidirectional on legacy_desktop modern_windows, allocation proportional to each country's trailing-28d modern_windows DAU. Re-gated by copying the August spec, parquet and model meta (sha1s unchanged) on 2026-09-04."
+}

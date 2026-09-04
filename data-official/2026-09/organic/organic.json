@@ -1,0 +1,30 @@
+{
+  "type": "paid_organic_split",
+  "platform": "mobile",
+  "data_file": "fenix_paid_organic.2026-09-02.parquet",
+  "share_column": "organic_share",
+  "scope": {
+    "app_flag_column": "fenix_android",
+    "exclude_countries": [
+      "IR"
+    ]
+  },
+  "share_backfill": {
+    "policy": "hold_earliest",
+    "measured_from": "2024-06-01"
+  },
+  "paid_forecast": {
+    "spec_file": null,
+    "data_file": "../marketing/marketing_lift_model.gmio_uac_meta_total.2026-09-02.parquet",
+    "value_column": "marketing_lift_daily",
+    "anchor_paid_dau": 800831.0,
+    "anchor_source": "marketing_lift_model.gmio_uac_meta_total.2026-09-02.meta.json:key_values.anchor_paid_dau",
+    "tail_policy": "hold_last"
+  },
+  "allocation": {
+    "key": "trailing_paid_dau_share",
+    "window_days": 28
+  },
+  "applies_to_forecast_start": "2026-09-02",
+  "notes": "September 2026 cycle, seam 2026-09-02, training through 2026-09-01. Measured Fenix paid/organic split rebuilt 2026-09-04 by scripts/build_fenix_organic_split.py (all four checks PASS; 823 days x 16 countries; shredder drift -2.9% at the oldest day, 0.0 at the edge). Paid forecast is the GMIO-feed curve in ../marketing/ (UAC + Meta Android, composed as UAC+Meta where present else UAC), in August's lift-plus-anchor framing: level(d) = marketing_lift_daily(d) + anchor_paid_dau (800,831.00, the composed level on 2026-03-30). Dec-15 paid level 1,891,002 vs August's 1,559,477. `m` stays retired; there is no marketing.json this cycle, so spec_file is null. Share backfill and allocation unchanged from August; IR excluded (the feed has no IR row either)."
+}

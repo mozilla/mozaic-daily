@@ -1204,7 +1204,7 @@ def test_lol_subtract_addback_roundtrip_at_world(desktop_training_df, lol_lift_s
 def test_lol_code_in_registry():
     registry = load_code_registry()
     assert "l" in registry
-    assert registry["l"]["name"] == "launch_on_login"
+    assert registry["l"]["name"] == "launch_on_login_new_users"  # retitled 2026-09-04
 
 
 def test_lol_code_canonical_and_marker():
@@ -1221,7 +1221,7 @@ def test_build_adjustments_applied_includes_lol(tmp_path):
     spec.write_text(json.dumps({"type": "desktop_overlay"}))
     applied = build_adjustments_applied_list(["l"], {"l": spec})
     assert applied[0]["code"] == "l"
-    assert applied[0]["name"] == "launch_on_login"
+    assert applied[0]["name"] == "launch_on_login_new_users"
 
 
 # --- MozillaOnline overlay applier (code `o`) ------------------------------

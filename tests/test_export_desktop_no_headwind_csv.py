@@ -164,14 +164,14 @@ class TestEndToEnd:
         _write_specs(tmp_path / "jul", {"headwind.json": {
             **HEADWIND_SPEC, "start_date": "2026-04-01", "desktop_dau": -1345000,
         }})
-        aug_ramp = export.load_desktop_headwind_ramp(str(tmp_path / "aug"), index, RAMP_START)
-        jul_ramp = export.load_desktop_headwind_ramp(
-            str(tmp_path / "jul"), index, pd.Timestamp("2026-07-06"))
+        # The fixture follows the module's own seams so the round-trip stays valid across roll-forwards.
+        aug_ramp = export.load_desktop_headwind_ramp(str(tmp_path / "aug"), index, export.FORECAST_START)
+        jul_ramp = export.load_desktop_headwind_ramp(str(tmp_path / "jul"), index, export.PREV_FORECAST_START)
         raw = pd.Series(raw_dec15, index=index)
         published = pd.DataFrame({
-            "desktop_actuals": raw.where(index < RAMP_START),
-            "desktop_prior_july": (raw + jul_ramp).round(0),
-            "desktop_current_august": (raw + aug_ramp).round(0).where(index >= RAMP_START),
+            "desktop_actuals": raw.where(index < export.FORECAST_START),
+            export.PRIOR_COLUMN: (raw + jul_ramp).round(0),
+            export.CURRENT_COLUMN: (raw + aug_ramp).round(0).where(index >= export.FORECAST_START),
         }, index=index)
         return published, raw_dec15
 
@@ -183,8 +183,8 @@ class TestEndToEnd:
         curves, ramps = export.build_curves(published)
         stripped = curves.set_index(pd.to_datetime(curves["date"]))
 
-        for column in [f"desktop_prior_july_{export.LABEL}",
-                       f"desktop_current_august_{export.LABEL}"]:
+        for column in [f"{export.PRIOR_COLUMN}_{export.LABEL}",
+                       f"{export.CURRENT_COLUMN}_{export.LABEL}"]:
             values = stripped[column].dropna()
             assert (values - raw_dec15).abs().max() <= 1, (
                 f"{column} did not return to the flat pre-headwind level")
@@ -202,15 +202,15 @@ class TestEndToEnd:
 
     def test_no_mobile_or_all_columns_survive(self, tmp_path, monkeypatch):
         published, _ = self._published(tmp_path)
-        published["mobile_current_august"] = 17_000_000.0
-        published["all_current_august"] = 67_000_000.0
+        published["mobile_current_september"] = 17_000_000.0
+        published["all_current_september"] = 67_000_000.0
         monkeypatch.setattr(export, "CURRENT_ADJUSTMENTS_DIR", str(tmp_path / "aug"))
         monkeypatch.setattr(export, "PRIOR_ADJUSTMENTS_DIR", str(tmp_path / "jul"))
 
         curves, _ = export.build_curves(published)
         assert list(curves.columns) == [
             "date", "desktop_actuals",
-            f"desktop_prior_july_{export.LABEL}", f"desktop_current_august_{export.LABEL}",
+            f"{export.PRIOR_COLUMN}_{export.LABEL}", f"{export.CURRENT_COLUMN}_{export.LABEL}",
         ]
 
     def test_ledger_columns_recover_the_published_figures(self, tmp_path, monkeypatch):
@@ -223,14 +223,14 @@ class TestEndToEnd:
         curves, ramps = export.build_curves(published)
         row = export.build_summary(curves, ramps).iloc[0]
 
-        assert row["win10_headwind_added_back_august"] == 1_315_000
-        assert row["win10_headwind_added_back_july"] == 1_345_000
-        recovered_aug = (row[f"current_august_{export.LABEL}"]
-                         - row["win10_headwind_added_back_august"])
-        recovered_jul = (row[f"prior_july_{export.LABEL}"]
-                         - row["win10_headwind_added_back_july"])
-        assert recovered_aug == published.loc[ANCHOR, "desktop_current_august"]
-        assert recovered_jul == published.loc[ANCHOR, "desktop_prior_july"]
+        assert row[f"win10_headwind_added_back_{export.CURRENT_KEY}"] == 1_315_000
+        assert row[f"win10_headwind_added_back_{export.PRIOR_KEY}"] == 1_345_000
+        recovered_aug = (row[f"current_{export.CURRENT_KEY}_{export.LABEL}"]
+                         - row[f"win10_headwind_added_back_{export.CURRENT_KEY}"])
+        recovered_jul = (row[f"prior_{export.PRIOR_KEY}_{export.LABEL}"]
+                         - row[f"win10_headwind_added_back_{export.PRIOR_KEY}"])
+        assert recovered_aug == published.loc[ANCHOR, export.CURRENT_COLUMN]
+        assert recovered_jul == published.loc[ANCHOR, export.PRIOR_COLUMN]
 
     def test_summary_delta_equals_the_difference_of_its_own_columns(self, tmp_path, monkeypatch):
         published, _ = self._published(tmp_path)
@@ -239,5 +239,5 @@ class TestEndToEnd:
 
         curves, ramps = export.build_curves(published)
         row = export.build_summary(curves, ramps).iloc[0]
-        assert row[f"delta_vs_july_{export.LABEL}"] == (
-            row[f"current_august_{export.LABEL}"] - row[f"prior_july_{export.LABEL}"])
+        assert row[f"delta_vs_{export.PRIOR_KEY}_{export.LABEL}"] == (
+            row[f"current_{export.CURRENT_KEY}_{export.LABEL}"] - row[f"prior_{export.PRIOR_KEY}_{export.LABEL}"])
