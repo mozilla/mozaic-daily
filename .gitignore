@@ -62,6 +62,7 @@ research/param-scans/*/*_report.html
 # Launch-on-login (`l`) overlay curve input (small, ~10KB) ARE tracked under
 # data-official/{YYYY-MM}/launch_on_login/ so the pipeline can apply the `l` adjustment.
 !data-official/*/launch_on_login/*.parquet
+!data-official/*/launch_at_login_new_users/*.parquet
 # Paid/organic split (`p`) input: the measured Fenix organic share by date x country
 # (~350KB). Tracked for the same reason as the three above -- the pipeline cannot run the
 # mobile forecast without it, and its producer depends on a scratch mirror table that

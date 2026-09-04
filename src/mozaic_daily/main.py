@@ -537,7 +537,7 @@ def generate_forecasts(
 # Boolean aliases on main() and their adjustment codes.
 LEGACY_FLAG_CODES = {
     "marketing_lift": "m",
-    "launch_on_login": "l",
+    "launch_at_login_new_users": "l",
     "mozillaonline": "o",
     "organic_split": "p",
 }
@@ -605,7 +605,7 @@ def main(
     forecast_start_date: Optional[str] = None,
     output_dir: Optional[str] = None,
     marketing_lift: bool = True,
-    launch_on_login: bool = True,
+    launch_at_login_new_users: bool = True,
     mozillaonline: bool = True,
     organic_split: bool = True,
     disabled_adjustments: Optional[Iterable[str]] = None,
@@ -630,7 +630,7 @@ def main(
             existing callers and map onto it (``m``, ``l``, ``o``, ``p``).
         marketing_lift: Alias for keeping `m` enabled (default True). False adds
             ``m`` to ``disabled_adjustments``.
-        launch_on_login: Alias for keeping `l` enabled (default True).
+        launch_at_login_new_users: Alias for keeping `l` enabled (default True).
         mozillaonline: Alias for keeping `o` enabled (default True).
         organic_split: Alias for keeping `p` enabled (default True). Disabling it
             yields a *total*-DAU mobile forecast with no paid treatment at all,
@@ -692,7 +692,7 @@ def main(
         disabled = _resolve_disabled_adjustments(
             disabled_adjustments,
             marketing_lift=marketing_lift,
-            launch_on_login=launch_on_login,
+            launch_at_login_new_users=launch_at_login_new_users,
             mozillaonline=mozillaonline,
             organic_split=organic_split,
         )

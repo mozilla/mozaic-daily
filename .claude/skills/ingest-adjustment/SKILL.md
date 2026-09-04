@@ -50,7 +50,8 @@ python3 - <<'PY'
 import yaml, json, glob
 reg = yaml.safe_load(open("data-official/adjustment_codes.yaml"))["codes"]
 for code, e in sorted(reg.items()):
-    specs = sorted(glob.glob(e["spec_glob"]))
+    patterns = e["spec_glob"] if isinstance(e["spec_glob"], list) else [e["spec_glob"]]
+    specs = sorted(p for g in patterns for p in glob.glob(g))
     live = [s for s in specs if json.load(open(s)).get("applies_to_forecast_start") or "adjustments/" in s]
     print(f"{code}  {e['name']:26s} {e['applier']:18s} specs={len(specs)}  newest={specs[-1] if specs else '-'}")
 PY

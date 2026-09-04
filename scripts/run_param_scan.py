@@ -270,7 +270,7 @@ def parse_args() -> argparse.Namespace:
                    help="Disable one adjustment code even if its spec matches (repeatable). "
                         "Works for every registered overlay; the output is stamped without "
                         "that code so the filename describes what is baked into the parquet.")
-    g.add_argument("--no-launch-on-login", action="store_true",
+    g.add_argument("--no-launch-at-login-new-users", "--no-launch-on-login", dest="no_launch_at_login_new_users", action="store_true",
                    help="Alias for --disable-adjustment l.")
     g.add_argument("--no-mozillaonline", action="store_true",
                    help="Alias for --disable-adjustment o.")
@@ -326,7 +326,7 @@ def main_cli() -> None:
     # to stamp the output marker + meta correctly. A disabled code is left off the marker so
     # the filename always describes what is actually baked into the parquet.
     disabled = set(args.disable_adjustment)
-    if args.no_launch_on_login:
+    if args.no_launch_at_login_new_users:
         disabled.add("l")
     if args.no_mozillaonline:
         disabled.add("o")

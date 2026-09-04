@@ -39,7 +39,7 @@ answer on each. A harness timeout is not an answer.
      start moves to the new seam (August convention: yes).
    - `t` mobile tailwind (display layer, `adjustments/tailwind.json`) — carry, resize, or drop. It is a
      discretionary number; its `notes` say so and any change must be recorded there.
-   - `l` launch at login for new users (baked into the desktop parquet, `launch_on_login/lol.json`) — ceiling is
+   - `l` Launch at Login for new users (baked into the desktop parquet, `launch_at_login_new_users/launch_at_login_new_users.json`) — ceiling is
      per-cycle; changing it needs a new curve from its producer **and** a model re-run.
    - `o` MozillaOnline (baked in, `mozillaonline/mozillaonline.json`) — August carried July's curve
      forward twice; the cycle index says rebuild.
@@ -67,7 +67,7 @@ overlays and silently writes `.raw.` (the notebook's `require_state=` loads catc
 not rely on that).
 
 ```bash
-for d in adjustments launch_on_login mozillaonline organic marketing; do
+for d in adjustments launch_at_login_new_users mozillaonline organic marketing; do  # launch_on_login/ through 2026-08
   mkdir -p data-official/$CYCLE/$d && cp -R data-official/$PREV/$d/. data-official/$CYCLE/$d/
 done
 grep -l applies_to_forecast_start data-official/$CYCLE/*/*.json     # each must be edited to "$SEAM"

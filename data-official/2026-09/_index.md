@@ -99,7 +99,7 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
   tailwind/                          # present — t September rationale record
   marketing/                         # present — paid-DAU curve for `p` from the GMIO feed, BUILT + WIRED 2026-09-04
   organic/                           # present — p REBUILT 2026-09-04 (split through 2026-09-01, four checks PASS) and pointed at marketing/ (anchor 800,831)
-  launch_on_login/                   # present — `l` re-gated 2026-09-04, retitled 'launch at login for NEW users'; 200K curve carried unchanged
+  launch_at_login_new_users/         # present — `l` re-gated 2026-09-04, renamed 'Launch at Login for new users' (dir, spec, registry name); 200K curve carried unchanged
   mozillaonline/                     # present — `o` REBUILT 2026-09-04 from the 2026-09-02 official export via /ingest-adjustment; rerun pending
   japan_bot/                         # present — `j` WIRED 2026-09-04 (registry + spec + curve + source_data/); rerun pending
   japan_bot_REVERT_2026-09-04/       # present — the handoff's original spec/parquet; revert target, keep while cycle is live

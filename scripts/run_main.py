@@ -118,13 +118,14 @@ if __name__ == '__main__':
         )
     )
     parser.add_argument(
-        '--no-launch-on-login',
-        dest='launch_on_login',
+        '--no-launch-at-login-new-users', '--no-launch-on-login',
+        dest='launch_at_login_new_users',
         action='store_false',
         default=True,
         help=(
-            'Disable the launch at login for new users (`l`) desktop overlay for this run, even '
-            'if a matching spec exists in data-official/{YYYY-MM}/launch_on_login/. '
+            'Disable the Launch at Login for new users (`l`) desktop overlay for this run, even '
+            'if a matching spec exists in data-official/{YYYY-MM}/launch_at_login_new_users/ '
+            '(--no-launch-on-login is the pre-2026-09 alias). '
             'Default is to apply it to legacy_desktop DAU when a spec matches '
             'forecast_start_date.'
         )
@@ -176,7 +177,7 @@ if __name__ == '__main__':
         forecast_start_date=args.forecast_start_date,
         output_dir=args.output_dir,
         marketing_lift=args.marketing_lift,
-        launch_on_login=args.launch_on_login,
+        launch_at_login_new_users=args.launch_at_login_new_users,
         mozillaonline=args.mozillaonline,
         organic_split=args.organic_split,
         disabled_adjustments=args.disable_adjustment,

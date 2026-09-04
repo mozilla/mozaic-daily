@@ -26,7 +26,7 @@ data-official/
     mobile_refresh_2026-07-06/<config>/                        # refreshed mobile, adj-m
       mozaic_daily_forecast.2026-07-06.gm-D.adj-m.parquet
     adjustments/headwind.json                                  # h spec
-    launch_on_login/lol.json                                   # l spec (desktop tailwind)
+    launch_at_login_new_users/launch_at_login_new_users.json   # l spec (desktop tailwind; launch_on_login/lol.json through 2026-08)
     mozillaonline/mozillaonline.json                           # o spec (CN desktop migration)
     marketing/marketing.json                                   # m spec (mobile lift)
     iran_fill/                                                 # Iran counterfactual-fill specs

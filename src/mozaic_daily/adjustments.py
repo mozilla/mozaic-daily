@@ -408,7 +408,7 @@ def build_adjustments_applied_list(
 #
 # Consumers (thin wrappers / callers, defined below or in main.py):
 #   ``m`` marketing_lift   — mobile, flag_column ``fenix_android``
-#   ``l`` launch_on_login  — desktop, flag_column ``modern_windows``
+#   ``l`` launch_at_login_new_users  — desktop, flag_column ``modern_windows``
 #   ``o`` mozillaonline     — desktop, flag_column ``modern_windows``, fixed shares
 #
 # The same ``country_shares`` Series is used for both halves so the subtraction

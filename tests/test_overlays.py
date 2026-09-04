@@ -242,15 +242,16 @@ class TestCommittedRegistryAndSpecs:
         resolved = resolve_overlays("2026-08-02")
         assert [o.code for o in resolved] == ["l", "o"]
         assert {o.data_source for o in resolved} == {DataSource.LEGACY_DESKTOP}
-        assert resolved[0].sentinel_attr == "launch_on_login_new_users_subtracted"  # renamed 2026-09-04; code + layout unchanged
+        assert resolved[0].sentinel_attr == "launch_at_login_new_users_subtracted"  # renamed 2026-09-04; August keeps its launch_on_login/ layout
 
     def test_september_seam_carries_launch_at_login_forward(self):
         """`l` was re-gated to 2026-09-02 on 2026-09-04 with August's 200K curve unchanged (retitled 'new users')."""
         sep = {o.code: o for o in resolve_overlays("2026-09-02")}
         aug = {o.code: o for o in resolve_overlays("2026-08-02")}
-        assert sep["l"].name == "launch_on_login_new_users"
+        assert sep["l"].name == "launch_at_login_new_users"
         assert sep["l"].spec["data_file"] == aug["l"].spec["data_file"] == "lol_tailwind.2026-07-29.cap200k.parquet"
-        assert sep["l"].spec_path.parent.name == "launch_on_login"
+        assert sep["l"].spec_path.parent.name == "launch_at_login_new_users"   # new layout
+        assert aug["l"].spec_path.parent.name == "launch_on_login"             # legacy layout, still resolved
 
     def test_september_seam_resolves_japan_bot(self):
         """`j` was the first code wired purely through the registry (2026-09-04)."""
@@ -295,6 +296,17 @@ class TestCommittedRegistryAndSpecs:
         assert sep["o"].spec_path.parent.name == "mozillaonline"
         assert aug["o"].spec["data_file"] == "mozillaonline_migration_model.official.2026-06-29.parquet"
         assert sep["o"].spec["allocation"]["shares"]["CN"] == 0.9277
+
+    def test_spec_glob_may_list_legacy_layouts(self, root):
+        """A code can move directory without orphaning older cycles: the first glob is current, the rest legacy."""
+        registry = _registry(l=("per_tile_overlay", ["data-official/*/new_layout/new_layout.json", "data-official/*/lol/lol.json"]))
+        _write_spec(root, "lol", applies_to="2026-08-02")
+        _write_spec(root, "new_layout", applies_to=SEAM)
+        assert resolve_overlays("2026-08-02", registry=registry, root=root)[0].spec_path.parent.name == "lol"
+        assert resolve_overlays(SEAM, registry=registry, root=root)[0].spec_path.parent.name == "new_layout"
+        _write_spec(root, "lol", applies_to=SEAM)  # both layouts claiming one seam is an error
+        with pytest.raises(ValueError, match="across layouts"):
+            resolve_overlays(SEAM, registry=registry, root=root)
 
     def test_repo_root_points_at_the_checkout(self):
         assert (overlays.repo_root() / "data-official" / "adjustment_codes.yaml").exists()

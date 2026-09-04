@@ -139,6 +139,21 @@ def find_spec_for_forecast(
     return matches[0]
 
 
+def spec_globs(entry: dict) -> list[str]:
+    """A registry entry's ``spec_glob`` as a list: the first is the current layout, later ones legacy."""
+    globs = entry["spec_glob"]
+    return [globs] if isinstance(globs, str) else list(globs)
+
+
+def _find_across_globs(patterns: list[str], forecast_start_date: str, label: str, root: Path) -> Optional[Path]:
+    """One spec across every layout a code has ever used; two layouts claiming one date is an error."""
+    matches = [m for m in (find_spec_for_forecast(g, forecast_start_date, label, root) for g in patterns) if m is not None]
+    if len(matches) > 1:
+        raise ValueError(f"Multiple {label} specs claim applies_to_forecast_start={forecast_start_date!r} "
+                         f"across layouts: {[str(m) for m in matches]}")
+    return matches[0] if matches else None
+
+
 def resolve_overlays(
     forecast_start_date: str,
     *,
@@ -158,7 +173,7 @@ def resolve_overlays(
     for code, entry in sorted(registered_overlay_codes(registry).items()):
         if code in disabled:
             continue
-        spec_path = find_spec_for_forecast(entry["spec_glob"], forecast_start_date, entry["name"], root)
+        spec_path = _find_across_globs(spec_globs(entry), forecast_start_date, entry["name"], root)
         if spec_path is None:
             continue
         spec = load_overlay_spec(spec_path)

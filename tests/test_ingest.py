@@ -274,7 +274,12 @@ class TestPlanAndRegistry:
         registry = root / "data-official" / "adjustment_codes.yaml"
         registry.write_text(registry.read_text() + (
             "  o:\n    name: mozillaonline_migration\n    applier: per_tile_overlay\n"
-            "    description: >\n      x\n    spec_glob: \"data-official/*/mozillaonline/mozillaonline.json\"\n"))
+            "    description: >\n      x\n    spec_glob: \"data-official/*/mozillaonline/mozillaonline.json\"\n"
+            "  l:\n    name: launch_at_login_new_users\n    applier: per_tile_overlay\n    description: >\n      x\n"
+            "    spec_glob:\n      - \"data-official/*/launch_at_login_new_users/launch_at_login_new_users.json\"\n"
+            "      - \"data-official/*/launch_on_login/lol.json\"\n"))
+        listed = _plan(root, code="l", name="launch_at_login_new_users")
+        assert listed.curve_dir.name == "launch_at_login_new_users"  # first glob wins for updates
         plan = _plan(root, code="o", name="mozillaonline_migration")
         assert plan.curve_dir == root / "data-official" / "2026-09" / "mozillaonline"
         assert plan.spec_path.name == "mozillaonline.json"

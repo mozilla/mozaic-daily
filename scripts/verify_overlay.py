@@ -78,9 +78,10 @@ def locate_overlay(code: str, cycle: str, forecast_start_date: str | None) -> Re
     registry_entry = registered_overlay_codes().get(code)
     if registry_entry is None:
         raise SystemExit(f"`{code}` is not a per_tile_overlay code in data-official/adjustment_codes.yaml")
-    cycle_specs = sorted((REPO / "data-official" / cycle).glob(registry_entry["spec_glob"].split("/", 2)[2]))
+    from mozaic_daily.overlays import spec_globs
+    cycle_specs = sorted(p for g in spec_globs(registry_entry) for p in (REPO / "data-official" / cycle).glob(g.split("/", 2)[2]))
     if not cycle_specs:
-        raise SystemExit(f"no spec for `{code}` under data-official/{cycle}/ ({registry_entry['spec_glob']})")
+        raise SystemExit(f"no spec for `{code}` under data-official/{cycle}/ ({spec_globs(registry_entry)})")
     spec = json.loads(cycle_specs[0].read_text())
     start = forecast_start_date or spec.get("applies_to_forecast_start")
     if start is None:

@@ -140,7 +140,8 @@ def registered_layout(code: str, root: Path) -> Optional[tuple[str, str]]:
 
     Older codes predate the ``<name>/<name>.json`` convention (``o`` is ``mozillaonline_migration``
     but lives in ``mozillaonline/mozillaonline.json``), so an update must follow the glob the
-    dispatcher actually searches, not the registry name. ``None`` for an unregistered code.
+    dispatcher actually searches, not the registry name. When ``spec_glob`` is a list the first
+    pattern is the current layout. ``None`` for an unregistered code.
     """
     registry_path = root / "data-official" / "adjustment_codes.yaml"
     if not registry_path.exists():
@@ -148,7 +149,9 @@ def registered_layout(code: str, root: Path) -> Optional[tuple[str, str]]:
     entry = load_code_registry(registry_path).get(code)
     if entry is None or "spec_glob" not in entry:
         return None
-    parts = entry["spec_glob"].split("/")
+    globs = entry["spec_glob"]
+    current = globs if isinstance(globs, str) else globs[0]  # first pattern is the current layout
+    parts = current.split("/")
     if len(parts) < 4 or parts[0] != "data-official":
         raise ValueError(f"unexpected spec_glob for code {code!r}: {entry['spec_glob']!r}")
     return parts[-2], parts[-1]

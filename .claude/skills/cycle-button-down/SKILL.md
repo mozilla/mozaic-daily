@@ -94,7 +94,7 @@ Goal: `CYCLE_BRANCH` holds the complete, documented, green record.
 
 1. **Doc currency.** `data-official/$CYCLE/_index.md` must open with a "current usable
    working set" block naming the canonical desktop and mobile parquets, the published CSVs,
-   every wired spec (`adjustments/`, `launch_on_login/`, `mozillaonline/`, `organic/`, …),
+   every wired spec (`adjustments/`, `launch_at_login_new_users/` (`launch_on_login/` through 2026-08), `mozillaonline/`, `organic/`, …),
    and the producer notebook. Every subdirectory needs an `_index.md` (or README). Add a
    **"Present vs Archived"** section stating what will stay on disk and what goes to `PREFIX`
    — write it now, before the move, so the branch record already says where things went.

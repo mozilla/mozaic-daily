@@ -7,7 +7,8 @@
 #
 # Adding a new adjustment:
 #   1. Add a one-letter code below with name + applier + description + spec_glob.
-#   2. `applier` selects the machinery and is load-bearing:
+#   2. `applier` selects the machinery and is load-bearing (`spec_glob` may be one pattern or a
+#      list; the first is the current layout, later ones are legacy layouts):
 #        display_layer      — spec in data-official/*/adjustments/, summed onto the
 #                             28d MA after mozaic (`h`, `t`). No Python needed.
 #        per_tile_overlay   — a `desktop_overlay` spec + curve parquet, subtracted
@@ -82,7 +83,7 @@ codes:
       applies_to_forecast_start.
     spec_glob: "data-official/*/organic/organic.json"
   l:
-    name: launch_on_login_new_users
+    name: launch_at_login_new_users
     applier: per_tile_overlay
     description: >
       Launch at Login for new users desktop DAU tailwind (retitled 2026-09-04 from
@@ -95,10 +96,14 @@ codes:
       the capped/flat curve is added back to the per-country forecast, allocated
       proportionally to trailing-28d modern_windows DAU. The ceiling is a per-cycle
       judgement (July 125K, August 200K, September carried 200K unchanged). Spec type
-      is the generic desktop_overlay; the per-cycle spec keeps the historical layout
-      data-official/{YYYY-MM}/launch_on_login/lol.json with a sidecar daily curve
-      parquet from ~/work/launch-on-login/build_lol_tailwind.py.
-    spec_glob: "data-official/*/launch_on_login/lol.json"
+      is the generic desktop_overlay. From 2026-09 the per-cycle spec is
+      data-official/{YYYY-MM}/launch_at_login_new_users/launch_at_login_new_users.json;
+      cycles through 2026-08 keep the historical launch_on_login/lol.json layout (the
+      second glob), with a sidecar daily curve parquet from
+      ~/work/launch-on-login/build_lol_tailwind.py.
+    spec_glob:
+      - "data-official/*/launch_at_login_new_users/launch_at_login_new_users.json"
+      - "data-official/*/launch_on_login/lol.json"   # legacy layout, cycles <= 2026-08
   o:
     name: mozillaonline_migration
     applier: per_tile_overlay
