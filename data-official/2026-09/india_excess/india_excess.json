@@ -1,0 +1,23 @@
+{
+  "type": "desktop_overlay",
+  "platform": "desktop",
+  "data_file": "india_excess.settle.2026-08-29.parquet",
+  "value_column": "india_excess_dau_daily",
+  "allocation": {
+    "key": "fixed_country_shares",
+    "flag_column": "modern_windows",
+    "window_days": 28,
+    "shares": {
+      "IN": 1.0
+    }
+  },
+  "scope": {
+    "exclude_countries": []
+  },
+  "model_meta_file": "india_excess.settle.2026-08-29.meta.json",
+  "applies_to_forecast_start": "2026-09-02",
+  "applies_to_data_source": "legacy_desktop",
+  "telemetry_source": "legacy",
+  "placeholder": false,
+  "notes": "September 2026 cycle. India's 2026 DAU above a typical year (adjustment code `i`), SETTLE scenario: Settle \u00b7 decays slowly. WHAT IT IS: the gap between India's 2026 rebased 28-day DAU curve and the 2022-2025 mean of the same curve by calendar day, turned into a daily DAU series as actual x (2026 - typical) / 2026, so weekday structure survives subtraction. Anchor Feb 15 - Apr 15, 2,785,181 DAU. ONSET 2026-05-22: first 14-day run above the MAXIMUM of every norm year, searched from 2026-04-16 (after the anchor window; a February run is anchor arithmetic per D68). Zero before onset. HOLIDAYS AND DIPS are bridged out of every year before measuring, so the comparison is holiday-neutral whichever calendar is complete: calendar days on mozaic's own India calendar that dipped past -3.2% (mozaic's rule), plus any India-only dip below -10% while the world ex-India was not down (mozaic's calendar has no Diwali, Dussehra, Sankranti or Ambedkar Jayanti). Independence Day fell on a Saturday in 2026 and would otherwise have added ~1.7 index points to the August gap. Bridging affects the RATIO only: the delivered curve is actual x ratio, so every dip stays in the training frame and mozaic treats holidays exactly as it does today. NETTED against `l`: India carries 5.72% of the launch-on-login lift (11,450/day at the edge, 21% of the gross excess) and that is subtracted so the two overlays do not remove the same DAU twice. Net 28-day level at the edge 43,286/day, peak 57,155 on 2026-06-27. SCENARIOS from the edge, judged at 2026-12-15: hold = peak carried flat; proportional = a constant share of the typical level; linger = decay toward zero with a 250-day half-life (planning constant, the midpoint); settle = decay toward zero with a 90-day half-life (a planning constant, roughly one semester, not an estimate); fade = decay toward zero with a 18-day half-life FITTED from history (AR(1) on monthly leave-one-out deviations of the norm years, phi 0.31/month); proportional = 1.58% of India's typical level, following the seasonal calendar. Dec-15 2026 28ma: hold 57,155, proportional 41,945, linger 33,317, settle 20,946, fade 1,161. EVIDENCE (evidence.py; narrows, does not decide): the summer's own increment over 2025 is 92% clients older than 28 days and 73% clients active 10+ days a month, with no new-profile surge -- existing users more often, not a cohort, so churn-style decay (fade) does not fit the mechanism; the one positive-summer norm year (2023) held about two thirds of its late-August excess through November and was gone by 15 December; the 2026 excess itself halved once in five weeks and recovered. History favours the settle end of the middle; linger is the case for a driver running the whole semester. Held to 2027-12-31, NOT zero-filled. THE CAUSE IS A HYPOTHESIS: a change in the Indian university calendar is the leading candidate and is not established; the prior analysis (D70-D74) read 2026 as inside India's historical range on level-free measures, and this component is built on Brendan's decision that a twelve-week run above the four-year envelope is a real-world effect to be carried, not noise to be reverted. Allocation 100% India, fixed; modern_windows by measurement (78% of India's DAU). NOT WIRED: main.py hand-wires each overlay code, so `i` needs a _find_india_excess_spec_for_forecast / _apply_india_excess_pre_mozaic pair plus an add_lift_to_forecast call, and a registry entry in adjustment_codes.yaml. Producer: scratch/brwells/regional-story/india_forecast, evidence page site/india_forecast.html."
+}

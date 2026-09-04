@@ -40,37 +40,35 @@ button-down); older cycles and all large artifacts are archived to GCS
 (`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/{cycle}/`) and recoverable from that
 cycle's branch history. See each cycle's `_index.md` "Present vs Archived" section.
 
-**Cycle roll-forward.** On this branch the window has advanced for the **August 2026** cycle:
+**Cycle roll-forward.** On this branch the window has advanced for the **September 2026** cycle:
 
 | cycle | state |
 |---|---|
-| `2026-08` | current — created on the `august-forecast` branch |
-| `2026-07` | N-1, present in full. The prior-forecast comparison series for August comes from here |
-| `2026-06` | N-2, **retained deliberately** — see below. Its large artifacts already went to GCS `june-2026/` during the July button-down; only ~10 MB of specs, canonical CSVs, and sidecars remain |
-| `2026-04` | removed in an earlier roll-forward. GCS `april-2026/`, branch `april-forecasting` |
+| `2026-09` | current — opened 2026-09-04 on the `september-forecast` branch; holds the unwired `j`/`i` overlay candidates and the stale-reference report |
+| `2026-08` | N-1, retained. Every forecast + raw-pull parquet, sidecar, spec, CSV and notebook is on disk; the 11 fitted pickles and the handoff bundle are in GCS `august-2026/`. The prior-forecast comparison series for September comes from `2026-08/csv/` |
+| `2026-07` | N-2, retained (3-month window). Canonical parquets + specs on disk; pickles in GCS `july-2026/` |
+| `2026-06` | N-3, **retained past the window on purpose** — see below. Only ~67 MB of parquets, specs, CSVs and sidecars remain; pickles in GCS `june-2026/` |
+| `2026-04` | removed at the July roll-forward. GCS `april-2026/`, branch `april-forecasting` |
 | `iran_synthetic/`, `march_brad_forecast.csv` | April-era leftovers, removed 2026-09-04 after verifying the copies in GCS `april-2026/data-official/` |
 
-**Why 2026-06 is not pruned.** The rule is "current + N-1 in full", and June is N-2 — but its
-remaining tracked files are *load-bearing for the July cycle*, so deleting them would break
-reproducibility of the cycle we still depend on:
+**Why 2026-06 is still not pruned.** Its remaining tracked files are load-bearing for code that is still
+live:
 
-- `marketing/marketing_lift_model.real_data_v2.hybrid.2026-05-22.parquet` (+ its `.meta.json`) is
-  what July's `marketing/build_lift.py` and the canonical `m` spec chain read.
+- `export_canonical_curves.py` is the **frozen** seam-MA implementation that `_archive/` (and its tests)
+  and `research/ma-seam-turbulence/` import as the "before" reference. Past cycles' curves cannot move
+  because this file cannot change (see `_archive/_index.md`).
+- `marketing/marketing_lift_model.real_data_v2.hybrid.2026-05-22.parquet` (+ sidecar) is what July's
+  `marketing/build_lift.py` and the canonical `m` spec chain read.
 - `mozillaonline/june_delivered_mo_tailwind.json` is read by July's canonical-review notebook and by
   `research/param-scans/aug22-retune/`.
-- `csv/june_canonical_curves.csv` is the N-1 comparison series for
-  `research/ma-seam-turbulence/backtest_seam.py` and `_archive/scripts/mobile_sensitivity.py` (archived
-  2026-07-29 — it binds the frozen 2026-06 seam MA; see `_archive/_index.md`).
-- `adjustments/headwind.json` is referenced across July. `export_canonical_curves.py` was the seam-MA home
-  through the 2026-07 cycle; as of 2026-07-29 the live implementation is `src/mozaic_daily/seam_ma.py` and
-  the 2026-06 copy is frozen (see `_archive/_index.md`).
+- `csv/june_canonical_curves.csv` is the N-1 comparison series for `research/ma-seam-turbulence/backtest_seam.py`.
 
-Pruning it saves ~10 MB and costs a broken July. **Revisit when July becomes N-2** (i.e. at the
-September roll-forward), at which point the August cycle should own its own copies of whatever it
-still needs and June can go.
+**Resolve before the October roll-forward**, when June is four months old: give the live code its own
+copies (or retire the consumers) so June can go. The stale-reference report for the September cycle
+(`2026-09/STALE_REFERENCES_from_august_button_down.md`) restates these dependencies.
 
-The prune is always done on this base branch, never on a cycle branch — cycle branches keep the
-complete record of what that cycle shipped.
+The prune is always done on the `clean-slate` base branch, never on a cycle branch — cycle branches keep the
+complete record of what that cycle shipped. Procedure: `.claude/skills/cycle-button-down/SKILL.md`.
 
 ## Naming convention (load-bearing files only)
 

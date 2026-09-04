@@ -67,6 +67,11 @@ research/param-scans/*/*_report.html
 # mobile forecast without it, and its producer depends on a scratch mirror table that
 # expires 2027-04-01, so git is the durable copy.
 !data-official/*/organic/*.parquet
+# September 2026 desktop overlays `j` (japan_bot) and `i` (india_excess): the scenario curves the
+# pipeline loads (~160 KB total). Tracked for the same reason; the sibling .csv copies are
+# read-only duplicates of the same numbers and stay ignored.
+!data-official/*/japan_bot/*.parquet
+!data-official/*/india_excess/*.parquet
 # Public-facing canonical exports: small (<100KB), referenced by the README
 # next to them, regenerable via export_canonical_curves.py. Tracked so
 # downstream consumers don't need to run the export script. The csv/ folder
