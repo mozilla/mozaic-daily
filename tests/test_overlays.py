@@ -244,5 +244,40 @@ class TestCommittedRegistryAndSpecs:
         assert {o.data_source for o in resolved} == {DataSource.LEGACY_DESKTOP}
         assert resolved[0].sentinel_attr == "launch_on_login_subtracted"
 
+    def test_september_seam_resolves_japan_bot(self):
+        """`j` was the first code wired purely through the registry (2026-09-04)."""
+        by_code = {o.code: o for o in resolve_overlays("2026-09-02")}
+        assert "j" in by_code
+        assert by_code["j"].data_source == DataSource.LEGACY_DESKTOP
+        assert by_code["j"].sentinel_attr == "japan_bot_subtracted"
+        assert by_code["j"].spec["allocation"]["shares"] == {"JP": 1.0}
+
+    def test_september_seam_resolves_india_excess(self):
+        """`i` registered 2026-09-04; ships the PROPORTIONAL path, 100% India, net of `l`."""
+        by_code = {o.code: o for o in resolve_overlays("2026-09-02")}
+        assert "i" in by_code
+        assert by_code["i"].data_source == DataSource.LEGACY_DESKTOP
+        assert by_code["i"].sentinel_attr == "india_excess_subtracted"
+        assert by_code["i"].spec["allocation"]["shares"] == {"IN": 1.0}
+        assert ".proportional." in by_code["i"].spec["data_file"]
+
+    def test_september_seam_overlays_have_distinct_sentinels(self):
+        """Every overlay gated on the September seam subtracts under its own sentinel.
+
+        `i` and `j` both resolve today; `l` and `o` join once their September specs are
+        re-gated (the `i` curve is already net of `l`, so `l` must be applied in the same run).
+        """
+        resolved = resolve_overlays("2026-09-02")
+        assert {o.code for o in resolved} >= {"j", "i"}
+        sentinels = [o.sentinel_attr for o in resolved]
+        assert len(sentinels) == len(set(sentinels))
+
+    def test_september_seam_resolves_india_excess(self):
+        by_code = {o.code: o for o in resolve_overlays("2026-09-02")}
+        assert "i" in by_code
+        assert by_code["i"].sentinel_attr == "india_excess_subtracted"
+        assert by_code["i"].spec["allocation"]["shares"] == {"IN": 1.0}
+        assert "proportional" in by_code["i"].spec["notes"].lower()
+
     def test_repo_root_points_at_the_checkout(self):
         assert (overlays.repo_root() / "data-official" / "adjustment_codes.yaml").exists()

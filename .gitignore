@@ -135,3 +135,9 @@ data-official/*/handoff/*_handoff/
 
 # Editor/backup copies of notebooks
 *.copy.ipynb
+
+# japan_bot (`j`): curve parquet + delivered source, ingested 2026-09-04
+!data-official/*/japan_bot/source_data/*
+
+# india_excess (`i`): curve parquet + delivered source, ingested 2026-09-04
+!data-official/*/india_excess/source_data/*

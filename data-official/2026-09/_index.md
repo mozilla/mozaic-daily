@@ -11,16 +11,16 @@ September; they come from `../2026-08/csv/august_canonical_curves.csv`.
 
 ## What is already here (pre-work, produced before August was locked)
 
-Two candidate **desktop overlays**, both `desktop_overlay`-style bidirectional components on
-`legacy_desktop`, both produced by a different agent in `product-data-science-core/scratch/brwells/regional-story/`,
-and **neither wired into the pipeline**. Each directory has a `HANDOFF.md` — read it first — an
+Two **desktop overlays**, both `desktop_overlay`-style components on `legacy_desktop`, both produced by a
+different agent in `product-data-science-core/scratch/brwells/regional-story/`, and **both wired on 2026-09-04**
+through the registry (rerun pending). Each directory has a `HANDOFF.md` — read it first — an
 `_index.md`, a spec JSON, and scenario curves as `.parquet` (what the pipeline would load; tracked) with
 `.csv` twins (read-only, gitignored) and `.meta.json` sidecars.
 
 | dir | code | what | spec points at | data edge |
 |---|---|---|---|---|
-| `japan_bot/` | `j` | Japan's non-organic automated desktop traffic since late June 2026, to subtract before training and add back after. Three scenarios (low / **middle** / high plateau). A masking effect, not growth | MIDDLE | 2026-08-30 |
-| `india_excess/` | `i` | India desktop DAU running above the 2022–25 typical curve since late May 2026, carried forward as real. **Already net of `l`** — do not net again. Five scenarios | SETTLE | 2026-08-29 |
+| `japan_bot/` | `j` | Japan's non-organic automated desktop traffic since late June 2026, to subtract before training and add back after. A masking effect, not growth. **Wired 2026-09-04** via `/ingest-adjustment` (registered, spec rebuilt, MIDDLE kept, LOW/HIGH archived); **rerun pending** | MIDDLE | 2026-08-30 |
+| `india_excess/` | `i` | India desktop DAU running above the 2022–25 typical curve since late May 2026, carried forward as real. **Already net of `l`** — do not net again. **Wired 2026-09-04** (registered; spec switched SETTLE → PROPORTIONAL and rebuilt via `/ingest-adjustment`; four alternates kept on disk); **rerun pending** | PROPORTIONAL | 2026-08-29 |
 
 Wiring either is now registry-only (since 2026-09-04, `src/mozaic_daily/overlays.py`): add the code to
 `../adjustment_codes.yaml` with `applier: per_tile_overlay` and a `spec_glob`, then a model re-run — a
@@ -53,6 +53,20 @@ registration and bookkeeping.
   marketing parquet and `june_delivered_mo_tailwind.json`. Before June leaves the window, the current
   cycle must own copies of whatever it still needs.
 
+## Attribution ledger (desktop, Dec-15 28d-MA) — pending rerun
+
+Starts from August's delivered desktop figure. Each row differences two builds that differ in exactly one
+input; **no realised step exists until the September build runs**. Expected add-backs are the curve's own
+Dec-15 28d-MA and are what the rerun is checked against (pass-through in a 0.5–1.5× band via
+`scripts/verify_overlay.py`).
+
+| step | expected | realised | running |
+|---|--:|--:|--:|
+| August delivered (`h` + `l` + `o`) | | | 48,703,443 |
+| September data refresh + re-gated `l`/`o`/`h` | — | pending rerun | |
+| `j` japan_bot MIDDLE add-back | +67,094 | pending rerun | |
+| `i` india_excess PROPORTIONAL add-back | +41,945 | pending rerun | |
+
 ## Expected layout (populate as the cycle progresses)
 
 ```
@@ -66,7 +80,10 @@ registration and bookkeeping.
   organic/                           # p spec + measured split rebuilt for the new training window
   launch_on_login/lol.json           # l (200K ceiling; re-gate)
   mozillaonline/mozillaonline.json   # o — REBUILD, do not carry forward again
-  japan_bot/ india_excess/           # present — candidates, unwired
+  japan_bot/                         # present — `j` WIRED 2026-09-04 (registry + spec + curve + source_data/); rerun pending
+  japan_bot_REVERT_2026-09-04/       # present — the handoff's original spec/parquet; revert target, keep while cycle is live
+  india_excess/                      # present — `i` WIRED 2026-09-04 (PROPORTIONAL; hold/linger/settle/fade alternates kept); rerun pending
+  india_excess_REVERT_2026-09-04/    # present — pre-ingest spec/parquet; revert target, keep while cycle is live
   csv/september_canonical_curves.csv # + september_dec15_summary.csv (add .gitignore exceptions)
   plots/  kpi_sheet/  handoff/
   TODO_factors.md

@@ -6,7 +6,7 @@ they encode is a *measured gap with a hypothesised cause*, not an attribution.
 
 * **Producer**: `~/work/product-data-science-core/scratch/brwells/regional-story/india_forecast/`
 * **Evidence page**: that project's `site/india_forecast.html` — every number below is on it
-* **Reasoning**: that project's `DECISIONS.md`, D92–D96
+* **Reasoning**: that project's `DECISIONS.md`, D92–D97
 * **Data edge**: 2026-08-29 · **Cycle**: 2026-09 · **Code**: `i` · **Source**: `legacy_desktop`
 
 ---
@@ -36,7 +36,7 @@ India nothing (ROW 1%); `j` is Japan only.
 
 | file | use |
 |---|---|
-| `india_excess.json` | the spec. Points at **SETTLE**. |
+| `india_excess.json` | the spec. Points at **PROPORTIONAL** (Brendan, 2026-09-04). |
 | `india_excess.{scenario}.2026-08-29.parquet` | **what the pipeline loads** |
 | `india_excess.{scenario}.2026-08-29.csv` | human reading only — `load_lift_series` cannot read it |
 | `india_excess.all_scenarios.2026-08-29.csv` | all five side by side |
@@ -65,14 +65,19 @@ Single letter only — `parse_state_from_path` splits the marker into characters
 
 ## 4. Scenarios — which path persists is a planning choice, judged at 15 Dec 2026
 
+**Shipped: PROPORTIONAL.** Chosen by Brendan on 2026-09-04 under an instruction to pick a
+conservative path — ~42k DAU at the decision date judged conservative for the time being.
+`settle` had been the evidence-leaning default (D95–D96); the evidence below is unchanged.
+Registered in `adjustment_codes.yaml` the same day; **model re-run pending.**
+
 Net excess, trailing 28-day mean, DAU/day:
 
 | scenario | Dec-15 2026 | Jun-15 2027 | Dec-15 2027 | assumes |
 |---|--:|--:|--:|---|
 | Hold · the peak excess is carried flat | 57,155 | 57,155 | 57,155 | whatever produced this keeps producing it at the largest level yet seen (28-day peak, 27 Jun) |
-| Proportional · a constant share of the typical level | 41,945 | 41,099 | 41,945 | excess stays 1.58% of India's typical DAU; follows the seasonal calendar, returns next summer |
+| **Proportional · a constant share of the typical level** (shipped) | 41,945 | 41,099 | 41,945 | excess stays 1.58% of India's typical DAU; follows the seasonal calendar, returns next summer |
 | Linger · decays over a year | 33,317 | 20,115 | 12,110 | excess relaxes toward zero with a **250-day half-life — a planning constant**, the midpoint of the menu at the decision date |
-| **Settle · decays slowly** (shipped) | 20,946 | 5,156 | 1,260 | excess relaxes toward zero with a **90-day half-life — a planning constant** (≈ one semester), not an estimate |
+| Settle · decays slowly | 20,946 | 5,156 | 1,260 | excess relaxes toward zero with a **90-day half-life — a planning constant** (≈ one semester), not an estimate |
 | Fade · decays fast | 1,161 | 1 | 0 | reverts at the rate India's past deviations from typical did: **18-day half-life, fitted** (AR(1) on monthly leave-one-out blocks, φ 0.31/month, 44 pairs) |
 
 All five start from the same net level at the edge, **43,286/day**. Settle at 60 / 120 days

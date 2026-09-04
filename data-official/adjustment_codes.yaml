@@ -144,3 +144,46 @@ codes:
       mozaic, exactly like `h`. Needs no model re-run and has no Prophet
       interaction, so its Dec-15 effect is exactly its anchor.
     spec_glob: "data-official/*/adjustments/tailwind.json"
+  j:
+    name: japan_bot
+    applier: per_tile_overlay
+    description: >
+      Japan automated desktop traffic, cycle 2026-09. A population of non-organic clients arriving
+      in Japan since 2026-06-24 (four-clause behavioural definition: sub-minute sessions, 0 to 10
+      URIs, not default browser, profile age under 28 days; 95.1% ESR as an outcome, not an
+      input). Measured as raw daily excess over a flat 1,876 +/- 265 DAU/day baseline through the
+      2026-08-30 data edge, then an arrival-rate projection convolved with a measured per-cohort
+      activity kernel, ramping at the measured 501 DAU/day to a MIDDLE plateau of 67,101 DAU/day
+      (6.19% of Japan) reached 2026-11-28 and held flat to 2027-12-31. The plateau is a planning
+      choice, not an estimate: no inflection has been observed. A masking effect, not growth:
+      underneath it, ordinary Japanese users are down. Subtracted from modern_windows training
+      rows before mozaic and added back after, so Prophet does not extrapolate it on its own;
+      allocation is 100% JP, fixed. No double count with `o`: the flagged population is 95.1% ESR
+      while the MozillaOnline migration is entirely non-ESR. History is deliberately unsmoothed
+      because the daily swing is real contamination. Produced by scratch/brwells/regional-
+      story/forecast/deliver.py; evidence page site/forecast.html, DECISIONS D76-D90. Ingested
+      2026-09-04 from japan_bot.middle.2026-08-30.csv via /ingest-adjustment.
+    spec_glob: "data-official/*/japan_bot/japan_bot.json"
+  i:
+    name: india_excess
+    applier: per_tile_overlay
+    description: >
+      India's 2026 desktop DAU above a typical year, cycle 2026-09. The gap between India's
+      rebased 28-day KPI DAU curve and the 2022-2025 mean of the same curve by calendar day,
+      delivered as a daily series actual x (2026 - typical) / 2026 so weekday structure survives
+      subtraction. Onset 2026-05-22 (first 14-day run above every norm year's maximum after the
+      Feb 15 - Apr 15 anchor window); zero before onset. Holidays and India-only dips are bridged
+      out of every year before measuring (mozaic's calendar lacks Diwali, Dussehra, Sankranti and
+      Ambedkar Jayanti), for the ratio only -- the training frame keeps every dip. Already NET of
+      `l`: India carries 5.72% of the launch-on-login lift (11,450 DAU/day at the edge) and that
+      is subtracted here; do not net it again. Net 28-day level 43,286/day at the 2026-08-29 edge.
+      Shipped path PROPORTIONAL: the excess held at 1.58% of India's typical level, so it follows
+      the seasonal calendar -- 41,945 DAU/day on 2026-12-15, held to 2027-12-31. A planning
+      choice (Brendan, 2026-09-04: conservative for the time being); four alternatives ship
+      alongside (hold 57,155 / linger 33,317 / settle 20,946 / fade 1,161 at Dec-15), and the
+      evidence on the producer's page narrows without deciding. The CAUSE IS A HYPOTHESIS (a
+      university-calendar change is the leading candidate); report as "India above typical".
+      Allocation 100% IN, fixed; modern_windows by measurement (78% of India's DAU). Produced by
+      scratch/brwells/regional-story/india_forecast/deliver.py; evidence page
+      site/india_forecast.html, DECISIONS D92-D97.
+    spec_glob: "data-official/*/india_excess/india_excess.json"
