@@ -1,0 +1,407 @@
+"""Build the on-disk artifacts for an ingested headwind/tailwind curve.
+
+The write half of the ingest step. Given a confirmed :class:`IngestPlan` it produces,
+under ``data-official/{cycle}/{name}/``: a byte-for-byte copy of the delivered file in
+``source_data/``, the horizon-spanning curve parquet the pipeline loads, its sidecar
+meta, the spec JSON, an ``_index.md`` skeleton for the skill to finish, plus the
+registry entry in ``adjustment_codes.yaml`` and the ``.gitignore`` exception that
+keeps the parquet tracked. It never runs the model.
+
+Two families share this path and differ only in where the spec goes:
+
+- ``per_tile_overlay`` — ``{name}/{name}.json`` (a ``desktop_overlay`` spec), gated on
+  ``applies_to_forecast_start``. Needs a model re-run.
+- ``display_layer`` — ``adjustments/{name}.json`` (a ``daily_file`` spec pointing back
+  at ``../{name}/``), live by presence. No re-run.
+
+Horizon rule (agreed 2026-09-04): zero before the file starts, the file's daily values
+verbatim, then held flat at the final 28-day mean from the day after the file ends
+through 31 December of the year after the seam. A file must already reach 31 December
+of the seam year; that is checked upstream by ``ingest_inspect``.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import shutil
+from dataclasses import asdict, dataclass, field
+from datetime import date
+from pathlib import Path
+from typing import Optional
+
+import pandas as pd
+
+from .adjustments import load_code_registry, write_meta
+from .ingest_inspect import coerce_numeric, normalize_type_labels
+
+MA_WINDOW_DAYS = 28
+PER_TILE_OVERLAY = "per_tile_overlay"
+DISPLAY_LAYER = "display_layer"
+FAMILIES = (PER_TILE_OVERLAY, DISPLAY_LAYER)
+ALLOCATIONS = ("trailing_dau_share", "fixed_country_shares")
+SEGMENT_FLAG_BY_DATA_SOURCE = {"legacy_desktop": "modern_windows", "glean_desktop": "modern_windows", "glean_mobile": "fenix_android"}
+
+
+@dataclass
+class IngestPlan:
+    """Everything the user confirmed. Built by the CLI, consumed by :func:`build`."""
+
+    source_path: str
+    name: str
+    code: str
+    family: str
+    platform: str                 # "desktop" | "mobile"
+    data_source: str              # e.g. "legacy_desktop"; ignored for display_layer
+    forecast_start: str           # the seam, YYYY-MM-DD
+    cycle: str                    # YYYY-MM
+    date_column: str
+    value_column: str
+    type_column: Optional[str] = None
+    actuals_through: Optional[str] = None  # required when type_column is None
+    ma_column: Optional[str] = None        # validated, never used
+    sheet: Optional[str] = None
+    sign: int = 1                          # -1 flips the file's sign (e.g. a headwind delivered as positive numbers)
+    allocation: str = "trailing_dau_share"
+    shares: Optional[dict] = None          # fixed_country_shares only
+    exclude_countries: list[str] = field(default_factory=lambda: ["IR"])
+    flag_column: Optional[str] = None      # defaults from data_source
+    description: str = ""
+    notes: str = ""
+    replace: bool = False                  # required to overwrite an existing spec for this code
+    root: Optional[str] = None             # repo root override (tests)
+
+    def __post_init__(self):
+        if self.family not in FAMILIES:
+            raise ValueError(f"family must be one of {FAMILIES}, got {self.family!r}")
+        if not re.fullmatch(r"[a-z]", self.code):
+            raise ValueError(f"code must be a single lowercase letter, got {self.code!r}")
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", self.name):
+            raise ValueError(f"name must be snake_case, got {self.name!r}")
+        if self.platform not in ("desktop", "mobile"):
+            raise ValueError(f"platform must be desktop or mobile, got {self.platform!r}")
+        if self.sign not in (1, -1):
+            raise ValueError("sign must be 1 or -1")
+        if self.allocation not in ALLOCATIONS:
+            raise ValueError(f"allocation must be one of {ALLOCATIONS}")
+        if self.allocation == "fixed_country_shares" and not self.shares:
+            raise ValueError("fixed_country_shares needs a shares dict")
+        if self.type_column is None and self.actuals_through is None:
+            raise ValueError("either type_column or actuals_through is required")
+        if self.flag_column is None:
+            self.flag_column = SEGMENT_FLAG_BY_DATA_SOURCE.get(self.data_source, "modern_windows")
+
+    @property
+    def repo_root(self) -> Path:
+        return Path(self.root) if self.root else Path(__file__).resolve().parents[2]
+
+    @property
+    def cycle_dir(self) -> Path:
+        return self.repo_root / "data-official" / self.cycle
+
+    @property
+    def curve_dir(self) -> Path:
+        return self.cycle_dir / self.name
+
+    @property
+    def spec_path(self) -> Path:
+        if self.family == DISPLAY_LAYER:
+            return self.cycle_dir / "adjustments" / f"{self.name}.json"
+        return self.curve_dir / f"{self.name}.json"
+
+    @property
+    def spec_glob(self) -> str:
+        if self.family == DISPLAY_LAYER:
+            return f"data-official/*/adjustments/{self.name}.json"
+        return f"data-official/*/{self.name}/{self.name}.json"
+
+    @property
+    def horizon(self) -> tuple[pd.Timestamp, pd.Timestamp]:
+        seam = pd.Timestamp(self.forecast_start)
+        return pd.Timestamp(year=seam.year, month=1, day=1), pd.Timestamp(year=seam.year + 1, month=12, day=31)
+
+
+# --- curve -----------------------------------------------------------------------------
+
+def normalize_curve(frame: pd.DataFrame, plan: IngestPlan) -> pd.DataFrame:
+    """The delivered rows as a clean daily frame: DatetimeIndex, ``dau`` float, ``type``."""
+    dates = pd.DatetimeIndex(pd.to_datetime(frame[plan.date_column], errors="coerce")).normalize()
+    values = coerce_numeric(frame[plan.value_column]).to_numpy()
+    if plan.type_column:
+        types = normalize_type_labels(frame[plan.type_column]).to_numpy()
+    else:
+        types = pd.Series(pd.Timestamp(plan.actuals_through) >= dates).map({True: "actuals", False: "forecast"}).to_numpy()
+    curve = pd.DataFrame({"dau": values, "type": types}, index=dates).dropna(subset=["dau"]).sort_index()
+    curve = curve[~curve.index.isna()]
+    if curve.index.has_duplicates:
+        raise ValueError("duplicate dates in the delivered file")
+    full = pd.date_range(curve.index.min(), curve.index.max(), freq="D")
+    if len(full) != len(curve):
+        curve = curve.reindex(full)
+        curve["dau"] = curve["dau"].interpolate(method="linear")
+        curve["type"] = curve["type"].ffill()
+    curve["dau"] = curve["dau"].astype(float) * plan.sign
+    curve.index.name = "target_date"
+    return curve
+
+
+def build_horizon_curve(curve: pd.DataFrame, plan: IngestPlan) -> tuple[pd.DataFrame, dict]:
+    """Zero before the file, verbatim inside it, held flat at the final 28d mean after it."""
+    horizon_start, horizon_end = plan.horizon
+    index = pd.date_range(horizon_start, horizon_end, freq="D", name="target_date")
+    daily = pd.Series(0.0, index=index)
+    source = pd.Series("pre-onset", index=index, dtype="object")
+
+    covered = curve.index.intersection(index)
+    daily.loc[covered] = curve.loc[covered, "dau"]
+    source.loc[covered] = curve.loc[covered, "type"].map({"actuals": "measured", "forecast": "projected"})
+
+    last_delivered = curve.index.max()
+    hold_value = float(curve["dau"].tail(MA_WINDOW_DAYS).mean())
+    tail = index > last_delivered
+    daily.loc[tail] = hold_value
+    source.loc[tail] = "held"
+
+    ma = daily.rolling(MA_WINDOW_DAYS, min_periods=1).mean()
+    out = pd.DataFrame({f"{plan.name}_dau_daily": daily, f"{plan.name}_dau_ma": ma, "source": source})
+    measured = curve.index[curve["type"] == "actuals"]
+    summary = {
+        "delivered_start": str(curve.index.min().date()),
+        "delivered_end": str(last_delivered.date()),
+        "actuals_through": str(measured.max().date()) if len(measured) else None,
+        "hold_flat_from": str((last_delivered + pd.Timedelta(days=1)).date()) if tail.any() else None,
+        "hold_flat_value": hold_value if tail.any() else None,
+        "hold_flat_basis": f"mean of the final {MA_WINDOW_DAYS} delivered daily values",
+        "horizon": [str(horizon_start.date()), str(horizon_end.date())],
+        "sign_applied": plan.sign,
+    }
+    dec15 = pd.Timestamp(year=pd.Timestamp(plan.forecast_start).year, month=12, day=15)
+    if dec15 in out.index:
+        summary["dec15_daily"] = float(out.loc[dec15, f"{plan.name}_dau_daily"])
+        summary["dec15_ma28"] = float(out.loc[dec15, f"{plan.name}_dau_ma"])
+    return out, summary
+
+
+# --- specs ---------------------------------------------------------------------------------
+
+def overlay_spec(plan: IngestPlan, data_file: str, meta_file: str) -> dict:
+    allocation = {"key": plan.allocation, "flag_column": plan.flag_column, "window_days": MA_WINDOW_DAYS}
+    if plan.allocation == "fixed_country_shares":
+        allocation["shares"] = dict(plan.shares)
+    return {
+        "type": "desktop_overlay",
+        "platform": plan.platform,
+        "data_file": data_file,
+        "value_column": f"{plan.name}_dau_daily",
+        "allocation": allocation,
+        "scope": {"exclude_countries": list(plan.exclude_countries)},
+        "model_meta_file": meta_file,
+        "applies_to_forecast_start": plan.forecast_start,
+        "applies_to_data_source": plan.data_source,
+        "placeholder": False,
+        "notes": plan.notes,
+    }
+
+
+def display_spec(plan: IngestPlan, data_file_relative: str) -> dict:
+    return {
+        "type": "daily_file",
+        "platform": plan.platform,
+        "data_file": data_file_relative,
+        "value_column": f"{plan.name}_dau_daily",
+        "adjustment_code": plan.code,
+        "notes": plan.notes,
+    }
+
+
+# --- registry, gitignore, index -----------------------------------------------------------
+
+def registry_entry_text(plan: IngestPlan) -> str:
+    description = plan.description.strip() or f"{plan.name} ({plan.family}) ingested {date.today().isoformat()}."
+    indented = "\n".join(f"      {line}" for line in description.splitlines())
+    return (f"  {plan.code}:\n    name: {plan.name}\n    applier: {plan.family}\n"
+            f"    description: >\n{indented}\n    spec_glob: \"{plan.spec_glob}\"\n")
+
+
+def registry_status(plan: IngestPlan) -> str:
+    """``new`` (code free), ``same`` (code already registered to this name) or raises on a collision."""
+    registry = load_code_registry(plan.repo_root / "data-official" / "adjustment_codes.yaml")
+    entry = registry.get(plan.code)
+    if entry is None:
+        taken_by_name = [c for c, e in registry.items() if e.get("name") == plan.name]
+        if taken_by_name:
+            raise ValueError(f"name {plan.name!r} is already registered under code {taken_by_name[0]!r}")
+        return "new"
+    if entry.get("name") != plan.name:
+        raise ValueError(f"code {plan.code!r} is already registered as {entry.get('name')!r}")
+    return "same"
+
+
+def append_registry_entry(plan: IngestPlan) -> None:
+    path = plan.repo_root / "data-official" / "adjustment_codes.yaml"
+    text = path.read_text()
+    if not text.endswith("\n"):
+        text += "\n"
+    path.write_text(text + registry_entry_text(plan))
+
+
+def ensure_gitignore_exceptions(plan: IngestPlan) -> list[str]:
+    """Track the curve parquet and the delivered source file despite the global ignores."""
+    path = plan.repo_root / ".gitignore"
+    lines = path.read_text().splitlines() if path.exists() else []
+    wanted = [f"!data-official/*/{plan.name}/*.parquet", f"!data-official/*/{plan.name}/source_data/*"]
+    added = [w for w in wanted if w not in lines]
+    if added:
+        block = [f"# {plan.name} (`{plan.code}`): curve parquet + delivered source, ingested {date.today().isoformat()}"] + added
+        path.write_text("\n".join(lines + [""] + block) + "\n")
+    return added
+
+
+def render_index_md(plan: IngestPlan, summary: dict, files: dict) -> str:
+    dec15 = summary.get("dec15_ma28")
+    dec15_text = f"{dec15:,.0f}" if dec15 is not None else "n/a"
+    family_text = ("per-tile overlay: subtracted from training rows before mozaic and added back after; "
+                   "**needs a model re-run**" if plan.family == PER_TILE_OVERLAY
+                   else "display layer: its trailing 28-day mean is summed onto the published 28d MA; **no model re-run**, "
+                        "live by presence in `../adjustments/`")
+    return f"""# `{plan.code}` — {plan.name}, cycle {plan.cycle}
+
+<!-- Drafted by scripts/ingest_adjustment.py on {date.today().isoformat()}. Fill in the WHAT/WHY sections. -->
+
+**What it is:** _one paragraph: the real-world effect, who measured or modelled it, and why it belongs in the forecast._
+
+**Family:** {family_text}. **Platform:** {plan.platform} (`{plan.data_source}`). **Sign:** {"tailwind (+)" if summary["sign_applied"] * (1 if dec15 is None or dec15 >= 0 else -1) > 0 else "headwind (−)"}.
+
+## Files
+
+| file | role |
+|---|---|
+| `{Path(files["spec"]).relative_to(plan.cycle_dir)}` | the spec, gated on `applies_to_forecast_start: {plan.forecast_start}` |
+| `{Path(files["parquet"]).name}` | what the pipeline loads: `{plan.name}_dau_daily` on a `target_date` DatetimeIndex, `{plan.name}_dau_ma`, `source` |
+| `{Path(files["meta"]).name}` | provenance: source sha1, column mapping, coverage, hold-flat rule, checks |
+| `source_data/{Path(files["source_copy"]).name}` | the delivered file, byte for byte |
+
+## Coverage
+
+| | |
+|---|---|
+| delivered | {summary["delivered_start"]} → {summary["delivered_end"]} |
+| actuals through | {summary["actuals_through"] or "not flagged"} |
+| held flat from | {summary["hold_flat_from"] or "not needed"} at {f'{summary["hold_flat_value"]:,.0f}' if summary["hold_flat_value"] is not None else "—"}/day ({summary["hold_flat_basis"]}) |
+| horizon | {summary["horizon"][0]} → {summary["horizon"][1]} |
+| Dec-15 28d MA | {dec15_text} |
+
+## Allocation
+
+{"Proportional to population: `trailing_dau_share` over the last 28 days of `" + plan.flag_column + "` DAU" if plan.allocation == "trailing_dau_share" else "Localized: fixed country shares " + json.dumps(plan.shares)}; excluded: {plan.exclude_countries or "none"}.
+
+## What is measured and what is assumed
+
+_Fill in: which part of the curve is telemetry, which is a model, which is a planning choice._
+
+## Where new files go
+
+A refreshed curve for this cycle: re-run the ingest with `--replace`; the previous build moves to `{plan.name}_REVERT_<date>/`. Cross-cycle analysis of this effect goes to `research/`.
+"""
+
+
+# --- revert ------------------------------------------------------------------------------
+
+def stash_previous_build(plan: IngestPlan) -> Optional[Path]:
+    """Move the live spec + data file + meta for this code into a REVERT dir with restore steps."""
+    if not plan.spec_path.exists():
+        return None
+    previous_spec = json.loads(plan.spec_path.read_text())
+    revert_dir = plan.cycle_dir / f"{plan.name}_REVERT_{date.today().isoformat()}"
+    revert_dir.mkdir(parents=True, exist_ok=True)
+    moved = [plan.spec_path]
+    for key in ("data_file", "model_meta_file"):
+        if key in previous_spec:
+            candidate = (plan.spec_path.parent / previous_spec[key]).resolve()
+            if candidate.exists():
+                moved.append(candidate)
+    for src in moved:
+        shutil.move(str(src), str(revert_dir / src.name))
+    (revert_dir / "REVERT.md").write_text(
+        f"# Revert target for `{plan.code}` ({plan.name}), stashed {date.today().isoformat()}\n\n"
+        f"The build that was live before the {date.today().isoformat()} re-ingest. Not an archive: delete only after the cycle closes.\n\n"
+        f"To restore, move these files back and re-run the model:\n\n"
+        + "".join(f"- `{p.name}` → `{p.parent.relative_to(plan.repo_root)}/`\n" for p in moved)
+        + "\nThe registry entry and `.gitignore` exception were not changed by the re-ingest and need no revert.\n"
+    )
+    return revert_dir
+
+
+# --- orchestration ---------------------------------------------------------------------------
+
+def build(plan: IngestPlan, frame: pd.DataFrame) -> dict:
+    """Write every artifact for the plan. Returns a summary dict the CLI prints as JSON."""
+    status = registry_status(plan)
+    if plan.spec_path.exists() and not plan.replace:
+        raise FileExistsError(f"{plan.spec_path} exists; pass --replace to stash it in a REVERT dir and overwrite")
+    revert_dir = stash_previous_build(plan) if plan.replace else None
+
+    curve = normalize_curve(frame, plan)
+    horizon, summary = build_horizon_curve(curve, plan)
+    edge = summary["actuals_through"] or summary["delivered_end"]
+
+    plan.curve_dir.mkdir(parents=True, exist_ok=True)
+    source_dir = plan.curve_dir / "source_data"
+    source_dir.mkdir(exist_ok=True)
+    source_copy = source_dir / Path(plan.source_path).name
+    shutil.copyfile(plan.source_path, source_copy)
+
+    parquet_path = plan.curve_dir / f"{plan.name}.{edge}.parquet"
+    horizon.to_parquet(parquet_path)
+    horizon.to_csv(parquet_path.with_suffix(".csv"))
+    meta_name = f"{plan.name}.{edge}.meta.json"
+    meta_path = write_meta(
+        parquet_path,
+        forecast_start_date=plan.forecast_start,
+        data_source=plan.data_source if plan.family == PER_TILE_OVERLAY else None,
+        produced_by="scripts/ingest_adjustment.py",
+        model_config=None,
+        adjustments_applied=[],
+        extra={
+            "artifact_type": "adjustment_curve",
+            "adjustment_code": plan.code,
+            "adjustment_name": plan.name,
+            "family": plan.family,
+            "platform": plan.platform,
+            "source_file": str(source_copy.relative_to(plan.repo_root)),
+            "source_sha1": hashlib.sha1(source_copy.read_bytes()).hexdigest(),
+            "source_sheet": plan.sheet,
+            "column_mapping": {"date": plan.date_column, "value": plan.value_column,
+                               "type": plan.type_column, "ma_validated_not_used": plan.ma_column},
+            "coverage": summary,
+            "allocation": {"key": plan.allocation, "shares": plan.shares, "exclude_countries": plan.exclude_countries},
+        },
+    )
+    meta_path = meta_path.rename(plan.curve_dir / meta_name)
+
+    plan.spec_path.parent.mkdir(parents=True, exist_ok=True)
+    if plan.family == PER_TILE_OVERLAY:
+        spec = overlay_spec(plan, parquet_path.name, meta_name)
+    else:
+        spec = display_spec(plan, f"../{plan.name}/{parquet_path.name}")
+    plan.spec_path.write_text(json.dumps(spec, indent=2) + "\n")
+
+    if status == "new":
+        append_registry_entry(plan)
+    gitignore_added = ensure_gitignore_exceptions(plan)
+
+    files = {"spec": str(plan.spec_path), "parquet": str(parquet_path), "csv": str(parquet_path.with_suffix(".csv")),
+             "meta": str(meta_path), "source_copy": str(source_copy)}
+    index_path = plan.curve_dir / "_index.md"
+    if not index_path.exists() or plan.replace:
+        index_path.write_text(render_index_md(plan, summary, files))
+    files["index"] = str(index_path)
+
+    return {
+        "code": plan.code, "name": plan.name, "family": plan.family, "registry": status,
+        "revert_dir": str(revert_dir) if revert_dir else None, "gitignore_added": gitignore_added,
+        "files": files, "coverage": summary, "plan": asdict(plan),
+        "next": ("model re-run required (curve is subtracted from training rows); verify with "
+                 f"scripts/verify_overlay.py --code {plan.code} --cycle {plan.cycle}" if plan.family == PER_TILE_OVERLAY
+                 else "no re-run: the canonical notebook picks this up from adjustments/ on its next run"),
+    }

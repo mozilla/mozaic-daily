@@ -79,6 +79,8 @@ src/mozaic_daily/
 ├── organic_source.py # Mobile paid/organic split `p` — PRODUCER: build the measured split + checks
 ├── seam_ma.py        # Display-layer 28d MAs; variance-matched actuals→forecast seam transition
 ├── overlays.py       # Registry-driven dispatch of per-tile overlays (`l`, `o`, any `per_tile_overlay` code)
+├── ingest_inspect.py # Ingest step, read-only half: read a delivered curve file, guess columns, check the contract
+├── ingest_build.py   # Ingest step, write half: horizon parquet + meta + spec + registry entry + gitignore
 └── main.py           # Main entry point
 ```
 
@@ -211,6 +213,16 @@ The `scripts/` directory contains helper scripts for common tasks:
   against a 0.5–1.5× band, plot + numbers JSON in the spec dir's `plots/`. Replaced the per-code
   `verify_lol_overlay.py` / `verify_mozillaonline_overlay.py` on 2026-09-04. Forecasts twice; the
   ingest skill prints the invocation and leaves running it to you
+- `ingest_adjustment.py` - **Turn a delivered headwind/tailwind file into a registered adjustment.** `inspect`
+  reads CSV/parquet/Excel, guesses the date / value / actuals-forecast columns with evidence, checks the
+  `templates/tailwind/` contract (daily rows, starts at or before the seam, reaches Dec 31 of the forecast
+  year) and exits 2 on any error — weekly rows always halt. `build` takes the confirmed mapping and writes
+  `data-official/{cycle}/{name}/`: `source_data/` copy (sha1 in meta), horizon parquet (zero before the
+  file, verbatim inside, **held flat at the final 28d mean** to Dec 31 of the following year) + csv twin +
+  meta, the spec (`desktop_overlay` in the curve dir, or `daily_file` in `adjustments/` for display
+  layer), an `_index.md` skeleton, the registry entry, and the `.gitignore` exception. `--replace` stashes
+  the live build in `{name}_REVERT_{date}/`. **Never runs the model.** Driven by the
+  `/ingest-adjustment` skill; logic lives in `mozaic_daily.ingest_inspect` / `ingest_build`
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
   sampled date windows. Run before using training rows as a stand-in for an actuals query (e.g. the canonical
