@@ -65,8 +65,5 @@
     "lower_90": 45026530.93043005,
     "upper_90": 45567906.340536736
   },
-  "references": {
-    "published Aug (l+o+h applied)": 48703443.0,
-    "published Aug, h removed (l+o only)": 50018443.0
-  }
+  "references": {}
 }

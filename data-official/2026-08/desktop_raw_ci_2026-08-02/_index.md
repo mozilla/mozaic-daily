@@ -29,12 +29,12 @@ else. Reproduction command is in the notebook and in `parameters.json`.
 | 50% interval | 48,934,166 – 51,028,125 (±1,046,979) |
 | 80% interval | 46,705,607 – 53,004,274 (±3,149,333) |
 | 90% interval | 45,007,113 – 54,629,301 (±4,811,094) |
-| published August, `h` removed (`l`+`o` baked in) | 50,018,443 |
-| published August (`l`+`o`+`h`) | 48,703,443 |
 
-So `l`+`o` together add **+83,084** at Dec-15 on this config, and `h` then removes 1,315,000. Both
-published figures sit inside the raw model's 50% band. Summer-trough minimum of the raw 28d-MA
-median: 45,305,971 on 2026-08-25.
+Summer-trough minimum of the raw 28d-MA median: 45,305,971 on 2026-08-25.
+
+For context only, not shown on any chart or in any CSV (dropped 2026-09-08 because markers that close to
+the curve read as a comparison this build was not made for): the published August desktop figure with
+`h` removed is 50,018,443, so `l`+`o` contribute +83,084 on this config.
 
 **The two "median" numbers differ by 18,509** and that is expected: the trailing mean of the
 median path is not the median of the trailing means when the path distribution is skewed. Quote
@@ -62,8 +62,8 @@ desktop_raw_ci_2026-08-02/
   cps0.1649_..._regimemultiplicative/ the run: parameters.json, .raw. parquet + sidecar (sidecar tracked), pkl (gitignored)
   csv/desktop_raw_28ma_bands.csv      date, actuals_28ma, point_forecast_28ma, median, lower/upper 50/80/90 — 2026 only (tracked)
   csv/desktop_raw_daily_bands.csv     same on daily DAU (tracked)
-  csv/desktop_raw_summary.csv         the headline table above, plus the two published references (tracked)
-  plots/desktop_raw_28ma_bands.png    full-year 28d-MA with shaded bands and the two published Dec-15 markers
+  csv/desktop_raw_summary.csv         the headline table above (tracked)
+  plots/desktop_raw_28ma_bands.png    full-year 28d-MA with shaded bands
   plots/desktop_raw_daily_bands.png   daily DAU, seam onward
   plots/desktop_raw_dec15_zoom.png    Nov–Dec 28d-MA zoom
 ```
@@ -85,9 +85,7 @@ python scripts/run_param_scan.py --forecast-start-date 2026-08-02 \
 python scripts/compute_forecast_intervals.py \
   --pkl <slug>/mozaic_objects.legacy_desktop.2026-08-02.pkl \
   --forecast-parquet <slug>/mozaic_daily_forecast.2026-08-02.ld-D.raw.parquet \
-  --out-dir data-official/2026-08/desktop_raw_ci_2026-08-02 \
-  --reference "published Aug (l+o+h applied)=48703443" \
-  --reference "published Aug, h removed (l+o only)=50018443"
+  --out-dir data-official/2026-08/desktop_raw_ci_2026-08-02
 ```
 
 The model run took about two minutes and is deterministic (g01 reproduces exactly, see
