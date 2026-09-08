@@ -1,0 +1,5 @@
+series,date,median,lower_50,upper_50,halfwidth_50,lower_80,upper_80,halfwidth_80,lower_90,upper_90,halfwidth_90,point_forecast_28ma
+desktop_raw 28d-MA,2026-12-15,49916850,48934166,51028125,1046979,46705607,53004274,3149333,45007113,54629301,4811094,49935359
+desktop_raw daily,2026-12-15,56521332,54734753,58356035,1810641,52110206,60957922,4423858,49948864,63393884,6722510,
+published Aug (l+o+h applied),2026-12-15,48703443,,,,,,,,,,
+"published Aug, h removed (l+o only)",2026-12-15,50018443,,,,,,,,,,

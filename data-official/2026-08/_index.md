@@ -360,6 +360,13 @@ Reverting is one file: `rm adjustments/tailwind.json`, re-execute, re-pin `ORGAN
 
 ## Current working set
 
+- **Post-button-down addition (2026-09-08): `desktop_raw_ci_2026-08-02/`** — the g01 desktop config
+  re-run at the 2026-08-02 seam on the cached raw pull with **every adjustment off** (`l`, `o` not
+  applied; `h` never enters a parquet; Iran fill on), plus **50/80/90% prediction intervals** from the
+  fitted pickle's 1,000 sample paths. Raw Dec-15 28d-MA **49,935,359** (90%: 45,007,113 – 54,629,301);
+  published-minus-`h` is 50,018,443, so `l`+`o` add +83,084 on this config. Not canonical, changes no
+  published artifact. See its `_index.md`; method in `scripts/compute_forecast_intervals.py`.
+
 - **Producer / review notebook** — `august_canonical_v2026-07-28.ipynb` (26 cells, executed with
   outputs). The single canonical view: both platform plots, the ex-Iran mobile plot, the Dec-15 table,
   and the caveats. All plots are generated inside the notebook and saved to `plots/`.
@@ -530,6 +537,7 @@ Three checks run as assertions, not eyeballs:
   desktop_s01_REVERT_2026-07-29/   # present — s01 REVERT TARGET (config + headwind); see its REVERT.md
   desktop_baseline_2026-07-28/     # present — superseded (July's params); ledger baseline + raw cache
   desktop_candidate_aug25/         # present — g01 candidate build kept for the Aug-25 gap search
+  desktop_raw_ci_2026-08-02/       # present (2026-09-08, post-button-down) — g01 with ALL adjustments off + prediction intervals; NOT canonical
   mobile_cpr0725_2026-08-02/       # present — CANONICAL mobile (adj-p, cpr 0.725, 08-02 seam)
   mobile_cpr0725_2026-07-28/       # present — the 07-28 build; refresh comparison base
   mobile_rawpull_2026-08-02/       # present — raw BQ mobile pull for the 08-02 split's drift check

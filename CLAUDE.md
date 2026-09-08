@@ -239,6 +239,12 @@ The `scripts/` directory contains helper scripts for common tasks:
 - `tile_corr_distribution.py` - Reports the per-tile level/volatility correlation behind desktop's
   `seasonality_regime="auto"` switch; used to place grid points. Desktop-only — mobile's regime switch is
   volume-driven, so `seasonality_corr_threshold` does not exist there
+- `compute_forecast_intervals.py` - **Prediction intervals for one build from its fitted pickle.** Rebuilds the
+  1,000 world-total sample paths, asserts the median reproduces the parquet, writes daily + 28d-MA bands
+  (quantiles of the trailing mean across paths, never the mean of quantiles), a Dec-15/trough summary and
+  plots. Writes `point_forecast_28ma` (published convention) beside the band-centre `median` — they differ
+  under skew. Prophet predictive intervals, not calibrated. Logic in `mozaic_daily.intervals`. First use:
+  `data-official/2026-08/desktop_raw_ci_2026-08-02/` (August desktop, all adjustments off)
 - `run_pinned_scan.py` - Desktop forecast with per-tile Prophet changepoints pinned to April's locations;
   built to test whether changepoint placement explained the April↔June trend gap
 

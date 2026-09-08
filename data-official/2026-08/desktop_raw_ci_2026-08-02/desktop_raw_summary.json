@@ -1,0 +1,72 @@
+{
+  "produced_by": "scripts/compute_forecast_intervals.py",
+  "pkl": "/Users/brendanwells/work/mozaic-daily-august/data-official/2026-08/desktop_raw_ci_2026-08-02/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_objects.legacy_desktop.2026-08-02.pkl",
+  "forecast_parquet": "/Users/brendanwells/work/mozaic-daily-august/data-official/2026-08/desktop_raw_ci_2026-08-02/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-08-02.ld-D.raw.parquet",
+  "forecast_start_date": "2026-08-02",
+  "adjustments_applied": [],
+  "model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.032,
+    "prophet_changepoint_prior_scale": 0.1649,
+    "prophet_changepoint_range": 0.814,
+    "prophet_n_changepoints": 40,
+    "prophet_recent_weeks": 17,
+    "prophet_seasonality_prior_scale": 0.00825,
+    "seasonality_corr_threshold": 0.0,
+    "seasonality_regime": "multiplicative"
+  },
+  "n_sample_paths": 1000,
+  "levels": [
+    0.5,
+    0.8,
+    0.9
+  ],
+  "ma_window": 28,
+  "method": "quantiles across sample paths; 28d-MA = plain trailing mean per path with actuals spliced in front",
+  "interval_kind": "Prophet predictive (trend + changepoint simulation + observation noise); not calibrated",
+  "median_vs_parquet_worst_abs_dev": 0.0,
+  "anchor_28ma": {
+    "date": "2026-12-15",
+    "median": 49916850.20471163,
+    "lower_50": 48934166.47943536,
+    "upper_50": 51028124.86473007,
+    "halfwidth_50": 1046979.1926473528,
+    "lower_80": 46705607.07827403,
+    "upper_80": 53004273.69181595,
+    "halfwidth_80": 3149333.3067709617,
+    "lower_90": 45007112.58321804,
+    "upper_90": 54629300.86023839,
+    "halfwidth_90": 4811094.138510175,
+    "point_forecast_28ma": 49935359.298017725
+  },
+  "anchor_daily": {
+    "date": "2026-12-15",
+    "median": 56521332.44224779,
+    "lower_50": 54734753.17785154,
+    "upper_50": 58356034.883348316,
+    "halfwidth_50": 1810640.8527483866,
+    "lower_80": 52110206.06997215,
+    "upper_80": 60957921.874150865,
+    "halfwidth_80": 4423857.902089357,
+    "lower_90": 49948863.7066879,
+    "upper_90": 63393883.90291714,
+    "halfwidth_90": 6722510.098114621
+  },
+  "trough_28ma": {
+    "trough_date": "2026-08-25",
+    "point_forecast_28ma": 45300364.25016705,
+    "median": 45305970.57726657,
+    "lower_50": 45193095.74795073,
+    "upper_50": 45411936.03652924,
+    "lower_80": 45090903.31880046,
+    "upper_80": 45509851.27107466,
+    "lower_90": 45026530.93043005,
+    "upper_90": 45567906.340536736
+  },
+  "references": {
+    "published Aug (l+o+h applied)": 48703443.0,
+    "published Aug, h removed (l+o only)": 50018443.0
+  }
+}

@@ -130,3 +130,7 @@ data-official/*/handoff/*_handoff/
 
 # Editor/backup copies of notebooks
 *.copy.ipynb
+
+# Raw-model prediction-interval bands (scripts/compute_forecast_intervals.py). Small, and the
+# quotable numbers live in them, so they travel with the summary JSON and the notebook.
+!data-official/*/desktop_raw_ci_*/csv/*.csv
