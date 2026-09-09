@@ -8,7 +8,8 @@ because `p` reads the lift parquet as its **paid forecast**:
 
     paid(d) = marketing_lift_daily(d) + anchor_paid_dau (922,250.47)
 
-**The anchor is load-bearing.** The delivered artifact is a *lift*, not a level, because that is what
+**The anchor is load-bearing for THIS build.** (From September 2026 `p` reads the level as delivered and no anchor
+exists; August's spec keeps its anchor and reproduces unchanged.) The delivered artifact is a *lift*, not a level, because that is what
 `m` consumed. Getting the anchor wrong shifts every total by a constant while leaving the shape right,
 so nothing downstream would catch it. It is pinned in `../organic/organic.json` and asserted by
 `tests/test_organic.py::test_real_august_marketing_level_matches_the_published_anchor_and_lift`.

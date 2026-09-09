@@ -27,6 +27,7 @@ from .organic import (
     load_split_frame,
     marketing_paid_level,
     measured_paid_country_shares,
+    paid_level_framing,
     paid_seam_step,
     split_training_to_organic,
 )
@@ -419,7 +420,8 @@ def process_data_source(
         n_total = len(df_combined)
         n_forecast = (df_combined["source"] == "forecast").sum()
         print(f'Paid/organic split: added back across {n_total} rows '
-              f'({n_forecast} forecast + {n_total - n_forecast} training/actual)')
+              f'({n_forecast} forecast + {n_total - n_forecast} training/actual); '
+              f'marketing paid read as {paid_level_framing(organic_context["spec"])}')
         print(f'  seam step at {step["training_end"]}: measured 28d mean '
               f'{step["measured_paid_mean"]:,.0f} -> marketing {step["marketing_paid_mean"]:,.0f} '
               f'= {step["step_abs"]:+,.0f} ({step["step_rel"]:+.2%} of paid)')

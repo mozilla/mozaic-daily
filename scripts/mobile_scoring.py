@@ -21,8 +21,8 @@ never implicit. See `data-official/2026-08/organic/_index.md`.
 
 Why parameters have more leverage here than the July scan's slopes suggest
 --------------------------------------------------------------------------
-Under `p`, paid DAU is a **level** stacked on after mozaic: 922,250 (anchor) + 637,227
-(marketing's Dec-15 lift) = ~1,559,477, with zero Prophet interaction. The model therefore
+Under `p`, paid DAU is a **level** stacked on after mozaic: marketing's Dec-15 paid DAU,
+~1,559,477 in August (stored then as anchor 922,250 + lift 637,227), with zero Prophet interaction. The model therefore
 controls only the ~16.07M organic remainder, and the whole +322,714 must come from it
 (**+2.01% on organic**). But the add-back is additive, so a change to the model's curve
 reaches the headline **1:1** — unlike the retired `m` overlay, whose bidirectional

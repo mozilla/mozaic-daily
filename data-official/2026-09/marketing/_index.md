@@ -1,11 +1,19 @@
 # `data-official/2026-09/marketing/` — the paid-DAU curve `p` consumes (September 2026)
 
-**Status: BUILT AND WIRED 2026-09-04.** `../organic/organic.json` points `paid_forecast` at the parquet below with
-`anchor_paid_dau` copied from the meta; the split was rebuilt for the September window the same day (see `../organic/`).
-The "Wiring" section below is kept as the procedure for the next re-pull.
+**Status: REPOINTED 2026-09-09 to the `pull2026-09-09` curve** (see *Pulls on disk*). The sections below describe the
+2026-09-04 build, which stays on disk as a sibling; the method is identical. `../organic/organic.json` points `paid_forecast` at the 09-09 parquet's
+`paid_dau_level_daily` column; the split was rebuilt for the September window the same day (see `../organic/`).
+
+**Framing change 2026-09-09.** `p` now reads the level column **as delivered** and `organic.json` carries **no anchor**. Both
+pulls on disk also carry `marketing_lift_daily` (= level − level on 2026-03-30) because they were built before the change;
+those columns are inert. The paragraph below that says the framing "is not to be dropped" recorded the reasoning at the
+time; it was dropped because the round-trip cancels exactly in the forecast region (`p` uses *measured* paid for training
+rows, so the marketing file's framing never touched history) and its only effect was a float copied by hand after every
+re-pull. `scripts/pull_paid_dau_curve.py` writes `paid_dau_level_daily` + `paid_dau_level_ma` only from now on.
+The "Wiring" section below is kept as the procedure for the next re-pull, updated for the new framing.
 
 `m` (marketing_lift) stays retired; there is no `marketing.json` here. This directory holds the paid **level**
-input to `p`, in the lift-plus-anchor framing August settled on.
+input to `p`.
 
 ## What it is
 
@@ -30,7 +38,7 @@ change. Elapsed weeks moved 3–6% (actuals revision); the rest is plan and refi
 | `source_data/gmio_paid_dau_total_all.20260904.csv` | the raw query output, 51 weekly ISO-Monday rows, **the source of truth** (sha1 in the meta) |
 | `paid_dau_curve.2026-09-02.xlsx` | three sheets: `raw_query`, `composed_weekly` (`paid_dau_used` + `basis` = which query column), `daily` |
 | `marketing_lift_model.gmio_uac_meta_total.2026-09-02.parquet` | what `p` will load: `marketing_lift_daily` (lift vs anchor), `marketing_lift_ma`, `paid_dau_level_daily` (the level, for inspection) |
-| `marketing_lift_model.gmio_uac_meta_total.2026-09-02.meta.json` | provenance + `key_values` — **`anchor_paid_dau` = 800,831.00 must be copied into `organic.json`** |
+| `marketing_lift_model.gmio_uac_meta_total.2026-09-02.meta.json` | provenance + `key_values` (its `anchor_paid_dau` is no longer read by anything) |
 | `plots/paid_dau_curve.2026-09-02.png` | level and lift, weekly points (filled = actual, hollow = forecast), August's Dec-15 level for reference |
 
 ## Method (August's, unchanged)
@@ -66,15 +74,22 @@ feed's own forecast. `p` uses measured paid for training rows and this level fro
    → `../mobile_rawpull_2026-09-02/`.
 2. Rebuild the split: `python scripts/build_fenix_organic_split.py --forecast-start-date 2026-09-02 --production-raw <that pull>`
    (~141 GB scan). Writes `../organic/fenix_paid_organic.<T-0>.parquet` + sidecar.
-3. Write `../organic/organic.json` from August's, with `applies_to_forecast_start: 2026-09-02`, `data_file` = the new
-   split, and `paid_forecast` → `../marketing/marketing_lift_model.gmio_uac_meta_total.2026-09-02.parquet`,
-   `value_column: marketing_lift_daily`, `anchor_paid_dau: 800831.0`,
-   `anchor_source: marketing_lift_model.gmio_uac_meta_total.2026-09-02.meta.json:key_values.anchor_paid_dau`.
-4. Extend `tests/test_organic.py` with a September pin (level at Dec-15 = anchor + lift = 1,891,002).
+3. Point `../organic/organic.json` `paid_forecast.data_file` at the new parquet with `value_column: paid_dau_level_daily`.
+   No anchor key.
+4. Extend `tests/test_organic.py` with a pin on the new Dec-15 level.
 5. Mobile model rerun.
 
 ## Where new files go
 
-A re-pull of the feed: save the new CSV under `source_data/` with its pull date, repoint `SOURCE_CSV` in the
-producer, re-run it, and update `anchor_paid_dau` in `organic.json` — the anchor changes whenever the actuals
-before 2026-03-30 are revised. Alternative bases (e.g. the 12-month-rolling view) go here too, named by basis.
+A re-pull of the feed goes through **`scripts/pull_paid_dau_curve.py`** (skill `/pull-marketing-curve`), not this
+directory's `build_paid_dau_curve.py`, which is the frozen 2026-09-04 producer. The script writes a **pull-date-suffixed
+sibling** (`marketing_lift_model.gmio_uac_meta_total.2026-09-02.pull<date>.*`), saves the query output verbatim under
+`source_data/`, and leaves `PENDING_WIRING.md`; it never edits `organic.json`. Wiring (repoint `paid_forecast.data_file`,
+pin a test, rerun) is a separate step; there is no anchor to copy. Alternative bases (e.g. the 12-month-rolling view) go here too, named by basis.
+
+## Pulls on disk
+
+| pull | source table suffix | actuals through week of | anchor | level Dec-15 | status |
+|---|---|---|--:|--:|---|
+| 2026-09-04 (`…2026-09-02.parquet`, built by `build_paid_dau_curve.py`) | `_20260901` | 2026-08-24 | 800,831 | 1,891,002 | superseded 2026-09-09, kept as sibling |
+| 2026-09-09 (`…2026-09-02.pull2026-09-09.parquet`, `pull_paid_dau_curve.py`) | `_20260909` | 2026-08-31 | 808,398 | 1,883,182 | **wired** in `../organic/organic.json` 2026-09-09; Dec-15 −7,820 vs the 09-04 pull; mobile rerun done 2026-09-09 → `../mobile_cpr0725_paid0909_2026-09-02/` |

@@ -149,6 +149,9 @@ Quantified as a sensitivity arm in `research/mobile-organic/reproduce_prototype.
 
 ## The paid half
 
+*Retired framing note (2026-09-09): from the September cycle `p` reads the marketing file's level column directly and
+the spec carries no anchor. This section describes August's build, which keeps its anchor and reproduces unchanged.*
+
 `paid(d) = marketing_lift_daily(d) + 922,250.47`, from
 `../marketing/marketing_lift_model.uac_meta_total.2026-07-28.parquet`. The delivered artifact is
 a *lift*, not a level, because that is what `m` consumed; stacking needs the level, so the anchor

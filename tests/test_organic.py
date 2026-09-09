@@ -28,6 +28,7 @@ from mozaic_daily.organic import (
     load_organic_spec,
     load_split_frame,
     marketing_paid_level,
+    paid_level_framing,
     measured_paid_country_shares,
     paid_seam_step,
     split_training_to_organic,
@@ -104,9 +105,15 @@ def _make_split_fixture() -> pd.DataFrame:
 
 
 def _make_marketing_lift() -> pd.Series:
-    """A flat 200,000 lift from the anchor onward, so level = 200,000 + anchor."""
+    """LEGACY framing: a flat 200,000 lift from the anchor onward, so level = 200,000 + anchor."""
     idx = pd.date_range("2026-02-01", "2026-06-30", freq="D")
     return pd.Series(200_000.0, index=idx, name="marketing_lift_daily")
+
+
+def _make_marketing_level() -> pd.Series:
+    """Current framing: the marketing team's total paid DAU, rising 1,000/day from 1,000,000."""
+    idx = pd.date_range("2026-02-01", "2026-06-30", freq="D")
+    return pd.Series(1_000_000.0 + 1_000.0 * np.arange(len(idx)), index=idx, name="paid_dau_level_daily")
 
 
 @pytest.fixture
@@ -131,7 +138,7 @@ def share_lookup(split):
 
 @pytest.fixture
 def organic_spec_dir(tmp_path, split):
-    """A complete on-disk spec + data pair, so loader tests exercise real files."""
+    """A complete on-disk spec + data pair in the LEGACY lift-plus-anchor framing (August 2026)."""
     split.to_parquet(tmp_path / "split.parquet", index=False)
     lift = _make_marketing_lift().to_frame()
     lift.index.name = "target_date"
@@ -147,6 +154,32 @@ def organic_spec_dir(tmp_path, split):
             "data_file": "lift.parquet",
             "value_column": "marketing_lift_daily",
             "anchor_paid_dau": 800_000.0,
+            "tail_policy": "hold_last",
+        },
+        "allocation": {"key": "trailing_paid_dau_share", "window_days": 28},
+        "applies_to_forecast_start": str(FORECAST_START.date()),
+    }
+    (tmp_path / "organic.json").write_text(json.dumps(spec, indent=2))
+    return tmp_path
+
+
+@pytest.fixture
+def level_spec_dir(tmp_path, split):
+    """The same spec in the current framing: `value_column` is the level, no anchor key at all."""
+    split.to_parquet(tmp_path / "split.parquet", index=False)
+    level = _make_marketing_level().to_frame()
+    level.index.name = "target_date"
+    level.to_parquet(tmp_path / "level.parquet")
+    spec = {
+        "type": "paid_organic_split",
+        "platform": "mobile",
+        "data_file": "split.parquet",
+        "share_column": "organic_share",
+        "scope": {"app_flag_column": "fenix_android", "exclude_countries": ["IR"]},
+        "share_backfill": {"policy": "hold_earliest", "measured_from": str(MEASURED_FROM.date())},
+        "paid_forecast": {
+            "data_file": "level.parquet",
+            "value_column": "paid_dau_level_daily",
             "tail_policy": "hold_last",
         },
         "allocation": {"key": "trailing_paid_dau_share", "window_days": 28},
@@ -421,8 +454,29 @@ def test_paid_shares_use_only_the_trailing_window(split):
     assert "ZZ" not in narrow.index
 
 
-def test_marketing_level_is_lift_plus_anchor(organic_spec_dir):
+def test_marketing_level_is_read_verbatim_when_the_spec_has_no_anchor(level_spec_dir):
+    """Current framing: the marketing team's file IS total paid DAU, and nothing is added to it."""
+    spec = load_organic_spec(level_spec_dir / "organic.json")
+    assert paid_level_framing(spec) == "level"
+    level = marketing_paid_level(spec, level_spec_dir,
+                                 forecast_start=FORECAST_START, forecast_end="2026-06-30")
+    expected = _make_marketing_level()
+    assert level.loc[FORECAST_START] == expected.loc[FORECAST_START]
+    assert level.loc[pd.Timestamp("2026-06-30")] == expected.loc[pd.Timestamp("2026-06-30")]
+    assert level.name == "marketing_paid_dau"
+
+
+def test_marketing_level_holds_flat_past_the_curve_in_level_framing(level_spec_dir):
+    spec = load_organic_spec(level_spec_dir / "organic.json")
+    level = marketing_paid_level(spec, level_spec_dir,
+                                 forecast_start=FORECAST_START, forecast_end="2027-12-31")
+    assert level.loc[pd.Timestamp("2027-12-31")] == level.loc[pd.Timestamp("2026-06-30")]
+
+
+def test_legacy_spec_with_an_anchor_still_gets_lift_plus_anchor(organic_spec_dir):
+    """Locked August artifacts store a lift; their spec carries the anchor and must reproduce exactly."""
     spec = load_organic_spec(organic_spec_dir / "organic.json")
+    assert paid_level_framing(spec) == "lift_plus_anchor"
     level = marketing_paid_level(spec, organic_spec_dir,
                                  forecast_start=FORECAST_START, forecast_end="2026-06-30")
     assert level.loc[FORECAST_START] == pytest.approx(200_000.0 + 800_000.0)
@@ -438,13 +492,23 @@ def test_marketing_level_holds_flat_past_the_curve(organic_spec_dir):
     assert level.min() > 0
 
 
-def test_marketing_level_requires_an_anchor(organic_spec_dir):
-    """Without the anchor every total shifts by a constant with the shape left right."""
+def test_removing_the_anchor_from_a_legacy_spec_changes_the_level_by_exactly_the_anchor(organic_spec_dir):
+    """The framing switch is decided by the anchor key alone. Dropping it from a lift-framed spec
+    must NOT be silently harmless: the level falls by the anchor, which is what a future test
+    pinning a real cycle's Dec-15 would catch. This test locks the mechanism, not the mistake."""
     spec = load_organic_spec(organic_spec_dir / "organic.json")
+    with_anchor = marketing_paid_level(spec, organic_spec_dir,
+                                       forecast_start=FORECAST_START, forecast_end="2026-06-30")
     del spec["paid_forecast"]["anchor_paid_dau"]
-    with pytest.raises(ValueError, match="anchor_paid_dau is required"):
-        marketing_paid_level(spec, organic_spec_dir,
-                             forecast_start=FORECAST_START, forecast_end="2026-06-30")
+    without_anchor = marketing_paid_level(spec, organic_spec_dir,
+                                          forecast_start=FORECAST_START, forecast_end="2026-06-30")
+    assert paid_level_framing(spec) == "level"
+    assert np.allclose(with_anchor - without_anchor, 800_000.0)
+
+
+def test_spec_loader_no_longer_requires_an_anchor(level_spec_dir):
+    spec = load_organic_spec(level_spec_dir / "organic.json")
+    assert "anchor_paid_dau" not in spec["paid_forecast"]
 
 
 def test_marketing_level_rejects_a_curve_that_starts_too_late(organic_spec_dir):
@@ -660,31 +724,64 @@ def test_mobile_app_name_set_is_unchanged_by_the_split():
     }
 
 
-def test_september_gmio_paid_curve_is_a_lift_whose_anchor_recovers_the_level():
-    """data-official/2026-09/marketing (2026-09-04): the parquet is a lift in August's framing, the meta
-    carries the anchor, and lift + anchor reproduces the level column. organic.json must copy that anchor."""
+def test_september_2026_09_04_curve_level_column_equals_its_lift_plus_anchor():
+    """data-official/2026-09/marketing (2026-09-04 build, frozen): this file was produced in the lift-plus-anchor
+    framing and is the oracle for `test_paid_curve.py`. Its level column must equal lift + the meta's anchor from
+    the anchor date on -- that identity is why switching `p` to read the level column changed no number."""
     import json
     marketing = REAL_SPEC.parent.parent.parent / "2026-09" / "marketing"
     df = pd.read_parquet(marketing / "marketing_lift_model.gmio_uac_meta_total.2026-09-02.parquet")
     meta = json.loads((marketing / "marketing_lift_model.gmio_uac_meta_total.2026-09-02.meta.json").read_text())
     anchor = meta["key_values"]["anchor_paid_dau"]
-    assert df.loc["2026-03-30", "marketing_lift_daily"] == 0.0
-    assert (df.loc[:"2026-03-29", "marketing_lift_daily"] == 0.0).all()
     recovered = df["marketing_lift_daily"].loc["2026-03-30":] + anchor
     pd.testing.assert_series_equal(recovered, df["paid_dau_level_daily"].loc["2026-03-30":], check_names=False)
     assert df.loc["2026-12-15", "paid_dau_level_daily"] == pytest.approx(1891001.857142857, abs=1.0)
     assert df.loc["2026-12-31", "paid_dau_level_daily"] == df.loc["2026-12-21", "paid_dau_level_daily"]  # forward-filled tail
 
 
-def test_real_september_organic_spec_points_at_the_gmio_curve_with_its_own_anchor():
-    """September (2026-09-04): organic.json must carry the anchor from the marketing curve's meta, and
-    lift + anchor must give the composed level (1,891,002 at Dec-15), held flat into 2027."""
+def test_september_2026_09_09_pull_level_column_is_the_wired_input():
+    """The 2026-09-09 re-pull (scripts/pull_paid_dau_curve.py, feed tables _20260909) is what organic.json reads.
+    Its level column must reproduce the marketing feed's own Monday values (interpolated), one more actual week
+    than the 09-04 build, and hold flat after the last Monday."""
     import json
+    marketing = REAL_SPEC.parent.parent.parent / "2026-09" / "marketing"
+    stem = "marketing_lift_model.gmio_uac_meta_total.2026-09-02.pull2026-09-09"
+    df = pd.read_parquet(marketing / f"{stem}.parquet")
+    meta = json.loads((marketing / f"{stem}.meta.json").read_text())
+    assert meta["coverage"]["actuals_through_week_of"] == "2026-08-31"
+    source = pd.read_csv(marketing / "source_data" / "gmio_paid_dau_total_all.20260909.csv", parse_dates=["date"]).set_index("date")
+    # Two Monday values straight from the marketing team's query, on the level column, no arithmetic.
+    assert df.loc["2026-03-30", "paid_dau_level_daily"] == source.loc["2026-03-30", "uac_actual"]
+    assert df.loc["2026-12-14", "paid_dau_level_daily"] == source.loc["2026-12-14", "uac_meta_forecast"]
+    assert df.loc["2026-12-15", "paid_dau_level_daily"] == pytest.approx(1883182, abs=1.0)
+    assert df.loc["2026-12-31", "paid_dau_level_daily"] == df.loc["2026-12-21", "paid_dau_level_daily"]
+
+
+def test_real_september_organic_spec_reads_the_gmio_level_with_no_anchor():
+    """September (from 2026-09-09): organic.json points value_column at the level column and carries NO anchor.
+    The Dec-15 level is the marketing feed's own number, held flat into 2027."""
     sept = REPO_ROOT / "data-official" / "2026-09" / "organic" / "organic.json"
     spec = load_organic_spec(sept)
     assert spec["applies_to_forecast_start"] == "2026-09-02"
-    meta = json.loads((sept.parent / "../marketing/marketing_lift_model.gmio_uac_meta_total.2026-09-02.meta.json").read_text())
-    assert spec["paid_forecast"]["anchor_paid_dau"] == meta["key_values"]["anchor_paid_dau"]
+    paid = spec["paid_forecast"]
+    assert paid["data_file"].endswith(".pull2026-09-09.parquet")
+    assert paid["value_column"] == "paid_dau_level_daily"
+    assert "anchor_paid_dau" not in paid and "anchor_source" not in paid
+    assert paid_level_framing(spec) == "level"
     level = marketing_paid_level(spec, sept.parent, forecast_start="2026-09-02", forecast_end="2027-12-31")
-    assert level.loc[pd.Timestamp("2026-12-15")] == pytest.approx(1891001.857142857, abs=1.0)
+    assert level.loc[pd.Timestamp("2026-12-15")] == pytest.approx(1883182, abs=1.0)
     assert level.loc[pd.Timestamp("2027-06-01")] == pytest.approx(level.loc[pd.Timestamp("2026-12-31")])
+
+
+def test_september_level_framing_reproduces_the_legacy_arithmetic_exactly():
+    """The switch changed no number: reading the level column gives the same series as lift + anchor
+    would have, over the whole forecast horizon, to the float."""
+    import json
+    sept = REPO_ROOT / "data-official" / "2026-09" / "organic" / "organic.json"
+    spec = load_organic_spec(sept)
+    level_framing = marketing_paid_level(spec, sept.parent, forecast_start="2026-09-02", forecast_end="2027-12-31")
+    legacy = json.loads(json.dumps(spec))
+    legacy["paid_forecast"]["value_column"] = "marketing_lift_daily"
+    legacy["paid_forecast"]["anchor_paid_dau"] = 808398.0
+    lift_framing = marketing_paid_level(legacy, sept.parent, forecast_start="2026-09-02", forecast_end="2027-12-31")
+    pd.testing.assert_series_equal(level_framing, lift_framing)

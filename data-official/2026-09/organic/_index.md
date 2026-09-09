@@ -6,7 +6,7 @@ window (through 2026-09-01).
 
 | file | role |
 |---|---|
-| `organic.json` | the spec — gated to `applies_to_forecast_start: 2026-09-02`; `paid_forecast` → `../marketing/marketing_lift_model.gmio_uac_meta_total.2026-09-02.parquet`, **`anchor_paid_dau` 800,831.00** (copied from that curve's meta — must match) |
+| `organic.json` | the spec — gated to `applies_to_forecast_start: 2026-09-02`; `paid_forecast` → `../marketing/marketing_lift_model.gmio_uac_meta_total.2026-09-02.pull2026-09-09.parquet`, `value_column: paid_dau_level_daily` — the level **as delivered, no anchor** (framing changed 2026-09-09; August's lift-plus-anchor specs still load through the legacy path) |
 | `fenix_paid_organic.2026-09-02.parquet` | measured split, `date × country` (823 days × 16 countries = 13,168 rows) |
 | `fenix_paid_organic.2026-09-02.parquet.meta.json` | sidecar: definition, sources, coverage, the four build checks |
 | `build.log` | the producer's run log (checks: tail overlap, partition identity, split coverage, shredder drift — all PASS) |
@@ -22,8 +22,8 @@ assumed a fresher snapshot.
 |---|--:|--:|
 | training end | 2026-08-01 | 2026-09-01 |
 | paid curve | two single-channel feeds, `uac_meta_total.2026-07-28` | GMIO cross-channel feed, `gmio_uac_meta_total.2026-09-02` |
-| `anchor_paid_dau` | 922,250.47 | 800,831.00 |
-| paid level at Dec-15 | 1,559,477 | 1,891,002 (+331,525) |
+| framing | lift + `anchor_paid_dau` 922,250.47 | level column, no anchor |
+| paid level at Dec-15 | 1,559,477 | 1,883,182 (+323,705; the 09-04 pull was 1,891,002) |
 
 The seam step between measured paid (training rows) and marketing's level (forecast rows) is seam-dependent and
 **must be re-measured after the rerun** (`paid_seam_step`); do not carry August's +1,903 forward.
@@ -31,5 +31,5 @@ The seam step between measured paid (training rows) and marketing's level (forec
 ## Where new files go
 
 A refreshed split for this cycle: re-run the producer with the new `--forecast-start-date` and repoint `data_file`.
-A refreshed paid curve: rebuild in `../marketing/` and copy its `key_values.anchor_paid_dau` here — the anchor
-changes with every re-pull.
+A refreshed paid curve: pull it into `../marketing/` (`/pull-marketing-curve`) and repoint `paid_forecast.data_file`
+here. Nothing else changes — there is no anchor to copy.

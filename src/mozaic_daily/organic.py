@@ -20,7 +20,7 @@ The difference from ``m`` is what gets subtracted and what gets added:
 ===============  ====================================  =========================================
 subtracts        modelled lift *since an anchor*       **measured** paid, from the gclid flag
 adds (training)  the same modelled lift                the same **measured** paid
-adds (forecast)  the same modelled lift                marketing's paid **level** (lift + anchor)
+adds (forecast)  the same modelled lift                marketing's paid **level**, as delivered
 paid's effect    absorbed ~58% by Prophet              **exactly its own value**
 ===============  ====================================  =========================================
 
@@ -66,6 +66,7 @@ __all__ = [
     "split_training_to_organic",
     "measured_paid_country_shares",
     "marketing_paid_level",
+    "paid_level_framing",
     "add_paid_to_forecast",
     "paid_seam_step",
 ]
@@ -100,7 +101,7 @@ def load_organic_spec(spec_path: str | Path) -> dict:
             raise ValueError(f"{spec_path}: missing required key {key!r}")
     if "app_flag_column" not in spec["scope"]:
         raise ValueError(f"{spec_path}: missing required key scope.app_flag_column")
-    for key in ("data_file", "value_column", "anchor_paid_dau"):
+    for key in ("data_file", "value_column"):
         if key not in spec["paid_forecast"]:
             raise ValueError(f"{spec_path}: missing required key paid_forecast.{key}")
     if spec["allocation"].get("key") not in _ALLOCATION_KEYS:
@@ -315,14 +316,21 @@ def marketing_paid_level(
 ) -> pd.Series:
     """Marketing's paid DAU as a **level**, covering the whole forecast horizon.
 
-    ``paid(d) = marketing_lift_daily(d) + anchor_paid_dau``. The delivered artifact is a *lift*
-    because that is what ``m`` consumed; stacking needs the level, so the anchor is added back.
-    (Compare cycles on levels, never lifts — August's lift is 18% below July's but its level is
-    3.4% *higher*, because it also raised the anchor.)
+    The marketing team delivers total paid DAU, and that is what gets stacked: ``value_column``
+    is read as the level, verbatim. This is the framing from the 2026-09 cycle on.
+
+    **Legacy framing (specs through 2026-08, and September's first drafts).** Those specs carry
+    ``paid_forecast.anchor_paid_dau`` and point ``value_column`` at a *lift* — the level minus
+    its value on an anchor date, a shape inherited from the retired ``m`` overlay, which needed an
+    increment. When the anchor is present the level is rebuilt as ``lift + anchor``, exactly as
+    before, so every locked build reproduces byte-for-byte. New specs must not carry an anchor:
+    the round-trip cancelled by construction and its only effect was a float that had to be
+    copied by hand from the curve meta into the spec after every re-pull. (Compare cycles on
+    levels, never lifts — August's lift was 18% below July's but its level 3.4% *higher*.)
 
     Past the curve's last day the level is **held flat**. ``forecast_end_date`` is Dec 31 of the
     following year while the curve stops at 2026-12-31, and zero-filling — what ``m`` does —
-    would drop the whole paid level (~1.56M) on 2027-01-01. Holding flat is an explicit
+    would drop the whole paid level (~1.6M) on 2027-01-01. Holding flat is an explicit
     extrapolation into a period that is out of scope for planning; the alternative is a cliff
     that is certainly wrong.
     """
@@ -333,18 +341,15 @@ def marketing_paid_level(
     if column not in df.columns:
         raise ValueError(f"{path}: no column {column!r}; available: {list(df.columns)}")
 
+    values = df[column].astype("float64")
+    values.index = pd.DatetimeIndex(values.index).normalize()
+    values = values.sort_index()
+
     anchor = paid_spec.get("anchor_paid_dau")
     if anchor is None:
-        raise ValueError(
-            f"{path}: paid_forecast.anchor_paid_dau is required. The delivered curve is a lift, "
-            f"not a level, so without the anchor every total would be shifted by a constant with "
-            f"the shape left right — nothing downstream would catch it."
-        )
-
-    lift = df[column]
-    lift.index = pd.DatetimeIndex(lift.index).normalize()
-    lift = lift.sort_index()
-    level = (lift + float(anchor)).rename("marketing_paid_dau")
+        level = values.rename("marketing_paid_dau")
+    else:
+        level = (values + float(anchor)).rename("marketing_paid_dau")
 
     forecast_start = pd.Timestamp(forecast_start).normalize()
     forecast_end = pd.Timestamp(forecast_end).normalize()
@@ -359,6 +364,11 @@ def marketing_paid_level(
     if policy != "hold_last":
         raise ValueError(f"paid_forecast.tail_policy {policy!r} is not implemented")
     return level.reindex(level.index.union(horizon)).ffill().reindex(horizon)
+
+
+def paid_level_framing(spec: dict) -> str:
+    """``"level"`` when ``value_column`` is read verbatim, ``"lift_plus_anchor"`` for legacy specs."""
+    return "lift_plus_anchor" if spec["paid_forecast"].get("anchor_paid_dau") is not None else "level"
 
 
 def add_paid_to_forecast(
