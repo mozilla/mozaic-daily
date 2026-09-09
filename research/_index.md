@@ -24,6 +24,7 @@ Add a new topic cluster here when work spans more than one month or doesn't tie 
 | `headwinds/` | Linear-ramp profile explorations for the `h` (headwinds) adjustment |
 | `csv-vs-actuals/` | Validates exported forecast CSVs against actual DAU from BigQuery before release (per-cycle) |
 | `collaboration-review/` | Retrospectives on the human/agent *workflow* rather than the forecast — sourced from session transcripts via `tooling/transcript_review/`. Recommendations only; nothing applied. |
+| `forecast-intervals/` | **Prediction intervals around forecast builds**, copied from the cycle branch where the model ran. Quantiles of the 28d trailing mean across the fitted pickle's 1,000 sample paths (Prophet predictive, not calibrated). First entry: `august-2026-desktop/` — August g01 with **all adjustments off**, raw Dec-15 28d-MA 49,935,359, 90% band 45,007,113 – 54,629,301. Code lives on `august-forecast` (`mozaic_daily.intervals`); port before reusing. |
 | `ma-seam-turbulence/` | Diagnosis + backtest behind the `display_ma` seam work. Two fixes shipped: the v1 variance-matched transition (in the now-frozen `data-official/2026-06/export_canonical_curves.py`) and **Fix A**, the trend-estimator correction that moved the live implementation to `src/mozaic_daily/seam_ma.py` (test-locked in `tests/test_seam_ma.py`). See its `LOG.md` § Fix A. |
 
 ## Archived (GCS — pull back only for prior art)

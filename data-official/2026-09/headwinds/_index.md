@@ -1,5 +1,9 @@
 # `h` — headwinds, cycle 2026-09
 
+> **Superseded 2026-09-08:** the live spec anchor is now **−1,089,347** (the `h_for_plus479k` counterfactual from
+> `../adjustment_combinatorics/`, all-in Dec-15 = August +479,000 = 49,182,443). Brad's −726,000 described below is the
+> delivered source value and remains the reference point; the ramp shape (0 at the seam, flat after Dec-15) is unchanged. DRAFT.
+
 Provenance and rationale for the September Win10 desktop headwind. The spec lives at
 `../adjustments/headwind.json` (display layer, live by presence); this directory holds the delivered file, the
 value read from it, the plot, and this record.

@@ -1,0 +1,228 @@
+{
+  "cycle": "2026-09",
+  "forecast_start": "2026-09-02",
+  "measurement_date": "2026-12-15",
+  "model_config": {
+    "prophet_recent_weeks": 17,
+    "prophet_changepoint_range": 0.814,
+    "prophet_n_changepoints": 40,
+    "holiday_threshold": -0.032,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_effect_floor": -0.6,
+    "seasonality_regime": "multiplicative",
+    "seasonality_corr_threshold": 0.0,
+    "prophet_changepoint_prior_scale": 0.1649,
+    "prophet_seasonality_prior_scale": 0.00825
+  },
+  "config_from": "data-official/2026-09/desktop_g01_2026-09-02/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-09-02.ld-D.adj-ijlo.parquet.meta.json",
+  "droppable_codes": [
+    "i",
+    "j",
+    "l",
+    "o"
+  ],
+  "pinned_overlay_codes": [],
+  "overlay_fingerprints": {
+    "i": "c0c0acf810f82c4a978f1d04b8031a6655a83634",
+    "j": "40b8b14c9337b13ad6a2e39ba6428f5bcdcf6460",
+    "l": "8e6eaf5e10ca873737b5fee2d6da12708c9c217e",
+    "o": "ca5e4c30e0ed1dfd3fe433e092266932f9d94ef2"
+  },
+  "display_effects_dec15": {
+    "h": -726000.0
+  },
+  "runs": {
+    "raw": {
+      "overlay_subset": [],
+      "overlays_enabled": [],
+      "parquet": "data-official/2026-09/adjustment_ladder/raw.9eaf582af09bbd74/mozaic_daily_forecast.2026-09-02.ld-D.raw.parquet",
+      "dec15_plain_ma": 50209026.921960875
+    },
+    "i": {
+      "overlay_subset": [
+        "i"
+      ],
+      "overlays_enabled": [
+        "i"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i.0f7484fc055ee468/mozaic_daily_forecast.2026-09-02.ld-D.adj-i.parquet",
+      "dec15_plain_ma": 50160763.76240468
+    },
+    "j": {
+      "overlay_subset": [
+        "j"
+      ],
+      "overlays_enabled": [
+        "j"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/j.f69a61534e24302f/mozaic_daily_forecast.2026-09-02.ld-D.adj-j.parquet",
+      "dec15_plain_ma": 50280382.42024547
+    },
+    "l": {
+      "overlay_subset": [
+        "l"
+      ],
+      "overlays_enabled": [
+        "l"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/l.26a3665ae131f014/mozaic_daily_forecast.2026-09-02.ld-D.adj-l.parquet",
+      "dec15_plain_ma": 50273292.33555632
+    },
+    "o": {
+      "overlay_subset": [
+        "o"
+      ],
+      "overlays_enabled": [
+        "o"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/o.efa988f0da88c39c/mozaic_daily_forecast.2026-09-02.ld-D.adj-o.parquet",
+      "dec15_plain_ma": 50108245.86345865
+    },
+    "i+j": {
+      "overlay_subset": [
+        "i",
+        "j"
+      ],
+      "overlays_enabled": [
+        "i",
+        "j"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i+j.4fda9c116c476c47/mozaic_daily_forecast.2026-09-02.ld-D.adj-ij.parquet",
+      "dec15_plain_ma": 50179063.275947616
+    },
+    "i+l": {
+      "overlay_subset": [
+        "i",
+        "l"
+      ],
+      "overlays_enabled": [
+        "i",
+        "l"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i+l.d241052783823be9/mozaic_daily_forecast.2026-09-02.ld-D.adj-il.parquet",
+      "dec15_plain_ma": 50325746.41657007
+    },
+    "i+o": {
+      "overlay_subset": [
+        "i",
+        "o"
+      ],
+      "overlays_enabled": [
+        "i",
+        "o"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i+o.c1d7f7a720022847/mozaic_daily_forecast.2026-09-02.ld-D.adj-io.parquet",
+      "dec15_plain_ma": 50186275.92054897
+    },
+    "j+l": {
+      "overlay_subset": [
+        "j",
+        "l"
+      ],
+      "overlays_enabled": [
+        "j",
+        "l"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/j+l.8eeab434be1a768a/mozaic_daily_forecast.2026-09-02.ld-D.adj-jl.parquet",
+      "dec15_plain_ma": 50215317.58211129
+    },
+    "j+o": {
+      "overlay_subset": [
+        "j",
+        "o"
+      ],
+      "overlays_enabled": [
+        "j",
+        "o"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/j+o.3fa94702f7ed9115/mozaic_daily_forecast.2026-09-02.ld-D.adj-jo.parquet",
+      "dec15_plain_ma": 50252432.90780085
+    },
+    "l+o": {
+      "overlay_subset": [
+        "l",
+        "o"
+      ],
+      "overlays_enabled": [
+        "l",
+        "o"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/l+o.738ddebbfed1391e/mozaic_daily_forecast.2026-09-02.ld-D.adj-lo.parquet",
+      "dec15_plain_ma": 50203355.4178764
+    },
+    "i+j+l": {
+      "overlay_subset": [
+        "i",
+        "j",
+        "l"
+      ],
+      "overlays_enabled": [
+        "i",
+        "j",
+        "l"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i+j+l.84d4aa0e45cf6399/mozaic_daily_forecast.2026-09-02.ld-D.adj-ijl.parquet",
+      "dec15_plain_ma": 50235263.41194735
+    },
+    "i+j+o": {
+      "overlay_subset": [
+        "i",
+        "j",
+        "o"
+      ],
+      "overlays_enabled": [
+        "i",
+        "j",
+        "o"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i+j+o.1c3fbb8ee1b2c36f/mozaic_daily_forecast.2026-09-02.ld-D.adj-ijo.parquet",
+      "dec15_plain_ma": 50215379.15677273
+    },
+    "i+l+o": {
+      "overlay_subset": [
+        "i",
+        "l",
+        "o"
+      ],
+      "overlays_enabled": [
+        "i",
+        "l",
+        "o"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i+l+o.7bc741b33e7d43ef/mozaic_daily_forecast.2026-09-02.ld-D.adj-ilo.parquet",
+      "dec15_plain_ma": 50138730.90725875
+    },
+    "j+l+o": {
+      "overlay_subset": [
+        "j",
+        "l",
+        "o"
+      ],
+      "overlays_enabled": [
+        "j",
+        "l",
+        "o"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/j+l+o.06c4b8a4464d240c/mozaic_daily_forecast.2026-09-02.ld-D.adj-jlo.parquet",
+      "dec15_plain_ma": 50231855.75152051
+    },
+    "i+j+l+o": {
+      "overlay_subset": [
+        "i",
+        "j",
+        "l",
+        "o"
+      ],
+      "overlays_enabled": [
+        "i",
+        "j",
+        "l",
+        "o"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i+j+l+o.bab9994c4272304c/mozaic_daily_forecast.2026-09-02.ld-D.adj-ijlo.parquet",
+      "dec15_plain_ma": 50271790.24848466
+    }
+  },
+  "built_at": "2026-09-08T19:19:59+00:00"
+}

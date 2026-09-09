@@ -3,12 +3,21 @@
 Active cycle (branch `september-forecast`, off `clean-slate` @ `a59d04f`, which carries every August
 tooling change). Opened 2026-09-04 by the button-down skill.
 
-## Status: DRAFT BUILDS at the 2026-09-02 seam (2026-09-04) — not locked
+## Status: DRAFT BUILDS at the 2026-09-02 seam — not locked · `h` re-anchored to −1,089,347 on 2026-09-08
+
+**2026-09-08:** the Win10 headwind `h` anchor moved −726,000 → **−1,089,347** (the `h_for_plus479k` counterfactual from
+`adjustment_combinatorics/counterfactuals.csv`: all four overlays kept, all-in desktop Dec-15 = August +479,000 exactly). A
+calibration choice between Brad's model value and August's −1,315,000, not a measurement. Display layer, so no rerun: desktop
+Dec-15 28d-MA is now **49,182,443** (+479,000 vs August, −330,714 vs Baseline), ALL **67,440,453**; mobile unchanged. Canonical
+notebook, CSVs, plots and the waterfalls were rerun the same day. The numbers in the paragraph below are the 2026-09-04
+values at −726,000. **Stale at the old anchor:** `adjustment_combinatorics/` (manifest `display_effects_dec15.h` and
+`index.html`) — its `h_for_plus479k` row IS the adopted number, so re-render only if the report is to be circulated.
+
 
 Canonical builds made 2026-09-04 with August's locked configs (desktop g01 → `desktop_g01_2026-09-02/`, `.adj-ijlo.`;
-mobile cpr 0.725 → `mobile_cpr0725_2026-09-02/`, `.adj-p.`). Dec-15 28d-MA, display layer applied (`h` −726,000 draft,
-`t` +299,000, `u` −27,162): desktop **49,545,790** (+842,347 vs August), mobile **18,258,010** (+333,448), ALL
-**67,803,800** (+1,175,795). Desktop sits +32,633 above the Baseline target. Review notebook
+mobile cpr 0.725 → `mobile_cpr0725_2026-09-02/`, `.adj-p.`; **mobile rerun 2026-09-09** with the re-pulled GMIO paid curve → `mobile_cpr0725_paid0909_2026-09-02/`, same config and raw pull, Dec-15 raw-model 28d-MA −7,072 vs the 09-04 build, training rows identical; the 09-04 build stays on disk as the revert target). Dec-15 28d-MA, display layer applied (`h` −1,089,347 draft, adopted 2026-09-08;
+`t` +299,000, `u` −27,162), notebook re-executed 2026-09-09: desktop **49,182,443** (+479,000 vs August, by construction of `h`), mobile **18,250,938** (+326,376; was 18,258,010 before the paid re-pull), ALL
+**67,433,381** (+805,376). Desktop sits −330,714 below the Baseline target; ALL sits +397,429 above it. Review notebook
 `september_canonical_v2026-09-04.ipynb`; CSVs in `csv/`; plots (DRAFT-watermarked) in `plots/`.
 
 **Desktop adjustment ladder** (`adjustment_ladder/ladder_manifest.json`, 7 cached isolation runs, built 2026-09-04): raw model
@@ -17,6 +26,12 @@ raw were o −100,781, j +71,355, l +64,265, i −48,263: for `o` and `i` the tr
 more than the curve adds back, so wiring them LOWERS Dec-15 despite positive curves; cumulative steps differ from single
 effects because overlays interact through the fit. Rebuilding the ladder needs explicit approval (the script prompts).
 
+**Desktop adjustment combinatorics** (`adjustment_combinatorics/`, built 2026-09-08): every subset of the four droppable
+overlays `i`/`j`/`l`/`o` forecast with `h` always applied — 16 real desktop runs sharing the ladder cache — scored at Dec-15
+against August's 48,703,443, the all-in September build and the targets, with the canonical desktop chart per combination in a
+self-contained `index.html`. Built because not every adjustment can ship this cycle; the numbers are inputs to that choice, and no
+combination has been selected. See its `_index.md`.
+
 **Desktop Dec-15 waterfalls** (`september_desktop_waterfalls.ipynb`, built 2026-09-04): 2025 actual 51,846,238 → 2026 published
 49,545,790 (−2,300,447) decomposed three ways from the canonical parquet's tiles, bars by absolute magnitude, closing exactly.
 By OS: modern Windows −1,611,048 (holds the whole `h` −726,000), older Windows −1,125,336, Mac + Linux + other +435,937 (the
@@ -24,7 +39,11 @@ forecast has no Mac/Linux split). By market: ROW −988,740, CN +920,370 (Mozill
 `h` allocated to countries by 2026 modern-Windows share, no separate `h` bar. By market group (member-labelled, deliberately
 NOT called regions because ROW is a third of DAU): ROW −988,740, DE + FR + IT −865,165, CN + JP + ID +710,295, US + CA −528,427,
 PL + RU −364,306, BR + MX + AR −167,374, IN −103,410, IR +6,678. Plots `plots/desktop_waterfall_{os,country,country_groups}.png`
-(DRAFT-watermarked), table `csv/september_desktop_waterfall_steps.csv`.
+(DRAFT-watermarked), table `csv/september_desktop_waterfall_steps.csv`. **Added 2026-09-08:** the same three decompositions
+for August delivered 48,703,443 → September 49,545,790 (+842,347), files `*_aug_vs_sep.png`, each build's `h` placed by its
+own modern-Windows shares (so the +589,000 re-anchor is spread across every country bar, not shown separately). By OS: modern
+Windows +772,842, Mac + Linux + other +51,516, older Windows +17,989. By market: ROW +230,959, US +98,193, JP +82,588 (`j`),
+CN +73,794 (`o` refresh), FR +72,510, IN +58,399 (`i`) … AR +4,271; every market is up.
 
 ## Previous status: EMPTY CYCLE — `../2026-08/` remains authoritative until this branch produces output
 
@@ -95,7 +114,7 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
 | August delivered (`h` mobile −27,162 + `t` +299,000 + `p`) | | | 17,924,562 |
 | `u` tou_mobile_headwind: the −27,162 mobile leg moved out of `headwind.json`, anchor unchanged | 0 | 0 (exact) | |
 | `t` mobile calibration tailwind carried forward unchanged (+299,000) | 0 vs August | 0 (exact) | |
-| `p` paid level: August curve 1,559,477 → GMIO curve 1,891,002 at Dec-15 (anchor 800,831); split rebuilt + wired | +331,525 | pending rerun | |
+| `p` paid level: August curve 1,559,477 → GMIO curve 1,883,182 at Dec-15 (anchor 808,398; the 2026-09-09 re-pull of feed `_20260909`, replacing the 09-04 pull's 1,891,002); split rebuilt + wired; **mobile rerun done 2026-09-09** (`mobile_cpr0725_paid0909_2026-09-02/`) | +323,705 | rerun done; realised Dec-15 raw-model 28d-MA −7,072 vs the 09-04 build (paid ramp −7,820 daily at Dec-15) | |
 
 ## Read this before quoting the headline
 
@@ -121,14 +140,14 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
   adjustments/tailwind.json          # present — t carried forward unchanged 2026-09-04 (+299,000 mobile at Dec-15, ramp from the seam)
   tailwind/                          # present — t September rationale record
   marketing/                         # present — paid-DAU curve for `p` from the GMIO feed, BUILT + WIRED 2026-09-04
-  organic/                           # present — p REBUILT 2026-09-04 (split through 2026-09-01, four checks PASS) and pointed at marketing/ (anchor 800,831)
+  organic/                           # present — p REBUILT 2026-09-04 (split through 2026-09-01, four checks PASS); repointed 2026-09-09 at marketing/…pull2026-09-09 (anchor 808,398)
   launch_at_login_new_users/         # present — `l` re-gated 2026-09-04, renamed 'Launch at Login for new users' (dir, spec, registry name); 200K curve carried unchanged
   mozillaonline/                     # present — `o` REBUILT 2026-09-04 from the 2026-09-02 official export via /ingest-adjustment; rerun pending
   japan_bot/                         # present — `j` WIRED 2026-09-04 (registry + spec + curve + source_data/); rerun pending
   japan_bot_REVERT_2026-09-04/       # present — the handoff's original spec/parquet; revert target, keep while cycle is live
   india_excess/                      # present — `i` WIRED 2026-09-04 (PROPORTIONAL; hold/linger/settle/fade alternates kept); rerun pending
   india_excess_REVERT_2026-09-04/    # present — pre-ingest spec/parquet; revert target, keep while cycle is live
-  september_desktop_waterfalls.ipynb     # present — Dec-15 2025→2026 desktop waterfalls (OS / market / market group); `h` placed in modern Windows
+  september_desktop_waterfalls.ipynb     # present — desktop waterfalls, 2025 actual→Sep 2026 and Aug→Sep forecast (OS / market / market group); `h` in modern Windows
   csv/september_canonical_curves.csv # + september_dec15_summary.csv + september_desktop_waterfall_steps.csv (add .gitignore exceptions)
   plots/  kpi_sheet/  handoff/
   TODO_factors.md

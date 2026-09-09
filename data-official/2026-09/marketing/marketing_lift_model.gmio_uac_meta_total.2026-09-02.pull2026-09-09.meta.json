@@ -1,0 +1,65 @@
+{
+  "model_name": "fenix_marketing_lift_gmio_uac_meta_total",
+  "description": "Paid-DAU curve for the `p` paid/organic split, anchor-and-subtract on the marketing team's GMIO cross-channel feed (UAC + Meta Android, Meta stacked cumulatively), composed as UAC+Meta where present else UAC. lift(d) = paid_dau(d) - paid_dau(2026-03-30), 0 before the anchor; the level is also written. Produced by scripts/pull_paid_dau_curve.py from the query, not wired.",
+  "wiring_status": "wired",
+  "created_at_utc": "2026-09-09T17:07:41.969721+00:00",
+  "mozaic_daily_git_hash": "16f7763983b46b47c816203cb6992e414052bae1",
+  "forecast_start_date": "2026-09-02",
+  "coverage": {
+    "start_date": "2026-01-05",
+    "end_date": "2026-12-31",
+    "anchor_date": "2026-03-30",
+    "actuals_through_week_of": "2026-08-31",
+    "last_weekly_row": "2026-12-21",
+    "tail_rule": "forward-fill after the last Monday to 2026-12-31; `p` holds flat past that"
+  },
+  "methodology": {
+    "framing": "anchor-and-subtract on the marketing team's paid-DAU curve (August 2026 method D)",
+    "composition": "COALESCE(uac_meta_actual, uac_actual) for actual weeks; COALESCE(uac_meta_forecast, uac_forecast) for forecast weeks",
+    "weekly_to_daily": "value on its ISO Monday, linear interpolation, forward-fill after the last Monday",
+    "metric_basis": "total",
+    "template_params": {
+      "metric": "Total Paid DAU",
+      "country": "All"
+    },
+    "meta_channel": "included, stacked cumulatively, assumed fully incremental",
+    "iran": "not in the feed, so ex-IR by construction"
+  },
+  "source_data": {
+    "template_sql": "data-official/2026-09/marketing/source_data/query_gmio_paid_dau_total_all.template.20260909.sql",
+    "template_sql_sha1": "f24cbe565271bf22d35f77b96b8e2cb3ea91e1fd",
+    "query_sql": "data-official/2026-09/marketing/source_data/query_gmio_paid_dau_total_all.20260909.sql",
+    "query_sql_sha1": "2e39a6ddb08788c6cc5a3a7100b49d5de42397b6",
+    "query_json": "data-official/2026-09/marketing/source_data/gmio_paid_dau_total_all.20260909.json",
+    "query_json_sha1": "1c9f5d83264f96247c85441b1967412df8fd52dc",
+    "query_csv": "data-official/2026-09/marketing/source_data/gmio_paid_dau_total_all.20260909.csv",
+    "query_csv_sha1": "a83906e30246e58e9d533efbab555687830ce716",
+    "feed_tables": [
+      "mozdata.analysis.ahe_gmio_weekly_metrics_20260909",
+      "mozdata.analysis.ahe_gmio_weekly_paid_dau_views_20260909"
+    ],
+    "pulled_on": "2026-09-09",
+    "gb_processed": 0.0004,
+    "weekly_rows": 51,
+    "basis_counts": {
+      "uac_meta_actual": 18,
+      "uac_actual": 17,
+      "uac_meta_forecast": 16
+    }
+  },
+  "key_values": {
+    "anchor_paid_dau": 808398.0,
+    "level_at_seam": 1632269.0,
+    "lift_dec15": 1074784.0,
+    "level_dec15": 1883182.0,
+    "lift_year_end": 1088200.0,
+    "level_year_end": 1896598.0
+  },
+  "known_limitations": [
+    "The feed's forecast reflects the marketing spend plan and the GMIO refit; a change versus the previous pull is mostly plan, not actuals revision.",
+    "Weekly values are treated as the level on their Monday and interpolated; within-week shape is not observed.",
+    "Curve ends Dec 31 of the forecast year; `p` holds it flat through the following year by its tail_policy."
+  ],
+  "artifact_sha1": "99b7fbb76b904ce0e2a254eac142916c29a34bd3",
+  "wired_on": "2026-09-09"
+}
