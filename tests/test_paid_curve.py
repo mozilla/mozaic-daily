@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 
 from mozaic_daily.paid_curve import (
-    basis_slug, build_daily_table, check_contract, compose_weekly, curve_stem,
+    basis_slug, basis_with_variant, build_daily_table, check_contract, compose_weekly, curve_stem,
     daily_type_labels, feed_tables, interpolate_weekly_to_daily, key_values, resolve_template_params,
 )
 
@@ -144,6 +144,13 @@ class TestDaily:
 class TestNaming:
     def test_stem_carries_basis_seam_and_pull_date(self):
         assert curve_stem("total", "2026-09-02", "2026-09-09") == "marketing_lift_model.gmio_uac_meta_total.2026-09-02.pull2026-09-09"
+
+    def test_variant_lands_in_the_stem_so_a_quantile_pull_is_never_mistaken_for_the_point_estimate(self):
+        assert curve_stem("total", "2026-09-02", "2026-09-10", "ci90lo") == \
+            "marketing_lift_model.gmio_uac_meta_total_ci90lo.2026-09-02.pull2026-09-10"
+        assert basis_with_variant("total", None) == "total"
+        with pytest.raises(ValueError, match="ci90lo"):
+            basis_with_variant("total", "CI90-lo")
 
     def test_basis_slugs(self):
         assert basis_slug("Total Paid DAU") == "total"

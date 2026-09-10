@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from mozaic_daily.paid_curve import curve_stem, daily_type_labels
+from mozaic_daily.paid_curve import basis_with_variant, curve_stem, daily_type_labels
 
 PENDING_NOTE = "PENDING_WIRING.md"
 
@@ -32,6 +32,8 @@ class PullProvenance:
     template_params: dict[str, str]
     pull_date: str
     gb_processed: float
+    # None for the point estimate; a slug such as `ci90lo` when the query returns another quantile.
+    variant: str | None = None
 
 
 def sha1_of(path: Path) -> str:
@@ -48,13 +50,14 @@ def _relative(path: Path, repo: Path) -> str:
 def write_curve_files(out_dir: Path, basis: str, forecast_start: str, provenance: PullProvenance,
                       weekly: pd.DataFrame, daily: pd.DataFrame, values: dict, repo: Path) -> dict[str, Path]:
     """Write parquet, csv twin, workbook, plot and meta; return the paths by role."""
-    stem = curve_stem(basis, forecast_start, provenance.pull_date)
+    stem = curve_stem(basis, forecast_start, provenance.pull_date, provenance.variant)
+    side_stem = "paid_dau_curve" + (f".{provenance.variant}" if provenance.variant else "")
     paths = {
         "parquet": out_dir / f"{stem}.parquet",
         "csv": out_dir / f"{stem}.csv",
         "meta": out_dir / f"{stem}.meta.json",
-        "workbook": out_dir / f"paid_dau_curve.{forecast_start}.pull{provenance.pull_date}.xlsx",
-        "plot": out_dir / "plots" / f"paid_dau_curve.{forecast_start}.pull{provenance.pull_date}.png",
+        "workbook": out_dir / f"{side_stem}.{forecast_start}.pull{provenance.pull_date}.xlsx",
+        "plot": out_dir / "plots" / f"{side_stem}.{forecast_start}.pull{provenance.pull_date}.png",
     }
     for path in paths.values():
         if path.exists():
@@ -67,7 +70,7 @@ def write_curve_files(out_dir: Path, basis: str, forecast_start: str, provenance
     csv_twin["target_date"] = csv_twin["target_date"].dt.date
     csv_twin.to_csv(paths["csv"], index=False)
     write_workbook(paths["workbook"], provenance.raw_csv, weekly, csv_twin)
-    write_plot(paths["plot"], weekly, daily, forecast_start)
+    write_plot(paths["plot"], weekly, daily, forecast_start, provenance.variant)
     paths["meta"].write_text(json.dumps(
         build_meta(basis, forecast_start, provenance, weekly, daily, values, paths, repo),
         indent=2) + "\n")
@@ -79,7 +82,8 @@ def build_meta(basis: str, forecast_start: str, provenance: PullProvenance, week
     last_actual_week = weekly.loc[weekly["is_actual"], "date"].max()
     git_hash = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True).stdout.strip()
     return {
-        "model_name": f"fenix_paid_dau_level_gmio_uac_meta_{basis}",
+        "model_name": f"fenix_paid_dau_level_gmio_uac_meta_{basis_with_variant(basis, provenance.variant)}",
+        "variant": provenance.variant or "point_estimate",
         "description": ("Paid-DAU level for the `p` paid/organic split, from the marketing team's GMIO cross-channel feed "
                         "(UAC + Meta Android, Meta stacked cumulatively), composed as UAC+Meta where present else UAC, "
                         "interpolated to daily and written as delivered: `p` stacks paid_dau_level_daily verbatim. "
@@ -95,7 +99,8 @@ def build_meta(basis: str, forecast_start: str, provenance: PullProvenance, week
         "methodology": {"framing": "level as delivered (the lift-plus-anchor round-trip was retired 2026-09-09)",
                         "composition": "COALESCE(uac_meta_actual, uac_actual) for actual weeks; COALESCE(uac_meta_forecast, uac_forecast) for forecast weeks",
                         "weekly_to_daily": "value on its ISO Monday, linear interpolation, forward-fill after the last Monday",
-                        "metric_basis": basis, "template_params": provenance.template_params,
+                        "metric_basis": basis, "variant": provenance.variant or "point_estimate",
+                        "template_params": provenance.template_params,
                         "meta_channel": "included, stacked cumulatively, assumed fully incremental",
                         "iran": "not in the feed, so ex-IR by construction"},
         "source_data": {"template_sql": _relative(provenance.template_sql, repo), "template_sql_sha1": sha1_of(provenance.template_sql),
@@ -123,7 +128,8 @@ def write_workbook(path: Path, raw_csv: Path, weekly: pd.DataFrame, daily_csv_tw
         daily_csv_twin.to_excel(book, sheet_name="daily", index=False)
 
 
-def write_plot(path: Path, weekly: pd.DataFrame, daily: pd.DataFrame, forecast_start: str) -> None:
+def write_plot(path: Path, weekly: pd.DataFrame, daily: pd.DataFrame, forecast_start: str,
+               variant: str | None = None) -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -143,7 +149,8 @@ def write_plot(path: Path, weekly: pd.DataFrame, daily: pd.DataFrame, forecast_s
     ax.scatter(forecast["date"], forecast["paid_dau_used"], facecolors="none", edgecolors="#2a78d6", s=22, zorder=3, label="weekly, forecast")
     ax.set_ylabel("paid DAU level")
     ax.legend(loc="upper left", fontsize=9, frameon=False)
-    ax.set_title(f"Paid-DAU level for `p`, seam {forecast_start} — GMIO feed, UAC+Meta where present else UAC", loc="left")
+    variant_label = f" [{variant}]" if variant else ""
+    ax.set_title(f"Paid-DAU level for `p`{variant_label}, seam {forecast_start} — GMIO feed, UAC+Meta where present else UAC", loc="left")
     for when, text in ((pd.Timestamp(forecast_start), "seam"), (kpi, "Dec-15")):
         ax.axvline(when, color="#52514e", ls=":", lw=1)
         ax.text(when, 0.02, f" {text}", transform=ax.get_xaxis_transform(), fontsize=9, color="#52514e")
@@ -167,6 +174,9 @@ def write_pending_note(out_dir: Path, paths: dict[str, Path], values: dict, prov
         f"- `organic.json` currently points at: `{currently_wired or 'nothing (no organic.json for this cycle)'}`",
         f"- level at seam: {values['level_at_seam']:,.0f}; at Dec-15: {values['level_dec15']:,.0f}; at year end: {values['level_year_end']:,.0f}",
         f"- feed tables: {', '.join(provenance.feed_tables)}",
+        *([f"- **variant: `{provenance.variant}`** — this is not the point estimate. Wiring it replaces the point-estimate",
+           "  paid level with this variant for the published mobile forecast; that is a deliberate decision, not a refresh."]
+          if provenance.variant else []),
         "",
         "## To wire (not done here)",
         "",

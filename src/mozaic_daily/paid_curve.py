@@ -35,6 +35,7 @@ KPI_MONTH_DAY = (12, 15)
 
 _TEMPLATE_PATTERN = re.compile(r"\{\{\s*(\w+)\s*\}\}")
 _TABLE_PATTERN = re.compile(r"`([\w-]+\.[\w-]+\.[\w-]+)`")
+_VARIANT_PATTERN = re.compile(r"[a-z0-9]+")
 
 
 def resolve_template_params(sql: str, params: dict[str, str]) -> str:
@@ -127,13 +128,24 @@ def daily_type_labels(daily: pd.DataFrame, weekly: pd.DataFrame) -> pd.Series:
                      index=daily.index, name="type")
 
 
-def curve_stem(basis: str, forecast_start: str, pull_date: str) -> str:
-    """`marketing_lift_model.gmio_uac_meta_{basis}.{seam}.pull{pull_date}` — siblings per pull, never overwrite.
+def curve_stem(basis: str, forecast_start: str, pull_date: str, variant: str | None = None) -> str:
+    """`marketing_lift_model.gmio_uac_meta_{basis}[_{variant}].{seam}.pull{pull_date}` — siblings per pull, never overwrite.
 
     The `marketing_lift_model` prefix is historical (the file no longer carries a lift); it is kept
     so the skill's file-name documentation and existing siblings stay consistent within a cycle.
+    `variant` names a query that is not the point estimate (e.g. `ci90lo`, the lower end of the
+    90% credible interval) so the file is distinguishable from the point-estimate pull by name.
     """
-    return f"marketing_lift_model.gmio_uac_meta_{basis}.{forecast_start}.pull{pull_date}"
+    return f"marketing_lift_model.gmio_uac_meta_{basis_with_variant(basis, variant)}.{forecast_start}.pull{pull_date}"
+
+
+def basis_with_variant(basis: str, variant: str | None) -> str:
+    """`{basis}` for the point estimate, `{basis}_{variant}` otherwise; the variant slug must be [a-z0-9]+."""
+    if variant is None:
+        return basis
+    if not _VARIANT_PATTERN.fullmatch(variant):
+        raise ValueError(f"variant {variant!r} must match [a-z0-9]+ (e.g. ci90lo); it lands in file names")
+    return f"{basis}_{variant}"
 
 
 def basis_slug(metric: str) -> str:

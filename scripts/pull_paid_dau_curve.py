@@ -3,6 +3,7 @@
 
     python scripts/pull_paid_dau_curve.py --sql ~/Downloads/gmio_widget.sql
     python scripts/pull_paid_dau_curve.py --sql ... --from-json <saved machine JSON>   # no BigQuery
+    python scripts/pull_paid_dau_curve.py --sql ... --variant ci90lo   # a non-point-estimate twin, labelled in every file
 
 Steps: resolve the widget's `{{metric}}` / `{{country}}` params (defaults: Total Paid DAU / All) →
 run the query read-only through bq_query.py → save the template SQL, the resolved SQL, the JSON
@@ -31,7 +32,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from mozaic_daily.paid_curve import (  # noqa: E402
-    TEMPLATE_DEFAULTS, basis_slug, build_daily_table, check_contract, compose_weekly,
+    TEMPLATE_DEFAULTS, basis_slug, basis_with_variant, build_daily_table, check_contract, compose_weekly,
     feed_tables, interpolate_weekly_to_daily, key_values, resolve_template_params,
 )
 from mozaic_daily.paid_curve_files import PullProvenance, write_curve_files, write_pending_note  # noqa: E402
@@ -51,6 +52,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-gb", type=float, default=10.0, help="bq_query.py billing guard")
     parser.add_argument("--from-json", type=Path, default=None, help="reuse a saved bq_query.py --machine result instead of querying")
     parser.add_argument("--out-dir", type=Path, default=None, help="default data-official/{cycle}/marketing")
+    parser.add_argument("--variant", default=None,
+                        help="slug ([a-z0-9]+) for a query that is not the point estimate, e.g. ci90lo for the lower end of "
+                             "the 90%% credible interval; lands in every file name and the meta so the pull is never mistaken "
+                             "for the point estimate")
     return parser.parse_args()
 
 
@@ -105,7 +110,7 @@ def main() -> None:
 
     params = {"metric": args.metric, "country": args.country}
     basis = basis_slug(args.metric)
-    slug = f"gmio_paid_dau_{basis}_{args.country.lower()}"
+    slug = f"gmio_paid_dau_{basis_with_variant(basis, args.variant)}_{args.country.lower()}"
     stamp = args.pull_date.replace("-", "")
     template_sql = source_dir / f"query_{slug}.template.{stamp}.sql"
     resolved_sql = source_dir / f"query_{slug}.{stamp}.sql"
@@ -141,7 +146,8 @@ def main() -> None:
 
     provenance = PullProvenance(template_sql=template_sql, resolved_sql=resolved_sql, raw_json=raw_json, raw_csv=raw_csv,
                                 feed_tables=feed_tables(resolved_text), template_params=params,
-                                pull_date=args.pull_date, gb_processed=float(result.get("gb_processed", 0.0)))
+                                pull_date=args.pull_date, gb_processed=float(result.get("gb_processed", 0.0)),
+                                variant=args.variant)
     paths = write_curve_files(out_dir, basis, forecast_start, provenance, weekly, daily, values, REPO)
     note = write_pending_note(out_dir, paths, values, provenance, forecast_start, currently_wired_curve(cycle_dir), REPO)
 

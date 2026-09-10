@@ -46,6 +46,7 @@ Establish and show as a table for confirmation:
 | `CYCLE` | newest `data-official/YYYY-MM/`. Infer, then confirm |
 | `SEAM` | `applies_to_forecast_start` in `data-official/$CYCLE/organic/organic.json`. Confirm |
 | `PULL_DATE` | today, unless the user says otherwise |
+| `VARIANT` | none for the point estimate; a slug (e.g. `ci90lo`) if the SQL header says it is another quantile. The user must name it |
 | existing pulls | `ls data-official/$CYCLE/marketing/` — list every `marketing_lift_model.*` stem and which one `organic.json` points at |
 
 Templates: `grep -o '{{[a-z_]*}}' $SQL | sort -u`. The widget query has `{{metric}}` and
@@ -63,8 +64,14 @@ Otherwise proceed.
 ```bash
 source .venv/bin/activate
 python scripts/pull_paid_dau_curve.py --sql $SQL --cycle $CYCLE --forecast-start $SEAM \
-    [--pull-date YYYY-MM-DD] [--metric ...] [--country ...]
+    [--pull-date YYYY-MM-DD] [--metric ...] [--country ...] [--variant SLUG]
 ```
+
+**`--variant`** is for a query that is not the point estimate — the marketing team also publishes a
+lower-bound twin (`ci_lo` = p5 of the 90% credible interval on forecast weeks, `_ci90_` feed tables).
+Pass a slug such as `ci90lo`; it lands in every file name (`...gmio_uac_meta_total_ci90lo...`,
+`paid_dau_curve.ci90lo...`), the meta's `model_name` / `variant`, the plot title and the hand-off
+note, so the pull can never be mistaken for the point estimate. Omit it for the point estimate.
 
 The script, in order: copies the template SQL; writes the resolved SQL with a provenance header;
 runs it through `bq_query.py --machine`; writes the JSON result and a CSV **verbatim** under
