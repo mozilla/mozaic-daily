@@ -757,28 +757,83 @@ def test_september_2026_09_09_pull_level_column_is_the_wired_input():
     assert df.loc["2026-12-31", "paid_dau_level_daily"] == df.loc["2026-12-21", "paid_dau_level_daily"]
 
 
+def test_september_2026_09_10_lower_bound_pull_is_labelled_and_below_the_point_estimate():
+    """The 2026-09-10 pull is the marketing team's LOWER-BOUND twin query (p5 of the 90% credible interval on
+    forecast weeks, feed tables _ci90_20260909). It carries the `ci90lo` variant in its file name and meta so it
+    is never mistaken for the point estimate; its actuals end one week earlier (the retention window must close
+    before a week is measured) and its forecast sits below the 09-09 point estimate."""
+    import json
+    marketing = REAL_SPEC.parent.parent.parent / "2026-09" / "marketing"
+    stem = "marketing_lift_model.gmio_uac_meta_total_ci90lo.2026-09-02.pull2026-09-10"
+    df = pd.read_parquet(marketing / f"{stem}.parquet")
+    meta = json.loads((marketing / f"{stem}.meta.json").read_text())
+    assert meta["variant"] == "ci90lo" and meta["model_name"].endswith("_total_ci90lo")
+    assert meta["coverage"]["actuals_through_week_of"] == "2026-08-24"
+    source = pd.read_csv(marketing / "source_data" / "gmio_paid_dau_total_ci90lo_all.20260910.csv", parse_dates=["date"]).set_index("date")
+    assert df.loc["2026-12-14", "paid_dau_level_daily"] == source.loc["2026-12-14", "uac_meta_forecast"]
+    assert df.loc["2026-12-15", "paid_dau_level_daily"] == pytest.approx(1826168, abs=1.0)
+    point_estimate = pd.read_parquet(marketing / "marketing_lift_model.gmio_uac_meta_total.2026-09-02.pull2026-09-09.parquet")
+    forecast_days = df.loc["2026-09-02":"2026-12-31", "paid_dau_level_daily"]
+    assert (forecast_days < point_estimate.loc[forecast_days.index, "paid_dau_level_daily"]).all()
+
+
+def test_september_2026_09_10_low_scenario_import_is_labelled_and_reads_the_workbook_verbatim():
+    """The second 2026-09-10 import is the marketing team's delivered WORKBOOK (`Paid DAU Forecast Scenarios.xlsx`),
+    column `Low Forecast` = point estimate minus a 3.3% backtest error, imported through
+    `pull_paid_dau_curve.py --from-xlsx` as variant `low`. Every Monday value must be a cell of the delivered sheet
+    (the first week from the `result` sheet's UAC-only actual), the footer row must not leak in, and the meta must
+    carry the variant and the delivered file's sha1."""
+    import hashlib
+    import json
+    marketing = REAL_SPEC.parent.parent.parent / "2026-09" / "marketing"
+    stem = "marketing_lift_model.gmio_uac_meta_total_low.2026-09-09.pull2026-09-10"
+    df = pd.read_parquet(marketing / f"{stem}.parquet")
+    meta = json.loads((marketing / f"{stem}.meta.json").read_text())
+    assert meta["variant"] == "low" and meta["model_name"].endswith("_total_low")
+    assert meta["coverage"]["actuals_through_week_of"] == "2026-08-24"
+    delivered = marketing / "source_data" / "delivered.paid_dau_forecast_scenarios.20260910.xlsx"
+    assert meta["source_data"]["delivered_file_sha1"] == hashlib.sha1(delivered.read_bytes()).hexdigest()
+    sheet = pd.read_excel(delivered, sheet_name="Scenarios")
+    sheet = sheet[pd.to_datetime(sheet["Weeks"], errors="coerce").notna()].copy()
+    sheet["Weeks"] = pd.to_datetime(sheet["Weeks"])
+    sheet = sheet.set_index("Weeks")
+    assert df.loc["2026-08-24", "paid_dau_level_daily"] == sheet.loc["2026-08-24", "Actualized Total Paid DAU"]
+    assert df.loc["2026-12-14", "paid_dau_level_daily"] == sheet.loc["2026-12-14", "Low Forecast"]
+    result = pd.read_excel(delivered, sheet_name="result", parse_dates=["date"]).set_index("date")
+    assert df.loc["2026-01-05", "paid_dau_level_daily"] == result.loc["2026-01-05", "uac_actual"]
+    assert meta["source_data"]["dropped_row_labels"] == ["Dec15 DAU"]
+    assert df.loc["2026-12-15", "paid_dau_level_daily"] == pytest.approx(1814609, abs=1.0)
+    assert df.loc["2026-12-31", "paid_dau_level_daily"] == df.loc["2026-12-21", "paid_dau_level_daily"]
+    ci90lo = pd.read_parquet(marketing / "marketing_lift_model.gmio_uac_meta_total_ci90lo.2026-09-02.pull2026-09-10.parquet")
+    assert df.loc["2026-12-15", "paid_dau_level_daily"] < ci90lo.loc["2026-12-15", "paid_dau_level_daily"]
+
+
 def test_real_september_organic_spec_reads_the_gmio_level_with_no_anchor():
-    """September (from 2026-09-09): organic.json points value_column at the level column and carries NO anchor.
-    The Dec-15 level is the marketing feed's own number, held flat into 2027."""
+    """September (from 2026-09-10, second repoint): organic.json points value_column at the level column of the
+    delivered workbook's LOW scenario and carries NO anchor. The Dec-15 level is the marketing team's own number, held flat into 2027."""
     sept = REPO_ROOT / "data-official" / "2026-09" / "organic" / "organic.json"
     spec = load_organic_spec(sept)
-    assert spec["applies_to_forecast_start"] == "2026-09-02"
+    assert spec["applies_to_forecast_start"] == "2026-09-09"   # refreshed 2026-09-10 from 2026-09-02
+    assert spec["data_file"] == "fenix_paid_organic.2026-09-09.parquet"   # split rebuilt for training through 2026-09-08
     paid = spec["paid_forecast"]
-    assert paid["data_file"].endswith(".pull2026-09-09.parquet")
+    assert paid["data_file"].endswith("_total_low.2026-09-09.pull2026-09-10.parquet")   # the workbook's Low scenario, variant `low`
     assert paid["value_column"] == "paid_dau_level_daily"
     assert "anchor_paid_dau" not in paid and "anchor_source" not in paid
     assert paid_level_framing(spec) == "level"
-    level = marketing_paid_level(spec, sept.parent, forecast_start="2026-09-02", forecast_end="2027-12-31")
-    assert level.loc[pd.Timestamp("2026-12-15")] == pytest.approx(1883182, abs=1.0)
+    level = marketing_paid_level(spec, sept.parent, forecast_start="2026-09-09", forecast_end="2027-12-31")
+    assert level.loc[pd.Timestamp("2026-12-15")] == pytest.approx(1814609, abs=1.0)   # the Low scenario; the ci90lo pull was 1,826,168
     assert level.loc[pd.Timestamp("2027-06-01")] == pytest.approx(level.loc[pd.Timestamp("2026-12-31")])
 
 
 def test_september_level_framing_reproduces_the_legacy_arithmetic_exactly():
     """The switch changed no number: reading the level column gives the same series as lift + anchor
-    would have, over the whole forecast horizon, to the float."""
+    would have, over the whole forecast horizon, to the float. Pinned to the 2026-09-09 point-estimate pull,
+    the last file written with both columns -- the live spec has since moved to the ci90lo pull, which carries
+    the level only."""
     import json
     sept = REPO_ROOT / "data-official" / "2026-09" / "organic" / "organic.json"
     spec = load_organic_spec(sept)
+    spec["paid_forecast"]["data_file"] = "../marketing/marketing_lift_model.gmio_uac_meta_total.2026-09-02.pull2026-09-09.parquet"
     level_framing = marketing_paid_level(spec, sept.parent, forecast_start="2026-09-02", forecast_end="2027-12-31")
     legacy = json.loads(json.dumps(spec))
     legacy["paid_forecast"]["value_column"] = "marketing_lift_daily"

@@ -1,6 +1,6 @@
 ---
 name: pull-marketing-curve
-description: Turn the marketing team's paid-DAU SQL query (the GMIO widget query with {{metric}} / {{country}} templates) into files on disk — the query output verbatim plus the daily paid-DAU curve that the mobile `p` split consumes — under data-official/{cycle}/marketing/, with a pull-date suffix and a PENDING_WIRING.md hand-off. Use when the user pastes or points at a marketing paid-DAU query, says "pull the marketing data", "re-pull the paid curve", "refresh the GMIO feed", or hands over a new ahe_gmio table suffix. Query-to-file only — it never edits organic.json, tests, the registry, or the model, and never overwrites an earlier pull.
+description: Turn the marketing team's paid-DAU SQL query (the GMIO widget query with {{metric}} / {{country}} templates) — or, since 2026-09-10, a delivered weekly scenario WORKBOOK (one scenario column, via --from-xlsx) — into files on disk — the query output verbatim plus the daily paid-DAU curve that the mobile `p` split consumes — under data-official/{cycle}/marketing/, with a pull-date suffix and a PENDING_WIRING.md hand-off. Use when the user pastes or points at a marketing paid-DAU query, says "pull the marketing data", "re-pull the paid curve", "refresh the GMIO feed", or hands over a new ahe_gmio table suffix. Query-to-file only — it never edits organic.json, tests, the registry, or the model, and never overwrites an earlier pull.
 disable-model-invocation: false
 ---
 
@@ -16,8 +16,10 @@ The deterministic work is in `scripts/pull_paid_dau_curve.py`; logic in `mozaic_
 
 **Boundary with `/ingest-adjustment`.** That skill takes a *file* of *daily* rows and wires a
 *registered adjustment code* (spec, registry, `_index.md` ledger, CLAUDE.md row, tests). This one
-takes a *query* of *weekly* rows and produces an *input file* for the existing `p` code. They share no
-files. Wiring the new curve into `organic.json` is a third, separate step that this skill only
+takes *weekly* rows — a *query*, or since 2026-09-10 a *delivered workbook* — and produces an *input
+file* for the existing `p` code. They share no files. **A weekly paid-DAU file is this skill's job even
+though it is a file**: `/ingest-adjustment` halts on weekly rows by rule, and the paid level is `p`'s input,
+not a code. Wiring the new curve into `organic.json` is a third, separate step that this skill only
 describes in `PENDING_WIRING.md`.
 
 **Rules.**
@@ -87,6 +89,37 @@ user must do. Do not patch the data.
 
 To rebuild from a saved result without re-querying: `--from-json source_data/<slug>.<stamp>.json`
 with a new `--pull-date`.
+
+---
+
+### Phase 1b — A delivered workbook instead of a query (`--from-xlsx`)
+
+When the marketing team hands over a workbook of weekly rows (first case: `Paid DAU Forecast Scenarios.xlsx`,
+2026-09-10 — a `Weeks` column, an actualized column, and High / Med / Low scenario columns side by side with a
+legend off to the right), list the sheets and print the header row plus a few rows around the actual→forecast
+handoff and the tail. Then **GATE (question block)**, all in one go:
+
+- **which scenario column** to import, quoting the sheet's own legend for each (High = point estimate, Med = 90% CI
+  lower end, Low = point estimate − 3.3% backtest error, in that first file — never assume the same next time);
+- **how to handle a week blank in both** the actualized and the chosen column (the first week was blank in the
+  actualized column; the workbook's `result` sheet carried the UAC-only actual for it → `--fill-actual-from
+  'result!uac_actual'`), or halt;
+- the **variant slug** (`low`, `med`, `high`, …) — mandatory on this path;
+- whether to **wire `organic.json` afterwards** or leave `PENDING_WIRING.md` (the user asked for wiring in the same
+  pass on 2026-09-10; the default of this skill is files only).
+
+```bash
+python scripts/pull_paid_dau_curve.py --from-xlsx "$FILE" --sheet Scenarios \
+    --date-column Weeks --actual-column "Actualized Total Paid DAU" --forecast-column "Low Forecast" \
+    --fill-actual-from "result!uac_actual" --variant low --column-legend "<the sheet's legend, verbatim>"
+```
+
+The script copies the workbook byte for byte to `source_data/delivered.<slug>.<stamp>.xlsx`, reads the one
+column, drops rows whose date cell does not parse (footer summaries such as `Dec15 DAU`) **and prints them**, and
+then runs the same daily build and writes the same files as the query path; the meta's `source_data.kind` is
+`delivered_file` with the sheet, columns, legend, fills and drops. Report the dropped labels and filled weeks to
+the user. **Do not trust a footer "Dec-15" figure** in the sheet: in the first file it sat well below both
+neighbouring weekly values, so its convention was unknown; our Dec-15 is the Monday series interpolated.
 
 ---
 

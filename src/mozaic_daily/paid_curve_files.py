@@ -4,52 +4,37 @@ Everything here lands under `data-official/{cycle}/marketing/` with a **pull-dat
 re-pull within a cycle is a sibling of the previous build, never an overwrite. Nothing the forecast
 reads (`organic.json`, tests, registry) is touched: the `PENDING_WIRING.md` note is the hand-off to
 whoever wires the curve, and that agent deletes it when done.
+
+The rows may come from the query (`PullProvenance`) or a delivered workbook
+(`DeliveredFileProvenance`); see `paid_curve_provenance`. The files written are the same either way.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Union
 
 import pandas as pd
 
 from mozaic_daily.paid_curve import basis_with_variant, curve_stem, daily_type_labels
+from mozaic_daily.paid_curve_provenance import (  # noqa: F401  (re-exported for the script)
+    DeliveredFileProvenance, PullProvenance, relative_to_repo, sha1_of,
+)
 
 PENDING_NOTE = "PENDING_WIRING.md"
+Provenance = Union[PullProvenance, DeliveredFileProvenance]
 
 
-@dataclass(frozen=True)
-class PullProvenance:
-    """What was run, where it came from, and when."""
-    template_sql: Path
-    resolved_sql: Path
-    raw_json: Path
-    raw_csv: Path
-    feed_tables: list[str]
-    template_params: dict[str, str]
-    pull_date: str
-    gb_processed: float
-    # None for the point estimate; a slug such as `ci90lo` when the query returns another quantile.
-    variant: str | None = None
+def write_curve_files(out_dir: Path, basis: str, forecast_start: str, provenance: Provenance,
+                      weekly: pd.DataFrame, daily: pd.DataFrame, values: dict, repo: Path,
+                      raw_frame: pd.DataFrame) -> dict[str, Path]:
+    """Write parquet, csv twin, workbook, plot and meta; return the paths by role.
 
-
-def sha1_of(path: Path) -> str:
-    return hashlib.sha1(path.read_bytes()).hexdigest()
-
-
-def _relative(path: Path, repo: Path) -> str:
-    try:
-        return str(path.resolve().relative_to(repo.resolve()))
-    except ValueError:
-        return str(path)
-
-
-def write_curve_files(out_dir: Path, basis: str, forecast_start: str, provenance: PullProvenance,
-                      weekly: pd.DataFrame, daily: pd.DataFrame, values: dict, repo: Path) -> dict[str, Path]:
-    """Write parquet, csv twin, workbook, plot and meta; return the paths by role."""
+    `raw_frame` is what came in, as delivered (the query rows, or the delivered sheet), for the
+    workbook's first tab.
+    """
     stem = curve_stem(basis, forecast_start, provenance.pull_date, provenance.variant)
     side_stem = "paid_dau_curve" + (f".{provenance.variant}" if provenance.variant else "")
     paths = {
@@ -69,25 +54,25 @@ def write_curve_files(out_dir: Path, basis: str, forecast_start: str, provenance
     csv_twin = daily.assign(type=daily_type_labels(daily, weekly)).reset_index()
     csv_twin["target_date"] = csv_twin["target_date"].dt.date
     csv_twin.to_csv(paths["csv"], index=False)
-    write_workbook(paths["workbook"], provenance.raw_csv, weekly, csv_twin)
-    write_plot(paths["plot"], weekly, daily, forecast_start, provenance.variant)
+    write_workbook(paths["workbook"], raw_frame, provenance.raw_sheet_name, weekly, csv_twin)
+    write_plot(paths["plot"], weekly, daily, forecast_start, provenance.plot_subtitle, provenance.variant)
     paths["meta"].write_text(json.dumps(
         build_meta(basis, forecast_start, provenance, weekly, daily, values, paths, repo),
         indent=2) + "\n")
     return paths
 
 
-def build_meta(basis: str, forecast_start: str, provenance: PullProvenance, weekly: pd.DataFrame,
+def build_meta(basis: str, forecast_start: str, provenance: Provenance, weekly: pd.DataFrame,
                daily: pd.DataFrame, values: dict, paths: dict, repo: Path) -> dict:
     last_actual_week = weekly.loc[weekly["is_actual"], "date"].max()
     git_hash = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True).stdout.strip()
     return {
         "model_name": f"fenix_paid_dau_level_gmio_uac_meta_{basis_with_variant(basis, provenance.variant)}",
         "variant": provenance.variant or "point_estimate",
-        "description": ("Paid-DAU level for the `p` paid/organic split, from the marketing team's GMIO cross-channel feed "
-                        "(UAC + Meta Android, Meta stacked cumulatively), composed as UAC+Meta where present else UAC, "
-                        "interpolated to daily and written as delivered: `p` stacks paid_dau_level_daily verbatim. "
-                        "Produced by scripts/pull_paid_dau_curve.py from the query, not wired."),
+        "description": (f"Paid-DAU level for the `p` paid/organic split, from {provenance.origin} "
+                        "(UAC + Meta Android, Meta stacked cumulatively), one value per week interpolated to daily and "
+                        "written as delivered: `p` stacks paid_dau_level_daily verbatim. "
+                        "Produced by scripts/pull_paid_dau_curve.py, not wired."),
         "wiring_status": "pending",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "mozaic_daily_git_hash": git_hash,
@@ -97,22 +82,16 @@ def build_meta(basis: str, forecast_start: str, provenance: PullProvenance, week
                      "last_weekly_row": str(weekly["date"].max().date()),
                      "tail_rule": f"forward-fill after the last Monday to {daily.index.max().date()}; `p` holds flat past that"},
         "methodology": {"framing": "level as delivered (the lift-plus-anchor round-trip was retired 2026-09-09)",
-                        "composition": "COALESCE(uac_meta_actual, uac_actual) for actual weeks; COALESCE(uac_meta_forecast, uac_forecast) for forecast weeks",
+                        "composition": provenance.composition,
                         "weekly_to_daily": "value on its ISO Monday, linear interpolation, forward-fill after the last Monday",
                         "metric_basis": basis, "variant": provenance.variant or "point_estimate",
-                        "template_params": provenance.template_params,
                         "meta_channel": "included, stacked cumulatively, assumed fully incremental",
                         "iran": "not in the feed, so ex-IR by construction"},
-        "source_data": {"template_sql": _relative(provenance.template_sql, repo), "template_sql_sha1": sha1_of(provenance.template_sql),
-                        "query_sql": _relative(provenance.resolved_sql, repo), "query_sql_sha1": sha1_of(provenance.resolved_sql),
-                        "query_json": _relative(provenance.raw_json, repo), "query_json_sha1": sha1_of(provenance.raw_json),
-                        "query_csv": _relative(provenance.raw_csv, repo), "query_csv_sha1": sha1_of(provenance.raw_csv),
-                        "feed_tables": provenance.feed_tables, "pulled_on": provenance.pull_date,
-                        "gb_processed": provenance.gb_processed, "weekly_rows": int(len(weekly)),
+        "source_data": {**provenance.source_section(repo), "weekly_rows": int(len(weekly)),
                         "basis_counts": {k: int(v) for k, v in weekly["basis"].value_counts().items()}},
         "key_values": values,
         "known_limitations": [
-            "The feed's forecast reflects the marketing spend plan and the GMIO refit; a change versus the previous pull is mostly plan, not actuals revision.",
+            "The forecast reflects the marketing spend plan and the GMIO refit; a change versus the previous pull is mostly plan, not actuals revision.",
             "Weekly values are treated as the level on their Monday and interpolated; within-week shape is not observed.",
             "Curve ends Dec 31 of the forecast year; `p` holds it flat through the following year by its tail_policy.",
             "Not wired: organic.json must point paid_forecast.data_file at this parquet with value_column paid_dau_level_daily (see PENDING_WIRING.md).",
@@ -121,15 +100,16 @@ def build_meta(basis: str, forecast_start: str, provenance: PullProvenance, week
     }
 
 
-def write_workbook(path: Path, raw_csv: Path, weekly: pd.DataFrame, daily_csv_twin: pd.DataFrame) -> None:
+def write_workbook(path: Path, raw_frame: pd.DataFrame, raw_sheet_name: str, weekly: pd.DataFrame,
+                   daily_csv_twin: pd.DataFrame) -> None:
     with pd.ExcelWriter(path, engine="openpyxl") as book:
-        pd.read_csv(raw_csv).to_excel(book, sheet_name="raw_query", index=False)
+        raw_frame.to_excel(book, sheet_name=raw_sheet_name, index=False)
         weekly.assign(date=weekly["date"].dt.date).to_excel(book, sheet_name="composed_weekly", index=False)
         daily_csv_twin.to_excel(book, sheet_name="daily", index=False)
 
 
 def write_plot(path: Path, weekly: pd.DataFrame, daily: pd.DataFrame, forecast_start: str,
-               variant: str | None = None) -> None:
+               subtitle: str, variant: str | None = None) -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -150,7 +130,7 @@ def write_plot(path: Path, weekly: pd.DataFrame, daily: pd.DataFrame, forecast_s
     ax.set_ylabel("paid DAU level")
     ax.legend(loc="upper left", fontsize=9, frameon=False)
     variant_label = f" [{variant}]" if variant else ""
-    ax.set_title(f"Paid-DAU level for `p`{variant_label}, seam {forecast_start} — GMIO feed, UAC+Meta where present else UAC", loc="left")
+    ax.set_title(f"Paid-DAU level for `p`{variant_label}, seam {forecast_start} — {subtitle}", loc="left")
     for when, text in ((pd.Timestamp(forecast_start), "seam"), (kpi, "Dec-15")):
         ax.axvline(when, color="#52514e", ls=":", lw=1)
         ax.text(when, 0.02, f" {text}", transform=ax.get_xaxis_transform(), fontsize=9, color="#52514e")
@@ -159,7 +139,7 @@ def write_plot(path: Path, weekly: pd.DataFrame, daily: pd.DataFrame, forecast_s
     plt.close(fig)
 
 
-def write_pending_note(out_dir: Path, paths: dict[str, Path], values: dict, provenance: PullProvenance,
+def write_pending_note(out_dir: Path, paths: dict[str, Path], values: dict, provenance: Provenance,
                        forecast_start: str, currently_wired: str | None, repo: Path) -> Path:
     """The hand-off flag for the wiring step. Overwritten on each pull; deleted by whoever wires the curve."""
     note = out_dir / PENDING_NOTE
@@ -169,11 +149,11 @@ def write_pending_note(out_dir: Path, paths: dict[str, Path], values: dict, prov
         "Written by `scripts/pull_paid_dau_curve.py`. This directory holds a **new, unwired** paid curve. Nothing the",
         "forecast reads was changed. Wiring is a separate step; delete this file once it is done.",
         "",
-        f"- new curve: `{_relative(paths['parquet'], repo)}`",
-        f"- its meta: `{_relative(paths['meta'], repo)}`",
+        f"- new curve: `{relative_to_repo(paths['parquet'], repo)}`",
+        f"- its meta: `{relative_to_repo(paths['meta'], repo)}`",
         f"- `organic.json` currently points at: `{currently_wired or 'nothing (no organic.json for this cycle)'}`",
         f"- level at seam: {values['level_at_seam']:,.0f}; at Dec-15: {values['level_dec15']:,.0f}; at year end: {values['level_year_end']:,.0f}",
-        f"- feed tables: {', '.join(provenance.feed_tables)}",
+        *provenance.note_lines(repo),
         *([f"- **variant: `{provenance.variant}`** — this is not the point estimate. Wiring it replaces the point-estimate",
            "  paid level with this variant for the published mobile forecast; that is a deliberate decision, not a refresh."]
           if provenance.variant else []),

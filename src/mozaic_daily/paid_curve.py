@@ -66,22 +66,39 @@ def check_contract(raw: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"need at least 2 weekly rows, got {len(raw)}")
     frame = raw.copy()
     frame["date"] = pd.to_datetime(frame["date"])
-    frame = frame.sort_values("date").reset_index(drop=True)
+    frame = check_weekly_dates(frame)
     for column in REQUIRED_COLUMNS[1:]:
         frame[column] = pd.to_numeric(frame[column])
-    if (frame["date"].dt.dayofweek != 0).any():
-        bad = frame.loc[frame["date"].dt.dayofweek != 0, "date"].dt.date.tolist()[:3]
-        raise ValueError(f"rows must sit on ISO Mondays; offenders start {bad}")
-    gaps = frame["date"].diff().dropna().dt.days
-    if gaps.ne(7).any():
-        raise ValueError(f"weeks are not consecutive; gaps of {sorted(set(gaps[gaps.ne(7)]))} days found")
-    if frame["date"].duplicated().any():
-        raise ValueError("duplicate week rows")
     for prefix in ("uac", "uac_meta"):
         overlap = frame.dropna(subset=[f"{prefix}_actual", f"{prefix}_forecast"])
         if (overlap[f"{prefix}_actual"] != overlap[f"{prefix}_forecast"]).any():
             raise ValueError(f"{prefix} actual and forecast disagree on the handoff week")
     return frame
+
+
+def check_weekly_dates(frame: pd.DataFrame) -> pd.DataFrame:
+    """Rows must sit on consecutive, distinct ISO Mondays; return the frame sorted by `date`.
+
+    Shared by the query contract and the delivered-workbook reader: the weekly-to-daily step below
+    is only meaningful on this grid, whichever source the rows came from.
+    """
+    frame = frame.sort_values("date").reset_index(drop=True)
+    if (frame["date"].dt.dayofweek != 0).any():
+        bad = frame.loc[frame["date"].dt.dayofweek != 0, "date"].dt.date.tolist()[:3]
+        raise ValueError(f"rows must sit on ISO Mondays; offenders start {bad}")
+    if frame["date"].duplicated().any():
+        raise ValueError("duplicate week rows")
+    gaps = frame["date"].diff().dropna().dt.days
+    if gaps.ne(7).any():
+        raise ValueError(f"weeks are not consecutive; gaps of {sorted(set(gaps[gaps.ne(7)]))} days found")
+    return frame
+
+
+def check_actuals_precede_forecasts(weekly: pd.DataFrame, source: str) -> None:
+    """An actual week after a forecast week means the source's actual/forecast labelling is broken."""
+    actual_after_forecast = weekly["is_actual"] & (~weekly["is_actual"]).cummax()
+    if actual_after_forecast.any():
+        raise ValueError(f"an actual week follows a forecast week; {source}")
 
 
 def compose_weekly(frame: pd.DataFrame) -> pd.DataFrame:
@@ -95,9 +112,7 @@ def compose_weekly(frame: pd.DataFrame) -> pd.DataFrame:
     picked = frame.apply(pick, axis=1, result_type="expand")
     weekly = frame.copy()
     weekly["paid_dau_used"], weekly["basis"], weekly["is_actual"] = picked[0], picked[1], picked[2].astype(bool)
-    actual_after_forecast = weekly["is_actual"] & (~weekly["is_actual"]).cummax()
-    if actual_after_forecast.any():
-        raise ValueError("an actual week follows a forecast week; the feed's was_forecast flag is inconsistent")
+    check_actuals_precede_forecasts(weekly, "the feed's was_forecast flag is inconsistent")
     return weekly
 
 
