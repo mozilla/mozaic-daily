@@ -37,10 +37,14 @@ codes:
       its Dec-15 effect is exact and needs no rerun). Per-cycle spec at
       data-official/{YYYY-MM}/adjustments/headwind.json: a two-number linear_ramp from
       0 at the cycle's seam to the anchor at Dec-15. Through 2026-08 the anchor was
-      -1,315,000 (with mobile -27,162 in the same file). From 2026-09 the anchor is the
-      Dec-15 value of Brad's Win10 model curve, -726,000, flat after Dec-15
-      (clamp_at_anchor), desktop only - the mobile leg is code `u`. Delivered file and
-      value-read meta in data-official/2026-09/headwinds/. DRAFT as of 2026-09-04.
+      -1,315,000 (with mobile -27,162 in the same file). For 2026-09 the delivered value
+      was the Dec-15 point of Brad's Win10 model curve, -726,000 (2026-09-04); it was then
+      re-anchored as a calibration: -1,089,347 (2026-09-08, the combinatorics
+      `h_for_plus479k` counterfactual), -1,167,277 (2026-09-10, same target at the refreshed
+      seam) and -1,017,277 (2026-09-15, eased 150,000 at the c-suite's request so desktop
+      Dec-15 lands at 49,332,443). Flat after Dec-15 (clamp_at_anchor), desktop only - the
+      mobile leg is code `u`. Delivered file and value-read meta in
+      data-official/2026-09/headwinds/; every re-anchor is dated in the spec's notes. DRAFT.
     spec_glob: "data-official/*/adjustments/headwind.json"
   m:
     name: marketing_lift
@@ -165,17 +169,21 @@ codes:
       in Japan since 2026-06-24 (four-clause behavioural definition: sub-minute sessions, 0 to 10
       URIs, not default browser, profile age under 28 days; 95.1% ESR as an outcome, not an
       input). Measured as raw daily excess over a flat 1,876 +/- 265 DAU/day baseline through the
-      2026-08-30 data edge, then an arrival-rate projection convolved with a measured per-cohort
-      activity kernel, ramping at the measured 501 DAU/day to a MIDDLE plateau of 67,101 DAU/day
-      (6.19% of Japan) reached 2026-11-28 and held flat to 2027-12-31. The plateau is a planning
-      choice, not an estimate: no inflection has been observed. A masking effect, not growth:
+      2026-09-07 data edge, then an arrival-rate projection convolved with a measured per-cohort
+      activity kernel, ramping at the measured 466 DAU/day to a PEAK plateau of 43,813 DAU/day
+      (3.99% of Japan) -- the highest single day of excess measured so far, 2026-08-28 -- reached
+      2026-09-30 and held flat to 2027-12-31. Re-exported 2026-09-09: the 2026-09-04 build shipped
+      MIDDLE (67,101, 6.19% of Japan); the fleet stopped growing in late August (28-day mean 34,919
+      at the edge) and Brendan chose PEAK. Alternates at the same edge: LOW 34,919 / MIDDLE 69,839 /
+      HIGH 109,926. The plateau is a planning choice, not an estimate: no inflection has been observed. A masking effect, not growth:
       underneath it, ordinary Japanese users are down. Subtracted from modern_windows training
       rows before mozaic and added back after, so Prophet does not extrapolate it on its own;
       allocation is 100% JP, fixed. No double count with `o`: the flagged population is 95.1% ESR
       while the MozillaOnline migration is entirely non-ESR. History is deliberately unsmoothed
       because the daily swing is real contamination. Produced by scratch/brwells/regional-
-      story/forecast/deliver.py; evidence page site/forecast.html, DECISIONS D76-D90. Ingested
-      2026-09-04 from japan_bot.middle.2026-08-30.csv via /ingest-adjustment.
+      story/forecast/deliver.py; evidence page site/forecast.html, DECISIONS D76-D91, D105. Ingested
+      2026-09-04 from japan_bot.middle.2026-08-30.csv via /ingest-adjustment; re-ingested 2026-09-09
+      from japan_bot.peak.2026-09-07.csv.
     spec_glob: "data-official/*/japan_bot/japan_bot.json"
   i:
     name: india_excess
@@ -189,11 +197,12 @@ codes:
       out of every year before measuring (mozaic's calendar lacks Diwali, Dussehra, Sankranti and
       Ambedkar Jayanti), for the ratio only -- the training frame keeps every dip. Already NET of
       `l`: India carries 5.72% of the launch at login for new users lift (11,450 DAU/day at the edge) and that
-      is subtracted here; do not net it again. Net 28-day level 43,286/day at the 2026-08-29 edge.
-      Shipped path PROPORTIONAL: the excess held at 1.58% of India's typical level, so it follows
-      the seasonal calendar -- 41,945 DAU/day on 2026-12-15, held to 2027-12-31. A planning
+      is subtracted here; do not net it again. Net 28-day level 52,360/day at the 2026-09-06 edge
+      (re-exported 2026-09-09; the 2026-08-29 build read 43,286).
+      Shipped path PROPORTIONAL: the excess held at 1.92% of India's typical level, so it follows
+      the seasonal calendar -- 50,994 DAU/day on 2026-12-15, held to 2027-12-31. A planning
       choice (Brendan, 2026-09-04: conservative for the time being); four alternatives ship
-      alongside (hold 57,155 / linger 33,317 / settle 20,946 / fade 1,161 at Dec-15), and the
+      alongside (hold 57,155 / linger 41,205 / settle 26,948 / fade 1,916 at Dec-15), and the
       evidence on the producer's page narrows without deciding. The CAUSE IS A HYPOTHESIS (a
       university-calendar change is the leading candidate); report as "India above typical".
       Allocation 100% IN, fixed; modern_windows by measurement (78% of India's DAU). Produced by
@@ -214,3 +223,22 @@ codes:
       data-official/{YYYY-MM}/adjustments/tou_mobile_headwind.json; rationale in
       data-official/{YYYY-MM}/tou_mobile_headwind/_index.md.
     spec_glob: "data-official/*/adjustments/tou_mobile_headwind.json"
+  e:
+    name: launch_at_login_existing_users
+    applier: per_tile_overlay
+    description: >
+      Launch at Login for EXISTING desktop users DAU tailwind (the new-users half is code l).
+      Delivered 2026-09-10 as launch-on-login-dau-forecasts.csv: measured daily incremental DAU
+      from the existing-users rollout that began 2026-07-30 (actuals through 2026-09-08, the day
+      before the seam), then the producer's forecast to 2026-12-31 with planned rollout steps
+      (about 66K from the seam, about 77K on 2026-10-13, about 736K from 2026-10-15; Dec-15 about
+      738K, easing to 669K by Dec-31), held flat at the final 28d mean through 2027. The rollout
+      steps are planned, not observed. Per-tile overlay on legacy_desktop DAU, modern_windows
+      segment: subtracted from training rows before mozaic so Prophet does not extrapolate the
+      ramp, added back after. Allocation is LOCALIZED by fixed shares measured once from BigQuery:
+      each country's share of trailing-28d (2026-08-12 to 2026-09-08) legacy-desktop DAU on
+      Windows 10/11 in an en* locale (US 33.7%, ROW 37.3%, IN 13.6%, ID 5.8%, CA 4.6%), IR
+      excluded, because the feature ships to en locales. WITHHELD at ingest (spec carries
+      withheld: true): registered and gated on the 2026-09-09 seam but not applied until the key
+      is removed; the September rerun that follows ingest must not include it.
+    spec_glob: "data-official/*/launch_at_login_existing_users/launch_at_login_existing_users.json"

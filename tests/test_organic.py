@@ -808,20 +808,47 @@ def test_september_2026_09_10_low_scenario_import_is_labelled_and_reads_the_work
     assert df.loc["2026-12-15", "paid_dau_level_daily"] < ci90lo.loc["2026-12-15", "paid_dau_level_daily"]
 
 
+def test_september_2026_09_15_med_scenario_import_is_labelled_and_reads_the_workbook_verbatim():
+    """The 2026-09-15 import is the SAME delivered workbook's `Med Forecast` column (the sheet's 90% CI lower end,
+    the scenario leadership calls the midpoint), imported as variant `med` at the c-suite's request. Same contract as
+    the Low import: every Monday value a delivered cell, footer dropped, variant + sha1 in the meta, and it must sit
+    strictly between the Low and High scenarios at Dec-15."""
+    import hashlib
+    import json
+    marketing = REAL_SPEC.parent.parent.parent / "2026-09" / "marketing"
+    stem = "marketing_lift_model.gmio_uac_meta_total_med.2026-09-09.pull2026-09-15"
+    df = pd.read_parquet(marketing / f"{stem}.parquet")
+    meta = json.loads((marketing / f"{stem}.meta.json").read_text())
+    assert meta["variant"] == "med" and meta["model_name"].endswith("_total_med")
+    assert meta["coverage"]["actuals_through_week_of"] == "2026-08-24"
+    delivered = marketing / "source_data" / "delivered.paid_dau_forecast_scenarios.20260910.xlsx"
+    assert meta["source_data"]["delivered_file_sha1"] == hashlib.sha1(delivered.read_bytes()).hexdigest()
+    sheet = pd.read_excel(delivered, sheet_name="Scenarios")
+    sheet = sheet[pd.to_datetime(sheet["Weeks"], errors="coerce").notna()].copy()
+    sheet["Weeks"] = pd.to_datetime(sheet["Weeks"])
+    sheet = sheet.set_index("Weeks")
+    assert df.loc["2026-08-24", "paid_dau_level_daily"] == sheet.loc["2026-08-24", "Actualized Total Paid DAU"]
+    assert df.loc["2026-12-14", "paid_dau_level_daily"] == sheet.loc["2026-12-14", "Med Forecast"]
+    assert meta["source_data"]["dropped_row_labels"] == ["Dec15 DAU"]
+    assert df.loc["2026-12-15", "paid_dau_level_daily"] == pytest.approx(1833753, abs=1.0)
+    low = pd.read_parquet(marketing / "marketing_lift_model.gmio_uac_meta_total_low.2026-09-09.pull2026-09-10.parquet")
+    assert low.loc["2026-12-15", "paid_dau_level_daily"] < df.loc["2026-12-15", "paid_dau_level_daily"] < sheet.loc["2026-12-14", "High Forecast"]
+
+
 def test_real_september_organic_spec_reads_the_gmio_level_with_no_anchor():
-    """September (from 2026-09-10, second repoint): organic.json points value_column at the level column of the
-    delivered workbook's LOW scenario and carries NO anchor. The Dec-15 level is the marketing team's own number, held flat into 2027."""
+    """September (from 2026-09-15, third repoint): organic.json points value_column at the level column of the
+    delivered workbook's MED scenario and carries NO anchor. The Dec-15 level is the marketing team's own number, held flat into 2027."""
     sept = REPO_ROOT / "data-official" / "2026-09" / "organic" / "organic.json"
     spec = load_organic_spec(sept)
     assert spec["applies_to_forecast_start"] == "2026-09-09"   # refreshed 2026-09-10 from 2026-09-02
     assert spec["data_file"] == "fenix_paid_organic.2026-09-09.parquet"   # split rebuilt for training through 2026-09-08
     paid = spec["paid_forecast"]
-    assert paid["data_file"].endswith("_total_low.2026-09-09.pull2026-09-10.parquet")   # the workbook's Low scenario, variant `low`
+    assert paid["data_file"].endswith("_total_med.2026-09-09.pull2026-09-15.parquet")   # the workbook's Med scenario, variant `med`
     assert paid["value_column"] == "paid_dau_level_daily"
     assert "anchor_paid_dau" not in paid and "anchor_source" not in paid
     assert paid_level_framing(spec) == "level"
     level = marketing_paid_level(spec, sept.parent, forecast_start="2026-09-09", forecast_end="2027-12-31")
-    assert level.loc[pd.Timestamp("2026-12-15")] == pytest.approx(1814609, abs=1.0)   # the Low scenario; the ci90lo pull was 1,826,168
+    assert level.loc[pd.Timestamp("2026-12-15")] == pytest.approx(1833753, abs=1.0)   # the Med scenario; Low was 1,814,609, ci90lo 1,826,168
     assert level.loc[pd.Timestamp("2027-06-01")] == pytest.approx(level.loc[pd.Timestamp("2026-12-31")])
 
 

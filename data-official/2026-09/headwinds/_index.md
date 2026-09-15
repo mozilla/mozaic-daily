@@ -1,7 +1,14 @@
 # `h` — headwinds, cycle 2026-09
 
-> **Superseded 2026-09-08:** the live spec anchor is now **−1,089,347** (the `h_for_plus479k` counterfactual from
-> `../adjustment_combinatorics/`, all-in Dec-15 = August +479,000 = 49,182,443). Brad's −726,000 described below is the
+> **Eased 2026-09-15 at the c-suite's request: the live spec anchor is now −1,017,277** (150,000 less headwind than the
+> −1,167,277 below, so the published desktop Dec-15 28d-MA lands at **49,332,443** = August +629,000). A calibration decision,
+> not a measurement: nothing in Brad's curve or in telemetry changed. Recorded as an `h` edit rather than a separate code, on
+> Brendan's instruction. Display layer, exact at Dec-15, no rerun.
+>
+> **Superseded 2026-09-08, re-anchored 2026-09-10:** the spec anchor was then **−1,167,277** — the −1,089,347 adopted
+> 2026-09-08 (the `h_for_plus479k` counterfactual from `../adjustment_combinatorics/`, all-in Dec-15 = August +479,000 =
+> 49,182,443) plus the +77,930 the refreshed 2026-09-09 seam's raw model added at Dec-15, so the published desktop stays
+> at that same 49,182,443. Brad's −726,000 described below is the
 > delivered source value and remains the reference point; the ramp shape (0 at the seam, flat after Dec-15) is unchanged. DRAFT.
 
 Provenance and rationale for the September Win10 desktop headwind. The spec lives at

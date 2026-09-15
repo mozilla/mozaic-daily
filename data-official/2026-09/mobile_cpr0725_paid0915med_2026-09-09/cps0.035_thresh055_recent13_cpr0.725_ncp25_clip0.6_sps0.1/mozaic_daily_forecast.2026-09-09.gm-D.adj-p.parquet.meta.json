@@ -1,0 +1,29 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "p",
+      "name": "paid_organic_split",
+      "scope": "glean_mobile DAU only",
+      "spec_file": "data-official/2026-09/organic/organic.json"
+    }
+  ],
+  "artifact_sha1": "dcfe5323d8b759a8b9223b875fee5be54c1cae87",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-09-09",
+  "model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.055,
+    "prophet_changepoint_prior_scale": 0.035,
+    "prophet_changepoint_range": 0.725,
+    "prophet_n_changepoints": 25,
+    "prophet_recent_weeks": 13,
+    "prophet_seasonality_prior_scale": 0.1,
+    "seasonality_corr_threshold": 0.0,
+    "seasonality_regime": "auto"
+  },
+  "mozaic_daily_commit": "e0a9c288f7d1d813ca9cc7d944df61e9fa89887f",
+  "produced_at": "2026-09-15T22:44:09.348823+00:00Z",
+  "produced_by": "scripts/run_mobile_param_scan.py"
+}
