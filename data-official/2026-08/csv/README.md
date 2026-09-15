@@ -14,11 +14,12 @@ BigQuery, no model code needed. This is the set to hand off / upload.
 | `august_dec15_summary.DESKTOP_ONLY.EX_IR_CN.csv` | Desktop only, **ex-Iran, ex-China** | Yes, full anchor |
 | `august_canonical_curves.DESKTOP_ONLY.WIN10_HEADWIND_REMOVED.EX_IR_CN.csv` | Desktop only, **ex-Iran, ex-China** | **`h` REMOVED** |
 | `august_dec15_summary.DESKTOP_ONLY.WIN10_HEADWIND_REMOVED.EX_IR_CN.csv` | Desktop only, **ex-Iran, ex-China** | **`h` REMOVED** |
+| `august_canonical_curves.DESKTOP_ONLY.DAILY.csv` | Desktop only, **DAILY (unsmoothed) DAU**, not a 28-day MA | **Yes**, as the ramp advanced 13.5 days (see § The DAILY file) |
 
-⚠️ **Only the first two files are the published forecast.** The other six are scoped or
-counterfactual views — see [§ The WIN10_HEADWIND_REMOVED
-files](#the-win10_headwind_removed-files) and [§ The EX_IR_CN files](#the-ex_ir_cn-files)
-below. Everything the canonical forecast reports comes from the first two.
+⚠️ **Only the first two files are the published forecast.** The other seven are scoped,
+counterfactual or unsmoothed views — see [§ The WIN10_HEADWIND_REMOVED
+files](#the-win10_headwind_removed-files), [§ The EX_IR_CN files](#the-ex_ir_cn-files) and
+[§ The DAILY file](#the-daily-file) below. Everything the canonical forecast reports comes from the first two.
 
 All curve values are **28-day moving averages of daily active users (DAU)**, in
 absolute user counts, daily from **2026-01-01 through 2026-12-31**.
@@ -491,6 +492,84 @@ gone, and that each summary re-derives from its own curves file. Tests:
 `tests/test_export_desktop_ex_ir_cn_csv.py`.
 
 ---
+
+## The `DAILY` file
+
+`august_canonical_curves.DESKTOP_ONLY.DAILY.csv` holds **one raw daily DAU value per row**, not a
+28-day MA. It keeps the published file's layout (`date`, `desktop_actuals`, `desktop_prior_july`,
+`desktop_current_august`; 2026-01-01 → 2026-12-31; whole DAU) but none of its smoothing: desktop
+loses ~40% of its users at weekends, so Dec-15, a Tuesday, reads **55,077,204** where the published
+MA reads 48,703,443. A collaborator asked for the unsmoothed curve; `scripts/export_desktop_daily_csv.py`
+builds it from the same two desktop parquets as the published file.
+
+### ⚠️ This file is not the published forecast
+
+The columns share names with the published file but hold a different quantity. Only the filename
+says "daily", so a loader pointed at the wrong file reads numbers ±20% off and raises nothing. The
+published headline is the 28-day MA in `august_canonical_curves.csv`. This file re-smooths to it
+(see below) but is not it.
+
+### How the file carries `h`, and why not as the published ramp
+
+The pipeline applies the Win10 headwind `h` to the 28-day MA and nowhere else
+(`apply_net_adjustment_to_series`); no daily row in this repo had ever carried it. A trailing 28-day
+mean of a linear ramp **lags the ramp by 13.5 days**, the window's mean lag, so adding the published
+ramp per day and re-smoothing overshoots the published curve by 13.5 × slope on every date. We
+tested that on 2026-09-11: exactly +131,500 DAU from 2026-08-29 through Dec-31. The consistent daily
+headwind is the ramp **advanced by 13.5 days**:
+
+```
+daily_h(t) = ramp(t + 13.5 days)   for t ≥ seam,   0 on training rows
+```
+
+The script implements it as the mean of `ramp(t+13)` and `ramp(t+14)`, which is exact for a linear
+ramp. With it, `rolling(28).mean()` of the file reproduces the published column **to the DAU from
+seam + 27 onward**, and the script asserts that rather than assuming it. The July column gets the
+same treatment under July's own frozen spec.
+
+### The weirdness this creates (deliberate, and printed by the script)
+
+| | August (`desktop_current_august`) | July (`desktop_prior_july`) |
+|---|---|---|
+| spec | 0 at 2026-08-02 → −1,315,000 at Dec-15 | 0 at **2026-04-01** → −1,345,000 at Dec-15 |
+| slope | −9,740.7 DAU/day | −5,213.2 DAU/day |
+| 13.5-day advance | −131,500 | −70,378 |
+| MA-space ramp on the seam day | 0 | **−500,465** (ramping since April) |
+| daily headwind on the seam day | **−131,500** | **−570,843** |
+| daily headwind at Dec-15 | **−1,446,500** (anchor −1,315,000) | **−1,415,378** (anchor −1,345,000) |
+| file re-smooths to the published curve from | 2026-08-29 | 2026-08-02 |
+| max discrepancy inside the transition | 101,373 DAU | 469,412 DAU |
+
+1. **The headwind starts with a step.** On the seam day the daily headwind is already 13.5 slopes
+   deep. The export did not add that step: the published MA carries the ramp's full daily increment
+   from its first forecast day, when 27 of its 28 window days are actuals, and no daily series that is
+   zero on actuals can match that. The step is what the MA-space spec asserted all along.
+2. **At Dec-15 the daily headwind is deeper than the anchor** by the same 13.5 slopes. Quote the anchor
+   from the published file; the daily value is the anchor in daily space, not a new number.
+3. **July's step is larger** because July's spec ramps from 2026-04-01, so its MA-space ramp had reached
+   −500,465 by the 2026-07-06 seam. July published that behaviour (its MA drops 570K on its seam day in
+   `desktop_prior_july` above); the daily file only shows it per day.
+4. **For 27 days after each seam the file does not re-smooth to the published curve.** There the
+   published curve is `display_ma`'s variance-matched splice, which is non-linear in an added ramp (up
+   to 5,677 DAU for August's), so no daily series reproduces it. The two windows coincide: the days the
+   published MA is a transition are the days this file cannot be smoothed back.
+5. **Actuals end 2026-08-01**, one day before the published file's, because the parquet's training rows
+   stop at training-end. The July column's pre-seam rows are July's own training rows through
+   2026-07-05; on shared dates they differ from August's pull by at most 4 DAU (late-landing telemetry).
+6. **Only `h` rides on the file.** `t` is mobile-only; `l` and `o` are baked into the parquet and cannot
+   come off. Any other spec type (`step`, `daily_file`) would need its own inversion, so the script
+   refuses non-`linear_ramp` specs rather than guess.
+
+### Provenance
+
+`scripts/export_desktop_daily_csv.py` reads the parquets, not the published CSVs, which hold only MAs.
+`tests/test_export_desktop_daily_csv.py` locks the 13.5-day advance, rejects the unadvanced ramp, and
+re-verifies against the real builds when the parquets are on disk. Regenerate and re-verify with:
+
+```bash
+python scripts/export_desktop_daily_csv.py            # write + verify, prints the ledger above
+python scripts/export_desktop_daily_csv.py --dry-run   # ledger only
+```
 
 ## Why some columns are blank in part of the year
 

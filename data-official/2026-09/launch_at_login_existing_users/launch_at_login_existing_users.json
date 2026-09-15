@@ -1,0 +1,39 @@
+{
+  "type": "desktop_overlay",
+  "platform": "desktop",
+  "data_file": "launch_at_login_existing_users.2026-09-08.parquet",
+  "value_column": "launch_at_login_existing_users_dau_daily",
+  "allocation": {
+    "key": "fixed_country_shares",
+    "flag_column": "modern_windows",
+    "window_days": 28,
+    "shares": {
+      "ROW": 0.373138,
+      "US": 0.336728,
+      "IN": 0.135718,
+      "ID": 0.058009,
+      "CA": 0.045854,
+      "DE": 0.015865,
+      "FR": 0.007131,
+      "BR": 0.006072,
+      "PL": 0.0056,
+      "MX": 0.004162,
+      "IT": 0.00383,
+      "JP": 0.002466,
+      "RU": 0.002386,
+      "CN": 0.001658,
+      "AR": 0.001382
+    }
+  },
+  "scope": {
+    "exclude_countries": [
+      "IR"
+    ]
+  },
+  "model_meta_file": "launch_at_login_existing_users.2026-09-08.meta.json",
+  "applies_to_forecast_start": "2026-09-09",
+  "applies_to_data_source": "legacy_desktop",
+  "placeholder": false,
+  "withheld": true,
+  "notes": "September 2026 cycle, seam 2026-09-09. Launch at Login for existing users, code e, ingested 2026-09-10 via /ingest-adjustment from ~/Downloads/launch-on-login-dau-forecasts.csv (sha1 in the meta). Positive numbers, applied as delivered (sign +1). Actuals 2026-07-30..2026-09-08 (matches training end); producer forecast to 2026-12-31 with planned rollout steps on 2026-10-13 and 2026-10-15 (user-confirmed as planned rollouts, not data errors); held flat through 2027-12-31. Allocation: fixed country shares = share of trailing-28d Win10/11 en-locale legacy-desktop DAU, query source_data/en_locale_win1x_country_shares.sql (69.8 GB), IR excluded and renormalized. WITHHELD: withheld=true means resolve_overlays skips this spec and the run log prints WITHHELD; delete the key to turn it on, which then requires a model rerun."
+}

@@ -1,0 +1,64 @@
+{
+  "adjustment_code": "e",
+  "adjustment_name": "launch_at_login_existing_users",
+  "adjustments_applied": [],
+  "allocation": {
+    "exclude_countries": [
+      "IR"
+    ],
+    "key": "fixed_country_shares",
+    "shares": {
+      "AR": 0.001382,
+      "BR": 0.006072,
+      "CA": 0.045854,
+      "CN": 0.001658,
+      "DE": 0.015865,
+      "FR": 0.007131,
+      "ID": 0.058009,
+      "IN": 0.135718,
+      "IT": 0.00383,
+      "JP": 0.002466,
+      "MX": 0.004162,
+      "PL": 0.0056,
+      "ROW": 0.373138,
+      "RU": 0.002386,
+      "US": 0.336728
+    }
+  },
+  "artifact_sha1": "e2983ee493db947f8b2dd9f3e691b393b93fd32e",
+  "artifact_type": "adjustment_curve",
+  "column_mapping": {
+    "date": "submission_date",
+    "ma_validated_not_used": null,
+    "type": "type",
+    "value": "dau"
+  },
+  "coverage": {
+    "actuals_through": "2026-09-08",
+    "dec15_daily": 737536.75,
+    "dec15_ma28": 736934.5903571427,
+    "delivered_end": "2026-12-31",
+    "delivered_start": "2026-07-30",
+    "hold_flat_basis": "mean of the final 28 delivered daily values",
+    "hold_flat_from": "2027-01-01",
+    "hold_flat_value": 723852.862142857,
+    "horizon": [
+      "2026-01-01",
+      "2027-12-31"
+    ],
+    "rebase_offset_at_seam": null,
+    "rebase_to_seam": false,
+    "sign_applied": 1
+  },
+  "data_source": "legacy_desktop",
+  "family": "per_tile_overlay",
+  "forecast_start_date": "2026-09-09",
+  "model_config": null,
+  "mozaic_daily_commit": "81e0d7f91b7865ff129acc390d441f739eda5c57",
+  "platform": "desktop",
+  "produced_at": "2026-09-10T23:07:55.361884+00:00Z",
+  "produced_by": "scripts/ingest_adjustment.py",
+  "source_file": "data-official/2026-09/launch_at_login_existing_users/source_data/launch-on-login-dau-forecasts.csv",
+  "source_sha1": "9abf8cd4a4cd6a91d4e4a382838c07989a7ea66e",
+  "source_sheet": null
+}

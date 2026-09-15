@@ -1,0 +1,319 @@
+{
+  "adjustment_code": "i",
+  "adjustment_name": "india_excess",
+  "anchor_dau_2026": 2785180.7956349202,
+  "anchor_window_mmdd": [
+    "02-15",
+    "04-15"
+  ],
+  "caveats": [
+    "The cause is a hypothesis. A university-calendar change is the leading candidate; it is not established, and the component is a measured gap, not an attribution.",
+    "The prior analysis (D70-D74) read 2026 as inside India's historical range on level-free measures. This component rests on the decision that a twelve-week run above the four-year envelope is a real-world effect to carry, not noise to revert.",
+    "The `settle` half-life is a planning constant. The `fade` half-life is fitted, but on deviations that were noise; it says how fast India reverts when nothing is driving it, which is exactly what `fade` assumes.",
+    "The `l` share used for netting is the August cycle's. The September run will recompute it on fresher training data; it moves by tenths of a point.",
+    "The norm is a flat four-year mean. India's seasonal amplitude has been flattening year over year (LOO gap +1.29 in 2025), so part of the gap is drift that predates 2026. Brendan chose the flat norm knowingly."
+  ],
+  "data_edge": "2026-09-06",
+  "decision_date": "2026-12-15",
+  "evidence": {
+    "analog_half_lives": {
+      "2023": 37.731080918794085
+    },
+    "analog_years": [
+      2023
+    ],
+    "dau_mau_change_2026": 0.011286501379069891,
+    "dau_mau_change_norm_max": 0.004343180328248208,
+    "events": {
+      "2020": {
+        "months_to_recover": 2,
+        "trough_gap": -16.5525248813835,
+        "trough_month": 4
+      },
+      "2021": {
+        "months_to_recover": 2,
+        "trough_gap": -11.81841993264417,
+        "trough_month": 5
+      }
+    },
+    "heavy_share": 0.732157360288326,
+    "mau_2026_rebased": 99.71589880880458,
+    "mau_norm_rebased": 97.72208277439196,
+    "new_profiles_2026_rebased": 102.6485844475616,
+    "new_profiles_norm_rebased": 100.51005822468751,
+    "new_share": 0.08455836204906438,
+    "non_default_share": 0.6934318776025481,
+    "non_esr_share": 0.8278764686914587,
+    "tenured_share": 0.9154416379509356,
+    "total_swing": 141207.42795698938,
+    "within_year": {
+      "days_peak_to_trough": 31,
+      "edge": 52360.34264937749,
+      "implied_half_life": 23.175629333180453,
+      "peak": 57155.293402134164,
+      "peak_date": "2026-06-27",
+      "trough": 22614.923484885563,
+      "trough_date": "2026-07-28"
+    }
+  },
+  "excess_index_points": {
+    "by_month": {
+      "2026-05": 1.267744752085838,
+      "2026-06": 2.242741658443757,
+      "2026-07": 1.21189029637392,
+      "2026-08": 2.0849542165618167,
+      "2026-09": 3.1086650221001784
+    },
+    "edge": 3.4201449902751335,
+    "peak": 3.4201449902751335,
+    "peak_date": "2026-09-06"
+  },
+  "holidays": {
+    "august_gap_index_bridged": 2.3189420576063315,
+    "august_gap_index_unbridged": 4.754438495905862,
+    "bridge_threshold": -0.032,
+    "bridged_days_2026": [
+      "2026-01-01",
+      "2026-01-15",
+      "2026-01-23",
+      "2026-01-26",
+      "2026-02-15",
+      "2026-03-04",
+      "2026-03-20",
+      "2026-04-03",
+      "2026-05-01",
+      "2026-05-27",
+      "2026-08-15",
+      "2026-08-25",
+      "2026-08-28",
+      "2026-09-04"
+    ],
+    "calendar": "mozaic/holiday_smart.get_calendar('IN')",
+    "dip_days_2026": [
+      "2026-01-14",
+      "2026-02-14",
+      "2026-03-03",
+      "2026-03-19",
+      "2026-03-21",
+      "2026-04-14",
+      "2026-05-28",
+      "2026-06-26",
+      "2026-08-26",
+      "2026-08-27"
+    ],
+    "dip_days_all_years": [
+      "2019-01-14",
+      "2019-02-09",
+      "2019-03-22",
+      "2019-04-06",
+      "2019-04-13",
+      "2019-04-23",
+      "2019-09-12",
+      "2019-10-06",
+      "2019-10-07",
+      "2019-10-26",
+      "2019-10-28",
+      "2019-10-29",
+      "2019-10-30",
+      "2020-01-14",
+      "2020-03-22",
+      "2020-03-23",
+      "2020-03-24",
+      "2020-03-25",
+      "2020-03-26",
+      "2020-03-27",
+      "2020-03-28",
+      "2020-03-30",
+      "2020-03-31",
+      "2020-04-01",
+      "2020-04-02",
+      "2020-04-03",
+      "2020-04-14",
+      "2020-10-24",
+      "2020-10-26",
+      "2020-11-13",
+      "2020-11-15",
+      "2020-11-16",
+      "2020-11-17",
+      "2021-01-14",
+      "2021-04-13",
+      "2021-04-14",
+      "2021-09-11",
+      "2021-10-14",
+      "2021-11-03",
+      "2021-11-05",
+      "2021-11-06",
+      "2021-11-07",
+      "2022-01-14",
+      "2022-03-19",
+      "2022-05-14",
+      "2022-07-09",
+      "2022-08-12",
+      "2022-08-13",
+      "2022-08-14",
+      "2022-09-09",
+      "2022-10-03",
+      "2022-10-04",
+      "2022-10-22",
+      "2022-10-23",
+      "2022-10-25",
+      "2022-10-26",
+      "2022-10-27",
+      "2023-01-14",
+      "2023-03-07",
+      "2023-03-22",
+      "2023-04-14",
+      "2023-08-31",
+      "2023-09-18",
+      "2023-10-22",
+      "2023-10-23",
+      "2023-11-11",
+      "2023-11-13",
+      "2023-11-14",
+      "2023-11-15",
+      "2024-01-13",
+      "2024-01-22",
+      "2024-03-09",
+      "2024-04-09",
+      "2024-04-13",
+      "2024-04-17",
+      "2024-07-13",
+      "2024-09-14",
+      "2024-10-11",
+      "2024-10-13",
+      "2024-10-30",
+      "2024-11-02",
+      "2024-11-03",
+      "2025-01-14",
+      "2025-03-15",
+      "2025-04-12",
+      "2025-04-14",
+      "2025-05-10",
+      "2025-06-14",
+      "2025-09-06",
+      "2025-09-30",
+      "2025-10-01",
+      "2025-10-03",
+      "2025-10-19",
+      "2025-10-21",
+      "2025-10-22",
+      "2025-10-23",
+      "2025-10-24",
+      "2026-01-14",
+      "2026-02-14",
+      "2026-03-03",
+      "2026-03-19",
+      "2026-03-21",
+      "2026-04-14",
+      "2026-05-28",
+      "2026-06-26",
+      "2026-08-26",
+      "2026-08-27"
+    ],
+    "dip_rule": "India below -10% vs weekday-matched neighbours while world ex-India >= -5%; bridged for the ratio only, the dip stays in the delivered daily curve"
+  },
+  "horizon_end": "2027-12-31",
+  "levels_dau_28ma": {
+    "gross_at_edge": 63810.04796827553,
+    "market_28ma": 2686490.9285714286,
+    "net_at_edge": 52360.34264937749,
+    "net_peak": 57155.293402134164,
+    "net_peak_date": "2026-06-27",
+    "share_of_typical_at_edge": 0.01921572862570659
+  },
+  "norm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "onset": {
+    "alternatives": {
+      "1 sd of norm spread, 14d": "2026-05-24",
+      "2 sd of norm spread, 14d": "2026-06-07",
+      "envelope max, 14d": "2026-05-22",
+      "envelope max, 7d": "2026-05-22"
+    },
+    "date": "2026-05-22",
+    "rejected_runs": [
+      {
+        "days": 20,
+        "end": "2026-03-04",
+        "start": "2026-02-13",
+        "why": "inside or beside the anchor window"
+      },
+      {
+        "days": 5,
+        "end": "2026-03-10",
+        "start": "2026-03-06",
+        "why": "inside or beside the anchor window"
+      },
+      {
+        "days": 1,
+        "end": "2026-03-12",
+        "start": "2026-03-12",
+        "why": "inside or beside the anchor window"
+      }
+    ],
+    "rule": "above the norm years' maximum for 14 consecutive days, searched from 2026-04-16"
+  },
+  "overlap": {
+    "india_lol_dau_at_edge": 11449.705318898034,
+    "india_share_of_modern_windows": 0.057248526594490166,
+    "japan_bot_j": "Japan only",
+    "launch_on_login_spec": "data-official/2026-08/launch_on_login/lol.json",
+    "mozillaonline_o": "allocates India nothing (ROW bucket 1.03%)",
+    "netted": true,
+    "share_of_gross_excess_at_edge": 0.17943420642138505
+  },
+  "parameters": {
+    "fade_fit": {
+      "clamped": false,
+      "half_life_days": 17.862090391212178,
+      "pairs": 44,
+      "phi_monthly": 0.3073749583714664
+    },
+    "fade_half_life_days": 17.862090391212178,
+    "fade_half_life_status": "fitted from history",
+    "linger_half_life_days": 250,
+    "linger_half_life_status": "planning constant, the midpoint at the decision date",
+    "settle_half_life_days": 90,
+    "settle_half_life_status": "planning constant, not an estimate",
+    "settle_sensitivity_dec15_2026": {
+      "120": 31804.067211725076,
+      "60": 19360.068309523147,
+      "90": 26947.551395049966
+    }
+  },
+  "produced_by": "scratch/brwells/regional-story/india_forecast/deliver.py",
+  "readouts_28ma": {
+    "fade": {
+      "Dec-15 2026 (28ma)": 1915.7866882833116,
+      "Dec-15 2027 (28ma)": 0.0013520674086753162,
+      "Jun-15 2027 (28ma)": 1.640964753991714
+    },
+    "hold": {
+      "Dec-15 2026 (28ma)": 57155.293402134164,
+      "Dec-15 2027 (28ma)": 57155.293402134164,
+      "Jun-15 2027 (28ma)": 57155.293402134164
+    },
+    "linger": {
+      "Dec-15 2026 (28ma)": 41205.48359705962,
+      "Dec-15 2027 (28ma)": 14977.910178254384,
+      "Jun-15 2027 (28ma)": 24877.410853132333
+    },
+    "proportional": {
+      "Dec-15 2026 (28ma)": 50994.40124552677,
+      "Dec-15 2027 (28ma)": 50994.40124552677,
+      "Jun-15 2027 (28ma)": 49965.75373025448
+    },
+    "settle": {
+      "Dec-15 2026 (28ma)": 26947.55139504996,
+      "Dec-15 2027 (28ma)": 1620.5985186404466,
+      "Jun-15 2027 (28ma)": 6633.912853541127
+    }
+  },
+  "scenario": "fade",
+  "scenario_label": "Fade \u00b7 decays fast",
+  "source_data": "data/dau_mau.parquet (telemetry.active_users_aggregates, Legacy, Firefox Desktop, no channel filter)"
+}

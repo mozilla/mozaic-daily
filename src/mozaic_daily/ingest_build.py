@@ -74,6 +74,7 @@ class IngestPlan:
     root: Optional[str] = None             # repo root override (tests)
     values_are_28d_ma: bool = False        # display_layer only: the file already carries the 28-day series
     rebase_to_seam: bool = False           # shift the curve so it is 0 at forecast_start (pre-seam effect assumed in the base model)
+    withheld: bool = False                 # per_tile_overlay only: register + gate, but write `withheld: true` so the run skips it
     dir_name: Optional[str] = None         # directory under the cycle; defaults to name, or to the registered layout
     spec_filename: Optional[str] = None    # spec JSON filename; defaults to <name>.json, or to the registered layout
 
@@ -94,6 +95,8 @@ class IngestPlan:
             raise ValueError("fixed_country_shares needs a shares dict")
         if self.type_column is None and self.actuals_through is None:
             raise ValueError("either type_column or actuals_through is required")
+        if self.withheld and self.family != "per_tile_overlay":
+            raise ValueError("withheld is only honoured for per_tile_overlay specs; display-layer specs are live by presence")
         if self.flag_column is None:
             self.flag_column = SEGMENT_FLAG_BY_DATA_SOURCE.get(self.data_source, "modern_windows")
         if self.dir_name is None or self.spec_filename is None:
@@ -254,6 +257,7 @@ def overlay_spec(plan: IngestPlan, data_file: str, meta_file: str) -> dict:
         "applies_to_forecast_start": plan.forecast_start,
         "applies_to_data_source": plan.data_source,
         "placeholder": False,
+        **({"withheld": True} if plan.withheld else {}),
         "notes": plan.notes,
     }
 

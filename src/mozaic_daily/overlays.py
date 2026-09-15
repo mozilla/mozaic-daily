@@ -69,6 +69,15 @@ class ResolvedOverlay:
         return DataSource(self.spec["applies_to_data_source"])
 
     @property
+    def withheld(self) -> bool:
+        """Spec carries ``withheld: true`` — registered and gated on this seam, but deliberately not applied.
+
+        The on/off switch for an adjustment that is wired but not yet approved to ship. Turning it
+        on is deleting the key (or setting it false); no code changes and no ``--disable-adjustment``.
+        """
+        return bool(self.spec.get("withheld", False))
+
+    @property
     def sentinel_attr(self) -> str:
         """Idempotency marker set on the training frame; distinct per overlay so several stack."""
         return f"{self.name}_subtracted"
@@ -160,11 +169,14 @@ def resolve_overlays(
     disabled_codes: Iterable[str] = (),
     registry: Optional[dict] = None,
     root: Path | None = None,
+    include_withheld: bool = False,
 ) -> list[ResolvedOverlay]:
     """Every registered overlay whose spec gates on ``forecast_start_date``, sorted by code.
 
     ``disabled_codes`` are skipped even when their spec matches (the ``--disable-adjustment``
-    path). Each resolved spec is validated by ``load_overlay_spec`` and must also name
+    path). Specs carrying ``withheld: true`` are skipped too unless ``include_withheld`` is set —
+    callers that only want to *report* them (the run log) pass it; the applying path never does.
+    Each resolved spec is validated by ``load_overlay_spec`` and must also name
     ``applies_to_data_source`` and a known ``allocation.key``.
     """
     root = root if root is not None else repo_root()
@@ -178,7 +190,10 @@ def resolve_overlays(
             continue
         spec = load_overlay_spec(spec_path)
         _validate_dispatch_keys(spec, spec_path)
-        resolved.append(ResolvedOverlay(code=code, name=entry["name"], spec_path=spec_path, spec=spec))
+        overlay = ResolvedOverlay(code=code, name=entry["name"], spec_path=spec_path, spec=spec)
+        if overlay.withheld and not include_withheld:
+            continue
+        resolved.append(overlay)
     return resolved
 
 

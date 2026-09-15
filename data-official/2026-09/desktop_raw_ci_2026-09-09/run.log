@@ -1,0 +1,128 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+============================================================
+Param scan run
+============================================================
+Forecast start date : 2026-09-09
+Slug                : cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative
+Output dir          : data-official/2026-09/desktop_raw_ci_2026-09-09/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative
+Raw cache dir       : data-official/2026-09/desktop_rawpull_2026-09-09
+Config              : {
+  "prophet_recent_weeks": 17,
+  "prophet_changepoint_range": 0.814,
+  "prophet_n_changepoints": 40,
+  "holiday_threshold": -0.032,
+  "holiday_max_radius": 5,
+  "holiday_min_radius": 3,
+  "holiday_effect_floor": -0.6,
+  "seasonality_regime": "multiplicative",
+  "seasonality_corr_threshold": 0.0,
+  "prophet_changepoint_prior_scale": 0.1649,
+  "prophet_seasonality_prior_scale": 0.00825
+}
+Wrote data-official/2026-09/desktop_raw_ci_2026-09-09/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/parameters.json
+Symlinked raw cache files: ['mozaic_parts.raw.legacy.desktop.DAU.parquet']
+Desktop overlays applied this scan: none (raw)
+  NOTE: `i` spec matched but was suppressed by --disable-adjustment.
+  NOTE: `j` spec matched but was suppressed by --disable-adjustment.
+  NOTE: `l` spec matched but was suppressed by --disable-adjustment.
+  NOTE: `o` spec matched but was suppressed by --disable-adjustment.
+
+============================================================
+FILTERED MODE ENABLED
+  Data sources: legacy_desktop
+  Metrics: DAU
+============================================================
+
+Running forecast from 2026-09-09 through 2027-12-31
+Other config:
+{'forecast_run_dt': datetime.datetime(2026, 9, 10, 14, 32, 8, 871812), 'forecast_start_date': '2026-09-09', 'forecast_end_date': '2027-12-31', 'training_end_date': '2026-09-08', 'countries': {'FR', 'PL', 'US', 'IN', 'JP', 'IR', 'BR', 'MX', 'AR', 'IT', 'CN', 'CA', 'ID', 'RU', 'DE'}, 'country_string': "'AR', 'BR', 'CA', 'CN', 'DE', 'FR', 'ID', 'IN', 'IR', 'IT', 'JP', 'MX', 'PL', 'RU', 'US'", 'validation_countries': {'FR', 'PL', 'US', 'ALL', 'IN', 'JP', 'IR', 'BR', 'MX', 'AR', 'IT', 'CN', 'CA', 'ID', 'ROW', 'RU', 'DE'}}
+Pre-flight check: verifying training data is available through 2026-09-08...
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates' done 5s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.firefox_desktop.new_profiles_aggregates' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.firefox_desktop.desktop_engagement_aggregates' done 4s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.active_users_aggregates' done 4s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.desktop_new_profiles' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.desktop_engagement' done 3s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.glean_telemetry.active_users_aggregates' done 4s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.mobile_new_profiles' done 2s.
+[BQ-WATCHDOG] 'preflight moz-fx-data-shared-prod.telemetry.mobile_engagement' done 3s.
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-12-25 (-0.691), 2027-01-01 (-0.895), 2027-02-08 (-0.909), 2027-02-09 (-0.695)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-12-25 (-0.775), 2026-12-31 (-0.618), 2027-01-01 (-1.007), 2027-03-26 (-0.641), 2027-05-01 (-0.733)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-02-05 (-0.731), 2027-02-06 (-0.653), 2027-02-08 (-0.623), 2027-02-09 (-0.604), 2027-02-10 (-0.602)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-05-17 (-1.095)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-05-17 (-0.880)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-01-01 (-0.824), 2027-02-06 (-0.639), 2027-03-08 (-0.739), 2027-03-09 (-0.627), 2027-03-10 (-0.657), 2027-05-01 (-0.682), 2027-12-25 (-0.650)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-04-01 (-0.616), 2027-04-02 (-0.946)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-11-01 (-0.715), 2026-12-25 (-0.610), 2027-01-01 (-0.712), 2027-01-06 (-0.603), 2027-03-29 (-0.959), 2027-05-01 (-0.677), 2027-08-15 (-0.896), 2027-11-01 (-0.918)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-12-25 (-0.663), 2027-01-01 (-0.786), 2027-02-01 (-0.605), 2027-03-15 (-0.627)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2026-12-24 (-0.891), 2026-12-25 (-0.797), 2026-12-26 (-0.625), 2027-01-01 (-0.617), 2027-05-01 (-0.801), 2027-08-15 (-0.621), 2027-12-24 (-0.914), 2027-12-25 (-0.686)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2027-05-01 (-0.632)
+  unmatched = self._predict_holiday_effects()
+Pre-flight check passed: all tables have data through 2026-09-08.
+[1/1] Desktop Legacy DAU exists, loading
+Marketing-lift `m`: no spec found for forecast_start=2026-09-09; not applied this cycle.
+Paid/organic split `p`: using spec /Users/brendanwells/work/mozaic-daily/data-official/2026-09/organic/organic.json
+Overlay `i` (india_excess): disabled for this run by flag.
+Overlay `j` (japan_bot): disabled for this run by flag.
+Overlay `l` (launch_at_login_new_users): disabled for this run by flag.
+Overlay `o` (mozillaonline_migration): disabled for this run by flag.
+
+[1/1] Forecasting Desktop Legacy
+
+--- Populate tiles
+
+
+DAU
+
+ AR: modern_windows, other, winX, 
+ BR: modern_windows, other, winX, 
+ CA: modern_windows, other, winX, 
+ CN: modern_windows, other, winX, 
+ DE: modern_windows, other, winX, 
+ FR: modern_windows, other, winX, 
+ ID: modern_windows, other, winX, 
+ IN: modern_windows, other, winX, 
+ IR: modern_windows, other, winX, 
+ IT: modern_windows, other, winX, 
+ JP: modern_windows, other, winX, 
+ MX: modern_windows, other, winX, 
+ PL: modern_windows, other, winX, 
+ROW: modern_windows, other, winX, 
+ RU: modern_windows, other, winX, 
+ US: modern_windows, other, winX, 
+
+--- Curate Mozaics
+
+DAU
+   countries: AR, BR, CA, CN, DE, FR, ID, IN, IR, IT, JP, MX, PL, ROW, RU, US, 
+   populations: modern_windows, other, winX, 
+   reconciling...
+
+⚠️ New holidays in forecasted dates:
+ - JP National Holiday
+
+done.
+
+--- Extracting forecasts (1 metrics)
+  [1/1] DAU
+Saved mozaic objects to data-official/2026-09/desktop_raw_ci_2026-09-09/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_objects.legacy_desktop.2026-09-09.pkl
+
+
+Done with forecasts
+Renamed forecast to: data-official/2026-09/desktop_raw_ci_2026-09-09/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-09-09.ld-D.raw.parquet
+Wrote sidecar meta:  data-official/2026-09/desktop_raw_ci_2026-09-09/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-09-09.ld-D.raw.parquet.meta.json
+
+Done. Results in: data-official/2026-09/desktop_raw_ci_2026-09-09/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative

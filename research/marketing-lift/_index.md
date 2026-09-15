@@ -17,6 +17,7 @@ The hybrid in v2 lands about 30% the size of the v1 convolution forecast at Dec-
 |---|---|
 | `marketing_lift_validation.ipynb` | End-to-end validator: with-vs-without marketing comparison, MA28 diagnostics, Dec-15 readout |
 | `mobile_marketing_paid_organic.ipynb` | Decomposes mobile DAU into paid vs. organic contribution from the campaign |
+| `weekly_to_daily_demo.py` | Demo for the marketing team (2026-09-11): the delivered Monday value is the *mean of the week starting that Monday*; compares linear interpolation between Mondays (what `paid_curve.py` does) against holding each value flat for its week, with 28d MAs. Interpolation overstates a rising trend by 3/7 of each week's rise (+6,613 at Dec-15 on the September `Low` curve). Plot: `plots/weekly_to_daily_interp_vs_step.png` |
 
 ## Producers and consumers
 

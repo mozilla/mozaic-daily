@@ -53,7 +53,8 @@ def _write_curve(path: Path, value: float, column: str = "curve_dau_daily") -> N
 
 
 def _write_spec(root: Path, dirname: str, *, applies_to: str = SEAM, allocation: dict | None = None,
-                exclude: list[str] | None = None, data_source: str = "legacy_desktop", value: float = 1000.0) -> Path:
+                exclude: list[str] | None = None, data_source: str = "legacy_desktop", value: float = 1000.0,
+                withheld: bool | None = None) -> Path:
     spec_dir = root / "data-official" / "2026-09" / dirname
     spec_dir.mkdir(parents=True, exist_ok=True)
     _write_curve(spec_dir / "curve.parquet", value)
@@ -67,6 +68,8 @@ def _write_spec(root: Path, dirname: str, *, applies_to: str = SEAM, allocation:
         "applies_to_forecast_start": applies_to,
         "applies_to_data_source": data_source,
     }
+    if withheld is not None:
+        spec["withheld"] = withheld
     path = spec_dir / f"{dirname}.json"
     path.write_text(json.dumps(spec))
     return path
@@ -78,6 +81,9 @@ def root(tmp_path) -> Path:
 
 
 # --- registry ---------------------------------------------------------------
+
+# September 2026 seam; refreshed from 2026-09-02 on 2026-09-10 so training covers every landed day.
+SEPTEMBER_SEAM = "2026-09-09"
 
 class TestRegisteredOverlayCodes:
     def test_selects_only_per_tile_overlay_entries(self):
@@ -141,6 +147,21 @@ class TestResolveOverlays:
     def test_disabled_code_is_skipped_even_when_its_spec_matches(self, root):
         _write_spec(root, "lol")
         assert resolve_overlays(SEAM, disabled_codes={"l"}, registry=self._registry(), root=root) == []
+
+    def test_withheld_spec_is_skipped_by_default_but_listable(self, root):
+        """`withheld: true` is the registered-but-off switch (2026-09-10, code `e`). The applying path never sees it;
+        the run log asks for it explicitly so it can say WITHHELD instead of 'no spec found'."""
+        _write_spec(root, "lol", withheld=True)
+        _write_spec(root, "jbot", allocation={"key": "fixed_country_shares", "flag_column": "modern_windows",
+                                              "window_days": 28, "shares": {"JP": 1.0}})
+        applied = resolve_overlays(SEAM, registry=self._registry(), root=root)
+        assert [o.code for o in applied] == ["j"]
+        listed = resolve_overlays(SEAM, registry=self._registry(), root=root, include_withheld=True)
+        assert [(o.code, o.withheld) for o in listed] == [("j", False), ("l", True)]
+
+    def test_withheld_false_is_applied(self, root):
+        _write_spec(root, "lol", withheld=False)
+        assert [o.code for o in resolve_overlays(SEAM, registry=self._registry(), root=root)] == ["l"]
 
     def test_spec_on_another_date_is_not_resolved(self, root):
         _write_spec(root, "lol", applies_to="2026-08-02")
@@ -244,9 +265,14 @@ class TestCommittedRegistryAndSpecs:
         assert {o.data_source for o in resolved} == {DataSource.LEGACY_DESKTOP}
         assert resolved[0].sentinel_attr == "launch_at_login_new_users_subtracted"  # renamed 2026-09-04; August keeps its launch_on_login/ layout
 
+    def test_old_september_seam_no_longer_resolves_anything(self):
+        """The seam was refreshed 2026-09-02 -> 2026-09-09 on 2026-09-10 and every September spec was re-gated. A
+        run at the old date would find no overlay and silently write `.raw.`; this pins that nothing is left behind."""
+        assert resolve_overlays("2026-09-02") == []
+
     def test_september_seam_carries_launch_at_login_forward(self):
         """`l` was re-gated to 2026-09-02 on 2026-09-04 with August's 200K curve unchanged (retitled 'new users')."""
-        sep = {o.code: o for o in resolve_overlays("2026-09-02")}
+        sep = {o.code: o for o in resolve_overlays(SEPTEMBER_SEAM)}
         aug = {o.code: o for o in resolve_overlays("2026-08-02")}
         assert sep["l"].name == "launch_at_login_new_users"
         assert sep["l"].spec["data_file"] == aug["l"].spec["data_file"] == "lol_tailwind.2026-07-29.cap200k.parquet"
@@ -255,7 +281,7 @@ class TestCommittedRegistryAndSpecs:
 
     def test_september_seam_resolves_japan_bot(self):
         """`j` was the first code wired purely through the registry (2026-09-04)."""
-        by_code = {o.code: o for o in resolve_overlays("2026-09-02")}
+        by_code = {o.code: o for o in resolve_overlays(SEPTEMBER_SEAM)}
         assert "j" in by_code
         assert by_code["j"].data_source == DataSource.LEGACY_DESKTOP
         assert by_code["j"].sentinel_attr == "japan_bot_subtracted"
@@ -263,7 +289,7 @@ class TestCommittedRegistryAndSpecs:
 
     def test_september_seam_resolves_india_excess(self):
         """`i` registered 2026-09-04; ships the PROPORTIONAL path, 100% India, net of `l`."""
-        by_code = {o.code: o for o in resolve_overlays("2026-09-02")}
+        by_code = {o.code: o for o in resolve_overlays(SEPTEMBER_SEAM)}
         assert "i" in by_code
         assert by_code["i"].data_source == DataSource.LEGACY_DESKTOP
         assert by_code["i"].sentinel_attr == "india_excess_subtracted"
@@ -276,21 +302,32 @@ class TestCommittedRegistryAndSpecs:
         `i` and `j` both resolve today; `l` and `o` join once their September specs are
         re-gated (the `i` curve is already net of `l`, so `l` must be applied in the same run).
         """
-        resolved = resolve_overlays("2026-09-02")
+        resolved = resolve_overlays(SEPTEMBER_SEAM)
         assert {o.code for o in resolved} >= {"j", "i"}
         sentinels = [o.sentinel_attr for o in resolved]
         assert len(sentinels) == len(set(sentinels))
 
     def test_september_seam_resolves_india_excess(self):
-        by_code = {o.code: o for o in resolve_overlays("2026-09-02")}
+        by_code = {o.code: o for o in resolve_overlays(SEPTEMBER_SEAM)}
         assert "i" in by_code
         assert by_code["i"].sentinel_attr == "india_excess_subtracted"
         assert by_code["i"].spec["allocation"]["shares"] == {"IN": 1.0}
         assert "proportional" in by_code["i"].spec["notes"].lower()
 
+    def test_september_seam_withholds_launch_at_login_existing_users(self):
+        """`e` was ingested 2026-09-10 with `withheld: true`: registered and gated on the seam, but the applying path must
+        not see it and the listing path must report it as withheld. Turning it on is deleting the key."""
+        assert "e" not in {o.code for o in resolve_overlays(SEPTEMBER_SEAM)}
+        listed = {o.code: o for o in resolve_overlays(SEPTEMBER_SEAM, include_withheld=True)}
+        assert listed["e"].withheld is True
+        assert listed["e"].name == "launch_at_login_existing_users"
+        assert listed["e"].spec["allocation"]["key"] == "fixed_country_shares"
+        assert abs(sum(listed["e"].spec["allocation"]["shares"].values()) - 1.0) < 1e-4
+        assert "IR" not in listed["e"].spec["allocation"]["shares"]
+
     def test_september_seam_resolves_refreshed_mozillaonline(self):
         """`o` was refreshed for September (2026-09-04); August's frozen curve must still gate on 2026-08-02."""
-        sep = {o.code: o for o in resolve_overlays("2026-09-02")}
+        sep = {o.code: o for o in resolve_overlays(SEPTEMBER_SEAM)}
         aug = {o.code: o for o in resolve_overlays("2026-08-02")}
         assert sep["o"].spec["data_file"] == "mozillaonline_migration.2026-08-31.parquet"
         assert sep["o"].spec_path.parent.name == "mozillaonline"

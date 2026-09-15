@@ -66,6 +66,7 @@ import importlib
 import json
 import sys
 from pathlib import Path
+from typing import Optional
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -127,19 +128,31 @@ def stamp_marker_and_meta(
     slug_dir: Path,
     forecast_start_date: str,
     config: MobileModelConfig,
-    spec_kind: str,
-    spec_path: Path,
+    spec_kind: Optional[str],
+    spec_path: Optional[Path],
 ) -> Path:
-    """Rename the unmarked mobile forecast parquet to its ``.adj-<code>.`` state and write the sidecar.
+    """Rename the unmarked mobile forecast parquet to its ``.adj-<code>.`` (or ``.raw.``) state and write the sidecar.
 
     The code is derived from which spec actually gated the run, so the filename can never claim
-    an adjustment the build did not apply.
+    an adjustment the build did not apply. ``spec_kind=None`` means the paid treatment was turned
+    off with ``--no-organic-split`` and the file is stamped ``.raw.``.
     """
-    code, name = _SPEC_CODES[spec_kind]
     unmarked = slug_dir / f"mozaic_daily_forecast.{forecast_start_date}.gm-D.parquet"
     if not unmarked.exists():
         raise FileNotFoundError(f"Expected forecast parquet not found after main(): {unmarked}")
-    target = insert_state_marker(unmarked, [code])
+    if spec_kind is None:
+        # --no-organic-split: nothing was applied, so the file is stamped `.raw.`
+        adjustments_applied = []
+    else:
+        code, name = _SPEC_CODES[spec_kind]
+        adjustments_applied = [{
+            "code": code,
+            "name": name,
+            "scope": "glean_mobile DAU only",
+            "spec_file": str(spec_path.relative_to(REPO_ROOT))
+            if spec_path.is_absolute() else str(spec_path),
+        }]
+    target = insert_state_marker(unmarked, [a["code"] for a in adjustments_applied])
     unmarked.rename(target)
     write_meta(
         target,
@@ -147,13 +160,7 @@ def stamp_marker_and_meta(
         data_source="glean_mobile",
         produced_by="scripts/run_mobile_param_scan.py",
         model_config=config.to_dict(),
-        adjustments_applied=[{
-            "code": code,
-            "name": name,
-            "scope": "glean_mobile DAU only",
-            "spec_file": str(spec_path.relative_to(REPO_ROOT))
-            if spec_path.is_absolute() else str(spec_path),
-        }],
+        adjustments_applied=adjustments_applied,
     )
     return target
 
@@ -224,6 +231,11 @@ def parse_args() -> argparse.Namespace:
                         "than 0.0. Exposed only so that error surfaces instead of the flag "
                         "silently not existing.")
 
+    parser.add_argument("--no-organic-split", action="store_true",
+                        help="Turn the paid treatment (`p`, or legacy `m`) OFF for this run. Prophet then "
+                             "fits TOTAL mobile DAU with no paid split and the output is stamped `.raw.`. "
+                             "This is a total-DAU forecast, not an organic one.")
+
     g = parser.add_argument_group("Holiday knobs")
     g.add_argument("--holiday-threshold", type=float, default=None,
                    help="MobileModelConfig.holiday_threshold (default -0.032)")
@@ -252,7 +264,9 @@ def main_cli() -> None:
             f"({marketing_spec_path}) claim forecast_start={args.forecast_start_date}. "
             f"They are mutually exclusive — clear the marketing spec's date gate."
         )
-    if organic_spec_path is not None:
+    if args.no_organic_split:
+        spec_kind, spec_path = None, None
+    elif organic_spec_path is not None:
         spec_kind, spec_path = "organic", organic_spec_path
     elif marketing_spec_path is not None:
         spec_kind, spec_path = "marketing", marketing_spec_path
@@ -270,8 +284,11 @@ def main_cli() -> None:
     print(f"Slug                : {slug}")
     print(f"Output dir          : {slug_dir}")
     print(f"Raw cache dir       : {args.raw_cache_dir}")
-    print(f"Paid adjustment     : {_SPEC_CODES[spec_kind][0]} ({_SPEC_CODES[spec_kind][1]})")
-    print(f"Spec                : {spec_path}")
+    if spec_kind is None:
+        print("Paid adjustment     : none — turned off by --no-organic-split (TOTAL-DAU mobile, stamped .raw.)")
+    else:
+        print(f"Paid adjustment     : {_SPEC_CODES[spec_kind][0]} ({_SPEC_CODES[spec_kind][1]})")
+        print(f"Spec                : {spec_path}")
     print(f"Config              : {json.dumps(config.to_dict(), indent=2)}")
 
     params_path = slug_dir / "parameters.json"
@@ -279,8 +296,8 @@ def main_cli() -> None:
         "forecast_start_date": args.forecast_start_date,
         "slug": slug,
         "config": config.to_dict(),
-        "adjustment_code": _SPEC_CODES[spec_kind][0],
-        f"{spec_kind}_spec": str(spec_path),
+        "adjustment_code": None if spec_kind is None else _SPEC_CODES[spec_kind][0],
+        **({} if spec_kind is None else {f"{spec_kind}_spec": str(spec_path)}),
     }, indent=2))
     print(f"Wrote {params_path}")
 
@@ -307,6 +324,7 @@ def main_cli() -> None:
             forecast_start_date=args.forecast_start_date,
             output_dir=str(slug_dir),
             model_configs={DataSource.GLEAN_MOBILE: config},
+            organic_split=not args.no_organic_split,
         )
     finally:
         run_main_module.check_training_data_availability = original_preflight

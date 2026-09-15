@@ -24,6 +24,14 @@ sending to stakeholders. Dated by the forecast-start (seam) date — current: **
 - **`august_canonical_handoff/`** — the unzipped staging dir the zip was built from.
   Gitignored (`data-official/*/handoff/*_handoff/`); it duplicates tracked sources.
 
+- **`desktop_daily_handoff_2026-09-11/`** + **`.zip`** (~1 MB, 7 files) — the **desktop-only DAILY
+  (unsmoothed)** export built 2026-09-11 for a collaborator: `august_canonical_curves.DESKTOP_ONLY.DAILY.csv`,
+  the daily-vs-published-MA plot, the published 28d-MA CSV and both headwind specs as `reference/`,
+  a human `README.md` and an AI-facing `CLAUDE.md`. Both explain the one non-obvious construction:
+  `h` is defined on the 28d MA, so the daily headwind is the ramp **advanced 13.5 days** (seam-day
+  step −131,500; Dec-15 daily headwind −1,446,500 vs the −1,315,000 anchor). Source of truth is
+  `../csv/` + `scripts/export_desktop_daily_csv.py`; regenerate rather than edit here.
+
 ## What isn't here (source of truth — do NOT duplicate, regenerate instead)
 
 The bundle is a **packaged copy**. The live, tracked sources are:

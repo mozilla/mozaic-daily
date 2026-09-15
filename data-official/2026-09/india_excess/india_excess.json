@@ -1,7 +1,7 @@
 {
   "type": "desktop_overlay",
   "platform": "desktop",
-  "data_file": "india_excess.2026-08-29.parquet",
+  "data_file": "india_excess.2026-09-06.parquet",
   "value_column": "india_excess_dau_daily",
   "allocation": {
     "key": "fixed_country_shares",
@@ -14,9 +14,9 @@
   "scope": {
     "exclude_countries": []
   },
-  "model_meta_file": "india_excess.2026-08-29.meta.json",
-  "applies_to_forecast_start": "2026-09-02",
+  "model_meta_file": "india_excess.2026-09-06.meta.json",
+  "applies_to_forecast_start": "2026-09-09",
   "applies_to_data_source": "legacy_desktop",
   "placeholder": false,
-  "notes": "September 2026 cycle, seam 2026-09-02. India's 2026 desktop DAU above a typical year (code `i`), PROPORTIONAL scenario: the excess held at 1.58% of India's typical level so it follows the seasonal calendar; 41,945 DAU/day 28d-MA on 2026-12-15, carried to 2027-12-31. Measured daily excess 2026-05-22 to 2026-08-29 (actual x (2026 - typical) / 2026, holidays and India-only dips bridged out of the ratio only), projected after. Already NET of `l` (India's 5.72% share of the launch-on-login lift is subtracted here; do not net again). Allocation 100% IN, fixed; modern_windows by measurement (78% of India's DAU). The plateau path is a planning choice (Brendan, 2026-09-04: conservative for the time being); the cause is a hypothesis. Alternates hold / linger / settle / fade remain on disk beside this file and are described in _index.md. Re-ingested 2026-09-04 through scripts/ingest_adjustment.py from the producer's PROPORTIONAL CSV; the previous spec and parquet are in india_excess_REVERT_2026-09-04/. Producer: scratch/brwells/regional-story/india_forecast/deliver.py; evidence page site/india_forecast.html, DECISIONS D92-D97."
+  "notes": "September 2026 cycle, seam 2026-09-02. India's 2026 desktop DAU above a typical year (code `i`), PROPORTIONAL scenario: the excess held at 1.92% of India's typical level so it follows the seasonal calendar; 50,994 DAU/day 28d-MA on 2026-12-15, carried to 2027-12-31. Measured daily excess 2026-05-22 to 2026-09-06 (actual x (2026 - typical) / 2026, holidays and India-only dips bridged out of the ratio only), projected after. Already NET of `l` (India's 5.72% share of the launch-on-login lift is subtracted here; do not net again). Allocation 100% IN, fixed; modern_windows by measurement (78% of India's DAU). The path is a planning choice (Brendan, 2026-09-04: conservative for the time being; re-exported 2026-09-09 on the same path with the data edge moved from 2026-08-29 to 2026-09-06); the cause is a hypothesis. Alternates hold / linger / settle / fade remain on disk beside this file and are described in _index.md. Re-ingested 2026-09-09 through scripts/ingest_adjustment.py from the producer's PROPORTIONAL CSV; the previous spec and parquet are in india_excess_REVERT_2026-09-09/. Producer: scratch/brwells/regional-story/india_forecast/deliver.py; evidence page site/india_forecast.html, DECISIONS D92-D97. SEAM REFRESH 2026-09-10: re-gated from the 2026-09-02 seam to 2026-09-09 (training through 2026-09-08, the latest landed day) so the forecast trains on all available data; curve/anchor unchanged."
 }

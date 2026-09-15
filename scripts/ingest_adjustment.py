@@ -92,6 +92,9 @@ def parse_args() -> argparse.Namespace:
                    help="shift the curve so it reads 0 at --forecast-start (the pre-seam part is taken to be in the model's "
                         "own fit); the delivered series is kept in the parquet and the offset recorded in the meta")
     b.add_argument("--replace", action="store_true", help="stash the live build for this code in a REVERT dir and overwrite")
+    b.add_argument("--withheld", action="store_true",
+                   help="per_tile_overlay only: write `withheld: true` into the spec so the code is registered and gated "
+                        "on this seam but skipped by the run until the key is removed")
     b.add_argument("--root", default=None, help=argparse.SUPPRESS)
 
     pl = sub.add_parser("plot", help="re-render the shape plot for an adjustment already on disk")
@@ -141,7 +144,7 @@ def run_build(args: argparse.Namespace) -> int:
         exclude_countries=[c.strip() for c in args.exclude.split(",") if c.strip()],
         flag_column=args.flag_column, description=args.description, notes=args.notes,
         replace=args.replace, root=args.root, values_are_28d_ma=args.values_are_28d_ma,
-        rebase_to_seam=args.rebase_to_seam,
+        rebase_to_seam=args.rebase_to_seam, withheld=args.withheld,
     )
     # Re-check the contract with the confirmed mapping; refuse to build past an error.
     report = inspect_file(args.file, forecast_start=args.forecast_start, sheet=args.sheet, platform=args.platform,

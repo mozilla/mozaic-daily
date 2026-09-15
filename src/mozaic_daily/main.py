@@ -572,8 +572,9 @@ def _resolve_cycle_adjustments(
     )
     _log_spec_resolution("Paid/organic split `p`", organic_spec_path, forecast_start_date, "p" in disabled)
 
-    overlays = resolve_overlays(forecast_start_date, disabled_codes=disabled)
-    resolved_by_code = {o.code: o for o in overlays}
+    # Resolve withheld specs too so the log names them; only the non-withheld ones are applied.
+    every_gating_overlay = resolve_overlays(forecast_start_date, disabled_codes=disabled, include_withheld=True)
+    resolved_by_code = {o.code: o for o in every_gating_overlay}
     for code, entry in sorted(registered_overlay_codes().items()):
         overlay = resolved_by_code.get(code)
         _log_spec_resolution(
@@ -581,13 +582,20 @@ def _resolve_cycle_adjustments(
             overlay.spec_path if overlay else None,
             forecast_start_date,
             code in disabled,
+            is_withheld=bool(overlay and overlay.withheld),
         )
+    overlays = [o for o in every_gating_overlay if not o.withheld]
     return marketing_spec_path, organic_spec_path, overlays
 
 
-def _log_spec_resolution(label: str, spec_path: Optional[Path], forecast_start_date: str, is_disabled: bool) -> None:
+def _log_spec_resolution(
+    label: str, spec_path: Optional[Path], forecast_start_date: str, is_disabled: bool, is_withheld: bool = False
+) -> None:
     if is_disabled:
         print(f'{label}: disabled for this run by flag.')
+    elif is_withheld:
+        print(f'{label}: spec {spec_path} gates on this seam but is WITHHELD (`"withheld": true`); '
+              f'not applied. Remove the key to apply it.')
     elif spec_path is None:
         print(f'{label}: no spec found for forecast_start={forecast_start_date}; not applied this cycle.')
     else:

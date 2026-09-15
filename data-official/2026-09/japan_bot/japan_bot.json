@@ -1,7 +1,7 @@
 {
   "type": "desktop_overlay",
   "platform": "desktop",
-  "data_file": "japan_bot.2026-08-30.parquet",
+  "data_file": "japan_bot.2026-09-07.parquet",
   "value_column": "japan_bot_dau_daily",
   "allocation": {
     "key": "fixed_country_shares",
@@ -14,9 +14,9 @@
   "scope": {
     "exclude_countries": []
   },
-  "model_meta_file": "japan_bot.2026-08-30.meta.json",
-  "applies_to_forecast_start": "2026-09-02",
+  "model_meta_file": "japan_bot.2026-09-07.meta.json",
+  "applies_to_forecast_start": "2026-09-09",
   "applies_to_data_source": "legacy_desktop",
   "placeholder": false,
-  "notes": "September 2026 cycle, seam 2026-09-02. Japan bot traffic, MIDDLE scenario (plateau 67,101 DAU/day = 6.19% of Japan, reached 2026-11-28). Measured raw daily excess 2026-06-24 to 2026-08-30, projected after, held flat to 2027-12-31, deliberately unsmoothed. Allocation 100% JP, fixed; modern_windows by measurement (99.2% Windows_NT). Alternates LOW (33,551) and HIGH (108,423) were delivered alongside and are recorded in _index.md. Re-ingested 2026-09-04 through scripts/ingest_adjustment.py from the handoff's own CSV; the handoff's original spec and parquet are in japan_bot_REVERT_2026-09-04/."
+  "notes": "September 2026 cycle, seam 2026-09-02. Japan bot traffic, PEAK scenario (plateau 43,813 DAU/day = 3.99% of Japan, the highest single day of measured excess, 2026-08-28; reached 2026-09-30). Measured raw daily excess 2026-06-24 to 2026-09-07, projected after, held flat to 2027-12-31, deliberately unsmoothed. Allocation 100% JP, fixed; modern_windows by measurement (99.2% Windows_NT). Re-exported 2026-09-09 (Brendan): replaces the MIDDLE build of 2026-09-04 (67,101; edge 2026-08-30), which is in japan_bot_REVERT_2026-09-09/. Alternates LOW (34,919), MIDDLE (69,839) and HIGH (109,926) were produced alongside at the same edge and are recorded in _index.md. Re-ingested through scripts/ingest_adjustment.py from the producer's PEAK CSV. Producer: scratch/brwells/regional-story/forecast/deliver.py; evidence page site/forecast.html, DECISIONS D76-D91, D105. SEAM REFRESH 2026-09-10: re-gated from the 2026-09-02 seam to 2026-09-09 (training through 2026-09-08, the latest landed day) so the forecast trains on all available data; curve/anchor unchanged."
 }

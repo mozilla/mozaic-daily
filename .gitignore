@@ -95,6 +95,10 @@ research/param-scans/*/*_report.html
 # travel with the README section that explains the scope rather than circulate bare.
 !data-official/*/csv/*.DESKTOP_ONLY.EX_IR_CN.csv
 !data-official/*/csv/*.DESKTOP_ONLY.WIN10_HEADWIND_REMOVED.EX_IR_CN.csv
+# Desktop-only DAILY (unsmoothed) twin with `h` advanced 13.5 days (produced by
+# scripts/export_desktop_daily_csv.py). Same column names as the published MA file, so it must
+# travel with the README section that says it is NOT a 28-day MA.
+!data-official/*/csv/*.DESKTOP_ONLY.DAILY.csv
 !data-official/*/csv/per_country/*.no-headwinds.csv
 !data-official/*/june_canonical_curves.csv
 !data-official/*/april_composite_forecast_28ma.adj-h.csv
@@ -159,3 +163,10 @@ data-official/*/handoff/*_handoff/
 
 # Prediction-interval bands copied into research/forecast-intervals/ (small; the quotable numbers live in them).
 !research/forecast-intervals/*/csv/*.csv
+# Band CSVs beside the raw-model interval builds themselves (parquet/pkl in those dirs stay ignored).
+!data-official/*/desktop_raw_ci_*/csv/*.csv
+!data-official/*/mobile_raw_ci_*/csv/*.csv
+
+# launch_at_login_existing_users (`e`): curve parquet + delivered source, ingested 2026-09-10
+!data-official/*/launch_at_login_existing_users/*.parquet
+!data-official/*/launch_at_login_existing_users/source_data/*

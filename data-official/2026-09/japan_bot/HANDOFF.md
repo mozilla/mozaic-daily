@@ -1,5 +1,7 @@
 # Handoff: adjustment `j` — `japan_bot`
 
+> **Refreshed 2026-09-09.** The curve on disk now has its data edge at **2026-09-07** and ships the **PEAK** plateau (43,813 DAU/day, the highest single day of measured excess; Dec-15 2026 28d-MA 43,813; MAU 178,036). The numbers below describe the 2026-08-30 MIDDLE build, now in `../japan_bot_REVERT_2026-09-09/`; the method and caveats are unchanged. Current figures: `_index.md` here and the producer's `site/forecast.html`.
+
 **Read this before touching the files here.** They were produced by a different agent
 working in a different repository, they are **not wired into the pipeline**, and two of the
 things they encode contradict assumptions you may reasonably hold.

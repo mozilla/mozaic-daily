@@ -1,5 +1,7 @@
 # Handoff: adjustment `i` — `india_excess`
 
+> **Refreshed 2026-09-09.** The curve on disk now has its data edge at **2026-09-06** (net 28-day level 52,360/day; PROPORTIONAL reads 50,994 at Dec-15 2026; alternates hold 57,155 / linger 41,205 / settle 26,948 / fade 1,916). The numbers below describe the 2026-08-29 build, now in `../india_excess_REVERT_2026-09-09/`; the method and caveats are unchanged. Current figures: `_index.md` here and the producer's `site/india_forecast.html`.
+
 **Read this before touching the files here.** They were produced by a different agent
 working in a different repository, they are **not wired into the pipeline**, and the thing
 they encode is a *measured gap with a hypothesised cause*, not an attribution.
