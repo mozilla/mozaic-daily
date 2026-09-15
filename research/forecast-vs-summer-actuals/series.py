@@ -65,6 +65,14 @@ VINTAGES = {
         "csv_ex": "data-official/2026-08/csv/august_canonical_curves.DESKTOP_ONLY.EX_IR_CN.csv",
         "column_ex": "desktop_current_august_EX_IR_CN",
         "adjustments": "data-official/2026-08/adjustments",
+        # The published g01 parquet. Pinned here because `scripts/export_desktop_ex_ir_cn_csv.py`
+        # is cycle-scoped and moved on to September at the 2026-09-04 roll-forward; this audit
+        # judges the August vintage and must keep reading August's build.
+        "parquet": (
+            "data-official/2026-08/desktop_g01_2026-08-02/"
+            "cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/"
+            "mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet"
+        ),
         "csv_nh": ("data-official/2026-08/csv/"
                    "august_canonical_curves.DESKTOP_ONLY.WIN10_HEADWIND_REMOVED.csv"),
         "column_nh": "desktop_current_august_NO_WIN10_HEADWIND",

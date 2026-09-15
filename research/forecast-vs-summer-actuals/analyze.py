@@ -171,21 +171,19 @@ def plain_ma_diagnostic() -> dict:
     are two different things over exactly this window.
     """
     from export_desktop_no_headwind_csv import load_desktop_headwind_ramp
-    from export_desktop_ex_ir_cn_csv import (
-        DESKTOP_FORECAST_PATH,
-        CURRENT_ADJUSTMENTS_DIR,
-        forecast_ma,
-        load_country_dau,
-    )
+    from export_desktop_ex_ir_cn_csv import forecast_ma, load_country_dau
 
+    # August's own build and headwind spec, never the export script's cycle-scoped constants
+    # (those follow the live cycle and pointed at September after the 2026-09-04 roll-forward).
     repo = HERE.parent.parent
-    pivot, _training = load_country_dau(str(repo / DESKTOP_FORECAST_PATH))
+    august = S.VINTAGES["august"]
+    pivot, _training = load_country_dau(str(repo / august["parquet"]))
     daily = pivot["ALL"]
-    seam = S.VINTAGES["august"]["seam"]
+    seam = august["seam"]
 
     spliced = forecast_ma(daily, seam)
     plain = S.ma28(daily)
-    ramp = load_desktop_headwind_ramp(str(repo / CURRENT_ADJUSTMENTS_DIR), spliced.index, seam)
+    ramp = load_desktop_headwind_ramp(str(repo / august["adjustments"]), spliced.index, seam)
 
     spliced, plain = (spliced + ramp).reindex(WINDOW), (plain + ramp).reindex(WINDOW)
     return {
@@ -207,12 +205,12 @@ def headwind_contribution() -> dict:
     its own line — a headwind that is too heavy is a different failure from a model that drifts.
     """
     from export_desktop_no_headwind_csv import load_desktop_headwind_ramp
-    from export_desktop_ex_ir_cn_csv import CURRENT_ADJUSTMENTS_DIR
 
-    seam = S.VINTAGES["august"]["seam"]
+    august = S.VINTAGES["august"]
+    seam = august["seam"]
     index = pd.date_range(seam, pd.Timestamp("2026-12-31"), freq="D")
     ramp = load_desktop_headwind_ramp(
-        str(HERE.parent.parent / CURRENT_ADJUSTMENTS_DIR), index, seam
+        str(HERE.parent.parent / august["adjustments"]), index, seam
     )
     return {
         "ramp_at_window_end": float(ramp.reindex([S.EVAL_END]).iloc[0]),

@@ -92,7 +92,7 @@ Reproduce end-to-end:
 
 ```bash
 source .venv/bin/activate
-python research/forecast-vs-summer-actuals/fetch_actuals.py --refresh   # only when actuals moved
+python research/forecast-vs-summer-actuals/fetch_actuals.py --refresh   # only when actuals moved; --full if the seed predates a table fix
 python research/forecast-vs-summer-actuals/plots.py
 python research/forecast-vs-summer-actuals/seasonality_plots.py
 python research/forecast-vs-summer-actuals/build_report.py
@@ -101,17 +101,22 @@ python research/forecast-vs-summer-actuals/build_report.py
 The seasonality pane needs both vintages' fitted-model pickles (~630 MB each, gitignored). They are
 not kept on disk between cycles: pull the July one from `gs://…/july-2026/param-scans/aug22-retune/_rawcache/`
 and the August one from `gs://…/august-2026/data-official/2026-08/desktop_g01_2026-08-02/<slug>/`.
-August's is in the repo; **July's must be fetched**, and gsutil must be forced single-process or it
-hangs with a byte-complete but corrupt file (see `LOG.md` F14):
+Neither is kept on disk between cycles (August's pickle was pruned with the August archive). Fetch both
+with `gcloud storage cp` — `gsutil cp` hangs after the byte-complete `.gstmp` even when forced
+single-process (see `LOG.md` F14 and F24):
 
 ```bash
-gsutil -o "GSUtil:parallel_process_count=1" -o "GSUtil:parallel_thread_count=1" \
-       -o "GSUtil:sliced_object_download_threshold=0" \
-  cp gs://moz-data-science-brwells-bucket/mozaic-daily-archive/july-2026/param-scans/aug22-retune/\
+gcloud storage cp gs://moz-data-science-brwells-bucket/mozaic-daily-archive/july-2026/param-scans/aug22-retune/\
 round1/center/cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/\
-mozaic_objects.legacy_desktop.2026-07-06.pkl \
-  research/forecast-vs-summer-actuals/data/pkl/
+mozaic_objects.legacy_desktop.2026-07-06.pkl research/forecast-vs-summer-actuals/data/pkl/
+gcloud storage cp gs://moz-data-science-brwells-bucket/mozaic-daily-archive/august-2026/data-official/2026-08/\
+desktop_g01_2026-08-02/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/\
+mozaic_objects.legacy_desktop.2026-08-02.pkl data-official/2026-08/desktop_g01_2026-08-02/<that slug>/
 ```
+
+The audit is pinned to the **August** vintage: `series.VINTAGES["august"]` carries its parquet and
+headwind-spec paths, and `analyze.py` reads those rather than the cycle-scoped constants in
+`scripts/export_desktop_ex_ir_cn_csv.py`, which follow the live cycle (F24).
 
 ## Which adjustments are separable, and which are not
 

@@ -573,3 +573,35 @@ different windows, and each footnote now says which and why.
 roughly half to two-thirds of the distance. July leans deep on both. The spring anchor gives larger
 magnitudes because it measures a ~5-month descent against the seam anchor's ~6 weeks; neither is
 more correct, and the disagreement in size is the reason to publish both rather than pick one.
+
+---
+
+## Round 6 — 2026-09-15 — Actuals re-pulled after the active_users_aggregates fix
+
+### F24. The 2026-09-14 aggregates fix did not touch desktop; the audit's numbers are unchanged
+
+A data-platform fix to the `active_users_aggregates` tables landed 2026-09-14 and was reported as
+affecting older data (2025 among others). The per-country cache was not on disk, and the regional-story
+seed it normally tops up from was pulled 2026-09-09 (pre-fix), so the cache was rebuilt standalone
+(`fetch_actuals.py --refresh --full`, 2021-12-01 .. 2026-09-13, 428,137 rows, `seed: null` in the meta).
+
+Result: **every desktop number in `data/decomposition.json` reproduces to the DAU.** The only field that
+moved is `trough_reached`, false → true, because the actuals now extend past the norm-years' trough window.
+Independent confirmation from the same day: the September desktop training pull (world total, 2023-01-01
+.. 2026-09-08) matches the corrected `telemetry.active_users_aggregates` on all 1,347 days, and both
+`research/headwinds/extracts/` Windows-version extracts (2025 weekly + 2026 daily, from
+`firefox_desktop_derived.active_users_aggregates_v4`) came back identical.
+
+**The fix is mobile-only.** `glean_telemetry.active_users_aggregates` (Fenix, Firefox iOS, Focus
+Android, Focus iOS) differs from the September mobile training rows on every day 2023-01-01 .. 2026-06-06
+and on none after: +2.4% in 2023, +2.2% in 2024, +0.43% in 2025 (tapering from +0.10% in June to +0.06%
+in December), +0.02% in 2026, zero from 2026-06-07. Out of scope for this audit (desktop only, by
+decision), recorded here because the September mobile builds train on the pre-fix series.
+
+Two things had to change to reproduce at all, neither of them data:
+- `analyze.py` imported `DESKTOP_FORECAST_PATH` / `CURRENT_ADJUSTMENTS_DIR` from
+  `scripts/export_desktop_ex_ir_cn_csv.py`, which is cycle-scoped and moved on to September at the
+  2026-09-04 roll-forward (it raised `State mismatch … adj-ijlo … required ['l','o']`). The audit now
+  reads August's parquet and headwind spec from its own `series.VINTAGES["august"]`.
+- Both fitted pickles had to be re-fetched from GCS. `gsutil cp` with the single-process flags hung
+  after the byte-complete `.gstmp` (F14 again); `gcloud storage cp` finished both in under a minute.

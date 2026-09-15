@@ -531,7 +531,7 @@
       "norm_max": 0.937663362717672,
       "value_2026": 0.9496679167225177,
       "z_score": 2.3122554948057035,
-      "trough_reached": false
+      "trough_reached": true
     },
     "ex_ir_cn": {
       "norm_mean": 0.9220317965858212,
@@ -540,7 +540,7 @@
       "norm_max": 0.9296369523441876,
       "value_2026": 0.9363110062361979,
       "z_score": 1.703872363172715,
-      "trough_reached": false
+      "trough_reached": true
     }
   }
 }
