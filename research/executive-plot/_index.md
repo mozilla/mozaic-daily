@@ -39,7 +39,11 @@ reference labels in the right margin, DRAFT watermark on until the flag is flipp
 - Labels drawn above a line end take the free slot nearest their default that clears every reference line
   (`place_label_above`, decided 2026-09-15 from rendered variants): boxed if the gap fits the white backing box,
   bare text if it only fits the glyphs (Sep 2026 desktop sits between Base and Stretch), never below the default
-  so the label cannot cover its own curve. Combined: "Sep Forecast" sits just above Combined Flat.
+  so the label cannot cover its own curve. The default stays anchored to the Dec-15 end, but the label's bottom
+  edge must also clear the curve's MAXIMUM over the days the label spans (text width via `label_span_days`),
+  because the 2026-09-15 combined curve peaks a week before Dec-15 and ran under the text. Anchoring the default
+  to that peak instead was tried and reverted the same day: it pushed desktop's label above Stretch. The prior
+  (below) label keeps a fixed offset from its line end.
 - Scale matched to the examples on 2026-09-09 by drawing on a 16x8 in canvas at 150 dpi (same 2400x1200 px, point-sized elements 25% smaller). Label convention: current above its line end, prior below, white backing box.
 
 ## Where new code goes

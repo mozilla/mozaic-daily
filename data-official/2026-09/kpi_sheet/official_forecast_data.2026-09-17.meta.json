@@ -1,0 +1,43 @@
+{
+  "seam": "2026-09-09",
+  "prior_boundary": "2026-09-08",
+  "outgoing_seam": "2026-08-02",
+  "handoff_gap_date": "2026-08-01",
+  "publish_date": "2026-09-17",
+  "install_as": "CURRENT",
+  "label_mapping": {
+    "AUG": "JUL",
+    "CURRENT": "AUG"
+  },
+  "rows_in": 6390,
+  "rows_out": 7120,
+  "products": {
+    "desktop": {
+      "dec15": 49332443,
+      "outgoing_dec15": 48703443,
+      "seam_step": 1367549,
+      "handoff_gap_step": 1862809,
+      "forecast_rows": 114,
+      "prior_rows": 251
+    },
+    "mobile": {
+      "dec15": 18214594,
+      "outgoing_dec15": 17924562,
+      "seam_step": 153636,
+      "handoff_gap_step": 99106,
+      "forecast_rows": 114,
+      "prior_rows": 251
+    }
+  },
+  "sheet_export": "/Users/brendanwells/Downloads/2026 Firefox KPI Forecasts - Official Forecast Data(2).csv",
+  "sheet_export_sha1": "aae773b921654ba2e68ddd973231f32299be7fdf",
+  "curves": "data-official/2026-09/csv/september_canonical_curves.csv",
+  "curves_sha1": "e365b42ec0ff6e0016177a81b8f1b336e73c8fb9",
+  "curve_columns": {
+    "desktop": "desktop_current_september",
+    "mobile": "mobile_current_september"
+  },
+  "output_csv": "data-official/2026-09/kpi_sheet/official_forecast_data.2026-09-17.csv",
+  "output_sha1": "ee605b831246b2433724a309f962ce40a5a96657",
+  "check_plot": "data-official/2026-09/plots/kpi_sheet_2026-09-17.png"
+}
