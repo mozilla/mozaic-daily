@@ -93,3 +93,8 @@ blob dirs; removed `iran_synthetic/` (tracked) and `march_brad_forecast.csv` aft
   block**; audit script references and **edit the unambiguous cycle-scoped constants**, flag the
   ambiguous ones. Raw pulls and the `p` split rebuild stay in the monthly update — the skill does
   not pull data.
+- **Adjustment-effects record (user, 2026-09-17).** Every cycle stores, tracked in git, what each
+  adjustment added at Dec-15 from the full 2^N combinatorics (no cap on N), desktop and mobile (`p`
+  on/off), as per-cycle CSVs under `adjustment_combinatorics/` plus a comparison against the prior
+  cycle; withheld codes are not included. Built at button-down (Phase 1 step 0) and optionally in
+  the monthly update. August 2026 was built retroactively.

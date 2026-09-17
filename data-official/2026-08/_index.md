@@ -332,6 +332,35 @@ indistinguishable in telemetry; the LOL ceiling is unfalsifiable against current
 2026-06-23); and mobile carries the discretionary +276,000 `t` overlay, ~49% of which is unattributed
 planning judgement. See the caveats cell, `adjustments/_index.md` and `tailwind/_index.md`.
 
+## Added 2026-09-17 (retroactive, from the September branch): the adjustment-effects record
+
+`adjustment_combinatorics/` now holds what each August adjustment added at Dec-15 — every subset of
+the model-run codes (`raw`, `l`, `o`, `l+o`; mobile `raw` vs `p`) at the locked g01 / cpr-0.725 configs
+and the 2026-08-02 seam, as tracked CSVs, with `h`, `t` and the mobile headwind leg exact. The
+canonical parquets were adopted as the all-in runs and left untouched. **Comparability:** re-running
+the all-in desktop and mobile builds with the 2026-09-17 code (`adjustment_reproduction_2026-09-17/`)
+reproduced the 2026-08-03 canonical parquets exactly, every row. Fresh runs live in
+`adjustment_ladder/<codes>.<key>/` (desktop) and `mobile_raw_noorganic_2026-08-02/` (mobile `p` off).
+Headline Shapley at Dec-15: `l` +64,241 of a 200,000 curve, `o` +18,843 of 567,549, `p` +75,157
+against a 1,554,879 paid level. Details and the reading of each number: `adjustment_combinatorics/_index.md`.
+
+Commands (repo root, `.venv` active; the mobile config flags spell out the locked `parameters.json`):
+
+```bash
+MS=cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1
+DS=cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative
+DCAN=data-official/2026-08/desktop_g01_2026-08-02/$DS
+M="--forecast-start-date 2026-08-02 --raw-cache-dir data-official/2026-08/mobile_rawpull_2026-08-02 --changepoint-prior-scale 0.035 --changepoint-range 0.725 --n-changepoints 25 --recent-weeks 13 --seasonality-prior-scale 0.1 --seasonality-regime auto --seasonality-corr-threshold 0 --holiday-threshold -0.055 --holiday-effect-floor -0.6"
+python scripts/run_mobile_param_scan.py $M --no-organic-split --results-dir data-official/2026-08/mobile_raw_noorganic_2026-08-02
+python scripts/run_mobile_param_scan.py $M --results-dir data-official/2026-08/adjustment_reproduction_2026-09-17/mobile
+python scripts/run_param_scan.py --forecast-start-date 2026-08-02 --raw-cache-dir $DCAN --changepoint-prior-scale 0.1649 --changepoint-range 0.814 --n-changepoints 40 --recent-weeks 17 --seasonality-prior-scale 0.00825 --seasonality-regime multiplicative --seasonality-corr-threshold 0 --holiday-threshold -0.032 --holiday-max-radius 5 --holiday-min-radius 3 --holiday-effect-floor -0.6 --results-dir data-official/2026-08/adjustment_reproduction_2026-09-17/desktop
+python scripts/build_adjustment_combinatorics.py --cycle 2026-08 --forecast-start-date 2026-08-02 --raw-cache-dir $DCAN --config-from $DCAN/mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet.meta.json --reuse-run l+o=$DCAN/mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet --mobile-run p=data-official/2026-08/mobile_cpr0725_2026-08-02/$MS/mozaic_daily_forecast.2026-08-02.gm-D.adj-p.parquet --mobile-run raw=data-official/2026-08/mobile_raw_noorganic_2026-08-02/$MS/mozaic_daily_forecast.2026-08-02.gm-D.raw.parquet
+python scripts/export_adjustment_effects.py --cycle 2026-08 --desktop-canonical $DCAN/mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet --mobile-canonical data-official/2026-08/mobile_cpr0725_2026-08-02/$MS/mozaic_daily_forecast.2026-08-02.gm-D.adj-p.parquet
+```
+
+Present vs archived: the new run parquets and pickles (~2.4 GB) are gitignored exhaust of the
+September cycle and go to GCS with it; the CSVs, manifest and metas are tracked here.
+
 ## Mobile: re-locked and given a discretionary tailwind (2026-08-03) — LIVE
 
 **Two mobile changes, and they are different in kind.**

@@ -1,0 +1,105 @@
+{
+  "cycle": "2026-08",
+  "forecast_start": "2026-08-02",
+  "measurement_date": "2026-12-15",
+  "model_config": {
+    "prophet_recent_weeks": 17,
+    "prophet_changepoint_range": 0.814,
+    "prophet_n_changepoints": 40,
+    "holiday_threshold": -0.032,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_effect_floor": -0.6,
+    "seasonality_regime": "multiplicative",
+    "seasonality_corr_threshold": 0.0,
+    "prophet_changepoint_prior_scale": 0.1649,
+    "prophet_seasonality_prior_scale": 0.00825
+  },
+  "config_from": "data-official/2026-08/desktop_g01_2026-08-02/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet.meta.json",
+  "droppable_codes": [
+    "l",
+    "o"
+  ],
+  "pinned_overlay_codes": [],
+  "overlay_fingerprints": {
+    "l": "0deda46fb87422979f532f9b2d05c54ad465fdd5",
+    "o": "73935f9fe995050123b25c50b60457556d5cb5e7"
+  },
+  "display_effects_dec15": {
+    "h": -1315000.0
+  },
+  "runs": {
+    "raw": {
+      "overlay_subset": [],
+      "overlays_enabled": [],
+      "parquet": "data-official/2026-08/adjustment_ladder/raw.8423fa09708972e0/mozaic_daily_forecast.2026-08-02.ld-D.raw.parquet",
+      "dec15_plain_ma": 49935359.298017725,
+      "artifact_sha1": "e7c97c878a99d4e6f4df6c036950aa3b1eb4dcce"
+    },
+    "l": {
+      "overlay_subset": [
+        "l"
+      ],
+      "overlays_enabled": [
+        "l"
+      ],
+      "parquet": "data-official/2026-08/adjustment_ladder/l.fb8f7af0e297cacf/mozaic_daily_forecast.2026-08-02.ld-D.adj-l.parquet",
+      "dec15_plain_ma": 49995091.88449403,
+      "artifact_sha1": "c7febc9c589ca564119106731508003e28e2452b"
+    },
+    "o": {
+      "overlay_subset": [
+        "o"
+      ],
+      "overlays_enabled": [
+        "o"
+      ],
+      "parquet": "data-official/2026-08/adjustment_ladder/o.cdc55d60a5358781/mozaic_daily_forecast.2026-08-02.ld-D.adj-o.parquet",
+      "dec15_plain_ma": 49949694.45388069,
+      "artifact_sha1": "4666cfa47346a47f2df2f5c01255616554e7a600"
+    },
+    "l+o": {
+      "overlay_subset": [
+        "l",
+        "o"
+      ],
+      "overlays_enabled": [
+        "l",
+        "o"
+      ],
+      "parquet": "data-official/2026-08/adjustment_ladder/l+o.a7add716cb8d18de/mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet",
+      "dec15_plain_ma": 50018442.94762564,
+      "artifact_sha1": "7fe3fa3e363fbd1f1d5f2061e5e1e2e7db3ca658"
+    }
+  },
+  "built_at": "2026-09-17T20:42:17+00:00",
+  "mobile_runs": {
+    "p": {
+      "codes": [
+        "p"
+      ],
+      "parquet": "data-official/2026-08/mobile_cpr0725_2026-08-02/cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-08-02.gm-D.adj-p.parquet",
+      "dec15_plain_ma": 17652723.940824326,
+      "artifact_sha1": "3a8a1bccd7ca845955d861adf14749d2a793d379"
+    },
+    "raw": {
+      "codes": [],
+      "parquet": "data-official/2026-08/mobile_raw_noorganic_2026-08-02/cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-08-02.gm-D.raw.parquet",
+      "dec15_plain_ma": 17577566.979442652,
+      "artifact_sha1": "b819bbe93caf40bd47830121ad9f3551cd149a82"
+    }
+  },
+  "mobile_model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.055,
+    "prophet_changepoint_prior_scale": 0.035,
+    "prophet_changepoint_range": 0.725,
+    "prophet_n_changepoints": 25,
+    "prophet_recent_weeks": 13,
+    "prophet_seasonality_prior_scale": 0.1,
+    "seasonality_corr_threshold": 0.0,
+    "seasonality_regime": "auto"
+  }
+}

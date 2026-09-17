@@ -34,6 +34,8 @@ directories. Point at `data-official/<YYYY-MM>/_index.md` in the branch for the 
 ## File types
 
 - `.parquet` — forecast outputs (`.raw.` / `.adj-*.` state markers) and raw BigQuery caches.
+- `adjustment_ladder/<codes>.<key>/` — the isolation runs (parquet + pickle) behind the tracked
+  `adjustment_combinatorics/adjustment_*.csv`; the CSVs are in git, the runs only here.
 - `.pkl` — fitted Mozaic/Prophet objects, ~600–850 MB each. **First-class artifacts**: used to
   inspect Prophet internals and cross-check adjustments after the fact. Every probe pickle from
   the cycle's parameter searches is here.

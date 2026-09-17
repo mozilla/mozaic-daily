@@ -1,0 +1,7 @@
+cycle,seam,platform,label,codes,n_codes,dec15_no_display_layer,display_layer_dec15,dec15_with_display_layer,parquet
+2026-08,2026-08-02,desktop,raw,,0,49935359.298017725,-1315000.0,48620359.298017725,data-official/2026-08/adjustment_ladder/raw.8423fa09708972e0/mozaic_daily_forecast.2026-08-02.ld-D.raw.parquet
+2026-08,2026-08-02,desktop,l,l,1,49995091.88449403,-1315000.0,48680091.88449403,data-official/2026-08/adjustment_ladder/l.fb8f7af0e297cacf/mozaic_daily_forecast.2026-08-02.ld-D.adj-l.parquet
+2026-08,2026-08-02,desktop,o,o,1,49949694.45388069,-1315000.0,48634694.45388069,data-official/2026-08/adjustment_ladder/o.cdc55d60a5358781/mozaic_daily_forecast.2026-08-02.ld-D.adj-o.parquet
+2026-08,2026-08-02,desktop,l+o,lo,2,50018442.94762564,-1315000.0,48703442.94762564,data-official/2026-08/adjustment_ladder/l+o.a7add716cb8d18de/mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet
+2026-08,2026-08-02,mobile,raw,,0,17577566.979442652,271838.0,17849404.979442652,data-official/2026-08/mobile_raw_noorganic_2026-08-02/cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-08-02.gm-D.raw.parquet
+2026-08,2026-08-02,mobile,p,p,1,17652723.940824326,271838.0,17924561.940824326,data-official/2026-08/mobile_cpr0725_2026-08-02/cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-08-02.gm-D.adj-p.parquet

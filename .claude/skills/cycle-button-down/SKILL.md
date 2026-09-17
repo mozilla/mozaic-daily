@@ -92,6 +92,27 @@ commit and carried as untracked files across branch switches to `NEXT_BRANCH` (P
 
 Goal: `CYCLE_BRANCH` holds the complete, documented, green record.
 
+0. **Adjustment-effects currency.** The cycle's tracked record of what every adjustment added at
+   Dec-15 (`data-official/$CYCLE/adjustment_combinatorics/adjustment_*.csv`, written by
+   `scripts/export_adjustment_effects.py`) must describe the **canonical** build. Check first:
+   ```bash
+   python scripts/export_adjustment_effects.py --cycle $CYCLE --check-current \
+       --desktop-canonical <canonical desktop parquet> --mobile-canonical <canonical mobile parquet>
+   ```
+   Exit 0: rerun without `--check-current` to (re-)export — display-layer values render from the
+   live specs, so a late `h` edit is covered by the re-export alone — then
+   `python scripts/compare_adjustment_effects.py --prior <N-1 cycle> --current $CYCLE`.
+   Exit 2 (stale: seam moved, config changed, an overlay's spec or curve edited, or the all-in
+   run is not the canonical parquet): **GATE 1a**. Report the run list — every subset of the
+   desktop overlays except `raw` and the all-in build, which are adopted with `--reuse-run` from
+   the raw-interval build and the canonical parquet; mobile is the canonical `.adj-p.` build plus
+   its `--no-organic-split` twin via `--mobile-run` (one mobile run only if the twin does not
+   exist) — with wall time (~5 min and ~600 MB of pickle per desktop run) and wait for the
+   go-ahead. Then `scripts/build_adjustment_combinatorics.py` (prompts again), export, compare.
+   The CSVs, the meta and `adjustment_effects_vs_<prior>.csv` are tracked and belong in the
+   Phase 1 commit; the run parquets and pickles stay under `adjustment_ladder/<codes>.<key>/`
+   and are archived in Phase 2. September 2026's record was built at the 2026-09-09 seam; August
+   2026's retroactively on 2026-09-17 at its locked config and seam.
 1. **Doc currency.** `data-official/$CYCLE/_index.md` must open with a "current usable
    working set" block naming the canonical desktop and mobile parquets, the published CSVs,
    every wired spec (`adjustments/`, `launch_at_login_new_users/` (`launch_on_login/` through 2026-08), `mozillaonline/`, `organic/`, …),
@@ -229,7 +250,7 @@ Then, per item and **only after GATE 2 verification**:
   is fully gitignored; `git clean -Xfdn <dir>` (dry run) then `git clean -Xfd <dir>` when it
   mixes tracked sidecars with blobs, so notebooks and `.meta.json` survive.
 - **Keep every forecast and raw-pull `.parquet` in the closing cycle's `data-official/` dir** —
-  canonical, superseded, baseline and REVERT builds alike (June precedent; August's 36 came to
+  canonical, superseded, baseline, REVERT and `adjustment_ladder/<codes>.<key>/` run builds alike (June precedent; August's 36 came to
   ~25 MB) — plus every `.meta.json` / `parameters.json`, README, RESTORE/REVERT doc, and the
   KPI-sheet and source-data CSVs. These are what the cycle's notebooks, scan scripts and
   diagnostics read, so keeping them turns the stale-reference list from "broken" into "fine until
@@ -267,6 +288,9 @@ commits as before (prune; doc pass) and push.
    tooling and the cycle-scoped constants from Phase 3 that need repointing). If `PRE_WORK`
    already exists, index what is there and whether it is wired (August's `japan_bot` and
    `india_excess` handoffs were explicitly **not** wired).
+   Name the closing cycle's `adjustment_combinatorics/adjustment_effects.csv` as the comparison
+   baseline: the new cycle's record, once built, is compared with
+   `scripts/compare_adjustment_effects.py --prior $CYCLE --current $NEXT`.
 3. **Provisionally roll every adjustment forward, unmodified.** The base assumption is that each
    head- and tailwind carries into the new cycle as-is; the monthly update changes what it changes.
    Enumerate the set from `data-official/adjustment_codes.yaml`: for every registered code whose
@@ -338,3 +362,6 @@ retention window now in force.
 - Fragment-only greps (`desktop_locked`) matching the retained prior cycle's directory of the same name.
 - Opening the next cycle with an empty `data-official/<NEXT>/`, so `l`, `o`, `p`, `h`, `t` had to be
   rebuilt by hand in separate sessions (September 2026). Steps 3–5 above exist because of this.
+- September 2026's adjustment ladder and combinatorics were left at the 2026-09-02 seam after the
+  canonical moved to 2026-09-09, so no tracked file recorded what the shipped adjustments added.
+  Phase 1 step 0 exists because of this.

@@ -54,7 +54,13 @@ answer on each. A harness timeout is not an answer.
 4. **Whether the prior cycle's comparison curve is the published one.** It always should be:
    `PREV_DIR/csv/<prev-month>_canonical_curves.csv` is the N-1 series and its Dec-15 numbers are
    hardcoded into the notebook's reproduction check.
-5. **Cycle-scoped scripts.** `DATA_DIR/STALE_REFERENCES_from_<prev-month>_button_down.md` lists the
+5. **Quick or full update.** A *quick* update stops at the canonical build, notebook and exports. A
+   *full* update also rebuilds the adjustment-effects record (Step 5b): every subset of the desktop
+   overlays as a real run (2^N − 2, the raw and all-in builds are adopted), the mobile `p` on/off
+   pair, then the tracked CSVs and the comparison with the prior cycle. It costs ~5 min and ~600 MB
+   per desktop run. The user chooses; the button-down skill rebuilds it anyway at cycle end if it is
+   stale then, so *quick* defers the cost rather than skipping it.
+6. **Cycle-scoped scripts.** `DATA_DIR/STALE_REFERENCES_from_<prev-month>_button_down.md` lists the
    constants that still point at the prior cycle. Repoint them (or agree not to run them) before Step 5.
 
 ---
@@ -216,9 +222,31 @@ Both exporters are **cycle-scoped**: repoint `CSV_DIR`, `CURRENT_/PRIOR_ADJUSTME
 `FORECAST_START`, `PREV_FORECAST_START` first (Ask #5). Their `README.md` section in `csv/` must
 travel with the files — the ex-IR/CN delta has the opposite sign to the published one.
 
-Also update, or note as not done: `kpi_sheet/build_kpi_sheet_update.py` (the KPI workbook rows; August
-was a `FUTURE` draft, not a promotion — read its `_index.md` before reusing), and the `handoff/` bundle
-(`_index.md` there has the zip recipe).
+### Step 5b — Adjustment-effects record (full update only)
+
+Skipped in a quick update (Ask #5). Otherwise, after the canonical parquets exist:
+
+```bash
+python scripts/export_adjustment_effects.py --cycle $CYCLE --check-current \
+    --desktop-canonical <canonical desktop parquet> --mobile-canonical <canonical mobile parquet>
+# exit 2 = stale (expected after a rebuild). Show the run list and wait for the go-ahead, then:
+python scripts/build_adjustment_combinatorics.py --cycle $CYCLE --forecast-start-date $SEAM \
+    --raw-cache-dir DATA_DIR/desktop_rawpull_$SEAM --config-from <canonical desktop>.meta.json \
+    --reuse-run raw=<desktop --no-adjustments build, e.g. the raw-interval run> \
+    --reuse-run <all codes, e.g. i+j+l+o>=<canonical desktop parquet> \
+    --mobile-run p=<canonical mobile parquet> --mobile-run raw=<mobile --no-organic-split build>
+python scripts/export_adjustment_effects.py --cycle $CYCLE --desktop-canonical … --mobile-canonical …
+python scripts/compare_adjustment_effects.py --prior $PREV --current $CYCLE
+```
+
+The build prompts before every model run. Report the comparison table (per code: realized Dec-15
+both cycles, delta, curve-moved vs pass-through-moved) in Step 6. The CSVs and meta are tracked;
+runs stay gitignored under `adjustment_ladder/`.
+
+Also update, or note as not done: the KPI workbook tab — a separate skill, `/update-kpi-sheet`
+(`scripts/build_kpi_sheet_update.py`; needs the tab's fresh CSV export in `~/Downloads`; promotes the outgoing
+`CURRENT` and installs this cycle, or `--draft`s it as `FUTURE`) — and the `handoff/` bundle (`_index.md` there
+has the zip recipe).
 
 ---
 

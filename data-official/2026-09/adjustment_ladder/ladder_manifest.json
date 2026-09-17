@@ -1,6 +1,6 @@
 {
   "cycle": "2026-09",
-  "forecast_start": "2026-09-02",
+  "forecast_start": "2026-09-09",
   "measurement_date": "2026-12-15",
   "model_config": {
     "prophet_recent_weeks": 17,
@@ -15,7 +15,7 @@
     "prophet_changepoint_prior_scale": 0.1649,
     "prophet_seasonality_prior_scale": 0.00825
   },
-  "config_from": "data-official/2026-09/desktop_g01_2026-09-02/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-09-02.ld-D.adj-ijlo.parquet.meta.json",
+  "config_from": "data-official/2026-09/desktop_g01_2026-09-09/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-09-09.ld-D.adj-ijlo.parquet.meta.json",
   "overlay_codes": [
     "i",
     "j",
@@ -23,56 +23,56 @@
     "o"
   ],
   "overlay_fingerprints": {
-    "i": "c0c0acf810f82c4a978f1d04b8031a6655a83634",
-    "j": "40b8b14c9337b13ad6a2e39ba6428f5bcdcf6460",
-    "l": "cabcc9fbb9b51d6c8810eef3ce245ddfa18229d8",
-    "o": "ca5e4c30e0ed1dfd3fe433e092266932f9d94ef2"
+    "i": "f131a981d1bc55adbd6a6507f1438e59818be8c3",
+    "j": "df9b70d669d22b085b800b9489d8a48fc3724b65",
+    "l": "85aae2faa6fdec6a36ae4a2edcc9166d2dddbc2d",
+    "o": "06f9b72a5fdaa8cf04c4fe04507f4b047ecb6ae9"
   },
   "display_effects_dec15": {
-    "h": -726000.0
+    "h": -1017277.0
   },
   "single_overlay_effects_dec15": {
-    "i": -48263.15955619514,
-    "j": 71355.49828459322,
-    "l": 64265.413595445454,
-    "o": -100781.05850222707
+    "i": -55437.49847155064,
+    "j": 33658.745845124125,
+    "l": 96644.65531352907,
+    "o": 15570.233874157071
   },
   "order": [
     "h",
-    "o",
-    "j",
     "l",
-    "i"
+    "i",
+    "j",
+    "o"
   ],
   "runs": {
     "raw": {
       "overlay_subset": [],
-      "parquet": "data-official/2026-09/adjustment_ladder/raw.9eaf582af09bbd74/mozaic_daily_forecast.2026-09-02.ld-D.raw.parquet",
-      "dec15_plain_ma": 50209026.921960875
+      "parquet": "data-official/2026-09/adjustment_ladder/raw.0e49d0455cdadb38/mozaic_daily_forecast.2026-09-09.ld-D.raw.parquet",
+      "dec15_plain_ma": 50326586.730094254
     },
-    "o": {
+    "l": {
       "overlay_subset": [
-        "o"
+        "l"
       ],
-      "parquet": "data-official/2026-09/adjustment_ladder/o.efa988f0da88c39c/mozaic_daily_forecast.2026-09-02.ld-D.adj-o.parquet",
-      "dec15_plain_ma": 50108245.86345865
+      "parquet": "data-official/2026-09/adjustment_ladder/l.1e818eb194f87f72/mozaic_daily_forecast.2026-09-09.ld-D.adj-l.parquet",
+      "dec15_plain_ma": 50423231.38540778
     },
-    "j+o": {
+    "i+l": {
       "overlay_subset": [
+        "i",
+        "l"
+      ],
+      "parquet": "data-official/2026-09/adjustment_ladder/i+l.c6b78e7ddc5777f8/mozaic_daily_forecast.2026-09-09.ld-D.adj-il.parquet",
+      "dec15_plain_ma": 50398152.15914808
+    },
+    "i+j+l": {
+      "overlay_subset": [
+        "i",
         "j",
-        "o"
+        "l"
       ],
-      "parquet": "data-official/2026-09/adjustment_ladder/j+o.3fa94702f7ed9115/mozaic_daily_forecast.2026-09-02.ld-D.adj-jo.parquet",
-      "dec15_plain_ma": 50252432.90780085
-    },
-    "j+l+o": {
-      "overlay_subset": [
-        "j",
-        "l",
-        "o"
-      ],
-      "parquet": "data-official/2026-09/adjustment_ladder/j+l+o.62bbb693051669b6/mozaic_daily_forecast.2026-09-02.ld-D.adj-jlo.parquet",
-      "dec15_plain_ma": 50231855.75152051
+      "parquet": "data-official/2026-09/adjustment_ladder/i+j+l.7d4ceb9045b4c9f4/mozaic_daily_forecast.2026-09-09.ld-D.adj-ijl.parquet",
+      "dec15_plain_ma": 50442949.43363309
     },
     "i+j+l+o": {
       "overlay_subset": [
@@ -81,8 +81,8 @@
         "l",
         "o"
       ],
-      "parquet": "data-official/2026-09/adjustment_ladder/i+j+l+o.eccac69b63f5065d/mozaic_daily_forecast.2026-09-02.ld-D.adj-ijlo.parquet",
-      "dec15_plain_ma": 50271790.24848466
+      "parquet": "data-official/2026-09/adjustment_ladder/i+j+l+o.f482e79f98674fd6/mozaic_daily_forecast.2026-09-09.ld-D.adj-ijlo.parquet",
+      "dec15_plain_ma": 50349720.44548648
     }
   },
   "rungs": [
@@ -90,58 +90,58 @@
       "rung": 0,
       "added": null,
       "overlay_subset": [],
-      "dec15": 50209026.921960875,
+      "dec15": 50326586.730094254,
       "step": null
     },
     {
       "rung": 1,
       "added": "h",
       "overlay_subset": [],
-      "dec15": 49483026.921960875,
-      "step": -726000.0
+      "dec15": 49309309.730094254,
+      "step": -1017277.0
     },
     {
       "rung": 2,
-      "added": "o",
+      "added": "l",
       "overlay_subset": [
-        "o"
+        "l"
       ],
-      "dec15": 49382245.86345865,
-      "step": -100781.05850222707
+      "dec15": 49405954.38540778,
+      "step": 96644.65531352907
     },
     {
       "rung": 3,
-      "added": "j",
+      "added": "i",
       "overlay_subset": [
-        "j",
-        "o"
+        "i",
+        "l"
       ],
-      "dec15": 49526432.90780085,
-      "step": 144187.04434220493
+      "dec15": 49380875.15914808,
+      "step": -25079.226259700954
     },
     {
       "rung": 4,
-      "added": "l",
+      "added": "j",
       "overlay_subset": [
+        "i",
         "j",
-        "l",
-        "o"
+        "l"
       ],
-      "dec15": 49505855.75152051,
-      "step": -20577.156280346215
+      "dec15": 49425672.43363309,
+      "step": 44797.27448500693
     },
     {
       "rung": 5,
-      "added": "i",
+      "added": "o",
       "overlay_subset": [
         "i",
         "j",
         "l",
         "o"
       ],
-      "dec15": 49545790.24848466,
-      "step": 39934.49696415663
+      "dec15": 49332443.44548648,
+      "step": -93228.98814661056
     }
   ],
-  "built_at": "2026-09-04T22:59:47+00:00"
+  "built_at": "2026-09-17T20:59:33+00:00"
 }

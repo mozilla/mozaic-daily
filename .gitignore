@@ -100,6 +100,11 @@ research/param-scans/*/*_report.html
 # travel with the README section that says it is NOT a 28-day MA.
 !data-official/*/csv/*.DESKTOP_ONLY.DAILY.csv
 !data-official/*/csv/per_country/*.no-headwinds.csv
+# Adjustment-effects export (scripts/export_adjustment_effects.py): the per-cycle record of what
+# every adjustment added at Dec-15 (subset table, per-code views, world curves, per-country Dec-15)
+# and the cycle-over-cycle comparison. Small (<2 MB); tracked so a future cycle can say "the
+# impact of X moved by Y" without pulling run parquets back from GCS.
+!data-official/*/adjustment_combinatorics/adjustment_*.csv
 !data-official/*/june_canonical_curves.csv
 !data-official/*/april_composite_forecast_28ma.adj-h.csv
 # Win10 headwind anchor-validation extracts: small, and the notebook in
@@ -170,3 +175,5 @@ data-official/*/handoff/*_handoff/
 # launch_at_login_existing_users (`e`): curve parquet + delivered source, ingested 2026-09-10
 !data-official/*/launch_at_login_existing_users/*.parquet
 !data-official/*/launch_at_login_existing_users/source_data/*
+# KPI workbook update: the Sheets export each run read (provenance for the next cycle's diff).
+!data-official/*/kpi_sheet/source_data/*

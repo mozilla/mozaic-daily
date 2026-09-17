@@ -27,8 +27,7 @@ days ran ~890K/day above what the 09-02-seam forecast had for them (mobile ~76K/
 **`h` re-anchored the same day (Brendan's decision 2026-09-10): −1,089,347 → −1,167,277**, i.e. the +77,930 the new seam added at
 Dec-15 is taken back out, so published desktop stays **49,182,443** (= August +479,000, the value the old anchor was calibrated
 to) and ALL is **67,380,122** (−156,835 vs the 2025 flat line). Same calibration logic as 2026-09-08, re-applied at the new seam;
-display layer, exact, no rerun. Still a DRAFT. **Still open:** `adjustment_ladder/` and `adjustment_combinatorics/` are keyed to the 2026-09-02 seam and are now **stale**;
-the notebook's `[plot-desktop-ladder]` prints the rerun command and skips instead of asserting. Both reruns need explicit approval.
+display layer, exact, no rerun. Still a DRAFT. ~~Still open: `adjustment_ladder/` and `adjustment_combinatorics/` are keyed to the 2026-09-02 seam and are stale~~ — **both rebuilt 2026-09-17 at the 2026-09-09 seam** (see the entry below); the notebook's `[plot-desktop-ladder]` can assert again.
 
 **Raw-model prediction intervals (2026-09-10)** — `desktop_raw_ci_2026-09-09/` and `mobile_raw_ci_2026-09-09/`: the live
 configs re-run at the 2026-09-09 seam on the same raw pulls with **every adjustment off** (desktop `i j l o` disabled, `h` not
@@ -38,6 +37,31 @@ Dec-15 28d-MA: desktop raw **50,326,587**, 90% 48,477,503 – 52,425,191 (±1,97
 longer horizon); mobile raw **17,706,153**, 90% 17,486,488 – 17,966,102 (±239,807, 1.35% of level — the mobile model's own
 narrowness, not calibrated). Review notebook `september_raw_intervals.ipynb` (both platforms; ends with the raw-point-forecast / bounds / full-width table), chart
 `plots/raw_intervals_28ma_bands.png`. Copies in `research/forecast-intervals/september-2026-{desktop,mobile}/`.
+
+**Adjustment-effects record + ladder/combinatorics rebuilt, 2026-09-17** — with Brendan's approval, 14 desktop
+subsets were forecast at the 2026-09-09 seam (g01, ~2 min each; `raw` adopted from `desktop_raw_ci_2026-09-09/`, the
+all-in `i+j+l+o` from the canonical build, both sidecar-verified) and the mobile `p` on/off pair recorded from the
+canonical Med build and `mobile_raw_ci_2026-09-09/`. The all-in rows reproduce the published Dec-15 exactly (desktop
+49,332,443 with `h`; mobile 18,214,594 with `t`+`u`). New **tracked** files in `adjustment_combinatorics/`:
+`adjustment_subsets.csv`, `adjustment_effects.csv`, `adjustment_curves_28ma.csv`, `adjustment_dec15_by_country.csv`,
+`adjustment_effects.meta.json`, `adjustment_effects_vs_2026-08.csv` (`scripts/export_adjustment_effects.py`,
+`compare_adjustment_effects.py`). Shapley Dec-15 attribution: `l` +61,009 (of a 200,000 curve), `j` +15,547 (of
+43,813), `i` −8,585 (of 50,994), `o` −44,837 (of 668,839), `p` +236,603 (against a 1,804,995 paid level; the `p`-off
+run is a total-DAU fit, so this is marketing's paid minus the paid the model implies). Four overlays whose curves sum to
+963,646 net **+23,134** on the raw model at Dec-15. Ladder at the new seam: raw 50,326,587 → `h` −1,017,277 → `l`
++96,645 → `i` −25,079 → `j` +44,797 → `o` −93,229 = 49,332,443. `index.html` re-rendered. Versus August (Shapley): `o`
+−63,680 (curve +3,363, pass-through −67,043), `l` −3,231, `p` +161,446 (paid level +12,090, pass-through +149,357).
+August's own record was built the same day, retroactively (`../2026-08/adjustment_combinatorics/`, canonical
+reproduced exactly by today's code). The 2026-09-02-seam runs remain in `adjustment_ladder/` as exhaust (~10 GB).
+Detail: `adjustment_combinatorics/_index.md`.
+
+**Desktop DAILY (unsmoothed) export, 2026-09-17** — `csv/september_canonical_curves.DESKTOP_ONLY.DAILY.csv`, the
+September counterpart of August's daily file, by `scripts/export_desktop_daily_csv.py` repointed to this cycle.
+Dec-15 daily reads **55,802,968** (a Tuesday) against the published 28d-MA 49,332,443; the August column reproduces
+August's export (55,077,204). New this cycle: `h` is **clamped flat after Dec-15**, so no smooth daily headwind
+re-smooths to the published curve on both sides of the kink; Brendan chose the `exact` rule (rolling(28) of the file
+IS the published curve through Dec-31; the daily headwind sawtooths after Dec-15, −1,158,857 → −875,697 on Dec-16).
+Ledger, the two rejected rules and their numbers in `csv/README.md`; plot `plots/desktop_daily_export_vs_published_ma.png`.
 
 Canonical builds made 2026-09-04 with August's locked configs (desktop g01 → `desktop_g01_2026-09-02/`, `.adj-ijlo.`;
 mobile cpr 0.725 → `mobile_cpr0725_2026-09-02/`, `.adj-p.`; **mobile rerun 2026-09-09** with the re-pulled GMIO paid curve → `mobile_cpr0725_paid0909_2026-09-02/`, same config and raw pull, Dec-15 raw-model 28d-MA −7,072 vs the 09-04 build, training rows identical; **mobile rerun again 2026-09-10** with the marketing team's **lower-bound** paid curve (p5 of the 90% CI on forecast weeks, `_ci90_20260909` feed, pulled as variant `ci90lo`) → `mobile_cpr0725_paid0910ci90lo_2026-09-02/`, same config and raw pull, Dec-15 raw-model 28d-MA −64,273 vs the 09-09 build (daily −57,014 = the paid-curve delta exactly), training rows identical, paid seam step +71,978 (+4.52% of paid; was +103,544); the 09-09 build is the revert target, the 09-04 build stays beside it). Dec-15 28d-MA, display layer applied (`h` −1,089,347 draft, adopted 2026-09-08;
@@ -115,6 +139,15 @@ CN +73,794 (`o` refresh), FR +72,510, IN +58,399 (`i`) … AR +4,271; every mark
 Published August numbers (Dec-15 28d-MA, `h` + `t` applied): desktop **48,703,443** · mobile
 **17,924,562** · ALL **66,628,005**, at the 2026-08-02 seam. Those are the N-1 comparison series for
 September; they come from `../2026-08/csv/august_canonical_curves.csv`.
+
+## KPI workbook updated 2026-09-17 (`kpi_sheet/`)
+
+September promoted to `CURRENT` in the "Official Forecast Data" tab via the new `/update-kpi-sheet` skill
+(`scripts/build_kpi_sheet_update.py`, first run). Label mapping on existing rows: the hand-mislabelled July block
+`AUG *` → `JUL *`; August's `CURRENT *` → `AUG *`. New lines from `csv/september_canonical_curves.csv`, publish date
+2026-09-17: `CURRENT forecast` 2026-09-09 → 12-31 (Dec-15 desktop 49,332,443 / mobile 18,214,594, locked) and
+`CURRENT prior forecasts` Jan 1 → Sep 8 with 2026-08-01 blanked as the new handoff. Output
+`kpi_sheet/official_forecast_data.2026-09-17.csv` (7,120 rows), upload by hand pending. Details in `kpi_sheet/_index.md`.
 
 ## What is already here (pre-work, produced before August was locked)
 
@@ -229,6 +262,8 @@ Mobile (Dec-15 28d-MA), from August's delivered 17,924,562:
   september_raw_intervals.ipynb          # present — raw-model desktop + mobile prediction intervals (both *_raw_ci_2026-09-09/ builds), 2026-09-10
   september_desktop_waterfalls.ipynb     # present — desktop waterfalls, 2025 actual→Sep 2026 and Aug→Sep forecast (OS / market / market group); `h` in modern Windows
   csv/september_canonical_curves.csv # + september_dec15_summary.csv + september_desktop_waterfall_steps.csv (add .gitignore exceptions)
+  csv/september_canonical_curves.DESKTOP_ONLY.DAILY.csv  # present — desktop daily (unsmoothed) twin, `h` advanced 13.5d, `exact` post-anchor rule, 2026-09-17; csv/README.md
+  csv/README.md                      # present — file inventory + the DAILY file's ledger and clamp-rule decision
   plots/  kpi_sheet/  handoff/
   TODO_factors.md
 ```

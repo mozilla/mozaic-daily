@@ -80,12 +80,15 @@ src/mozaic_daily/
 ├── seam_ma.py        # Display-layer 28d MAs; variance-matched actuals→forecast seam transition
 ├── overlays.py       # Registry-driven dispatch of per-tile overlays (`l`, `o`, any `per_tile_overlay` code)
 ├── combinatorics.py  # Every subset of the droppable overlays scored at Dec-15 (the 'which adjustments ship' table)
+├── adjustment_effects.py # Per-code Dec-15 views over that subset table (single / marginal / Shapley, pass-through), cycle-over-cycle comparison, manifest currency check
 ├── ingest_inspect.py # Ingest step, read-only half: read a delivered curve file, guess columns, check the contract
 ├── ingest_build.py   # Ingest step, write half: horizon parquet + meta + spec + registry entry + gitignore
 ├── paid_curve.py     # Marketing paid-DAU pull, pure half: widget templates, strict weekly contract, compose → daily level
 ├── paid_curve_workbook.py # Marketing paid-DAU pull, pure half for a DELIVERED WORKBOOK: one scenario column → the same weekly frame
 ├── paid_curve_provenance.py # Where a paid curve came from: PullProvenance (query) / DeliveredFileProvenance (workbook)
 ├── paid_curve_files.py # Marketing paid-DAU pull, write half: pull-date-suffixed parquet/csv/meta/xlsx/plot + PENDING_WIRING.md
+├── kpi_sheet.py      # KPI workbook "Official Forecast Data" tab: promote/draft a cycle into the long table (pure)
+├── kpi_sheet_checks.py # The checks on that update (carried rows, new lines, Dec-15 lock) + the numbers to report
 └── main.py           # Main entry point
 ```
 
@@ -138,6 +141,18 @@ input, not a registered code). Query-to-file only: it leaves
 `PENDING_WIRING.md` in the directory and touches nothing the forecast reads (`organic.json`, tests, registry). The
 two skills are exclusive by design — ingest-adjustment takes daily files into registered codes; this takes a
 weekly query into `p`'s input.
+
+**Updating the KPI workbook is a skill: `.claude/skills/update-kpi-sheet/SKILL.md`.** The "2026 Firefox KPI
+Forecasts — Official Forecast Data" Google Sheet tab (loads to `mozdata.analysis.browser_kpi_forecasts_2026`, powers
+the KPI dashboard) holds every cycle as two lines per product: `<LABEL> forecast` (seam → Dec 31) and `<LABEL> prior
+forecasts` (Jan 1 → seam−1, every earlier cycle's own as-published forecast spliced with a blank day at each handoff).
+The official cycle is aliased `CURRENT`; superseded cycles carry the month of their `created_on`. The skill takes the
+tab's CSV export from `~/Downloads`, **always asks about non-standard changes** (variant lines, mislabelled blocks — the
+September 2026 export had July's rows under `AUG`, fixed with `--rename AUG=JUL`), then runs
+`scripts/build_kpi_sheet_update.py` to demote the outgoing `CURRENT`, splice it onto the prior line, install the new
+cycle (or append it as a `FUTURE` draft), lock Dec-15, and write the full replacement CSV + export copy + meta + check
+plot under `data-official/{cycle}/kpi_sheet/`. File only: the user pastes it over the whole tab by hand. Through August
+2026 each cycle had its own script copy; `tests/test_kpi_sheet.py` reproduces July's and August's outputs exactly.
 
 **Hand-off templates for external producers** live in `templates/` — currently `templates/tailwind/`, the
 three-column daily-DAU CSV contract (date, actuals/forecast flag, DAU) (plus a real example) to give anyone modelling a new tailwind curve.
@@ -249,6 +264,24 @@ The `scripts/` directory contains helper scripts for common tasks:
   into a self-contained `index.html` with the canonical desktop chart per combination and a Dec-15 table vs the prior
   cycle, the all-in build and the targets. Same approval rule as the ladder: **prompts before every model run**.
   Logic in `mozaic_daily.combinatorics`
+- `export_adjustment_effects.py` / `compare_adjustment_effects.py` - **The per-cycle record of what every adjustment
+  added, and how that moved since last cycle.** The export reads the combinatorics manifest's runs (desktop 2^N subsets,
+  plus the mobile `p` on/off pair recorded with `--mobile-run`) and writes four small **tracked** CSVs under
+  `data-official/{cycle}/adjustment_combinatorics/`: `adjustment_subsets.csv` (the fact table: Dec-15 per subset, without
+  and with the display layer), `adjustment_effects.csv` (per code: the curve's own **nominal** Dec-15, the realized
+  **single** = added to raw, **marginal** = removed from all-in, and **Shapley** = order-free attribution that sums exactly
+  to all-in minus raw, plus **pass-through** = realized ÷ nominal), `adjustment_curves_28ma.csv` (world 28d-MA per subset,
+  seam → horizon end) and `adjustment_dec15_by_country.csv`, with an `adjustment_effects.meta.json`. Display-layer codes
+  render from the live `adjustments/` specs at export time (an `h` re-anchor is a re-export, no model run). **Currency
+  check**: `--desktop-canonical` / `--mobile-canonical` compare the manifest against the canonical sidecars (seam, config,
+  overlay set + fingerprints, and that the all-in / `p` run *is* the canonical parquet by `artifact_sha1`);
+  `--check-current` exits 2 when stale and prints the rebuild command. The compare script joins two cycles' effects files
+  and splits each code's Dec-15 change into **curve moved** (Δnominal × prior pass-through) and **pass-through moved**
+  (current nominal × Δpass-through), exactly; writes `adjustment_effects_vs_{prior}.csv`. For `p` the "raw" run is a
+  **total**-DAU fit that already contains paid, so its realized effect reads as marketing's paid level minus the paid the
+  model implies, not as absorption. Run at button-down (skill Phase 1) and, optionally, in the monthly update. Logic in
+  `mozaic_daily.adjustment_effects`. August 2026 and September 2026 both have the export (August built retroactively on
+  2026-09-17 at its locked config and seam)
 - `ingest_adjustment.py` - **Turn a delivered headwind/tailwind file into a registered adjustment.** `inspect`
   reads CSV/parquet/Excel, guesses the date / value / actuals-forecast columns with evidence, checks the
   `templates/tailwind/` contract (daily rows, starts at or before the seam, reaches Dec 31 of the forecast
@@ -272,6 +305,12 @@ The `scripts/` directory contains helper scripts for common tasks:
   `source_data/delivered.*.xlsx`, footer rows dropped and reported, variant mandatory); logic in
   `mozaic_daily.paid_curve_workbook`. **Never overwrites a pull, never edits
   `organic.json`.** Driven by `/pull-marketing-curve`
+- `build_kpi_sheet_update.py` - **Fold a cycle into the KPI workbook's "Official Forecast Data" tab.** Reads the
+  tab's CSV export + the cycle's canonical curves CSV, derives the seam / outgoing cycle / demote label, applies
+  `--rename OLD=NEW` label fixes, promotes (or `--draft`s as `FUTURE`), inserts the handoff blank, locks Dec-15 with
+  `--expect-dec15 product=INT`, and writes `data-official/{cycle}/kpi_sheet/official_forecast_data.<publish>.csv` +
+  meta + `source_data/` export copy + a check plot. `--dry-run` prints the block inventory and plan. Never overwrites,
+  never uploads. Driven by `/update-kpi-sheet`; logic in `mozaic_daily.kpi_sheet` / `kpi_sheet_checks`
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
   sampled date windows. Run before using training rows as a stand-in for an actuals query (e.g. the canonical
@@ -304,9 +343,14 @@ The `scripts/` directory contains helper scripts for common tasks:
   curves CSV, same columns as the published MA file, `h` included. Because `h` is defined on the 28-day MA
   and a trailing mean of a linear ramp lags it by 13.5 days, the daily headwind is the ramp **advanced
   13.5 days**; the file's `rolling(28).mean()` then reproduces the published curve to the DAU from seam+27
-  (asserted). The price is a seam-day step of 13.5 slopes (−131,500 for August 2026) and a Dec-15 daily
-  headwind 131,500 deeper than the anchor; every such number is printed as a "weirdness ledger" and
-  recorded in the cycle's `csv/README.md`. Refuses non-`linear_ramp` specs. **Cycle-scoped**
+  (asserted). The price is a seam-day step of 13.5 slopes (−131,500 for August 2026, −141,580 for September)
+  and a Dec-15 daily headwind deeper than the anchor by the same amount; every such number is printed as a
+  "weirdness ledger" and recorded in the cycle's `csv/README.md`. **Clamped specs** (`clamp_at_anchor`,
+  September 2026 on) break the advance at the Dec-15 kink, so `--post-anchor-rule` picks the daily headwind
+  after the anchor: `exact` (default; the file re-smooths to the flat published curve through Dec-31 and the
+  daily headwind sawtooths with period 28 after Dec-15), `flat_at_anchor`, or the literal `advanced_clamped`
+  (36,706 shallow at Dec-15). Verification window follows the rule; writes a check plot. Refuses
+  non-`linear_ramp` specs. **Cycle-scoped** (currently September 2026, prior column August)
 - `plot_forecast_set.py` - Generate the canonical plot set (`global_<platform>.png` etc.) from a forecast checkpoint
 - `compute_forecast_intervals.py` - **Prediction intervals for one build from its fitted pickle.** Rebuilds the
   1,000 world-total sample paths, asserts the median reproduces the parquet, writes daily + 28d-MA bands
