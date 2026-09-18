@@ -149,7 +149,12 @@ Layout under `PREFIX` mirrors the tree (see `reference/history.md` for the live 
 research-superseded/<cluster>/       # retired research clusters (shared prefix, not per cycle)
 ```
 
-Upload with `gcloud storage cp -r` (parallel, no macOS bug). August's 78 GB took **34 minutes**
+**Check for a mid-cycle upload first.** If the cycle `_index.md` has an "Archived mid-cycle" section
+(first written 2026-09-17 for August's retroactive runs and a full September snapshot), those paths are
+already in `PREFIX` with verified counts. Do not re-copy them: upload with
+`gcloud storage rsync -r --no-ignore-symlinks <dir> <PREFIX>/<mirror>` (idempotent — only new or changed
+objects move; never pass `--delete-unmatched-destination-objects`) and re-verify. `cp -r` re-copies
+everything and is only right for a prefix that is still empty. August's 78 GB `cp -r` took **34 minutes**
 end to end. Put the sequence in a small script under `tmp/` and launch it detached — the Bash tool's
 background jobs are killed at the 10-minute timeout, and macOS has no `setsid`:
 
@@ -161,12 +166,12 @@ Have the script append `START` / `DONE` / `FAILED` lines per directory to `tmp/a
 and watch it with a `Monitor` on `tail -f … | grep --line-buffered 'DONE|FAILED|FINISHED'`.
 
 ```bash
-gcloud storage cp -r data-official/$CYCLE  $PREFIX/data-official/
-gcloud storage cp -r research/param-scans/<search>  $PREFIX/param-scans/
-gcloud storage cp README.md $PREFIX/README.md
+gcloud storage rsync -r --no-ignore-symlinks data-official/$CYCLE  $PREFIX/data-official/$CYCLE
+gcloud storage rsync -r --no-ignore-symlinks research/param-scans/<search>  $PREFIX/param-scans/<search>
+gcloud storage cp README.md $PREFIX/README.md   # replaces any provisional mid-cycle README
 ```
 
-Symlinks: `gcloud storage cp` follows them by default, which duplicates the shared raw pull
+Symlinks: `gcloud storage cp` follows them by default (`rsync` only with `--no-ignore-symlinks`), which duplicates the shared raw pull
 into each scan dir. That is acceptable (a few hundred MB) and safer than a missing file;
 note it in the README. If a link is dangling, fix or remove it first.
 
@@ -359,6 +364,10 @@ retention window now in force.
 - Next-cycle pre-work landing in the closing cycle's commit. Exclude `PRE_WORK` in Phase 1.
 - The test suite writing a forecast parquet at the repo root mid-button-down (August 2026).
 - A Bash-tool background upload dying at the 10-minute tool timeout; `setsid` absent on macOS.
+- A multi-hour `gcloud storage rsync` losing authentication mid-transfer (2026-09-17): parallel composite
+  upload components went out as "Anonymous caller" 401s, so small files landed and pickles did not. For
+  transfers over ~1 h set `CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED=False` in the launch script
+  and always re-verify counts; `rsync` makes the retry cheap.
 - Fragment-only greps (`desktop_locked`) matching the retained prior cycle's directory of the same name.
 - Opening the next cycle with an empty `data-official/<NEXT>/`, so `l`, `o`, `p`, `h`, `t` had to be
   rebuilt by hand in separate sessions (September 2026). Steps 3–5 above exist because of this.

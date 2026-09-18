@@ -358,8 +358,23 @@ python scripts/build_adjustment_combinatorics.py --cycle 2026-08 --forecast-star
 python scripts/export_adjustment_effects.py --cycle 2026-08 --desktop-canonical $DCAN/mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet --mobile-canonical data-official/2026-08/mobile_cpr0725_2026-08-02/$MS/mozaic_daily_forecast.2026-08-02.gm-D.adj-p.parquet
 ```
 
-Present vs archived: the new run parquets and pickles (~2.4 GB) are gitignored exhaust of the
-September cycle and go to GCS with it; the CSVs, manifest and metas are tracked here.
+### Archived mid-cycle (2026-09-17) — do not re-upload at button-down
+
+The four directories added that day are already in
+`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/august-2026/data-official/2026-08/`,
+uploaded with `gcloud storage rsync -r --no-ignore-symlinks` and verified (objects local / remote,
+local counted as files + symlinks; every pickle size identical):
+
+| directory | objects | pickles |
+|---|---|---|
+| `adjustment_combinatorics/` | 7 / 7 | — |
+| `adjustment_ladder/` | 18 / 18 | 3, sizes match |
+| `adjustment_reproduction_2026-09-17/` | 11 / 11 | 2, sizes match |
+| `mobile_raw_noorganic_2026-08-02/` | 6 / 6 | 1, sizes match |
+
+`_index.md` was re-copied the same day. Nothing was deleted. At the September button-down these
+directories are gitignored-blob exhaust with tracked sidecars: `rsync` to top up (idempotent), then
+prune the pickles per Phase 4. The CSVs, manifest and metas are tracked here.
 
 ## Mobile: re-locked and given a discretionary tailwind (2026-08-03) — LIVE
 

@@ -55,6 +55,21 @@ August's own record was built the same day, retroactively (`../2026-08/adjustmen
 reproduced exactly by today's code). The 2026-09-02-seam runs remain in `adjustment_ladder/` as exhaust (~10 GB).
 Detail: `adjustment_combinatorics/_index.md`.
 
+**Archived mid-cycle, 2026-09-17 — do not re-upload at button-down.** At Brendan's request the non-destructive half of
+the archive job ran the same day: all of `data-official/2026-09/` as it stood at commit `92b3f55` (25 GB, 476 files
+incl. symlinks, 43 pickles) is in
+`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/september-2026/data-official/2026-09/`, uploaded with
+`gcloud storage rsync -r --no-ignore-symlinks` and verified: **476 local / 479 remote** (the 3 extras are
+`japan_bot/alternates/*.2026-08-30.csv` from the pre-cycle handoff upload, since removed from disk), **sorted pickle-size
+list identical** (md5 `5309e860…`), remote 26.72 GB. A **PROVISIONAL** `september-2026/README.md` says it is a snapshot;
+Phase 2 of the button-down replaces it. Nothing was deleted or pruned. Anything produced after 2026-09-17 (new builds,
+notebook re-executions, spec edits) is *not* archived yet — the button-down tops the prefix up with `rsync`
+(idempotent), which is why the skill's Phase 2 now checks for this note before copying. Operational note: the first
+`rsync` pass lost authentication after ~1 h (539 "Anonymous caller" 401s on parallel composite upload components; small
+files landed, large ones did not); the retry with `CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED=False` completed
+with zero errors in 56 min. August's four new directories went to `august-2026/` the same day (see
+`../2026-08/_index.md` § "Archived mid-cycle").
+
 **Desktop DAILY (unsmoothed) export, 2026-09-17** — `csv/september_canonical_curves.DESKTOP_ONLY.DAILY.csv`, the
 September counterpart of August's daily file, by `scripts/export_desktop_daily_csv.py` repointed to this cycle.
 Dec-15 daily reads **55,802,968** (a Tuesday) against the published 28d-MA 49,332,443; the August column reproduces

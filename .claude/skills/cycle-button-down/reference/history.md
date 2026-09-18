@@ -98,3 +98,14 @@ blob dirs; removed `iran_synthetic/` (tracked) and `march_brad_forecast.csv` aft
   on/off), as per-cycle CSVs under `adjustment_combinatorics/` plus a comparison against the prior
   cycle; withheld codes are not included. Built at button-down (Phase 1 step 0) and optionally in
   the monthly update. August 2026 was built retroactively.
+
+## Mid-cycle upload, 2026-09-17 (September live)
+
+Brendan asked for "the parts of the archive job that don't involve deleting anything" after the
+adjustment-effects runs. Uploaded with `gcloud storage rsync -r --no-ignore-symlinks` (idempotent):
+August's four new dirs (`adjustment_combinatorics/`, `adjustment_ladder/`,
+`adjustment_reproduction_2026-09-17/`, `mobile_raw_noorganic_2026-08-02/`) + the refreshed
+`_index.md` into `august-2026/`, and all of `data-official/2026-09/` (25 GB) into `september-2026/`,
+with a PROVISIONAL README. Nothing was deleted or pruned. Counts are recorded in each cycle
+`_index.md` § "Archived mid-cycle"; Phase 2 now checks that section and uses `rsync` so the
+button-down only tops up.
