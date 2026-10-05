@@ -41,8 +41,8 @@ at the prefix root; the full directory under `data-official/2026-09/`, plus
 `research/forecast-vs-summer-actuals/data/pkl/` for the one research pickle that was not in any prefix).
 The whole tree also remains in the `september-forecast` branch. A full snapshot of this directory was
 uploaded mid-cycle on 2026-09-17 (476 local / 479 remote, 43 pickles, see "Archived mid-cycle" in the log
-below); the button-down topped it up with `gcloud storage rsync` and re-verified. Verified counts are
-recorded in the table at the end of this section once Phase 2 of the button-down has run.
+below); the button-down topped it up with `gcloud storage rsync` and re-verified. Verified counts are in
+the table at the end of this section.
 
 - **Present (on disk through the 3-month retention window, i.e. until the December 2026 roll-forward):**
   every forecast and raw-pull `.parquet` of every build above — canonical, revert targets, the two
@@ -58,8 +58,8 @@ recorded in the table at the end of this section once Phase 2 of the button-down
 
 | directory | local objects (files + symlinks) | remote objects | pickles | verified |
 |---|--:|--:|--:|---|
-| `data-official/2026-09/` | _filled at Phase 2_ | | 43 | |
-| `research/forecast-vs-summer-actuals/data/pkl/` | 1 | | 1 | |
+| `data-official/2026-09/` | 490 | 495 (5 remote-only: two `.DS_Store` from 09-17 and three removed `japan_bot/alternates/*.2026-08-30.csv`) | 43 / 43, sorted size lists identical (md5 `5309e860…`) | 2026-10-05, remote 26,718,840,148 bytes |
+| `research/forecast-vs-summer-actuals/data/pkl/` | 1 | 1 | 1 / 1, 661,420,403 bytes both sides | 2026-10-05 |
 
 ---
 
