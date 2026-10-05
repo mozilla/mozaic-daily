@@ -304,11 +304,16 @@ commits as before (prune; doc pass) and push.
    `adjustments/` (the display-layer specs — `h`, `t`, `u`, …), `marketing/` (`p` reads its
    parquet), and any rationale directories the specs point at (`tailwind/`, `headwinds/`,
    `tou_mobile_headwind/`). Skip build directories, raw pulls, notebooks, CSVs and plots. Then:
-   - Leave every `applies_to_forecast_start` and every ramp `start_date` **at the prior cycle's
-     seam** and append to each spec's `notes`: `PROVISIONAL carry-forward from <CYCLE> at the
-     <YYYY-MM-DD> roll-forward; seam not yet set — re-gate before any forecast run.` A run at an
-     unclaimed date silently writes `.raw.`, so the warning matters, but **do not block** — the
-     user decides the seam.
+   - **Per-tile overlays and `p`: set `applies_to_forecast_start` to the placeholder
+     `PROVISIONAL-SET-<MONTH>-SEAM`, never the prior seam.** `overlays.find_spec_for_forecast` is an
+     exact string match that **raises when two specs claim one date**, so a copy still carrying the
+     prior seam breaks every reproduction run of the closing cycle (ladder, combinatorics currency
+     check). A run at the real new seam before the placeholder is replaced applies no overlays and
+     writes `.raw.`, which the notebook's `require_state` rejects — loud, not silent. **Display-layer
+     ramps (`h`, `t`, `u`) keep their `start_date` at the prior seam** (no date gate, no collision).
+     Prepend to each spec's `notes`: `PROVISIONAL carry-forward from <CYCLE> at the <YYYY-MM-DD>
+     roll-forward; seam not yet set — re-gate before any forecast run.` **Do not block** — the user
+     decides the seam. (Rule fixed 2026-10-05 after the first attempt; see `reference/history.md`.)
    - `p` is included even though its measured split (`organic/fenix_paid_organic.*.parquet`) is
      always rebuilt for the new training window; say so in its `notes` and in the cycle index.
    - Write one line per carried code into the cycle `_index.md` under "Carried forward
