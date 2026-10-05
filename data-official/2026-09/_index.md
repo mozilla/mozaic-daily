@@ -51,7 +51,7 @@ the table at the end of this section.
   `source_data/`), every spec directory with its curves and `source_data/`, the `*_REVERT_*` directories'
   specs + parquets + `REVERT.md`, the notebooks, and `adjustment_combinatorics/` (tracked CSVs, manifest,
   `index.html`).
-- **Archived to GCS and removed from disk (Phase 4):** all **43** `mozaic_objects.*.pkl` (≈24 GB — the
+- **Archived to GCS and removed from disk (2026-10-05, on `clean-slate`):** all **43** `mozaic_objects.*.pkl` (≈24 GB — the
   canonical desktop/mobile fits, every revert-target build, the two interval builds and the 33 ladder
   runs that were really forecast; the two `--reuse-run` ladder rungs never had one) and `.DS_Store` files.
   Nothing else leaves: this cycle produced no handoff zip, no `_backup_*` snapshot and no staging dir.

@@ -40,14 +40,16 @@ button-down); older cycles and all large artifacts are archived to GCS
 (`gs://moz-data-science-brwells-bucket/mozaic-daily-archive/{cycle}/`) and recoverable from that
 cycle's branch history. See each cycle's `_index.md` "Present vs Archived" section.
 
-**Cycle roll-forward.** On this branch the window has advanced for the **September 2026** cycle:
+**Cycle roll-forward.** On this branch the window has advanced for the **October 2026** cycle
+(September button-down 2026-10-05):
 
 | cycle | state |
 |---|---|
-| `2026-09` | current — opened 2026-09-04 on the `september-forecast` branch; holds the unwired `j`/`i` overlay candidates and the stale-reference report |
-| `2026-08` | N-1, retained. Every forecast + raw-pull parquet, sidecar, spec, CSV and notebook is on disk; the 11 fitted pickles and the handoff bundle are in GCS `august-2026/`. The prior-forecast comparison series for September comes from `2026-08/csv/` |
-| `2026-07` | N-2, retained (3-month window). Canonical parquets + specs on disk; pickles in GCS `july-2026/` |
-| `2026-06` | N-3, **retained past the window on purpose** — see below. Only ~67 MB of parquets, specs, CSVs and sidecars remain; pickles in GCS `june-2026/` |
+| `2026-10` | current — opened 2026-10-05 on the `october-forecast` branch with every September adjustment carried forward PROVISIONALLY (seams not yet set), the canonical-notebook template and the stale-reference report |
+| `2026-09` | N-1, retained. Every forecast + raw-pull parquet (117), sidecar, spec, CSV, notebook and plot is on disk; the 43 fitted pickles are in GCS `september-2026/` (verified 490/495 objects, pickle size lists identical). The prior-forecast comparison series for October comes from `2026-09/csv/september_canonical_curves.csv` |
+| `2026-08` | N-2, retained. Parquets, sidecars, specs, CSVs, notebooks on disk; all pickles in GCS `august-2026/` (the 7 re-pulled or made after its button-down were pruned again 2026-10-05) |
+| `2026-07` | N-3, retained (3-month window; leaves at the November roll-forward). Canonical parquets + specs on disk; pickles in GCS `july-2026/`. **Two test fixtures pin it** (`tests/test_kpi_sheet.py`, `tests/test_score_near_horizon.py`) — re-pin or vendor before it goes |
+| `2026-06` | N-4, **retained past the window on purpose, deferred a third time on 2026-10-05** — see below. ~67 MB of parquets, specs, CSVs and sidecars; pickles in GCS `june-2026/` (all 239 local files present there) |
 | `2026-04` | removed at the July roll-forward. GCS `april-2026/`, branch `april-forecasting` |
 | `iran_synthetic/`, `march_brad_forecast.csv` | April-era leftovers, removed 2026-09-04 after verifying the copies in GCS `april-2026/data-official/` |
 
@@ -63,9 +65,10 @@ live:
   `research/param-scans/aug22-retune/`.
 - `csv/june_canonical_curves.csv` is the N-1 comparison series for `research/ma-seam-turbulence/backtest_seam.py`.
 
-**Resolve before the October roll-forward**, when June is four months old: give the live code its own
-copies (or retire the consumers) so June can go. The stale-reference report for the September cycle
-(`2026-09/STALE_REFERENCES_from_august_button_down.md`) restates these dependencies.
+**Resolve before the November roll-forward**, when both June and July would leave: give the live code
+its own copies (or retire the consumers) so June can go, and re-pin the two July test fixtures. The
+stale-reference report for the October cycle
+(`2026-10/STALE_REFERENCES_from_september_button_down.md`) restates these dependencies.
 
 The prune is always done on the `clean-slate` base branch, never on a cycle branch — cycle branches keep the
 complete record of what that cycle shipped. Procedure: `.claude/skills/cycle-button-down/SKILL.md`.

@@ -109,3 +109,27 @@ August's four new dirs (`adjustment_combinatorics/`, `adjustment_ladder/`,
 with a PROVISIONAL README. Nothing was deleted or pruned. Counts are recorded in each cycle
 `_index.md` § "Archived mid-cycle"; Phase 2 now checks that section and uses `rsync` so the
 button-down only tops up.
+
+## September → October (2026-10-05), second run of this skill
+
+| commit | branch | what |
+|---|---|---|
+| `9ebe674`, `0b0e69e` | september-forecast | Lock: effects record re-checked current + re-exported, working-set block + planned Present vs Archived in the cycle index, 15 subdirectory `_index.md`s, verified counts; 630 + 12 tests green; pushed |
+| (Phase 4) | clean-slate | Fast-forwarded to `0b0e69e`; one doc-pass commit (the prune touched no tracked file) |
+| (Phase 5) | october-forecast | Opened off clean-slate with every adjustment carried forward provisionally, the notebook template, repointed constants and the stale-reference report |
+
+GCS `september-2026/`: 24.9 GiB + the 631 MB research pickle, final README replacing the 2026-09-17
+PROVISIONAL one. Because the mid-cycle snapshot already held the directory, Phase 2 was an `rsync`
+top-up: 5 s for `data-official/2026-09` (16 new small files) and 90 s for the pickle; zero errors with
+`CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED=False`. Verified 490/495 objects (5 remote-only
+stragglers named in the README), 43/43 pickles with identical sorted size lists (md5 `5309e860…`).
+Prune: `data-official/` 29 GB → 228 MB; 51 pickles (29.9 GB: 43 September, 7 August re-pulls, 1
+research), 20 `.DS_Store`, `tmp/` (1.3 GB incl. two unarchived regression-rerun pickles, deleted on
+Brendan's decision), 4 pre-window logs, one empty research dir. No `git rm`: `2026-06` deferred a third
+time (still read by `_archive/`, `seam_ma.py` docstring, `ma-seam-turbulence/`, July specs); no research
+cluster retired. Stale-reference report → `data-official/2026-10/STALE_REFERENCES_from_september_button_down.md`
+(three cycle-scoped scripts were never fully repointed for September; two test fixtures pin July).
+
+Decisions (user, 2026-10-05): defer `2026-06` again; delete `tmp/regression` without archiving (reruns of
+archived builds); commit `status/` (catch-up HTML + decision log) in the lock commit; remove the archived
+summer-actuals research pickle from disk.

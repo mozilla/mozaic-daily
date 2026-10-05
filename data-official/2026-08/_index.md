@@ -372,9 +372,10 @@ local counted as files + symlinks; every pickle size identical):
 | `adjustment_reproduction_2026-09-17/` | 11 / 11 | 2, sizes match |
 | `mobile_raw_noorganic_2026-08-02/` | 6 / 6 | 1, sizes match |
 
-`_index.md` was re-copied the same day. Nothing was deleted. At the September button-down these
-directories are gitignored-blob exhaust with tracked sidecars: `rsync` to top up (idempotent), then
-prune the pickles per Phase 4. The CSVs, manifest and metas are tracked here.
+`_index.md` was re-copied the same day. Nothing was deleted then. **At the September button-down
+(2026-10-05) the seven pickles these directories held (the four above plus the `desktop_g01_2026-08-02/`
+canonical pickle re-pulled for the summer audit on 2026-09-15) were verified byte-identical in GCS and
+removed from disk again.** Parquets, sidecars, manifest, CSVs and metas remain.
 
 ## Mobile: re-locked and given a discretionary tailwind (2026-08-03) — LIVE
 

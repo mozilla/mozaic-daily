@@ -98,17 +98,20 @@ python research/forecast-vs-summer-actuals/seasonality_plots.py
 python research/forecast-vs-summer-actuals/build_report.py
 ```
 
-The seasonality pane needs both vintages' fitted-model pickles (~630 MB each, gitignored). They are
-not kept on disk between cycles: pull the July one from `gs://…/july-2026/param-scans/aug22-retune/_rawcache/`
-and the August one from `gs://…/august-2026/data-official/2026-08/desktop_g01_2026-08-02/<slug>/`.
-Neither is kept on disk between cycles (August's pickle was pruned with the August archive). Fetch both
+The seasonality pane needs both vintages' fitted-model pickles (~630 MB each, gitignored). Neither is
+kept on disk between cycles — both were pruned at the September button-down (2026-10-05). **The July
+(2026-07-06, published-pass) pickle this audit used is archived at
+`gs://…/september-2026/research/forecast-vs-summer-actuals/data/pkl/` (661,420,403 bytes)** — the
+same-named file under `july-2026/param-scans/aug22-retune/` is the superseded 2026-06-29 pass (see
+`LOG.md` F-entries around line 318) and differs by 7,266 bytes. The August one is at
+`gs://…/august-2026/data-official/2026-08/desktop_g01_2026-08-02/<slug>/`. Fetch both
 with `gcloud storage cp` — `gsutil cp` hangs after the byte-complete `.gstmp` even when forced
 single-process (see `LOG.md` F14 and F24):
 
 ```bash
-gcloud storage cp gs://moz-data-science-brwells-bucket/mozaic-daily-archive/july-2026/param-scans/aug22-retune/\
-round1/center/cps0.08983_thresh032_recent13_cpr0.65_ncp25_clip0.6_sps0.00825/\
-mozaic_objects.legacy_desktop.2026-07-06.pkl research/forecast-vs-summer-actuals/data/pkl/
+gcloud storage cp gs://moz-data-science-brwells-bucket/mozaic-daily-archive/september-2026/research/\
+forecast-vs-summer-actuals/data/pkl/mozaic_objects.legacy_desktop.2026-07-06.pkl \
+research/forecast-vs-summer-actuals/data/pkl/
 gcloud storage cp gs://moz-data-science-brwells-bucket/mozaic-daily-archive/august-2026/data-official/2026-08/\
 desktop_g01_2026-08-02/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/\
 mozaic_objects.legacy_desktop.2026-08-02.pkl data-official/2026-08/desktop_g01_2026-08-02/<that slug>/
