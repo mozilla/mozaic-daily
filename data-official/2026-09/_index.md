@@ -1,9 +1,69 @@
 # `data-official/2026-09/` — September 2026 forecast cycle
 
-Active cycle (branch `september-forecast`, off `clean-slate` @ `a59d04f`, which carries every August
-tooling change). Opened 2026-09-04 by the button-down skill.
+Cycle branch `september-forecast`, off `clean-slate` @ `a59d04f` (which carries every August tooling
+change). Opened 2026-09-04 by the button-down skill; **closed 2026-10-05 by the same skill.**
 
-## Status: DRAFT BUILDS at the 2026-09-02 seam — not locked · `h` re-anchored to −1,089,347 on 2026-09-08
+## Status: CLOSED — buttoned down 2026-10-05 · published 2026-09-15 (c-suite update) · seam 2026-09-09
+
+October 2026 is the live cycle from 2026-10-05 (`october-forecast`). Nothing here changes any more; the
+numbers below are the ones that were delivered. The long section after the "Present vs Archived" block is
+the cycle log as it was written while September was live (newest entry first) and is kept verbatim.
+
+### Current usable working set
+
+| what | path / value |
+|---|---|
+| Canonical desktop build | `desktop_g01_2026-09-09/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-09-09.ld-D.adj-ijlo.parquet` + `.meta.json` + `parameters.json`. Config **g01**, overlays `i j l o` baked in, `h` applied by the notebook (display layer). Trained through 2026-09-08. |
+| Canonical mobile build | `mobile_cpr0725_paid0915med_2026-09-09/cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-09-09.gm-D.adj-p.parquet` + sidecar + `parameters.json`. **cpr 0.725**, `p` on the delivered workbook's **Med** paid scenario; `t` and `u` applied by the notebook. |
+| Published curves | `csv/september_canonical_curves.csv` (world 28d MA, both platforms + ALL, with the August prior columns), `csv/september_dec15_summary.csv`, `csv/september_canonical_curves.DESKTOP_ONLY.DAILY.csv` (desktop daily twin, `exact` post-anchor rule), `csv/september_desktop_waterfall_steps.csv`. Inventory and the daily file's ledger: `csv/README.md`. |
+| Producer notebook | `september_canonical_v2026-09-04.ipynb` — last executed 2026-09-15 after the c-suite update; plots in `plots/`. |
+| **Dec-15 28d-MA, published** | desktop **49,332,443** · mobile **18,214,594** · ALL **67,547,037** — vs August 48,703,443 / 17,924,562 / 66,628,005 = **+629,000 / +290,032 / +919,032**. ALL is +511,085 vs the Baseline target and +32,034 vs Stretch. |
+| Display-layer specs (`adjustments/`, live by presence, all ramps 2026-09-09 → 2026-12-15) | `headwind.json` **`h`** desktop **−1,017,277**, `clamp_at_anchor` (flat after Dec-15) · `tailwind.json` **`t`** mobile **+299,000** · `tou_mobile_headwind.json` **`u`** mobile **−27,162**. Rationale dirs: `headwinds/`, `tailwind/`, `tou_mobile_headwind/`. |
+| Per-tile desktop overlays (all gated `applies_to_forecast_start = 2026-09-09`) | **`l`** `launch_at_login_new_users/launch_at_login_new_users.json` → `lol_tailwind.2026-07-29.cap200k.parquet` (200K ceiling, carried from August) · **`o`** `mozillaonline/mozillaonline.json` → `mozillaonline_migration.2026-08-31.parquet` (Dec-15 28d-MA 668,839) · **`j`** `japan_bot/japan_bot.json` → `japan_bot.2026-09-07.parquet` (PEAK plateau 43,813) · **`i`** `india_excess/india_excess.json` → `india_excess.2026-09-06.parquet` (PROPORTIONAL, 50,994 at Dec-15) · **`e`** `launch_at_login_existing_users/launch_at_login_existing_users.json` → `launch_at_login_existing_users.2026-09-08.parquet`, **WITHHELD** (`"withheld": true`, never applied this cycle). |
+| Mobile paid split **`p`** | `organic/organic.json` → measured split `organic/fenix_paid_organic.2026-09-09.parquet`; paid level `marketing/marketing_lift_model.gmio_uac_meta_total_med.2026-09-09.pull2026-09-15.parquet` (workbook Med scenario, Dec-15 daily level 1,833,753; the Low, ci90lo, 09-09 and 09-04 pulls are siblings in `marketing/`). |
+| Raw BigQuery pulls | `desktop_rawpull_2026-09-09/`, `mobile_rawpull_2026-09-09/` (the canonical builds read these); `*_rawpull_2026-09-02/` feed the 09-02-seam revert builds and the stale ladder runs. |
+| Adjustment-effects record | `adjustment_combinatorics/adjustment_effects.csv` + `adjustment_subsets.csv`, `adjustment_curves_28ma.csv`, `adjustment_dec15_by_country.csv`, `adjustment_effects_vs_2026-08.csv`, `adjustment_effects.meta.json`. Re-checked **current** against both canonical sidecars and re-exported on 2026-10-05 (byte-identical CSVs). The October record is compared with `scripts/compare_adjustment_effects.py --prior 2026-09 --current 2026-10`. |
+| KPI workbook row set | `kpi_sheet/official_forecast_data.2026-09-17.csv` (September as `CURRENT`, uploaded by hand). |
+| Prediction intervals (raw model, **not canonical**) | `desktop_raw_ci_2026-09-09/`, `mobile_raw_ci_2026-09-09/`, `september_raw_intervals.ipynb`. |
+
+**Revert targets, now closed.** Desktop `desktop_g01_2026-09-02/` (old seam); mobile
+`mobile_cpr0725_paid0910low_2026-09-09/` (Low paid) with `mobile_cpr0725_paid0910ci90lo_2026-09-09/`,
+`mobile_cpr0725_paid0910ci90lo_2026-09-02/`, `mobile_cpr0725_paid0909_2026-09-02/`,
+`mobile_cpr0725_2026-09-02/` behind it; overlays `japan_bot_REVERT_2026-09-0{4,9}/`,
+`india_excess_REVERT_2026-09-0{4,9}/`. Their revert window closed when October became the live cycle:
+parquets, sidecars and REVERT docs stay on disk so a revert stays legible, only the pickles would need
+pulling back from GCS.
+
+### Present vs Archived (button-down 2026-10-05)
+
+Archive prefix: `gs://moz-data-science-brwells-bucket/mozaic-daily-archive/september-2026/` (`README.md`
+at the prefix root; the full directory under `data-official/2026-09/`, plus
+`research/forecast-vs-summer-actuals/data/pkl/` for the one research pickle that was not in any prefix).
+The whole tree also remains in the `september-forecast` branch. A full snapshot of this directory was
+uploaded mid-cycle on 2026-09-17 (476 local / 479 remote, 43 pickles, see "Archived mid-cycle" in the log
+below); the button-down topped it up with `gcloud storage rsync` and re-verified. Verified counts are
+recorded in the table at the end of this section once Phase 2 of the button-down has run.
+
+- **Present (on disk through the 3-month retention window, i.e. until the December 2026 roll-forward):**
+  every forecast and raw-pull `.parquet` of every build above — canonical, revert targets, the two
+  `*_raw_ci_*` interval builds and all 35 `adjustment_ladder/<codes>.<key>/` runs — with their
+  `.meta.json` / `parameters.json` / `run.log`; `csv/`, `plots/`, `kpi_sheet/` (incl. CSVs and
+  `source_data/`), every spec directory with its curves and `source_data/`, the `*_REVERT_*` directories'
+  specs + parquets + `REVERT.md`, the notebooks, and `adjustment_combinatorics/` (tracked CSVs, manifest,
+  `index.html`).
+- **Archived to GCS and removed from disk (Phase 4):** all **43** `mozaic_objects.*.pkl` (≈24 GB — the
+  canonical desktop/mobile fits, every revert-target build, the two interval builds and the 33 ladder
+  runs that were really forecast; the two `--reuse-run` ladder rungs never had one) and `.DS_Store` files.
+  Nothing else leaves: this cycle produced no handoff zip, no `_backup_*` snapshot and no staging dir.
+
+| directory | local objects (files + symlinks) | remote objects | pickles | verified |
+|---|--:|--:|--:|---|
+| `data-official/2026-09/` | _filled at Phase 2_ | | 43 | |
+| `research/forecast-vs-summer-actuals/data/pkl/` | 1 | | 1 | |
+
+---
+
+## Cycle log — written while September was live (newest first; originally headed "DRAFT BUILDS at the 2026-09-02 seam — not locked · `h` re-anchored to −1,089,347 on 2026-09-08")
 
 **2026-09-08:** the Win10 headwind `h` anchor moved −726,000 → **−1,089,347** (the `h_for_plus479k` counterfactual from
 `adjustment_combinatorics/counterfactuals.csv`: all four overlays kept, all-in desktop Dec-15 = August +479,000 exactly). A

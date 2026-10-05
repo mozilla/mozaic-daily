@@ -1,0 +1,7 @@
+# `desktop_g01_2026-09-02/` — September desktop build at the 2026-09-02 seam — revert target (window closed)
+
+Same g01 config and the same four overlays as the canonical build, forecast_start **2026-09-02** (trained through 2026-09-01). Built 2026-09-04; superseded 2026-09-10 by `../desktop_g01_2026-09-09/` when the seam moved. Raw-model Dec-15 28d-MA 50,271,790 vs 50,349,720 at the new seam (+77,930, taken back out through the `h` anchor). The 2026-09-02-seam ladder and combinatorics runs share its raw pull.
+
+One config subdirectory (`cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/`) holds `mozaic_daily_forecast.2026-09-02.ld-D.adj-ijlo.parquet` + `.meta.json`, `parameters.json` (all tracked), and the gitignored `mozaic_objects.legacy_desktop.2026-09-02.pkl` (592 MB). `run.log` is the run's stdout.
+
+**Present vs Archived.** The parquet, sidecar, `parameters.json` and `run.log` stay on disk through the retention window (the notebooks and scripts read them). The gitignored `mozaic_objects.*.pkl` was archived to `gs://moz-data-science-brwells-bucket/mozaic-daily-archive/september-2026/data-official/2026-09/``desktop_g01_2026-09-02/` (verified 2026-09-17 and again at the 2026-10-05 button-down) and removed from disk at the October roll-forward. The `mozaic_parts.raw.*.parquet` here is a symlink to the shared raw pull in `../desktop_rawpull_2026-09-02/`.

@@ -91,7 +91,7 @@
       "mobile": []
     }
   },
-  "mozaic_daily_commit": "d367dd2c8ab03813d03230d271b6913f57dcc0ca",
-  "exported_at": "2026-09-17T20:58:39+00:00",
+  "mozaic_daily_commit": "f485f146474b0f30720b7062bd91f5220214dc2b",
+  "exported_at": "2026-10-05T19:06:27+00:00",
   "produced_by": "scripts/export_adjustment_effects.py"
 }

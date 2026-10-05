@@ -1,0 +1,7 @@
+# `mobile_cpr0725_paid0915med_2026-09-09/` — CANONICAL September mobile build
+
+The published September 2026 mobile forecast: **cpr 0.725** (`cps 0.035, thresh −0.055, recent 13, ncp 25, sps 0.1`), `p` on the marketing team's delivered workbook **`Med Forecast`** scenario (`../marketing/…total_med.2026-09-09.pull2026-09-15.parquet`), forecast_start **2026-09-09**. Built 2026-09-15 at the c-suite's request; `t` +299,000 and `u` −27,162 are applied by the notebook. Dec-15 28d-MA published **18,214,594** (+19,734 vs the Low build, exactly the paid-level delta).
+
+One config subdirectory (`cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/`) holds `mozaic_daily_forecast.2026-09-09.gm-D.adj-p.parquet` + `.meta.json`, `parameters.json` (all tracked), and the gitignored `mozaic_objects.glean_mobile.2026-09-09.pkl` (771 MB). `run.log` is the run's stdout.
+
+**Present vs Archived.** The parquet, sidecar, `parameters.json` and `run.log` stay on disk through the retention window (the notebooks and scripts read them). The gitignored `mozaic_objects.*.pkl` was archived to `gs://moz-data-science-brwells-bucket/mozaic-daily-archive/september-2026/data-official/2026-09/``mobile_cpr0725_paid0915med_2026-09-09/` (verified 2026-09-17 and again at the 2026-10-05 button-down) and removed from disk at the October roll-forward. The `mozaic_parts.raw.*.parquet` here is a symlink to the shared raw pull in `../mobile_rawpull_2026-09-09/`.

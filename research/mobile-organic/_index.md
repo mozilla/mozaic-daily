@@ -265,6 +265,28 @@ total, well inside the 0.25% bar.
   `plots/paid_seam_three_methods.png`, `plots/paid_measured_vs_marketing_overlap.png`.
 - **Productionize the mirror.** It is a scratch table expiring 2027-04-01. The pinned per-cycle
   parquet insulates the pipeline, but the *producer* still depends on it.
+- **Revisit the paid definition and the flat backfill before the next forecast** (found by the
+  2027 forecast prototype, 2026-09-25; queries in its repo at `sql/organic_probe/`, branch
+  `phase2` of brendanwells-moz/2027-forecast-prototype: `q_fac_monthly.sql`,
+  `q_fac_union_monthly.sql`, `q_aua_adjust_monthly.sql`, `q_union_share_days.sql`,
+  `q_cy_paid_share_hist.sql`).
+  - *The pre-2024-06 hold is censored, not a bound.* `new_profile_clients` keeps ~775 days of
+    first-seen cohorts, and gclid is only populated for cohorts from ~Dec 2023, so older clients
+    count as organic by default. The "1.10% at 2024-06" earliest share is that artifact. Adjust
+    ("Google Ads ACI"/UAC) puts Fenix paid at ~3% of DAU in 2023-01 and ~10–11% in 2024-01..08
+    (ex-IR, `fenix_derived.active_users_aggregates_v3`). The flat hold therefore understates
+    historical paid, overstates the 2026 ramp, and leaves paid growth in the "organic" training
+    series.
+  - *gclid alone misses paid.* Over the Dec 2023–Aug 2024 overlap, Adjust caught 77–94% of
+    union-paid new profiles and gclid 47–70%. A union flag (gclid OR Adjust ACI/UAC, from
+    `fenix_derived.firefox_android_clients_v1`, which keeps first_seen from 2020-08) gives paid
+    12.2% of Fenix DAU on 2024-08-15 vs 5.6% gclid-only, and 16.1% vs 14.2% on 2026-09-15.
+    About 7.5% of today's DAU stays unattributable (Adjust stopped attributing installs
+    Sep 2024–Mar 2025).
+  - *Decide:* which definition is the organic target (it is also what the 2027 forecast will be
+    judged against), whether to switch the mirror to the union flag and full-history
+    `firefox_android_clients`, and how to backfill before 2024-06 (measured from Adjust, not held
+    flat). No organic MAU exists yet; the same client-level method gives one.
 
 ## What the change was worth
 
