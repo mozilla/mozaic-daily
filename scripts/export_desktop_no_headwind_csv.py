@@ -54,15 +54,15 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from mozaic_daily.adjustments import render_adjustment  # noqa: E402
 
 # --- Cycle-scoped configuration (repoint at each roll-forward) -------------------------------
-CSV_DIR = "data-official/2026-09/csv"
+CSV_DIR = "data-official/2026-10/csv"  # repointed 2026-10-05
 PUBLISHED_CURVES = "september_canonical_curves.csv"
 PUBLISHED_SUMMARY = "september_dec15_summary.csv"
 
-CURRENT_ADJUSTMENTS_DIR = "data-official/2026-09/adjustments"
-PRIOR_ADJUSTMENTS_DIR = "data-official/2026-08/adjustments"
+CURRENT_ADJUSTMENTS_DIR = "data-official/2026-10/adjustments"  # repointed 2026-10-05 (PROVISIONAL copies until re-gated)
+PRIOR_ADJUSTMENTS_DIR = "data-official/2026-09/adjustments"  # repointed 2026-10-05
 
 FORECAST_START = pd.Timestamp("2026-09-02")       # September desktop seam
-PREV_FORECAST_START = pd.Timestamp("2026-08-02")  # August's seam
+PREV_FORECAST_START = pd.Timestamp("2026-09-09")  # September's seam (repointed 2026-10-05)
 MEASUREMENT_DATE = pd.Timestamp("2026-12-15")
 TROUGH_WINDOW_END = pd.Timestamp("2026-10-15")
 

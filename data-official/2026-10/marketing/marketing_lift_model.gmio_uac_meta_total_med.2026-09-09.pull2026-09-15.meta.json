@@ -1,0 +1,64 @@
+{
+  "model_name": "fenix_paid_dau_level_gmio_uac_meta_total_med",
+  "variant": "med",
+  "description": "Paid-DAU level for the `p` paid/organic split, from a workbook delivered by the marketing team (UAC + Meta Android, Meta stacked cumulatively), one value per week interpolated to daily and written as delivered: `p` stacks paid_dau_level_daily verbatim. Produced by scripts/pull_paid_dau_curve.py, not wired.",
+  "wiring_status": "pending",
+  "created_at_utc": "2026-09-15T22:40:54.680225+00:00",
+  "mozaic_daily_git_hash": "e0a9c288f7d1d813ca9cc7d944df61e9fa89887f",
+  "forecast_start_date": "2026-09-09",
+  "coverage": {
+    "start_date": "2026-01-05",
+    "end_date": "2026-12-31",
+    "actuals_through_week_of": "2026-08-24",
+    "last_weekly_row": "2026-12-21",
+    "tail_rule": "forward-fill after the last Monday to 2026-12-31; `p` holds flat past that"
+  },
+  "methodology": {
+    "framing": "level as delivered (the lift-plus-anchor round-trip was retired 2026-09-09)",
+    "composition": "'Actualized Total Paid DAU' where present (actual weeks), else 'Med Forecast' (forecast weeks), every value a delivered cell verbatim; the week(s) ['2026-01-05'] blank in both were filled from result!uac_actual",
+    "weekly_to_daily": "value on its ISO Monday, linear interpolation, forward-fill after the last Monday",
+    "metric_basis": "total",
+    "variant": "med",
+    "meta_channel": "included, stacked cumulatively, assumed fully incremental",
+    "iran": "not in the feed, so ex-IR by construction"
+  },
+  "source_data": {
+    "kind": "delivered_file",
+    "delivered_file": "data-official/2026-09/marketing/source_data/delivered.delivered_paid_dau_forecast_scenarios_20260910.20260915.xlsx",
+    "delivered_file_sha1": "0c42615f88291239e49f483456465df3eaf22045",
+    "original_path": "data-official/2026-09/marketing/source_data/delivered.paid_dau_forecast_scenarios.20260910.xlsx",
+    "sheet": "Scenarios",
+    "columns": {
+      "date": "Weeks",
+      "actual": "Actualized Total Paid DAU",
+      "forecast": "Med Forecast"
+    },
+    "fill_actual_from": "result!uac_actual",
+    "filled_weeks": [
+      "2026-01-05"
+    ],
+    "dropped_row_labels": [
+      "Dec15 DAU"
+    ],
+    "column_legend": "Sheet legend: '90% CI lower end estimate (90% chance actual Paid DAU is higher)'. Chosen 2026-09-15 at the c-suite's request as the 'marketing midpoint' scenario; it sits between Low (point estimate minus 3.3% backtest error) and High (the point estimate). Same delivered workbook as the Low import of 2026-09-10.",
+    "received_on": "2026-09-15",
+    "weekly_rows": 51,
+    "basis_counts": {
+      "Actualized Total Paid DAU": 33,
+      "Med Forecast": 17,
+      "result!uac_actual": 1
+    }
+  },
+  "key_values": {
+    "level_at_seam": 1644163.0,
+    "level_dec15": 1833753.0,
+    "level_year_end": 1847601.0
+  },
+  "known_limitations": [
+    "The forecast reflects the marketing spend plan and the GMIO refit; a change versus the previous pull is mostly plan, not actuals revision.",
+    "Weekly values are treated as the level on their Monday and interpolated; within-week shape is not observed.",
+    "Curve ends Dec 31 of the forecast year; `p` holds it flat through the following year by its tail_policy.",
+    "Not wired: organic.json must point paid_forecast.data_file at this parquet with value_column paid_dau_level_daily (see PENDING_WIRING.md)."
+  ],
+  "artifact_sha1": "cf4a3824c6259508b0fd05546e59b5cb269992bd"
+}

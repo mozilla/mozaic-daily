@@ -75,7 +75,7 @@ from mozaic_daily.seam_ma import display_ma  # noqa: E402
 FORECAST_START = "2026-09-02"  # repointed 2026-09-04
 DEC15 = "2026-12-15"
 # September: the mobile headwind leg is its own spec (`u`); headwind.json is desktop-only from 2026-09.
-DEFAULT_HEADWIND = REPO_ROOT / "data-official/2026-09/adjustments/tou_mobile_headwind.json"
+DEFAULT_HEADWIND = REPO_ROOT / "data-official/2026-10/adjustments/tou_mobile_headwind.json"  # repointed 2026-10-05 (PROVISIONAL copy of September's u)
 
 #: July's delivered mobile Dec-15 28d-MA. The calibration target for the August search.
 TARGET_DEC15 = 17_924_562  # August delivered mobile Dec-15 (repointed 2026-09-04)

@@ -1,0 +1,28 @@
+{
+  "type": "paid_organic_split",
+  "platform": "mobile",
+  "data_file": "fenix_paid_organic.2026-09-09.parquet",
+  "share_column": "organic_share",
+  "scope": {
+    "app_flag_column": "fenix_android",
+    "exclude_countries": [
+      "IR"
+    ]
+  },
+  "share_backfill": {
+    "policy": "hold_earliest",
+    "measured_from": "2024-06-01"
+  },
+  "paid_forecast": {
+    "spec_file": null,
+    "data_file": "../marketing/marketing_lift_model.gmio_uac_meta_total_med.2026-09-09.pull2026-09-15.parquet",
+    "value_column": "paid_dau_level_daily",
+    "tail_policy": "hold_last"
+  },
+  "allocation": {
+    "key": "trailing_paid_dau_share",
+    "window_days": 28
+  },
+  "applies_to_forecast_start": "PROVISIONAL-SET-OCTOBER-SEAM",
+  "notes": "PROVISIONAL carry-forward from 2026-09 at the 2026-10-05 roll-forward; seam not yet set. applies_to_forecast_start is the placeholder 'PROVISIONAL-SET-OCTOBER-SEAM' rather than September's 2026-09-09 so this copy cannot collide with September's spec (the resolver raises when two specs claim one date, which would break September reproduction). Set it to the October seam before any forecast run — a run at an unclaimed date applies no overlays and writes .raw.. Curve, allocation and scope are September's, unmodified. || The measured split data_file (fenix_paid_organic.2026-09-09.parquet) is September's and is ALWAYS rebuilt for the new training window by scripts/build_fenix_organic_split.py --production-raw before the October mobile run; the paid level (../marketing/…total_med.2026-09-09.pull2026-09-15.parquet, workbook Med scenario) is September's until re-pulled via /pull-marketing-curve. || PAID CURVE REPOINTED 2026-09-15 (c-suite request) to the same delivered workbook's `Med Forecast` scenario, imported as variant `med` (per the sheet's legend the 90% CI lower end -- 90% chance actual paid DAU is higher; it sits between Low = point estimate minus 3.3% and High = the point estimate, which is why leadership calls it the midpoint). Dec-15 daily level 1,833,753 (+19,144 vs Low's 1,814,609; 28d-MA +19,734), level at the seam 1,644,163 (vs Low 1,620,631, so the paid seam step grows by ~23,500). Because `p` stacks the level additively after mozaic and the measured split is unchanged, the mobile Dec-15 28d-MA moves by exactly +19,734: 18,194,860 -> 18,214,594 expected. A planning choice; the Low, ci90lo, 09-09 and 09-04 pulls all stay on disk as siblings, the Low build is the revert target. September 2026 cycle, seam 2026-09-02, training through 2026-09-01. Measured Fenix paid/organic split rebuilt 2026-09-04 by scripts/build_fenix_organic_split.py (all four checks PASS; 823 days x 16 countries; shredder drift -2.9% at the oldest day, 0.0 at the edge). Paid forecast repointed 2026-09-10 to the LOWER-BOUND (ci90lo) GMIO-feed curve in ../marketing/ -- the marketing team's lower-bound twin query: p5 of the 90% credible interval on forecast weeks, measured telemetry on actual weeks, feed tables _ci90_20260909, actuals through week of 2026-08-24, pulled by scripts/pull_paid_dau_curve.py --variant ci90lo; the 2026-09-09 point-estimate pull and the 2026-09-04 pull stay on disk as siblings (UAC + Meta Android, composed as UAC+Meta where present else UAC). READ AS A LEVEL: value_column is the marketing team's total paid DAU (paid_dau_level_daily), stacked verbatim. The lift-plus-anchor framing August used (level = marketing_lift_daily + anchor_paid_dau) was retired 2026-09-09 -- it was a storage round-trip inherited from `m` that cancelled exactly, and its only effect was a float copied by hand from the curve meta after every re-pull. Dec-15 paid level 1,826,168 (lower bound) vs the 09-09 point estimate's 1,883,182, the 09-04 pull's 1,891,002 and August's 1,559,477. `m` stays retired; there is no marketing.json this cycle, so spec_file is null. Share backfill and allocation unchanged from August; IR excluded (the feed has no IR row either). SEAM REFRESH 2026-09-10: re-gated from the 2026-09-02 seam to 2026-09-09 (training through 2026-09-08, the latest landed day) so the forecast trains on all available data; measured split rebuilt for the new training window (fenix_paid_organic.2026-09-09.parquet); paid curve (ci90lo) unchanged. PAID CURVE REPOINTED 2026-09-10 (later the same day) to the marketing team's delivered WORKBOOK (`Paid DAU Forecast Scenarios.xlsx`, copied verbatim to ../marketing/source_data/delivered.paid_dau_forecast_scenarios.20260910.xlsx), sheet `Scenarios`, column `Low Forecast` -- per the sheet's legend the point estimate reduced by the highest backtest error (3.3%), assuming the weakness of the two most recent weeks (UAC bidding strategy / learning phase / language change) persists; NOT a credible-interval bound (the sheet's `Med Forecast` is the 90% CI lower end, `High Forecast` the point estimate). Imported by scripts/pull_paid_dau_curve.py --from-xlsx ... --variant low; actuals = the `Actualized Total Paid DAU` column through the week of 2026-08-24 (the first week, 2026-01-05, blank there, filled from the workbook's `result` sheet uac_actual, 641,980); the workbook's `Dec15 DAU` footer row (1,774,241 for Low) is a summary of unknown convention and was dropped, not used. Dec-15 daily level 1,814,609 (vs 1,826,168 on the ci90lo query pull it replaces, -11,559; 1,883,182 on the 09-09 point estimate). Brendan's planning choice, 2026-09-10. The ci90lo, 09-09 and 09-04 pulls all stay on disk as siblings."
+}

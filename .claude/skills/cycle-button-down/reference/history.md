@@ -133,3 +133,11 @@ cluster retired. Stale-reference report → `data-official/2026-10/STALE_REFEREN
 Decisions (user, 2026-10-05): defer `2026-06` again; delete `tmp/regression` without archiving (reruns of
 archived builds); commit `status/` (catch-up HTML + decision log) in the lock commit; remove the archived
 summer-actuals research pickle from disk.
+
+**Deviation recorded (2026-10-05, Phase 5 step 3).** The skill says to leave `applies_to_forecast_start` at
+the prior seam in the carried copies. That cannot work: `overlays.find_spec_for_forecast` is an exact string
+match that **raises when two specs claim one date**, so a verbatim copy breaks every September reproduction
+(ladder/combinatorics currency check, `--reuse-run`). The carried per-tile and `p` specs therefore carry the
+placeholder `"PROVISIONAL-SET-OCTOBER-SEAM"` (never equal to a date; a run at the real seam applies nothing
+and writes `.raw.`, which the notebook rejects). Display-layer ramps keep `start_date = 2026-09-09` as the
+skill says — they have no collision mechanism. SKILL.md step 3 should be amended to this rule.

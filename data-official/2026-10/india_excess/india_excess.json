@@ -1,0 +1,22 @@
+{
+  "type": "desktop_overlay",
+  "platform": "desktop",
+  "data_file": "india_excess.2026-09-06.parquet",
+  "value_column": "india_excess_dau_daily",
+  "allocation": {
+    "key": "fixed_country_shares",
+    "flag_column": "modern_windows",
+    "window_days": 28,
+    "shares": {
+      "IN": 1.0
+    }
+  },
+  "scope": {
+    "exclude_countries": []
+  },
+  "model_meta_file": "india_excess.2026-09-06.meta.json",
+  "applies_to_forecast_start": "PROVISIONAL-SET-OCTOBER-SEAM",
+  "applies_to_data_source": "legacy_desktop",
+  "placeholder": false,
+  "notes": "PROVISIONAL carry-forward from 2026-09 at the 2026-10-05 roll-forward; seam not yet set. applies_to_forecast_start is the placeholder 'PROVISIONAL-SET-OCTOBER-SEAM' rather than September's 2026-09-09 so this copy cannot collide with September's spec (the resolver raises when two specs claim one date, which would break September reproduction). Set it to the October seam before any forecast run — a run at an unclaimed date applies no overlays and writes .raw.. Curve, allocation and scope are September's, unmodified. || September 2026 cycle, seam 2026-09-02. India's 2026 desktop DAU above a typical year (code `i`), PROPORTIONAL scenario: the excess held at 1.92% of India's typical level so it follows the seasonal calendar; 50,994 DAU/day 28d-MA on 2026-12-15, carried to 2027-12-31. Measured daily excess 2026-05-22 to 2026-09-06 (actual x (2026 - typical) / 2026, holidays and India-only dips bridged out of the ratio only), projected after. Already NET of `l` (India's 5.72% share of the launch-on-login lift is subtracted here; do not net again). Allocation 100% IN, fixed; modern_windows by measurement (78% of India's DAU). The path is a planning choice (Brendan, 2026-09-04: conservative for the time being; re-exported 2026-09-09 on the same path with the data edge moved from 2026-08-29 to 2026-09-06); the cause is a hypothesis. Alternates hold / linger / settle / fade remain on disk beside this file and are described in _index.md. Re-ingested 2026-09-09 through scripts/ingest_adjustment.py from the producer's PROPORTIONAL CSV; the previous spec and parquet are in india_excess_REVERT_2026-09-09/. Producer: scratch/brwells/regional-story/india_forecast/deliver.py; evidence page site/india_forecast.html, DECISIONS D92-D97. SEAM REFRESH 2026-09-10: re-gated from the 2026-09-02 seam to 2026-09-09 (training through 2026-09-08, the latest landed day) so the forecast trains on all available data; curve/anchor unchanged."
+}

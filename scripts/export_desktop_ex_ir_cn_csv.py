@@ -64,7 +64,7 @@ from mozaic_daily.seam_ma import daily_to_28ma, display_ma  # noqa: E402
 from export_desktop_no_headwind_csv import load_desktop_headwind_ramp  # noqa: E402
 
 # --- Cycle-scoped configuration (repoint at each roll-forward) -------------------------------
-CSV_DIR = "data-official/2026-09/csv"
+CSV_DIR = "data-official/2026-10/csv"  # repointed 2026-10-05
 PUBLISHED_CURVES = "september_canonical_curves.csv"
 PUBLISHED_SUMMARY = "september_dec15_summary.csv"
 
@@ -78,8 +78,8 @@ PREV_DESKTOP_FORECAST_PATH = (
     "cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/"
     "mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet"
 )
-CURRENT_ADJUSTMENTS_DIR = "data-official/2026-09/adjustments"
-PRIOR_ADJUSTMENTS_DIR = "data-official/2026-08/adjustments"
+CURRENT_ADJUSTMENTS_DIR = "data-official/2026-10/adjustments"  # repointed 2026-10-05 (PROVISIONAL copies until re-gated)
+PRIOR_ADJUSTMENTS_DIR = "data-official/2026-09/adjustments"  # repointed 2026-10-05
 
 FORECAST_START = pd.Timestamp("2026-08-02")       # August desktop seam
 PREV_FORECAST_START = pd.Timestamp("2026-07-06")  # July's seam

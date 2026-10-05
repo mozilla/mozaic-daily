@@ -1,0 +1,24 @@
+{
+  "adjustment_code": "h",
+  "adjustment_name": "headwinds",
+  "applied_as": {
+    "anchor_date": "2026-12-15",
+    "clamp_at_anchor": true,
+    "desktop_dau": -726000,
+    "spec": "data-official/2026-09/adjustments/headwind.json",
+    "start_date": "2026-09-02",
+    "type": "linear_ramp"
+  },
+  "cycle": "2026-09",
+  "decision": "2026-09-04: take Brad's Dec-15 value and apply it with August's linear shape re-anchored at the September seam, flat after Dec-15. The first attempt (daily_file rebased to the seam) lost 166,711 of headwind and was reverted.",
+  "forecast_start_date": "2026-09-02",
+  "produced_by": "/ingest-adjustment (two-numbers path from a delivered file)",
+  "source_file": "data-official/2026-09/headwinds/source_data/win10_headwinds_2026-09-02.csv",
+  "source_sha1": "0e2916d17e1ba88f6107a003d8dd425dda9e6960",
+  "source_title_line": "Win10 MW additional headwinds. August 2026 forecast vintage,Linear ramp from 0 at seam (2026-08-02) to -726000 at anchor (2026-12-15) then flat.",
+  "value_read": {
+    "column": "dau_28ma",
+    "date": "2026-12-15",
+    "value": -726000
+  }
+}

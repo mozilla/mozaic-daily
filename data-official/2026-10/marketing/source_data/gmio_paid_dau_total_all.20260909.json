@@ -1,0 +1,375 @@
+{
+  "status": "ok",
+  "statement_type": "SELECT",
+  "columns": [
+    "date",
+    "uac_actual",
+    "uac_forecast",
+    "uac_meta_actual",
+    "uac_meta_forecast"
+  ],
+  "row_count": 51,
+  "total_rows": 51,
+  "truncated": false,
+  "gb_processed": 0.0004,
+  "max_gb": 10.0,
+  "rows": [
+    {
+      "date": "2026-01-05",
+      "uac_actual": 641994.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-01-12",
+      "uac_actual": 657653.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-01-19",
+      "uac_actual": 668918.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-01-26",
+      "uac_actual": 682265.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-02-02",
+      "uac_actual": 705048.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-02-09",
+      "uac_actual": 714199.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-02-16",
+      "uac_actual": 727253.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-02-23",
+      "uac_actual": 740859.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-03-02",
+      "uac_actual": 754606.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-03-09",
+      "uac_actual": 770839.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-03-16",
+      "uac_actual": 783148.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-03-23",
+      "uac_actual": 744584.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-03-30",
+      "uac_actual": 808398.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-04-06",
+      "uac_actual": 850856.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-04-13",
+      "uac_actual": 888400.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-04-20",
+      "uac_actual": 914378.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-04-27",
+      "uac_actual": 957445.0,
+      "uac_forecast": null,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-05-04",
+      "uac_actual": 981010.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 981015.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-05-11",
+      "uac_actual": 1073921.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1078319.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-05-18",
+      "uac_actual": 1119648.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1132063.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-05-25",
+      "uac_actual": 1159530.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1173210.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-06-01",
+      "uac_actual": 1216276.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1229995.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-06-08",
+      "uac_actual": 1252941.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1262500.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-06-15",
+      "uac_actual": 1306128.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1324937.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-06-22",
+      "uac_actual": 1342242.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1363061.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-06-29",
+      "uac_actual": 1352147.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1372372.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-07-06",
+      "uac_actual": 1380079.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1397934.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-07-13",
+      "uac_actual": 1416884.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1434172.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-07-20",
+      "uac_actual": 1455496.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1472999.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-07-27",
+      "uac_actual": 1460473.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1477650.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-08-03",
+      "uac_actual": 1490879.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1508219.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-08-10",
+      "uac_actual": 1519246.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1537088.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-08-17",
+      "uac_actual": 1548201.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1569037.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-08-24",
+      "uac_actual": 1573720.0,
+      "uac_forecast": null,
+      "uac_meta_actual": 1596607.0,
+      "uac_meta_forecast": null
+    },
+    {
+      "date": "2026-08-31",
+      "uac_actual": 1597212.0,
+      "uac_forecast": 1597212.0,
+      "uac_meta_actual": 1620581.0,
+      "uac_meta_forecast": 1620581.0
+    },
+    {
+      "date": "2026-09-07",
+      "uac_actual": null,
+      "uac_forecast": 1638118.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1661489.0
+    },
+    {
+      "date": "2026-09-14",
+      "uac_actual": null,
+      "uac_forecast": 1677497.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1701521.0
+    },
+    {
+      "date": "2026-09-21",
+      "uac_actual": null,
+      "uac_forecast": 1700768.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1725395.0
+    },
+    {
+      "date": "2026-09-28",
+      "uac_actual": null,
+      "uac_forecast": 1693978.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1719184.0
+    },
+    {
+      "date": "2026-10-05",
+      "uac_actual": null,
+      "uac_forecast": 1693517.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1719266.0
+    },
+    {
+      "date": "2026-10-12",
+      "uac_actual": null,
+      "uac_forecast": 1708370.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1734640.0
+    },
+    {
+      "date": "2026-10-19",
+      "uac_actual": null,
+      "uac_forecast": 1724093.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1750854.0
+    },
+    {
+      "date": "2026-10-26",
+      "uac_actual": null,
+      "uac_forecast": 1739920.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1767162.0
+    },
+    {
+      "date": "2026-11-02",
+      "uac_actual": null,
+      "uac_forecast": 1755923.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1783623.0
+    },
+    {
+      "date": "2026-11-09",
+      "uac_actual": null,
+      "uac_forecast": 1771922.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1800067.0
+    },
+    {
+      "date": "2026-11-16",
+      "uac_actual": null,
+      "uac_forecast": 1787963.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1816541.0
+    },
+    {
+      "date": "2026-11-23",
+      "uac_actual": null,
+      "uac_forecast": 1803827.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1832822.0
+    },
+    {
+      "date": "2026-11-30",
+      "uac_actual": null,
+      "uac_forecast": 1819566.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1848968.0
+    },
+    {
+      "date": "2026-12-07",
+      "uac_actual": null,
+      "uac_forecast": 1835289.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1865084.0
+    },
+    {
+      "date": "2026-12-14",
+      "uac_actual": null,
+      "uac_forecast": 1850768.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1880946.0
+    },
+    {
+      "date": "2026-12-21",
+      "uac_actual": null,
+      "uac_forecast": 1866049.0,
+      "uac_meta_actual": null,
+      "uac_meta_forecast": 1896598.0
+    }
+  ]
+}

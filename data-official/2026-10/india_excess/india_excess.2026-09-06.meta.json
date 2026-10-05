@@ -1,0 +1,48 @@
+{
+  "adjustment_code": "i",
+  "adjustment_name": "india_excess",
+  "adjustments_applied": [],
+  "allocation": {
+    "exclude_countries": [],
+    "key": "fixed_country_shares",
+    "shares": {
+      "IN": 1.0
+    }
+  },
+  "artifact_sha1": "6d789768ec7adf92a31f205d214144c80d129455",
+  "artifact_type": "adjustment_curve",
+  "column_mapping": {
+    "date": "date",
+    "ma_validated_not_used": "india_excess_dau_ma",
+    "type": "source",
+    "value": "india_excess_dau_daily"
+  },
+  "coverage": {
+    "actuals_through": "2026-09-06",
+    "dec15_daily": 51176.81,
+    "dec15_ma28": 50994.40142857143,
+    "delivered_end": "2027-12-31",
+    "delivered_start": "2026-01-01",
+    "hold_flat_basis": "mean of the final 28 delivered daily values",
+    "hold_flat_from": null,
+    "hold_flat_value": null,
+    "horizon": [
+      "2026-01-01",
+      "2027-12-31"
+    ],
+    "rebase_offset_at_seam": null,
+    "rebase_to_seam": false,
+    "sign_applied": 1
+  },
+  "data_source": "legacy_desktop",
+  "family": "per_tile_overlay",
+  "forecast_start_date": "2026-09-02",
+  "model_config": null,
+  "mozaic_daily_commit": "863b50367d187231939e09fe1b9782542918b1ef",
+  "platform": "desktop",
+  "produced_at": "2026-09-09T21:35:15.002307+00:00Z",
+  "produced_by": "scripts/ingest_adjustment.py",
+  "source_file": "data-official/2026-09/india_excess/source_data/india_excess.proportional.2026-09-06.csv",
+  "source_sha1": "0388c0022944b335028514a508c5cbd3bf5885e1",
+  "source_sheet": null
+}

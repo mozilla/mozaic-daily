@@ -1,0 +1,55 @@
+{
+  "model_name": "fenix_marketing_lift_gmio_uac_meta_total",
+  "description": "September 2026 paid-DAU curve for the `p` paid/organic split, anchor-and-subtract on the total Paid DAU basis exactly as August: lift(d) = paid_dau(d) - paid_dau(2026-03-30), 0 before the anchor. Source is the marketing team's GMIO cross-channel feed (UAC + Meta Android, Meta stacked cumulatively); composed as UAC+Meta where present else UAC, for actuals and forecast alike. The level is also written.",
+  "created_at_utc": "2026-09-04T22:09:01.921783+00:00",
+  "mozaic_daily_git_hash": "0161296b91c1bbc62de4bbc39c6bf1a3078f993c",
+  "forecast_start_date": "2026-09-02",
+  "coverage": {
+    "start_date": "2026-01-05",
+    "end_date": "2026-12-31",
+    "anchor_date": "2026-03-30",
+    "actuals_through_week_of": "2026-08-24",
+    "last_weekly_row": "2026-12-21",
+    "tail_rule": "forward-fill after the last Monday to 2026-12-31; `p` holds flat past that"
+  },
+  "methodology": {
+    "framing": "anchor-and-subtract on the marketing team's paid-DAU curve (August's method D, unchanged)",
+    "composition": "COALESCE(uac_meta_actual, uac_actual) for actual weeks; COALESCE(uac_meta_forecast, uac_forecast) for forecast weeks",
+    "weekly_to_daily": "value on its ISO Monday, linear interpolation, forward-fill after the last Monday",
+    "metric_basis": "total",
+    "meta_channel": "included, stacked cumulatively, assumed fully incremental",
+    "iran": "not in the feed (50 countries, no IR row), so ex-IR by construction"
+  },
+  "source_data": {
+    "query_csv": "data-official/2026-09/marketing/source_data/gmio_paid_dau_total_all.20260904.csv",
+    "query_csv_sha1": "08c911c31f65ec16cf69d095c219504044712f10",
+    "query_sql": "data-official/2026-09/marketing/source_data/query_gmio_paid_dau_total_all.sql",
+    "query_sql_sha1": "eb8dfd45efdcd1be2ffabeaea01280176f4c384e",
+    "feed_tables": [
+      "mozdata.analysis.ahe_gmio_weekly_paid_dau_views_20260901"
+    ],
+    "pulled_on": "2026-09-04",
+    "weekly_rows": 51,
+    "basis_counts": {
+      "uac_actual": 17,
+      "uac_meta_actual": 17,
+      "uac_meta_forecast": 17
+    }
+  },
+  "key_values": {
+    "anchor_paid_dau": 800831.0,
+    "lift_dec15": 1090170.857142857,
+    "lift_year_end": 1103964.0,
+    "level_dec15": 1891001.857142857,
+    "level_year_end": 1904795.0,
+    "august_level_dec15": 1559477.211448379,
+    "level_dec15_change_vs_august": 331524.64569447795
+  },
+  "known_limitations": [
+    "The feed's forecast reflects a spend plan (+36%/week UAC from the previous feed) and a refit; the change vs August is mostly plan, not actuals revision.",
+    "Weekly values are treated as the level on their Monday and interpolated; within-week shape is not observed.",
+    "Curve ends 2026-12-31; `p` holds it flat through 2027 by its tail_policy.",
+    "Not wired until data-official/2026-09/organic/organic.json points at this parquet with anchor_paid_dau from key_values."
+  ],
+  "artifact_sha1": "76fd0b8376bba67e061c04565952e8008434b3db"
+}
