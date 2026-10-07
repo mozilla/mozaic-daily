@@ -55,6 +55,14 @@ FENIX_NEW_PROFILE_CLIENTS = "mozdata.fenix.new_profile_clients"
 #: Days the tail deliberately re-covers so `check_tail_overlap` has something to compare.
 DEFAULT_OVERLAP_DAYS = 7
 
+#: Max relative disagreement between the live tail and the mirror snapshot on the overlap days.
+#: The mirror was snapshotted 2026-07-01 and client-level deletions keep removing clients from the
+#: live tables afterwards, so the gap GROWS with every cycle: September 2026 measured 0.35%,
+#: October 0.52% (almost all of it paid clients acquired more than a year earlier, -25%; organic
+#: -0.03%). Raise per cycle with --overlap-tolerance and record the measured value in the
+#: organic/_index.md, never here.
+DEFAULT_OVERLAP_TOLERANCE = 0.005
+
 #: The tail joins client-level active_users against new_profile_clients, which is the expensive
 #: half. ~26 days costs well under this; the cap exists so a mis-specified date range fails at
 #: dry-run instead of billing for a full-history scan.
@@ -127,6 +135,10 @@ def parse_args() -> argparse.Namespace:
                         help="Default: data-official/{YYYY-MM}/organic/")
     parser.add_argument("--project", default=STATIC_CONFIG["default_project"])
     parser.add_argument("--overlap-days", type=int, default=DEFAULT_OVERLAP_DAYS)
+    parser.add_argument("--overlap-tolerance", type=float, default=DEFAULT_OVERLAP_TOLERANCE,
+                        help="Max relative tail-vs-snapshot disagreement on the overlap days "
+                             f"(default {DEFAULT_OVERLAP_TOLERANCE:.3f}). The snapshot ages, so "
+                             "this needs raising each cycle; October 2026 ran at 0.01.")
     parser.add_argument("--max-gb", type=float, default=DEFAULT_MAX_GB)
     parser.add_argument("--dry-run", action="store_true",
                         help="Print scan sizes and stop. Writes nothing.")
@@ -179,7 +191,7 @@ def main() -> int:
 
     print("\n--- Checks")
     checks = [
-        check_tail_overlap(snapshot, tail),
+        check_tail_overlap(snapshot, tail, rel_tol=args.overlap_tolerance),
         check_partition_identity(combine_snapshot_and_tail(snapshot, tail)),
     ]
 

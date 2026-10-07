@@ -190,12 +190,16 @@ def test_all_mobile_residual_is_none_without_an_aggregate_row():
 # --------------------------------------------------------------------------
 @pytest.mark.skipif(
     not mobile_app_breakdown.DEFAULT_RAW.exists(),
-    reason="August raw mobile pull not on disk (gitignored, lives in GCS)",
+    reason="current-cycle raw mobile pull not on disk (gitignored, lives in GCS)",
 )
-def test_august_build_splits_four_ways_with_fenix_majority():
+def test_current_build_splits_four_ways_with_fenix_majority():
     raw = pd.read_parquet(mobile_app_breakdown.DEFAULT_RAW)
     tidy = tidy_raw_parts(raw)
-    shares = app_shares(tidy, [tidy["date"].max()])
+    # The pull has no upper date bound, so it can carry a partially landed seam day (October 2026:
+    # Focus only on 2026-10-05). Probe the last day on which all four apps are present.
+    apps_per_day = tidy.groupby("date")["app_name"].nunique()
+    last_complete_day = apps_per_day[apps_per_day == len(MOBILE_APPS)].index.max()
+    shares = app_shares(tidy, [last_complete_day])
 
     assert set(shares.index) == set(MOBILE_APPS), "mobile universe changed size"
     assert shares.index[0] == "fenix_android"

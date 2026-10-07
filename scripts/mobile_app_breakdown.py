@@ -58,13 +58,13 @@ ALL_MOBILE_LABEL = "ALL MOBILE"
 DEFAULT_TRAILING_WINDOW = 7
 
 # Cycle-scoped: repoint at each roll-forward.
-_AUGUST_MOBILE = (
+_CANONICAL_MOBILE = (
     REPO_ROOT
-    / "data-official/2026-09/mobile_rawpull_2026-09-02"  # repointed 2026-09-04
-    / "cps0.035_thresh055_recent13_cpr0.75_ncp25_clip0.6_sps0.1"
+    / "data-official/2026-10/mobile_cpr0725_paid0915med_2026-10-05"  # repointed 2026-10-06 (October canonical)
+    / "cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1"
 )
-DEFAULT_FORECAST = _AUGUST_MOBILE / "mozaic_daily_forecast.2026-09-02.gm-D.adj-p.parquet"  # TODO: point at the September mobile build once it exists
-DEFAULT_RAW = _AUGUST_MOBILE / "mozaic_parts.raw.glean.mobile.DAU.parquet"
+DEFAULT_FORECAST = _CANONICAL_MOBILE / "mozaic_daily_forecast.2026-10-05.gm-D.adj-p.parquet"
+DEFAULT_RAW = _CANONICAL_MOBILE / "mozaic_parts.raw.glean.mobile.DAU.parquet"
 
 
 # --------------------------------------------------------------------------

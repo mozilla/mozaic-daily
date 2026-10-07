@@ -1,5 +1,9 @@
 # `l` — launch at login for new users, cycle 2026-09
 
+## October 2026 status
+
+Carried into **October 2026** (seam **2026-10-05**, training through 2026-10-04) on 2026-10-06 with the curve, allocation and scope unchanged from September; only the spec gate moved from the roll-forward placeholder to the October seam. The September text below is kept as the record of how the curve was built. A fresh export is still expected this cycle (iterative build: this is the starting point, not the delivered number).
+
 **Retitled 2026-09-04** from "launch-on-login": this code is the tailwind for the feature as shipped to **new
 users** (experiment `long-term-holdback-2026-growth-desktop`, 100% rollout 2026-05-08). A second tailwind,
 **launch at login for existing users**, is expected before the end of the September cycle and will be ingested as

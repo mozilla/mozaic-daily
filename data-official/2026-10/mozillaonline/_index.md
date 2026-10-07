@@ -1,5 +1,9 @@
 # `o` — mozillaonline_migration, cycle 2026-09
 
+## October 2026 status
+
+Carried into **October 2026** (seam **2026-10-05**, training through 2026-10-04) on 2026-10-06 with the curve, allocation and scope unchanged from September; only the spec gate moved from the roll-forward placeholder to the October seam. The September text below is kept as the record of how the curve was built. A fresh export is still expected this cycle (iterative build: this is the starting point, not the delivered number).
+
 **What it is:** The MozillaOnline → canonical Firefox desktop migration: the China distribution partner is moving its users onto mainline Firefox, and migrating users flip `app_name` and newly count as Firefox Desktop DAU. This is the **September refresh** of the curve — the official model export delivered 2026-09-02 (`source_data/mozilla_online_forecast_2026-09-02.csv`), replacing the July curve that August had carried forward stale (`../../2026-08/mozillaonline/`, frozen and still gated to 2026-08-02). Actuals run to 2026-08-31, one day short of the seam; the file's own forecast covers that day, which is allowed. The pipeline learns modern_windows without the migration and stacks the curve back on at face value, allocated by the fixed geo footprint carried from August (CN 92.77%, then HK, US, JP, SG, TW, DE, AU, ROW; IR excluded). Producer: Brad Ochocki Szasz's MozillaOnline model; the format is the `templates/tailwind/` contract exactly.
 
 **Family:** per-tile overlay: subtracted from training rows before mozaic and added back after; **needs a model re-run**. **Platform:** desktop (`legacy_desktop`). **Sign:** tailwind (+).

@@ -38,12 +38,14 @@ PREV_SEAM = export.PREV_FORECAST_START
 DEC15 = export.MEASUREMENT_DATE
 COUNTRIES = ["US", "DE", "IR", "CN", "ROW"]
 
+# Ramps start at the exporter's own seams so the fixtures track the cycle constants; a hardcoded
+# start date silently produced an all-NaN ramp (and "no overlapping rows") after the October repoint.
 HEADWIND_SPEC = {
-    "type": "linear_ramp", "start_date": "2026-08-02", "anchor_date": "2026-12-15",
+    "type": "linear_ramp", "start_date": str(SEAM.date()), "anchor_date": "2026-12-15",
     "desktop_dau": -1315000, "mobile_dau": -27162,
 }
 PRIOR_HEADWIND_SPEC = {
-    "type": "linear_ramp", "start_date": "2026-04-01", "anchor_date": "2026-12-15",
+    "type": "linear_ramp", "start_date": str(PREV_SEAM.date()), "anchor_date": "2026-12-15",
     "desktop_dau": -1345000, "mobile_dau": -27162,
 }
 
@@ -173,14 +175,15 @@ class TestScopeFrames:
         canonical = frames["canonical"].set_index(pd.to_datetime(frames["canonical"]["date"]))
         no_hw = frames["no_headwind"].set_index(pd.to_datetime(frames["no_headwind"]["date"]))
         for family, canonical_suffix, no_hw_suffix in [
-            ("current_august", export.SCOPE_LABEL, f"NO_WIN10_HEADWIND_{export.SCOPE_LABEL}"),
-            ("prior_july", export.SCOPE_LABEL, f"NO_WIN10_HEADWIND_{export.SCOPE_LABEL}"),
+            ("current_october", export.SCOPE_LABEL, f"NO_WIN10_HEADWIND_{export.SCOPE_LABEL}"),
+            ("prior_september", export.SCOPE_LABEL, f"NO_WIN10_HEADWIND_{export.SCOPE_LABEL}"),
         ]:
             difference = (canonical[f"desktop_{family}_{canonical_suffix}"]
                           - no_hw[f"desktop_{family}_{no_hw_suffix}"])
             expected = ramps[family].reindex(canonical.index)
             overlap = difference.notna() & expected.notna()
-            assert overlap.sum() > 100, "no overlapping rows to compare"
+            # seam -> Dec-31 is 88 days for an early-October seam; demand at least two months
+            assert overlap.sum() >= 60, f"only {overlap.sum()} overlapping rows to compare"
             assert (difference[overlap] - expected[overlap]).abs().max() <= 1
 
     def test_canonical_is_below_no_headwind(self, tmp_path, monkeypatch):
@@ -189,21 +192,21 @@ class TestScopeFrames:
         frames, _, _ = self._build(tmp_path, monkeypatch)
         canonical = frames["canonical"].set_index(pd.to_datetime(frames["canonical"]["date"]))
         no_hw = frames["no_headwind"].set_index(pd.to_datetime(frames["no_headwind"]["date"]))
-        column = f"desktop_current_august_{export.SCOPE_LABEL}"
-        no_hw_column = f"desktop_current_august_NO_WIN10_HEADWIND_{export.SCOPE_LABEL}"
+        column = f"desktop_current_october_{export.SCOPE_LABEL}"
+        no_hw_column = f"desktop_current_october_NO_WIN10_HEADWIND_{export.SCOPE_LABEL}"
         assert canonical.loc[DEC15, column] < no_hw.loc[DEC15, no_hw_column]
 
     def test_column_names_and_no_world_or_mobile_leakage(self, tmp_path, monkeypatch):
         frames, _, _ = self._build(tmp_path, monkeypatch)
         assert list(frames["canonical"].columns) == [
             "date", f"desktop_actuals_{export.SCOPE_LABEL}",
-            f"desktop_prior_july_{export.SCOPE_LABEL}",
-            f"desktop_current_august_{export.SCOPE_LABEL}",
+            f"desktop_prior_september_{export.SCOPE_LABEL}",
+            f"desktop_current_october_{export.SCOPE_LABEL}",
         ]
         assert list(frames["no_headwind"].columns) == [
             "date", f"desktop_actuals_{export.SCOPE_LABEL}",
-            f"desktop_prior_july_NO_WIN10_HEADWIND_{export.SCOPE_LABEL}",
-            f"desktop_current_august_NO_WIN10_HEADWIND_{export.SCOPE_LABEL}",
+            f"desktop_prior_september_NO_WIN10_HEADWIND_{export.SCOPE_LABEL}",
+            f"desktop_current_october_NO_WIN10_HEADWIND_{export.SCOPE_LABEL}",
         ]
         for frame in frames.values():
             assert not [c for c in frame.columns if "mobile" in c or c.startswith("all_")]
@@ -222,7 +225,7 @@ class TestScopeFrames:
     def test_forecast_column_is_blank_before_the_seam(self, tmp_path, monkeypatch):
         frames, _, _ = self._build(tmp_path, monkeypatch)
         frame = frames["canonical"].set_index(pd.to_datetime(frames["canonical"]["date"]))
-        column = f"desktop_current_august_{export.SCOPE_LABEL}"
+        column = f"desktop_current_october_{export.SCOPE_LABEL}"
         assert frame[column].first_valid_index() == SEAM
 
 
@@ -235,34 +238,34 @@ class TestScopeSummary:
     def test_delta_equals_difference_of_its_own_columns(self, tmp_path, monkeypatch):
         row, scope = self._summary(tmp_path, monkeypatch, "canonical")
         suffix = scope["column_suffix"]
-        assert row[f"delta_vs_july_{suffix}"] == (
-            row[f"current_august_{suffix}"] - row[f"prior_july_{suffix}"])
+        assert row[f"delta_vs_september_{suffix}"] == (
+            row[f"current_october_{suffix}"] - row[f"prior_september_{suffix}"])
 
     def test_ledger_sign_is_negative_where_the_headwind_is_applied(self, tmp_path, monkeypatch):
         """The canonical file HAS -1,315,000 applied; the no-headwind file needs +1,315,000 added
         back. Getting the sign wrong would invert the audit trail between the two files."""
         canonical, _ = self._summary(tmp_path, monkeypatch, "canonical")
         no_headwind, _ = self._summary(tmp_path, monkeypatch, "no_headwind")
-        assert canonical["win10_headwind_applied_august"] == -1_315_000
-        assert canonical["win10_headwind_applied_july"] == -1_345_000
-        assert no_headwind["win10_headwind_added_back_august"] == 1_315_000
-        assert no_headwind["win10_headwind_added_back_july"] == 1_345_000
+        assert canonical["win10_headwind_applied_october"] == -1_315_000
+        assert canonical["win10_headwind_applied_september"] == -1_345_000
+        assert no_headwind["win10_headwind_added_back_october"] == 1_315_000
+        assert no_headwind["win10_headwind_added_back_september"] == 1_345_000
 
     def test_ledger_recovers_the_canonical_figure_from_the_no_headwind_one(
             self, tmp_path, monkeypatch):
         canonical, canonical_scope = self._summary(tmp_path, monkeypatch, "canonical")
         no_headwind, no_hw_scope = self._summary(tmp_path, monkeypatch, "no_headwind")
-        recovered = (no_headwind[f"current_august_{no_hw_scope['column_suffix']}"]
-                     - no_headwind["win10_headwind_added_back_august"])
-        assert abs(recovered - canonical[f"current_august_{canonical_scope['column_suffix']}"]) <= 1
+        recovered = (no_headwind[f"current_october_{no_hw_scope['column_suffix']}"]
+                     - no_headwind["win10_headwind_added_back_october"])
+        assert abs(recovered - canonical[f"current_october_{canonical_scope['column_suffix']}"]) <= 1
 
 
 @pytest.mark.skipif(
     not (REPO_ROOT / export.DESKTOP_FORECAST_PATH).exists(),
-    reason="August desktop parquet is gitignored / GCS-archived",
+    reason="current-cycle desktop parquet is gitignored / GCS-archived",
 )
 class TestAgainstTheRealBuild:
-    """Guarded checks against the on-disk August build — the properties the output actually rests on."""
+    """Guarded checks against the on-disk current-cycle build — the properties the output actually rests on."""
 
     def test_world_reconstruction_matches_the_published_csv(self):
         """The load-bearing property: if the world curve rebuilt from the parquet reproduces the
@@ -271,7 +274,7 @@ class TestAgainstTheRealBuild:
             REPO_ROOT / export.CSV_DIR / export.PUBLISHED_CURVES, parse_dates=["date"]
         ).set_index("date")
         august, _ = export.load_country_dau(str(REPO_ROOT / export.DESKTOP_FORECAST_PATH))
-        july, _ = export.load_country_dau(str(REPO_ROOT / export.PREV_DESKTOP_FORECAST_PATH))
+        july, _ = export.load_country_dau(str(REPO_ROOT / export.PREV_DESKTOP_FORECAST_PATH), export.PREV_DESKTOP_REQUIRED_STATE)
         export.verify_world_reconstruction(august, july, published, august.index)
 
     def test_ir_training_rows_are_real_telemetry_not_the_counterfactual_fill(self):

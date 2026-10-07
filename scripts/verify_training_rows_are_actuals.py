@@ -37,13 +37,14 @@ REPO = Path(__file__).resolve().parents[1]
 
 BQ_PROJECT = "moz-fx-data-bq-data-science"
 
-# Default targets: the August 2026 canonical notebook's two parquets. Each entry pins the
+# Default targets: the October 2026 canonical notebook's two parquets (cycle-scoped; repointed 2026-10-06). Each entry pins the
 # World(ALL) row selector alongside the BQ query that must reproduce it.
 DEFAULT_TARGETS = {
     "desktop": {
         "parquet": (
-            "data-official/2026-08/desktop_locked/"
-            "mozaic_daily_forecast.2026-07-28.ld-D.adj-lo.parquet"
+            "data-official/2026-10/desktop_g01_2026-10-05/"
+            "cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/"
+            "mozaic_daily_forecast.2026-10-05.ld-D.adj-eijlo.parquet"
         ),
         "data_source": "legacy_desktop",
         "segment": '{"os": "ALL"}',
@@ -54,9 +55,9 @@ DEFAULT_TARGETS = {
     },
     "mobile": {
         "parquet": (
-            "data-official/2026-08/mobile_baseline_2026-07-28/"
-            "cps0.035_thresh055_recent13_cpr0.75_ncp25_clip0.6_sps0.1/"
-            "mozaic_daily_forecast.2026-07-28.gm-D.adj-m.parquet"
+            "data-official/2026-10/mobile_cpr0725_paid0915med_2026-10-05/"
+            "cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/"
+            "mozaic_daily_forecast.2026-10-05.gm-D.adj-p.parquet"
         ),
         "data_source": "glean_mobile",
         "segment": "{}",

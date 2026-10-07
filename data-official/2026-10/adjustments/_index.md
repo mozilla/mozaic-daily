@@ -1,5 +1,9 @@
 # `data-official/2026-09/adjustments/` — display-layer adjustment specs (`h`, `t`, `u`)
 
+## October 2026 status
+
+All three ramps re-gated on 2026-10-06 to run from the **2026-10-05** seam to the 2026-12-15 anchor (71 days); anchors unchanged from September (`h` −1,017,277 clamped, `t` +299,000, `u` −27,162; net desktop −1,017,277, mobile +271,838). The `h` anchor and `t` were leadership / calibration choices in September and are carried as the iterative starting point, not re-derived. The September text below is the record.
+
 ## This directory is LIVE BY PRESENCE
 
 `load_adjustments()` does `glob("*.json")` and **sums every spec it finds**. There is no date gate and no

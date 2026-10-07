@@ -55,13 +55,13 @@ from mozaic_daily.adjustments import render_adjustment  # noqa: E402
 
 # --- Cycle-scoped configuration (repoint at each roll-forward) -------------------------------
 CSV_DIR = "data-official/2026-10/csv"  # repointed 2026-10-05
-PUBLISHED_CURVES = "september_canonical_curves.csv"
-PUBLISHED_SUMMARY = "september_dec15_summary.csv"
+PUBLISHED_CURVES = "october_canonical_curves.csv"
+PUBLISHED_SUMMARY = "october_dec15_summary.csv"
 
-CURRENT_ADJUSTMENTS_DIR = "data-official/2026-10/adjustments"  # repointed 2026-10-05 (PROVISIONAL copies until re-gated)
+CURRENT_ADJUSTMENTS_DIR = "data-official/2026-10/adjustments"  # re-gated to the October seam 2026-10-06
 PRIOR_ADJUSTMENTS_DIR = "data-official/2026-09/adjustments"  # repointed 2026-10-05
 
-FORECAST_START = pd.Timestamp("2026-09-02")       # September desktop seam
+FORECAST_START = pd.Timestamp("2026-10-05")       # October desktop seam
 PREV_FORECAST_START = pd.Timestamp("2026-09-09")  # September's seam (repointed 2026-10-05)
 MEASUREMENT_DATE = pd.Timestamp("2026-12-15")
 TROUGH_WINDOW_END = pd.Timestamp("2026-10-15")
@@ -72,9 +72,9 @@ TROUGH_WINDOW_END = pd.Timestamp("2026-10-15")
 WIN10_SPEC_FILENAME = "headwind.json"
 
 # Published CSV column stems for the current and prior cycle (check against the notebook's export).
-CURRENT_COLUMN = "desktop_current_september"
-PRIOR_COLUMN = "desktop_prior_august"
-CURRENT_KEY, PRIOR_KEY = "september", "august"
+CURRENT_COLUMN = "desktop_current_october"
+PRIOR_COLUMN = "desktop_prior_september"
+CURRENT_KEY, PRIOR_KEY = "october", "september"
 
 # Loud, unmissable labels. The whole point of this artifact is that it can never be mistaken for
 # the published canonical file, so the marker appears in the filename AND every value column.

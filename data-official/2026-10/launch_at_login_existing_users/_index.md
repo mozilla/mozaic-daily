@@ -1,5 +1,9 @@
 # `e` — launch_at_login_existing_users, cycle 2026-09
 
+## October 2026 status — APPLIED
+
+**`e` is ON for October 2026** (Brendan, 2026-10-06): the `withheld` key was deleted from the spec and the gate set to the **2026-10-05** seam, so the October desktop build is the first to carry it (`.adj-eijlo.`). Curve, allocation and shares are the 2026-09-10 ingest, unchanged: its measured part ends 2026-09-08, so the training days 2026-09-09..10-04 are subtracted at the producer's *planned-rollout* forecast (~66K/day), not at measured incremental DAU. The planned steps on 2026-10-13 and 2026-10-15 (to ~736K/day) are now inside the forecast horizon. A re-export at the October edge is expected. The September text below (which says WITHHELD) is the record of the ingest.
+
 <!-- Drafted by scripts/ingest_adjustment.py on 2026-09-10. Fill in the WHAT/WHY sections. -->
 
 **What it is:** Desktop DAU added by Launch at Login for *existing* users, the second half of the feature whose

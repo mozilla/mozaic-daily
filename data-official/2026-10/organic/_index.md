@@ -1,5 +1,30 @@
 # `data-official/2026-09/organic/` — measured Fenix paid/organic split (`p`), September 2026
 
+## October 2026 status (seam 2026-10-05) — split REBUILT, paid level carried
+
+Rebuilt 2026-10-06 for training through **2026-10-04**: `fenix_paid_organic.2026-10-05.parquet` (856 days × 16 countries,
+scan 392 GB, log `build.2026-10-05.log`). `organic.json` now reads it and is gated to `2026-10-05`; the paid level is still
+September's workbook **Med** scenario (`../marketing/…total_med.2026-09-09.pull2026-09-15.parquet`, Dec-15 1,833,753), **not
+re-pulled** — this cycle is an iterative starting point.
+
+**The tail-overlap check failed at its 0.50% default and the run was repeated at `--overlap-tolerance 0.01`** (new flag,
+default unchanged; Brendan's decision 2026-10-06; the failed log is `build.2026-10-05.failed_tol0005.log`). On the seven
+overlap days 2026-06-25..07-01 the live tail is 0.47–0.52% below the 2026-07-01 mirror snapshot. Diagnosed by re-running
+both sides for just those days: the gap is **attrition of the live client-level tables, not SQL drift** —
+
+| bucket, 7-day sum | mirror snapshot | live tail | rel |
+|---|--:|--:|--:|
+| organic | 80,810,815 | 80,783,585 | −0.03% |
+| paid, acquired within 12 months | 8,672,327 | 8,627,528 | −0.52% |
+| paid, acquired more than a year earlier | 1,492,170 | 1,114,324 | **−25.3%** |
+| organic share over the window | 0.88827 | 0.89239 | **+0.41pp** |
+
+September passed the same check at 0.35% (median −0.33%) with the same join, so the share series has carried a step up at
+the 2026-07-02 join since September; it is 0.41pp now and will keep growing while the snapshot ages. The check's own error
+text ("the tail SQL has drifted") misnames this cause. Options for a later cycle: ratio-splice the tail onto the snapshot per
+bucket, or rebuild the snapshot from live data (loses 2024-06..2025-09, outside the 25-month client retention). Other checks
+as September: partition identity PASS, coverage PASS (min share 0.631), shredder drift −2.9% at the oldest day, 0.0 at the edge.
+
 The input to adjustment **`p`** (`paid_organic_split`): mozaic forecasts **organic** Fenix DAU, and the paid
 **level** from `../marketing/` is stacked back on from the seam. Rebuilt 2026-09-04 for the September training
 window (through 2026-09-01), and **again 2026-09-10 for the refreshed seam 2026-09-09** (training through 2026-09-08; scan

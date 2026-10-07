@@ -43,7 +43,8 @@ column. That is asserted, not just described.
 Usage:
     python scripts/export_desktop_ex_ir_cn_csv.py [--csv-dir DIR] [--dry-run]
 
-Cycle-scoped: the constants below point at the August 2026 cycle. Repoint them at roll-forward.
+Cycle-scoped: the constants below point at the October 2026 cycle (repointed 2026-10-06). Repoint them at roll-forward.
+Column stems follow the published CSV (`current_october`, `prior_september`) and are literal below; rename them too.
 """
 
 import argparse
@@ -65,24 +66,24 @@ from export_desktop_no_headwind_csv import load_desktop_headwind_ramp  # noqa: E
 
 # --- Cycle-scoped configuration (repoint at each roll-forward) -------------------------------
 CSV_DIR = "data-official/2026-10/csv"  # repointed 2026-10-05
-PUBLISHED_CURVES = "september_canonical_curves.csv"
-PUBLISHED_SUMMARY = "september_dec15_summary.csv"
+PUBLISHED_CURVES = "october_canonical_curves.csv"
+PUBLISHED_SUMMARY = "october_dec15_summary.csv"
 
-# TODO (2026-09-04 repoint): replace <config>/<slug> with the September canonical desktop build once it exists.
 DESKTOP_FORECAST_PATH = (
-    "data-official/2026-09/desktop_<config>_2026-09-02/<slug>/"
-    "mozaic_daily_forecast.2026-09-02.ld-D.adj-ijlo.parquet"
+    "data-official/2026-10/desktop_g01_2026-10-05/"
+    "cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/"
+    "mozaic_daily_forecast.2026-10-05.ld-D.adj-eijlo.parquet"
 )
 PREV_DESKTOP_FORECAST_PATH = (
-    "data-official/2026-08/desktop_g01_2026-08-02/"
+    "data-official/2026-09/desktop_g01_2026-09-09/"
     "cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/"
-    "mozaic_daily_forecast.2026-08-02.ld-D.adj-lo.parquet"
+    "mozaic_daily_forecast.2026-09-09.ld-D.adj-ijlo.parquet"
 )
-CURRENT_ADJUSTMENTS_DIR = "data-official/2026-10/adjustments"  # repointed 2026-10-05 (PROVISIONAL copies until re-gated)
+CURRENT_ADJUSTMENTS_DIR = "data-official/2026-10/adjustments"  # re-gated to the October seam 2026-10-06
 PRIOR_ADJUSTMENTS_DIR = "data-official/2026-09/adjustments"  # repointed 2026-10-05
 
-FORECAST_START = pd.Timestamp("2026-08-02")       # August desktop seam
-PREV_FORECAST_START = pd.Timestamp("2026-07-06")  # July's seam
+FORECAST_START = pd.Timestamp("2026-10-05")       # October desktop seam
+PREV_FORECAST_START = pd.Timestamp("2026-09-09")  # September's seam
 DISPLAY_START = pd.Timestamp("2026-01-01")
 DISPLAY_END = pd.Timestamp("2026-12-31")
 MEASUREMENT_DATE = pd.Timestamp("2026-12-15")
@@ -92,7 +93,8 @@ EXCLUDED_COUNTRIES = ("IR", "CN")
 DESKTOP_SEGMENT = '{"os": "ALL"}'
 DESKTOP_APP_NAME = "desktop"
 DESKTOP_DATA_SOURCE = "legacy_desktop"
-DESKTOP_REQUIRED_STATE = ["l", "o"]
+DESKTOP_REQUIRED_STATE = ["e", "i", "j", "l", "o"]      # October canonical
+PREV_DESKTOP_REQUIRED_STATE = ["i", "j", "l", "o"]    # September canonical
 
 SCOPE_LABEL = "EX_IR_CN"
 
@@ -122,12 +124,15 @@ SCOPES = [
 ]
 
 
-def load_country_dau(path: str) -> tuple[pd.DataFrame, pd.DatetimeIndex]:
+def load_country_dau(
+    path: str, require_state: list[str] | None = None
+) -> tuple[pd.DataFrame, pd.DatetimeIndex]:
     """World-and-per-country daily desktop DAU from a forecast parquet, plus its training dates.
 
-    Returns a date-indexed frame with one column per country (including `ALL`).
+    Returns a date-indexed frame with one column per country (including `ALL`). `require_state`
+    defaults to the current cycle's overlay set; pass `PREV_DESKTOP_REQUIRED_STATE` for the prior build.
     """
-    df, _meta = load_forecast(path, require_state=DESKTOP_REQUIRED_STATE)
+    df, _meta = load_forecast(path, require_state=require_state or DESKTOP_REQUIRED_STATE)
     rows = df[
         (df["data_source"] == DESKTOP_DATA_SOURCE)
         & (df["segment"] == DESKTOP_SEGMENT)
@@ -201,14 +206,14 @@ def build_curves(
         "actuals": daily_to_28ma(
             pd.Series(training_dates), august_daily.reindex(training_dates)
         ),
-        "current_august": forecast_ma(august_daily, FORECAST_START),
-        "prior_july": forecast_ma(july_daily, PREV_FORECAST_START),
+        "current_october": forecast_ma(august_daily, FORECAST_START),
+        "prior_september": forecast_ma(july_daily, PREV_FORECAST_START),
     }
     ramps = {
-        "current_august": load_desktop_headwind_ramp(
-            CURRENT_ADJUSTMENTS_DIR, curves["current_august"].index, FORECAST_START),
-        "prior_july": load_desktop_headwind_ramp(
-            PRIOR_ADJUSTMENTS_DIR, curves["prior_july"].index, PREV_FORECAST_START),
+        "current_october": load_desktop_headwind_ramp(
+            CURRENT_ADJUSTMENTS_DIR, curves["current_october"].index, FORECAST_START),
+        "prior_september": load_desktop_headwind_ramp(
+            PRIOR_ADJUSTMENTS_DIR, curves["prior_september"].index, PREV_FORECAST_START),
     }
     return curves, ramps
 
@@ -228,7 +233,7 @@ def build_scope_frame(
 
     frame = pd.DataFrame({"date": index.strftime("%Y-%m-%d")})
     frame[f"desktop_actuals_{SCOPE_LABEL}"] = column(curves["actuals"]).values
-    for family, first_valid in [("prior_july", None), ("current_august", FORECAST_START)]:
+    for family, first_valid in [("prior_september", None), ("current_october", FORECAST_START)]:
         series = curves[family]
         if scope["apply_headwind"]:
             series = series + ramps[family]
@@ -242,10 +247,10 @@ def build_scope_summary(
     """Dec-15 headline + summer trough, read back off this file's own rounded columns."""
     suffix = scope["column_suffix"]
     indexed = frame.assign(date=pd.to_datetime(frame["date"])).set_index("date")
-    current = indexed.loc[MEASUREMENT_DATE, f"desktop_current_august_{suffix}"]
-    prior = indexed.loc[MEASUREMENT_DATE, f"desktop_prior_july_{suffix}"]
+    current = indexed.loc[MEASUREMENT_DATE, f"desktop_current_october_{suffix}"]
+    prior = indexed.loc[MEASUREMENT_DATE, f"desktop_prior_september_{suffix}"]
     window = indexed.loc[
-        FORECAST_START:TROUGH_WINDOW_END, f"desktop_current_august_{suffix}"
+        FORECAST_START:TROUGH_WINDOW_END, f"desktop_current_october_{suffix}"
     ].dropna()
     # Signed as the file needs it read: the canonical scope HAS this applied; the no-headwind scope
     # would need it ADDED BACK to return to the canonical figure.
@@ -254,14 +259,14 @@ def build_scope_summary(
     return pd.DataFrame([{
         "series": "Desktop",
         "measurement_date": MEASUREMENT_DATE.strftime("%Y-%m-%d"),
-        f"current_august_{suffix}": int(current),
-        f"prior_july_{suffix}": int(prior),
-        f"delta_vs_july_{suffix}": int(current - prior),
-        f"delta_pct_vs_july_{suffix}": round((current / prior - 1) * 100, 3),
+        f"current_october_{suffix}": int(current),
+        f"prior_september_{suffix}": int(prior),
+        f"delta_vs_september_{suffix}": int(current - prior),
+        f"delta_pct_vs_september_{suffix}": round((current / prior - 1) * 100, 3),
         f"summer_trough_min_{suffix}": int(window.min()),
         f"summer_trough_date_{suffix}": window.idxmin().strftime("%Y-%m-%d"),
-        f"{ledger}_august": int(sign * ramps["current_august"][MEASUREMENT_DATE]),
-        f"{ledger}_july": int(sign * ramps["prior_july"][MEASUREMENT_DATE]),
+        f"{ledger}_october": int(sign * ramps["current_october"][MEASUREMENT_DATE]),
+        f"{ledger}_september": int(sign * ramps["prior_september"][MEASUREMENT_DATE]),
     }])
 
 
@@ -276,8 +281,8 @@ def verify_world_reconstruction(
     numbers is the country subtraction.
     """
     for family, daily, seam, adjustments_dir in [
-        ("current_august", august["ALL"], FORECAST_START, CURRENT_ADJUSTMENTS_DIR),
-        ("prior_july", july["ALL"], PREV_FORECAST_START, PRIOR_ADJUSTMENTS_DIR),
+        ("current_october", august["ALL"], FORECAST_START, CURRENT_ADJUSTMENTS_DIR),
+        ("prior_september", july["ALL"], PREV_FORECAST_START, PRIOR_ADJUSTMENTS_DIR),
     ]:
         ma = forecast_ma(daily, seam)
         ramp = load_desktop_headwind_ramp(adjustments_dir, ma.index, seam)
@@ -302,7 +307,7 @@ def verify_outputs(
     no_hw_suffix = SCOPES[1]["column_suffix"]
 
     # 1. The two scopes must differ by EXACTLY the ramp, on every row.
-    for family in ["current_august", "prior_july"]:
+    for family in ["current_october", "prior_september"]:
         difference = (canonical[f"desktop_{family}_{canonical_suffix}"]
                       - no_headwind[f"desktop_{family}_{no_hw_suffix}"])
         expected = ramps[family].reindex(canonical.index)
@@ -329,7 +334,7 @@ def verify_outputs(
     excluded_dec15 = august.loc[MEASUREMENT_DATE, list(EXCLUDED_COUNTRIES)].sum()
     assert excluded_dec15 > 0, "IR+CN daily DAU at Dec-15 is not positive -- wrong columns"
     world_dec15 = forecast_ma(august["ALL"], FORECAST_START)[MEASUREMENT_DATE]
-    scope_dec15 = no_headwind.loc[MEASUREMENT_DATE, f"desktop_current_august_{no_hw_suffix}"]
+    scope_dec15 = no_headwind.loc[MEASUREMENT_DATE, f"desktop_current_october_{no_hw_suffix}"]
     assert world_dec15 - scope_dec15 > 1_000_000, (
         f"ex-{'/'.join(EXCLUDED_COUNTRIES)} Dec-15 is only {world_dec15 - scope_dec15:,.0f} below "
         f"world; IR+CN are ~5.8% of desktop, so the subtraction did not happen."
@@ -340,8 +345,8 @@ def verify_outputs(
         suffix = next(s["column_suffix"] for s in SCOPES if s["key"] == key)
         assert list(frame.columns) == [
             f"desktop_actuals_{SCOPE_LABEL}",
-            f"desktop_prior_july_{suffix}",
-            f"desktop_current_august_{suffix}",
+            f"desktop_prior_september_{suffix}",
+            f"desktop_current_october_{suffix}",
         ], f"{key} has unexpected columns {list(frame.columns)}"
 
     # 5. Each summary re-derives from its own curves file.
@@ -349,12 +354,12 @@ def verify_outputs(
         suffix = next(s["column_suffix"] for s in SCOPES if s["key"] == key)
         row = summary.set_index("series").loc["Desktop"]
         frame = written[key]
-        current = frame.loc[MEASUREMENT_DATE, f"desktop_current_august_{suffix}"]
-        prior = frame.loc[MEASUREMENT_DATE, f"desktop_prior_july_{suffix}"]
-        assert row[f"current_august_{suffix}"] == current, f"{key} summary disagrees with its curves"
-        assert row[f"prior_july_{suffix}"] == prior, f"{key} summary disagrees with its curves"
-        assert row[f"delta_vs_july_{suffix}"] == current - prior, (
-            f"{key} delta is {row[f'delta_vs_july_{suffix}']:,.0f} but the published columns differ "
+        current = frame.loc[MEASUREMENT_DATE, f"desktop_current_october_{suffix}"]
+        prior = frame.loc[MEASUREMENT_DATE, f"desktop_prior_september_{suffix}"]
+        assert row[f"current_october_{suffix}"] == current, f"{key} summary disagrees with its curves"
+        assert row[f"prior_september_{suffix}"] == prior, f"{key} summary disagrees with its curves"
+        assert row[f"delta_vs_september_{suffix}"] == current - prior, (
+            f"{key} delta is {row[f'delta_vs_september_{suffix}']:,.0f} but the published columns differ "
             f"by {current - prior:,.0f} -- a reader subtracting them would get another answer."
         )
 
@@ -372,10 +377,10 @@ def main() -> None:
     published = pd.read_csv(csv_dir / PUBLISHED_CURVES, parse_dates=["date"]).set_index("date")
 
     august, training_dates = load_country_dau(DESKTOP_FORECAST_PATH)
-    july, _ = load_country_dau(PREV_DESKTOP_FORECAST_PATH)
+    july, _ = load_country_dau(PREV_DESKTOP_FORECAST_PATH, PREV_DESKTOP_REQUIRED_STATE)
     residuals = {
-        "August": check_country_reconciliation(august, "August build"),
-        "July": check_country_reconciliation(july, "July delivered build"),
+        "October": check_country_reconciliation(august, "October build"),
+        "September": check_country_reconciliation(july, "September delivered build"),
     }
     print(f"country tiles reconcile on both builds ({len(august.columns) - 1} tiles + ALL); "
           f"max residual "

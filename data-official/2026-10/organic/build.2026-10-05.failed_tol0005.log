@@ -1,0 +1,23 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:266: FutureWarning: You are using a Python version (3.10.19) which Google will stop supporting in new releases of google.cloud.bigquery_storage_v1 once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.cloud.bigquery_storage_v1 past that date.
+  warnings.warn(message, FutureWarning)
+Fenix paid/organic split — forecast_start 2026-10-05, training_end 2026-10-04
+  mirror:   moz-fx-data-bq-data-science.brwells.fenix_dau_growth_source_v1
+  out:      data-official/2026-10/organic
+
+--- Query
+  [mirror snapshot] 0.02 GB (~$0.00)
+  snapshot covers through 2026-07-01; tail 2026-06-25 → 2026-10-04
+  [mirror tail] 391.68 GB (~$1.96)
+
+--- Checks
+Traceback (most recent call last):
+  File "/Users/brendanwells/work/mozaic-daily/scripts/build_fenix_organic_split.py", line 262, in <module>
+    raise SystemExit(main())
+  File "/Users/brendanwells/work/mozaic-daily/scripts/build_fenix_organic_split.py", line 182, in main
+    check_tail_overlap(snapshot, tail),
+  File "/Users/brendanwells/work/mozaic-daily/src/mozaic_daily/organic_source.py", line 116, in check_tail_overlap
+    raise ValueError(
+ValueError: tail disagrees with the snapshot by 0.5153% on 2026-06-25 (tolerance 0.50%); the tail SQL has drifted from the mirror build
+EXIT 1

@@ -15,6 +15,17 @@ names a pickle.
 
 ## 1. Cycle-scoped script constants (`scripts/`)
 
+> **Repointed at the first October build (2026-10-06):** `export_desktop_no_headwind_csv.py` (`FORECAST_START` 2026-10-05,
+> column stems `current_october` / `prior_september`, published file names), `export_desktop_ex_ir_cn_csv.py` (both seams,
+> both parquet paths, `DESKTOP_REQUIRED_STATE` = e i j l o + new `PREV_DESKTOP_REQUIRED_STATE`, column stems; `load_country_dau`
+> now takes the state to require), `mobile_app_breakdown.py` (`DEFAULT_FORECAST` / `DEFAULT_RAW` → the October canonical mobile
+> build; variable renamed `_CANONICAL_MOBILE`), `verify_training_rows_are_actuals.py` (both default targets → the October
+> canonicals; it was still on August's). Tests pinned to those constants were made seam-independent
+> (`tests/test_export_desktop_ex_ir_cn_csv.py`, `tests/test_mobile_app_breakdown.py`). **Still stale:** `mobile_scoring.py`
+> `FORECAST_START`/`TARGET_DEC15`, `score_near_horizon.py` `DEFAULT_TARGET_DATE`, `export_desktop_daily_csv.py` (test-pinned to
+> September's CSV), `verify_forecast_states.py` (only knows the pruned June cycle; wrote 0 rows), `run_aug_trough_gradient.py`.
+
+
 **Roll-forward edits (Phase 5 step 5, 2026-10-05):** the unambiguous ones were changed — `DEFAULT_HEADWIND` in
 `mobile_scoring.py` and `score_near_horizon.py` → the `2026-10/adjustments/` copies; `CSV_DIR`,
 `CURRENT_ADJUSTMENTS_DIR`, `PRIOR_ADJUSTMENTS_DIR` in `export_desktop_no_headwind_csv.py` and
