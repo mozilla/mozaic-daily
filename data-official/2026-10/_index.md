@@ -15,7 +15,7 @@ Possibly only a reference build for a colleague learning the forecast (Brendan, 
 | | path | marker |
 |---|---|---|
 | desktop canonical | `desktop_g01_2026-10-05/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-10-05.ld-D.adj-eijlo.parquet` | `.adj-eijlo.` |
-| mobile canonical | `mobile_cpr0725_paid0915med_2026-10-05/cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-10-05.gm-D.adj-p.parquet` | `.adj-p.` |
+| mobile canonical | `mobile_cpr0725_paid1006_2026-10-05/cps0.035_thresh055_recent13_cpr0.725_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-10-05.gm-D.adj-p.parquet` (paid curve re-pulled 2026-10-06; the Med-curve build `mobile_cpr0725_paid0915med_2026-10-05/` is the revert target) | `.adj-p.` |
 | raw mobile pull | `mobile_rawpull_2026-10-05/` (the desktop raw pull sits beside the desktop parquet) | |
 | notebook | `october_canonical.ipynb` (executed; DRAFT watermark on) | |
 | published curves | `csv/october_canonical_curves.csv`, `csv/october_dec15_summary.csv` + the `DESKTOP_ONLY.*` twins | |
@@ -26,11 +26,11 @@ Possibly only a reference build for a colleague learning the forecast (Brendan, 
 | | October (this build) | September delivered | delta | near-horizon min (seam..Oct-15) |
 |---|--:|--:|--:|--:|
 | desktop | **50,189,791** | 49,332,443 | **+857,348** (+1.74%) | 50,080,133 on 2026-10-15 |
-| mobile | **18,232,063** | 18,214,594 | **+17,469** (+0.10%) | 17,839,715 on 2026-10-15 |
-| ALL | **68,421,854** | 67,547,037 | **+874,817** (+1.30%) | 67,919,848 on 2026-10-15 |
+| mobile | **18,395,089** | 18,214,594 | **+180,495** (+0.99%) | 17,890,445 on 2026-10-05 |
+| ALL | **68,584,880** | 67,547,037 | **+1,037,843** (+1.54%) | 67,970,888 on 2026-10-15 |
 
 Desktop pre-`h` (model + overlays) Dec-15: 51,207,068 (`h` −1,017,277). Mobile model base (parquet, `p` applied)
-17,960,225, + `t` 299,000 − `u` 27,162 = 18,232,063. Both prior curves reproduce September's published Dec-15 to the
+18,123,251, + `t` 299,000 − `u` 27,162 = 18,395,089 (the first build of the day, on September's Med paid curve, was 17,960,225 → 18,232,063). Both prior curves reproduce September's published Dec-15 to the
 DAU (drift 0). Desktop vs targets: +676,634 above Baseline, +417,403 above Stretch.
 
 ### Attribution ledger, September delivered → this build (what changed)
@@ -40,13 +40,16 @@ DAU (drift 0). Desktop vs targets: +676,634 above Baseline, +417,403 above Stret
 | data refresh 2026-09-08 → 2026-10-04 (both platforms), seam 2026-09-09 → 2026-10-05 | model re-run | not isolated (bundled with `e` on desktop; the whole +17,469 on mobile) |
 | **`e` launch_at_login_existing_users applied** (was WITHHELD in September) | per-tile overlay, desktop | nominal **736,935** at Dec-15; realized effect not isolated this build (needs an `e`-off run; the combinatorics record would give it) |
 | `p` measured split rebuilt for the new window | input rebuild | share series carries the 2026-07-02 join step (+0.41pp, see `organic/_index.md`) |
+| **`p` paid curve re-pulled** from GMIO feed `_20261002` (point estimate, actuals through the week of 2026-09-21), replacing September's workbook Med scenario | input + mobile rerun | **+163,026** at mobile Dec-15, exactly the 28d-MA difference of the two curves (additive stack); of the mobile +180,495 vs September, +17,469 is the data refresh and +163,026 the curve |
 | `h`, `t`, `u` ramps re-gated to start 2026-10-05 | display layer | anchors unchanged (−1,017,277 / +299,000 / −27,162), exact at Dec-15 |
-| `i`, `j`, `l`, `o` curves, paid Med curve, model params | carried unchanged | 0 by construction |
+| `i`, `j`, `l`, `o` curves, model params | carried unchanged | 0 by construction |
 
 Desktop +857,348 vs September is therefore ≈ `e` (nominal 736,935 × an unknown pass-through) + the data refresh;
-the two cannot be separated without the `e`-off run. **Paid seam step**: measured paid on 2026-10-04 vs September's
-Med curve on 2026-10-05 is **−115,065/day (−0.64% of mobile)**; on 28d means −89,383 (−4.97% of paid). The Med
-curve now sits *below* measured paid at the seam — a re-pull is the obvious next input.
+the two cannot be separated without the `e`-off run. **Paid seam step** after the re-pull: measured paid on 2026-10-04 vs
+the new curve on 2026-10-05 is **−850/day (−0.00% of mobile)**; on 28-day means (trailing measured vs the first 28 forecast
+days) **+38,233 (+2.1% of paid)**. On the Med curve it had been −115,065/day and −89,383 on means, which is what made the
+paid 28d-MA fall for four weeks after the seam in the first build's plots; the new curve's level at the seam (1,799,164)
+matches the measured 28-day mean (1,799,331) to within 200 DAU, so that artefact is gone.
 
 ### How this build was produced (2026-10-06)
 
@@ -63,7 +66,10 @@ python scripts/build_fenix_organic_split.py --forecast-start-date 2026-10-05 --o
     --production-raw data-official/2026-10/mobile_rawpull_2026-10-05/mozaic_parts.raw.glean.mobile.DAU.parquet \
     --out-dir data-official/2026-10/organic      # failed at the 0.005 default first; see organic/_index.md
 python scripts/run_mobile_param_scan.py --forecast-start-date 2026-10-05 --raw-cache-dir data-official/2026-10/mobile_rawpull_2026-10-05 \
-    --results-dir data-official/2026-10/mobile_cpr0725_paid0915med_2026-10-05 --changepoint-prior-scale 0.035 \
+    --results-dir data-official/2026-10/mobile_cpr0725_paid0915med_2026-10-05 --changepoint-prior-scale 0.035 \   # first build, Med curve
+    # ... then: scripts/pull_paid_dau_curve.py --sql <template with _20261002 suffixes> --cycle 2026-10 --forecast-start 2026-10-05,
+    #           organic.json paid_forecast.data_file -> the pull2026-10-06 parquet, and the same mobile command with
+    #           --results-dir data-official/2026-10/mobile_cpr0725_paid1006_2026-10-05 (the canonical mobile build)
     --changepoint-range 0.725 --n-changepoints 25 --recent-weeks 13 --seasonality-prior-scale 0.1 \
     --holiday-threshold -0.055 --holiday-effect-floor -0.6
 jupyter nbconvert --to notebook --execute --inplace data-official/2026-10/october_canonical.ipynb
@@ -77,10 +83,10 @@ Verified: both parquets load with `require_state`; `parameters.json` matches Sep
 
 ### Open decisions (October)
 
-- Re-export `o`, `j`, `i`, `e` (and possibly `l`) at the October data edge; re-pull the paid curve (`/pull-marketing-curve`).
+- Re-export `o`, `j`, `i`, `e` (and possibly `l`) at the October data edge. (Paid curve re-pulled and wired 2026-10-06 — done; note it is the feed's point estimate where September shipped the Med scenario, a leadership choice that may need revisiting.)
 - `t` (+299,000) carried a third time; `h` anchor is September's c-suite calibration. Decide whether either is re-derived.
 - Isolate `e`'s realized Dec-15 effect (an `e`-off desktop run, or the combinatorics record — quick update deferred it).
-- Mobile forecast dips ~160K below the last actual 28d-MA by late October (paid seam step + seasonality); check against actuals as they land.
+- Mobile near-horizon minimum is now the seam day itself (17,890,445 on 2026-10-05); the late-October dip of the first build was the Med curve's paid seam step and is gone.
 - The `p` tail-overlap step at 2026-07-02 (+0.41pp organic share) grows every cycle; a per-bucket ratio splice is the candidate fix.
 
 ## Roll-forward record (2026-10-05, superseded by the build above)

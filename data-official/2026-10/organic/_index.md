@@ -3,9 +3,12 @@
 ## October 2026 status (seam 2026-10-05) — split REBUILT, paid level carried
 
 Rebuilt 2026-10-06 for training through **2026-10-04**: `fenix_paid_organic.2026-10-05.parquet` (856 days × 16 countries,
-scan 392 GB, log `build.2026-10-05.log`). `organic.json` now reads it and is gated to `2026-10-05`; the paid level is still
-September's workbook **Med** scenario (`../marketing/…total_med.2026-09-09.pull2026-09-15.parquet`, Dec-15 1,833,753), **not
-re-pulled** — this cycle is an iterative starting point.
+scan 392 GB, log `build.2026-10-05.log`). `organic.json` now reads it and is gated to `2026-10-05`. **Paid level re-pulled and wired later the same day**:
+`../marketing/marketing_lift_model.gmio_uac_meta_total.2026-10-05.pull2026-10-06.parquet`, the GMIO feed's point estimate from
+tables `_20261002` (actuals through the week of 2026-09-21; Dec-15 daily level 2,006,014 vs the Med scenario's 1,833,753). Mobile
+rerun into `../mobile_cpr0725_paid1006_2026-10-05/`; the Med build stays as the revert target. Paid seam step after the swap:
+−850/day; on 28-day means +38,233 (+2.1% of paid), from −115,065/day / −89,383 on the Med curve. Note the new input is a point
+estimate where September shipped the sheet's 90% CI lower end at leadership's request (D-008 in `status/decisions.md`).
 
 **The tail-overlap check failed at its 0.50% default and the run was repeated at `--overlap-tolerance 0.01`** (new flag,
 default unchanged; Brendan's decision 2026-10-06; the failed log is `build.2026-10-05.failed_tol0005.log`). On the seven

@@ -1,5 +1,26 @@
 # `data-official/2026-09/marketing/` — the paid-DAU curve `p` consumes (September 2026)
 
+## October 2026 status — RE-PULLED 2026-10-06 from GMIO feed `_20261002` and WIRED
+
+`scripts/pull_paid_dau_curve.py --sql <template> --cycle 2026-10 --forecast-start 2026-10-05`, the widget query verbatim apart from
+the two table suffixes (`ahe_gmio_weekly_paid_dau_views_20260909` → `_20261002`, `ahe_gmio_weekly_metrics_20260909` → `_20261002`;
+both exist). Point estimate (no variant), Total Paid DAU / All, 51 weeks 2026-01-05..12-21, actuals through the week of
+2026-09-21 (basis: `uac_meta_actual` 21, `uac_actual` 17, `uac_meta_forecast` 13). Files
+`marketing_lift_model.gmio_uac_meta_total.2026-10-05.pull2026-10-06.{parquet,csv,meta.json}`, `paid_dau_curve.2026-10-05.pull2026-10-06.xlsx`,
+`plots/paid_dau_curve.2026-10-05.pull2026-10-06.png`; query output verbatim in `source_data/gmio_paid_dau_total_all.20261006.{csv,json}`
++ the template and resolved SQL. `../organic/organic.json` points at it since 2026-10-06 (Brendan); mobile rerun
+`../mobile_cpr0725_paid1006_2026-10-05/`.
+
+| | Med workbook scenario (wired 09-15) | this pull (10-06) |
+|---|--:|--:|
+| level at the 2026-10-05 seam | 1,684,949 | 1,799,164 (measured 28d mean 1,799,331) |
+| level at Dec-15 | 1,833,753 | 2,006,014 |
+| level at Dec-31 | 1,847,601 | 2,023,844 |
+| Dec-15 28d-MA → mobile Dec-15 move | | **+163,026** |
+
+Against the like-for-like 09-09 point-estimate pull (Dec-15 1,883,182) this is +122,832. The September text below is the record
+of that cycle's pulls; all of them remain on disk as siblings.
+
 **Status: REPOINTED 2026-09-15 to the delivered workbook's `Med Forecast` scenario (variant `med`, `…total_med.2026-09-09.pull2026-09-15.parquet`)** at the c-suite's request — the scenario leadership calls the "marketing midpoint" (the sheet's 90% CI lower end, between Low and High). Dec-15 daily level 1,833,753 (+19,144 vs Low; 28d-MA +19,734). Same workbook, same import path (`pull_paid_dau_curve.py --from-xlsx … --forecast-column "Med Forecast" --variant med`); the workbook copy is `source_data/delivered.delivered_paid_dau_forecast_scenarios_20260910.20260915.xlsx` (byte-identical to the 09-10 copy, sha1 `0c42615f…`). Mobile rerun done 2026-09-15 → `../mobile_cpr0725_paid0915med_2026-09-09/`; the Low build is the revert target. See *Pulls on disk*.
 
 **Earlier status (2026-09-10, superseded 2026-09-15): REPOINTED (second repoint that day) to the delivered workbook's `Low Forecast` scenario (variant `low`, `…total_low.2026-09-09.pull2026-09-10.parquet`)** — see *Pulls on disk* and *Delivered workbook (2026-09-10)*. Earlier the same day the lower-bound query pull (variant `ci90lo`) had been wired; it stays on disk as a sibling and is described next.
