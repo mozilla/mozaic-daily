@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mozaic-daily: the mobile paid/organic split `p`, August to October 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --page:#f3f1ec; --card:#fffdf9; --ink:#1c1b19; --ink2:#5b5955; --grid:#e4e1da;
+    --accent:#2f6db5; --accent-soft:#eaf1fa; --warn:#9a6700; --warn-soft:#fff6d6; --ok:#1a7f37; --bad:#b3261e;
+    --serif:"Lora", "Charter", "Iowan Old Style", "Palatino", Georgia, serif;
+    --sans:"Lato", "Avenir Next", "Segoe UI", "Helvetica Neue", -apple-system, sans-serif;
+    --mono:ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  html { background: var(--page); }
+  body { font: 17px/1.65 var(--serif); color: var(--ink); max-width: 860px; margin: 3rem auto 5rem;
+         padding: 3rem 3.5rem; background: var(--card); border-radius: 8px;
+         box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 12px 40px -20px rgba(0,0,0,.18); }
+  @media (max-width: 720px) { body { padding: 1.5rem 1.25rem; margin: 0; border-radius: 0; } }
+
+  h1, h2, h3, h4, summary, nav, .eyebrow, th, figcaption, .meta, .stage h3 { font-family: var(--sans); }
+  h1 { font-size: 2.1rem; font-weight: 900; letter-spacing: -.015em; line-height: 1.15; margin: 0 0 .4rem; }
+  .subtitle { font-size: 1.1rem; color: var(--ink2); margin: 0 0 .6rem; font-style: italic; }
+  h2 { font-size: 1.35rem; font-weight: 700; margin: 0; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 1.4rem 0 .4rem; color: var(--ink2); }
+  h4 { font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 1.1rem 0 .25rem; }
+  .eyebrow { display: block; font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .6rem; }
+  .meta { color: var(--ink2); font-size: .9rem; }
+  .meta code { background: none; padding: 0; }
+  header { padding-bottom: 1.25rem; border-bottom: 1px solid var(--grid); margin-bottom: 1.5rem; }
+  nav { font-size: .88rem; margin-top: 1rem; display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; }
+  nav a { color: var(--accent); text-decoration: none; font-weight: 700; }
+  nav a:hover { text-decoration: underline; }
+
+  p, li { max-width: 68ch; }
+  p { margin: .8rem 0; }
+  a { color: var(--accent); }
+  strong { font-weight: 600; }
+  code { font: .85em var(--mono); background: #f1efe9; padding: .1em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+  pre { background: #f1efe9; padding: .8rem 1rem; border-radius: 6px; overflow-x: auto; font-size: .85rem; }
+  pre code { background: none; padding: 0; }
+
+  section.section, details.section { margin: 2rem 0 0; border-top: 1px solid var(--grid); padding-top: 1.1rem; }
+  details.section > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: .6rem; }
+  details.section > summary::-webkit-details-marker { display: none; }
+  details.section > summary::before { content: "▾"; color: var(--accent); font-size: 1rem; display: inline-block; transition: transform .15s; }
+  details.section:not([open]) > summary::before { transform: rotate(-90deg); }
+  details.section > summary:hover h2 { color: var(--accent); }
+
+  table { border-collapse: collapse; width: 100%; margin: .8rem 0 1.2rem; font-size: .93rem; table-layout: fixed; }
+  th, td { text-align: left; vertical-align: top; padding: .5rem .7rem; border-bottom: 1px solid var(--grid); }
+  th { color: var(--ink2); font-weight: 700; font-size: .78rem; letter-spacing: .05em; text-transform: uppercase; }
+  td:first-child { font-family: var(--sans); font-weight: 700; }
+  table.two-col td:first-child { width: 30%; }
+  table.paths td:first-child { width: 42%; font-family: var(--mono); font-size: .82rem; font-weight: 400; }
+  table.decisions td:nth-child(1) { width: 8%; } table.decisions td:nth-child(2) { width: 12%; } table.decisions td:nth-child(3) { width: 14%; font-weight: 400; font-family: var(--serif); }
+  table.impact td:nth-child(1) { width: 30%; } table.impact td:nth-child(3) { width: 20%; } table.impact td:nth-child(4) { width: 10%; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .effort { font-family: var(--sans); font-weight: 700; font-size: .8rem; padding: .1em .5em; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .pass { color: var(--ok); font-weight: 700; } .fail { color: var(--bad); font-weight: 700; } .mixed { color: var(--warn); font-weight: 700; }
+
+  .callout { background: var(--warn-soft); border-left: 4px solid var(--warn); padding: .7rem 1rem; margin: 1.2rem 0; border-radius: 0 6px 6px 0; font-size: .95rem; }
+  .callout.info { background: var(--accent-soft); border-color: var(--accent); }
+  .unverified { color: var(--warn); font-style: italic; }
+
+  .stage { border-left: 4px solid var(--accent); background: #f7f9fc; padding: .5rem 1.2rem .8rem; margin: 1.3rem 0; border-radius: 0 6px 6px 0; }
+  .stage > h3 { margin: .5rem 0 .2rem; font-size: 1.05rem; color: var(--ink); }
+  .stage .dates { color: var(--ink2); font-size: .85rem; font-family: var(--sans); }
+  details.stage-old { margin: 1.3rem 0; }
+  details.stage-old > summary { cursor: pointer; font-family: var(--sans); font-weight: 700; color: var(--ink2); padding: .4rem 0; }
+  details.stage-old > summary:hover { color: var(--accent); }
+  details.stage-old .stage { margin-top: .4rem; }
+
+  figure.plot { width: min(1400px, calc(100vw - 3rem)); margin: 1.6rem 0 1.6rem 50%; transform: translateX(-50%); }
+  figure.plot a, figure.plot label { display: block; cursor: zoom-in; }
+  figure.plot img { width: 100%; height: auto; display: block; border: 1px solid var(--grid); border-radius: 6px; background: #fff; }
+  figcaption { color: var(--ink2); font-size: .85rem; margin: .5rem auto 0; max-width: 860px; padding: 0 .25rem; }
+  figcaption code { font-size: .8rem; }
+
+  ol.steps li { margin: .5rem 0; }
+  dl dt { font-family: var(--sans); font-weight: 700; margin-top: .7rem; } dl dd { margin-left: 1.2rem; }
+  footer { margin-top: 3.5rem; color: var(--ink2); font-size: .85rem; border-top: 1px solid var(--grid); padding-top: .9rem; font-family: var(--sans); }
+</style>
+</head>
+<body>
+<header>
+  <span class="eyebrow">Catch-up · mozaic-daily</span>
+  <h1>mozaic-daily: the mobile paid/organic split <code>p</code>, August to October 2026</h1>
+  <p class="subtitle">What was done, what was decided, what is left. For the author, back after time away. Focus: the paid treatment of the mobile forecast and the paid plot that looked wrong on 6 October.</p>
+  <div class="meta">Written 2026-10-06 21:02 PDT · <code>/Users/brendanwells/work/mozaic-daily</code> · branch <code>october-forecast</code></div>
+  <nav>
+    <a href="#stand">Where we stand</a><a href="#machinery">Machinery</a><a href="#stages">Stages</a>
+    <a href="#decisions">Decisions</a><a href="#glossary">Glossary</a><a href="#more">Where to read more</a>
+  </nav>
+</header>
+
+<div class="callout info"><strong>First catch-up on this topic.</strong> No earlier timeline catch-up exists for this project; the 2026-09-28 file in <code>status/</code> is an overview for new collaborators, not a timeline. Everything here is drawn from the cycle indexes, the spec notes, the run logs and today's session; nothing is carried forward from a prior catch-up.</div>
+
+<section class="section" id="stand">
+  <h2>Where we stand and what you must decide</h2>
+  <p>The October mobile forecast, built today with forecast start date (the <strong>seam</strong>) 2026-10-05, treats paid the way September did: the measured split <code>p</code> scales Fenix training rows to <em>organic</em>, mozaic forecasts organic, and marketing's paid <em>level</em> is stacked back on from the seam (mechanics in <a href="#machinery">Machinery</a>). Two things are new. First, the rebuilt split failed its tail-overlap check (the producer's test that its live re-query agrees with the July snapshot it extends) for the first time; you resolved that by raising the tolerance to 1% (D-010). The cause is attrition in the live client tables (clients deleted since July), not a query change, and it will recur every cycle. Second, the paid curve stacked after the seam is still September's <em>Med</em> scenario (one column of the workbook marketing delivered on 2026-09-10), which now sits <strong>115,065 per day below measured paid</strong> at the seam (that figure compares the last measured day, 2026-10-04, with the curve's first day; on 28-day means the gap is 89,383, and against the last week's measured average it is about 205,000). So the published paid 28-day trailing mean <em>falls</em> for four weeks after the seam before it follows marketing's curve, and that fall is the whole explanation of the plot that confused you (Stage 3). Published mobile DAU on 2026-12-15 (<strong>Dec-15</strong>, the KPI date every build is scored on, as a 28-day mean) is 18,232,063, up 17,469 on September. The two <strong>display-layer</strong> ramps (adjustments added to the 28-day mean after the model, with no model rerun), the mobile tailwind <code>t</code> (+299,000 at Dec-15) and the terms-of-use headwind <code>u</code> (−27,162), are unchanged.</p>
+  <h4>Decisions pending</h4>
+  <ul>
+    <li><strong>P-1.</strong> Re-pull the marketing paid curve, or ask marketing for a new workbook. Measured paid grew about 16% between the week before September's seam and the week before October's; the Med scenario did not move. The figure that should decide this is the <strong>paid seam step on 28-day means</strong> (−89,383, or −5.0% of paid), because that is the published seam-continuity number the run prints every build; the daily and weekly gaps are supporting evidence of the same thing. No threshold is defined anywhere in the repo; September accepted a step of the opposite sign that was about a third as large. <em>(new; becomes a D-row when made)</em></li>
+    <li><strong>P-2.</strong> What to do about the +0.41pp step in the organic share at the 2026-07-02 join, which grows every cycle the mirror snapshot ages. Three options: <em>accept it</em> (nothing changes; the step keeps growing); <em>splice bucket by bucket</em> (scale each of the tail's three growth-source buckets by its own snapshot-to-tail ratio over the seven overlap days, so the join is continuous at the cost of treating the snapshot as the truth); or <em>rebuild the snapshot from live data</em> (one consistent series, but the client-level source only reaches back about 25 months, so measured history before roughly 2025-09 is lost and the held-flat backfill grows from 3.5 to 4.5 years). Any of the three changes the organic series Prophet trains on and needs a mobile rerun. Fuller write-up: the "October 2026 status" section of <code>data-official/2026-10/organic/_index.md</code>. <em>(new)</em></li>
+    <li><strong>P-4.</strong> The tolerance policy for the tail-overlap check. D-010 raised it to 1% <em>for October only</em>, through a flag whose default is still 0.5%; the gap will be larger again next cycle. Options: keep raising the flag per cycle and record the measured gap each time (the interim policy D-010 implies), change the check to compare per bucket so attrition in old paid clients is measured rather than tolerated, or fold this into P-2 (a splice or a rebuilt snapshot removes the overlap disagreement). <em>(new)</em></li>
+    <li><strong>P-3.</strong> Whether the mobile tailwind <code>t</code> (+299,000, sized in August before <code>p</code> existed) still has a job now that paid is measured and stacked explicitly. Carried three cycles so far; no decision has been recorded in any cycle. <em>(new, inherited from the September index)</em></li>
+  </ul>
+  <h4>Next actions</h4>
+  <ol class="steps">
+    <li>Decide P-1, then act on it one of two ways. (a) <strong>Re-pull the query</strong>: paste marketing's current GMIO widget query (or the new feed-table suffix) into <code>/pull-marketing-curve</code>; it runs the query read-only and writes a pull-date-suffixed daily level under <code>data-official/2026-10/marketing/</code>. (b) <strong>Import a new workbook</strong>: <code>/pull-marketing-curve --from-xlsx &lt;file&gt; --variant &lt;slug&gt;</code>, one scenario column. Either way the skill leaves a <code>PENDING_WIRING.md</code>; then set <code>paid_forecast.data_file</code> in <code>data-official/2026-10/organic/organic.json</code> to the new parquet and rerun the mobile model with the same command as tonight (recorded under "How this build was produced" in <code>data-official/2026-10/_index.md</code>; it is <code>scripts/run_mobile_param_scan.py</code> with September's locked parameters and <code>--raw-cache-dir data-official/2026-10/mobile_rawpull_2026-10-05</code>). One model run; the measured split and the raw cache stay valid only while the seam stays 2026-10-05 (a later seam means a new raw pull and a new split first). If you keep Med, nothing runs, and this document's explanation of the paid plot stands.</li>
+    <li>Re-measure the paid seam step after any rerun. It is seam- and curve-dependent; the run log prints it on 28-day means and the notebook cell <code>[plot-mobile-organic-paid]</code> prints it daily.</li>
+    <li>Build the mobile half of the adjustment-effects record (<code>p</code> on/off pair) when you want it; the desktop combinatorics were started tonight and the mobile pair was deliberately held back on your instruction.</li>
+  </ol>
+</section>
+
+<details class="section" id="machinery" open>
+  <summary><h2>The machinery every stage uses</h2></summary>
+  <h4>Paid versus organic Fenix clients</h4>
+  <p>A Fenix (Firefox for Android) client is <strong>paid</strong> if the client-level table <code>mozdata.fenix.new_profile_clients</code> records it as acquired through a paid Google click, on the release channel, installed from the Play Store. Everything else is <strong>organic</strong> by residual. Only Fenix has paid traffic; Firefox iOS and the two Focus apps are treated as 100% organic. Iran is excluded from the paid treatment (98.8% organic, and marketing's curve is ex-Iran).</p>
+  <h4>The measured split and the two-piece add-back</h4>
+  <p>Once per cycle a producer script builds <code>fenix_paid_organic.&lt;seam&gt;.parquet</code>: the organic share of Fenix DAU per day and country, measured from 2024-06-01 (the retention limit of the client table) to the day before the seam. Mobile DAU trains from 2020-12-31, so for the roughly 3.5 years before 2024-06-01 each country's earliest measured share is held flat backwards (the <strong>held-flat backfill</strong>; bounded at about 1.1 percentage points because paid was only 1.1% of Fenix DAU at the oldest measured month). Before the model runs, that share multiplies the Fenix training rows so mozaic sees organic DAU only. After the model runs, paid comes back in two pieces. <strong>Training rows</strong> get the <em>measured</em> paid, so they return to the raw actuals exactly. <strong>Forecast rows</strong> get <em>marketing's paid level</em>, allocated across countries by each country's share of measured paid over the trailing 28 days. The design exists so that paid contributes exactly its own value to the forecast, with no interaction with Prophet's trend, as the display-layer headwinds do.</p>
+  <h4>Why there is a mirror snapshot and a tail</h4>
+  <p>The share comes from a scratch BigQuery table, the <strong>mirror</strong> (<code>moz-fx-data-bq-data-science.brwells.fenix_dau_growth_source_v1</code>), built on 2026-07-01 from the client-level tables and expiring 2027-04-01. The client-level source keeps only about 25 months, so the mirror is what preserves history back to 2024-06-01. Each cycle the producer appends a <strong>tail</strong>: the same query run live from 2026-06-25 to the day before the seam, so snapshot and tail overlap for seven days. The <strong>tail-overlap check</strong> compares total DAU on those seven days and refuses to concatenate if they disagree by more than a tolerance, on the theory that disagreement means the tail SQL has drifted from the mirror build.</p>
+  <h4>The paid seam step</h4>
+  <p>Measured paid on the last training day and marketing's level on the first forecast day are two different measurements of the same quantity and never agree exactly. The difference is the <strong>paid seam step</strong>. It is reported after every build and never smoothed. It is quoted two ways: daily (last measured day versus first marketing day) and on 28-day means (measured trailing mean versus marketing's first day). It depends on the seam and on which paid curve is wired, so it must be re-measured after every refresh.</p>
+  <h4>28-day trailing moving average</h4>
+  <p>Every published mobile curve, including the paid-only plot, is a trailing 28-day mean of a daily series. A trailing mean reacts to a level change over 28 days: on the day after the change the window holds 27 old days and one new, and it takes four weeks for the window to hold only new days. Keep this in mind when reading any curve near the seam.</p>
+</details>
+
+<details class="section" id="stages" open>
+  <summary><h2>Stages</h2></summary>
+
+  <div class="stage">
+    <h3>1. Replace the marketing-lift overlay with the measured split</h3>
+    <div class="dates">August 2026 cycle · seam 2026-07-28, refreshed to 2026-08-02</div>
+    <h4>Assumption under test</h4>
+    <p>That paid mobile DAU can be <em>measured</em> from the client-level paid/organic flag and stacked on an organic-only forecast, instead of being modelled as an increment since an arbitrary anchor date (the retired code <code>m</code>).</p>
+    <h4>What we built</h4>
+    <p>The producer <code>scripts/build_fenix_organic_split.py</code> (mirror snapshot plus tail, four checks: tail overlap, partition identity, split coverage, shredder drift), the consumer module <code>src/mozaic_daily/organic.py</code>, the spec <code>data-official/2026-08/organic/organic.json</code>, and the research record in <code>research/mobile-organic/</code>. Marketing's paid input was the two single-channel feeds, stored as a <em>lift</em> relative to 2026-03-30 with the anchor value (922,250) carried in the spec and added back, a framing inherited from <code>m</code>.</p>
+    <h4>What we tested against</h4>
+    <p>An external prototype in <code>~/work/product-data-science-core/scratch/brwells/mobile_organic_aug/</code> (a different repository, outside mozaic-daily; reproduced, not ported), the raw actuals (training rows must return to them byte for byte), and the production level source (the shredder-drift check, named for the <em>shredder</em>, the data-platform job that deletes a client's rows from client-level tables when the user asks for deletion: the mirror loses about 2.9% to such deletions over 26 months relative to the production aggregate, so the share comes from the mirror but the level always comes from production).</p>
+    <h4>What we found</h4>
+    <p>The old <code>m</code> overlay absorbed 58% of any change to its curve (a −141,653 Dec-15 lift change moved the KPI only −59,875), so a lift-curve comparison had never been a KPI estimate. Under <code>p</code> paid contributes exactly its own value. The swap cost 322,714 at mobile Dec-15, and a 33-probe parameter search across three seasonality regimes could not recover it. The paid seam step at the 2026-08-02 seam was +1,903 per day (+0.01%).</p>
+    <h4>What we decided</h4>
+    <p>Adopt <code>p</code> for mobile from August on and retire <code>m</code> (it stays registered so July's artifacts load). Add the mobile tailwind <code>t</code> (+299,000 at Dec-15) as its own display-layer code to carry the remainder of the swap cost; about 47% of it was a measured excess from an independent implementation, about 45% a planning decision, about 8% calibration to July's published number. Backfilled into the decisions log today as D-015 and D-016 from <code>data-official/2026-08/organic/_index.md</code> and <code>data-official/2026-08/tailwind/_index.md</code>; the dates are the cycle's, not the day the choice was made.</p>
+  </div>
+
+  <div class="stage">
+    <h3>2. Read the paid curve as a level, then five paid curves in eleven days</h3>
+    <div class="dates">September 2026 cycle · seam 2026-09-02, refreshed to 2026-09-09 · 4 to 15 September</div>
+    <h4>Assumption under test</h4>
+    <p>That the lift-plus-anchor storage of marketing's curve was load-bearing. It was not: it cancelled exactly in the forecast region, and training rows never used the marketing file at all, so its only effect was a float copied by hand after every re-pull.</p>
+    <h4>What we built</h4>
+    <p>The <code>/pull-marketing-curve</code> skill and <code>scripts/pull_paid_dau_curve.py</code>, which turn marketing's weekly paid-DAU query (and from 2026-09-10 a delivered weekly workbook, one scenario column at a time) into a daily paid level under <code>data-official/2026-09/marketing/</code> with a pull-date suffix, never overwriting. The split was rebuilt twice (for the 09-02 and the 09-09 seams); both parquets are on disk.</p>
+    <h4>What we tested against</h4>
+    <p>Each pull's Dec-15 level against the previous one, and the published mobile Dec-15 after each repoint (the add-back is additive, so repointing the curve moves Dec-15 by exactly the 28d-MA difference of the two curves; the Low-to-Med move was predicted as +19,734 and landed at +19,734).</p>
+    <h4>What we found</h4>
+    <table>
+      <tr><th>paid curve wired</th><th>date</th><th class="num">Dec-15 daily level</th><th>what it is</th></tr>
+      <tr><td>GMIO feed, 09-04 pull</td><td>2026-09-04</td><td class="num">1,891,002</td><td>cross-channel feed point estimate, UAC+Meta where present else UAC</td></tr>
+      <tr><td>GMIO feed, 09-09 re-pull</td><td>2026-09-09</td><td class="num">1,883,182</td><td>same query, refreshed feed tables</td></tr>
+      <tr><td>GMIO lower-bound twin (<code>ci90lo</code>)</td><td>2026-09-10</td><td class="num">1,826,168</td><td>5th percentile of the 90% credible interval on forecast weeks</td></tr>
+      <tr><td>workbook <code>Low Forecast</code></td><td>2026-09-10</td><td class="num">1,814,609</td><td>point estimate minus the 3.3% worst backtest error</td></tr>
+      <tr><td>workbook <code>Med Forecast</code> (current)</td><td>2026-09-15</td><td class="num">1,833,753</td><td>the sheet's 90% CI lower end; leadership calls it the marketing midpoint</td></tr>
+    </table>
+    <p>August's curve had 1,559,477 at Dec-15, so every September candidate was 255,000 to 330,000 higher: future UAC spend in the feed had gone from $4.75M over 19 weeks to $6.14M over 18 weeks. The paid seam step at the 09-09 seam with the Med curve was <strong>−65,641 per day</strong> (measured 1,709,804 on 09-08 against marketing 1,644,163 on 09-09), already negative but small against a measured 28-day mean of 1,611,344 that the curve sat <em>above</em>.</p>
+    <h4>What we decided</h4>
+    <p>Read the marketing file as a level with no anchor (D-004). Switch the paid input to the workbook's Med scenario at leadership's request (D-008); the Low build stays on disk as the revert target, and the four earlier pulls stay as siblings. The two switches of 2026-09-10 (to the lower-bound query, then to the workbook's Low column) were Brendan's planning choices recorded in the spec notes; they predate the log, were superseded by D-008 within five days, and get no row. Neither <code>t</code> nor the share method was revisited; no decision on either is recorded for September (that is pending item P-3).</p>
+  </div>
+
+  <div class="stage">
+    <h3>3. October rebuild: the overlap check fails, and the paid curve falls behind measured paid</h3>
+    <div class="dates">October 2026 cycle · seam 2026-10-05 · 6 October (today)</div>
+    <h4>Assumption under test</h4>
+    <p>That the September machinery carries forward unchanged to a new seam: rebuild the split, keep the Med paid curve, rerun the model. Two parts of that assumption broke.</p>
+    <h4>What we built</h4>
+    <p>The October split <code>data-official/2026-10/organic/fenix_paid_organic.2026-10-05.parquet</code> (856 days × 16 countries, the production mobile country set of 15 named markets plus ROW, with Iran excluded later by the applier; 392 GB scanned), a new <code>--overlap-tolerance</code> flag on the producer (default still 0.5%) with a unit test, the October mobile build <code>data-official/2026-10/mobile_cpr0725_paid0915med_2026-10-05/</code> (<code>.adj-p.</code>; the directory name encodes the model's changepoint range 0.725, the paid curve pulled on 09-15 (Med), and the seam; the full parameter lock is in its <code>parameters.json</code>), and the paid/organic plots in <code>data-official/2026-10/plots/</code>.</p>
+    <h4>What we tested against</h4>
+    <p>The producer's four checks; the training-rows-equal-actuals verifier (exact on all 61 probed days); the app breakdown (ALL MOBILE equals the sum of the four apps); and, for the failed check, a re-run of both sides of the overlap for just the seven overlap days, broken down by paid bucket.</p>
+    <h4>What went wrong</h4>
+    <p>The tail-overlap check failed at 0.5153% on 2026-06-25 against a 0.50% tolerance. September had passed the same check at 0.347% with a median of −0.33%, so the gap had grown, not appeared. Re-running the overlap by bucket showed where it comes from: <strong>paid clients acquired more than a year earlier</strong> have lost a quarter of their DAU in the live tables since July, while organic is unchanged. This is client deletion in the live tables, the same mechanism the shredder-drift check already tolerates, and the check's error text ("the tail SQL has drifted") names the wrong cause.</p>
+    <table>
+      <tr><th>bucket, summed over 2026-06-25 to 07-01</th><th class="num">mirror snapshot</th><th class="num">live tail</th><th class="num">relative</th></tr>
+      <tr><td>organic</td><td class="num">80,810,815</td><td class="num">80,783,585</td><td class="num">−0.03%</td></tr>
+      <tr><td>paid, acquired within 12 months</td><td class="num">8,672,327</td><td class="num">8,627,528</td><td class="num">−0.52%</td></tr>
+      <tr><td>paid, acquired more than a year earlier</td><td class="num">1,492,170</td><td class="num">1,114,324</td><td class="num"><span class="fail">−25.3%</span></td></tr>
+      <tr><td>organic share over the window</td><td class="num">0.88827</td><td class="num">0.89239</td><td class="num">+0.41pp</td></tr>
+    </table>
+    <p>For the forecast, the consequence is a step <em>up</em> of 0.41 percentage points in the organic share at the join (2026-07-02), where the snapshot hands over to the tail. The share series has carried a smaller version of this step since September. It leaves the published actuals untouched (training rows get measured paid back and return to raw), but the organic series Prophet trains on now has a small level step three months before the seam, and that step will grow for as long as the snapshot ages.</p>
+    <h4>What we found: the paid plot</h4>
+    <figure class="plot">
+      <img src="file:///Users/brendanwells/work/mozaic-daily/data-official/2026-10/plots/mobile_paid_only.png" alt="Mobile paid DAU 28-day MA: measured actuals to the seam, then marketing's Med level; October and September forecasts with and without the t tailwind">
+      <figcaption>Mobile paid DAU, 28-day trailing MA. Black: measured paid (the split applied to raw actuals). Green solid: October's paid forecast, which is marketing's Med level from the 2026-10-05 seam. Blue solid: September's, the same Med file from the 2026-09-09 seam. Dashed: each plus the <code>t</code> tailwind. <code>/Users/brendanwells/work/mozaic-daily/data-official/2026-10/plots/mobile_paid_only.png</code></figcaption>
+    </figure>
+    <p><strong>Why the green line falls from the seam and then rejoins the blue line.</strong> The green solid curve is a trailing 28-day mean of a daily series that switches source at the seam: measured paid up to 2026-10-04, marketing's Med level from 2026-10-05. The two sources disagree badly at the switch:</p>
+    <table>
+      <tr><th>quantity</th><th class="num">value</th><th>note</th></tr>
+      <tr><td>measured paid, daily, 2026-10-04</td><td class="num">1,800,014</td><td>a Sunday, the weekly low; weekdays run 1.81M to 1.83M</td></tr>
+      <tr><td>measured paid, 7-day mean, 09-28 to 10-04</td><td class="num">1,890,626</td><td>up from 1,631,187 for the week before September's seam (+16%)</td></tr>
+      <tr><td>measured paid, 28-day mean to 10-04</td><td class="num">1,799,331</td><td>this is where the black line ends</td></tr>
+      <tr><td>Med curve, daily, 2026-10-05</td><td class="num">1,684,949</td><td>the forecast's first day; the same file September used, so the same value September's curve has on that date</td></tr>
+      <tr><td>paid seam step, daily</td><td class="num">−115,065</td><td>−0.64% of mobile DAU</td></tr>
+      <tr><td>paid seam step, on 28-day means</td><td class="num">−89,383</td><td>−4.97% of paid; the number printed in the run log</td></tr>
+      <tr><td>Med curve, daily, 2026-11-01</td><td class="num">1,740,583</td><td>rising about 1,800 per day</td></tr>
+    </table>
+    <p class="meta">Source: the daily measured-paid and Med-level series that the notebook cell <code>[plot-mobile-organic-paid]</code> builds (the cell prints the seam step and three dated rows of the table above); the 28-day-mean readings in the paragraph that follows were computed in this session from those same two series with <code>rolling(28).mean()</code> and saved as <code>data-official/2026-10/plots/mobile_paid_28ma_seam_path.csv</code> (daily, 2026-08-01 to 12-31: measured paid, the Med curve, the daily series each cycle used, and both cycles' 28-day means). Measured daily values come from the October split applied to the raw pull; the Med values are the <code>paid_dau_level_daily</code> column of the Med curve parquet.</p>
+    <p>On 2026-10-05 the 28-day window still holds 27 measured days (around 1.80M to 1.99M each) and one marketing day (1.68M), so the mean barely moves: 1,800,407. Each day after that, one measured day leaves the window and one marketing day enters. Every marketing day is about 100,000 to 200,000 lower than the measured day it replaces, so the mean falls: 1,790,751 on 10-12, 1,772,673 on 10-19, 1,744,379 on 10-26, and 1,709,948 on 11-01, when the window holds only marketing days. From 11-01 the green line <em>is</em> the 28-day mean of the Med file. So is the blue line, because September and October wired the identical file, and that is why they coincide from 1 November to the end of the year (both 1,804,995 at Dec-15). The blue line went the other way from its own seam because in September the Med curve (1,644,163 on 09-09) sat <em>above</em> the trailing measured mean (1,611,344), so swapping measured days for marketing days pushed its mean up.</p>
+    <p>The fall, then, is not a forecast of paid declining. It is the trailing mean draining out four weeks of measured paid that run higher than the curve marketing published in early September. Measured paid has outgrown the Med scenario by roughly 12% in four weeks (the 1,890,626 seven-day mean against the curve's 1,684,949 at the seam), and the curve needs re-pulling. The dashed lines add the <code>t</code> ramp (0 at each seam, +299,000 at Dec-15) to the solid lines; they are drawn because about half of <code>t</code> was sized from a paid excess, so paid-plus-<code>t</code> is the closest thing on the chart to a "paid including the tailwind" view.</p>
+    <figure class="plot">
+      <img src="file:///Users/brendanwells/work/mozaic-daily/data-official/2026-10/plots/mobile_organic_paid_decomposition.png" alt="Stacked organic, paid and display layer bands summing to the published mobile total">
+      <figcaption>The same paid series as the orange band, stacked under organic (blue) and the display layer (purple) so the three sum to the published mobile total. The paid band thins after the seam for the reason above; the total still rises because organic and the display layer grow. <code>/Users/brendanwells/work/mozaic-daily/data-official/2026-10/plots/mobile_organic_paid_decomposition.png</code></figcaption>
+    </figure>
+    <h4>What we found: the numbers</h4>
+    <table>
+      <tr><th>measure</th><th class="num">value</th><th>reading</th></tr>
+      <tr><td>mobile Dec-15 28d-MA, published</td><td class="num">18,232,063</td><td>+17,469 vs September delivered (18,214,594)</td></tr>
+      <tr><td>model base (parquet, <code>p</code> applied)</td><td class="num">17,960,225</td><td>+ <code>t</code> 299,000 − <code>u</code> 27,162 = published</td></tr>
+      <tr><td>organic at Dec-15</td><td class="num">16,155,230</td><td>+17,469 vs September; the whole mobile delta is organic, because the paid curve is identical</td></tr>
+      <tr><td>paid at Dec-15 (28d-MA)</td><td class="num">1,804,995</td><td>identical to September by construction</td></tr>
+      <tr><td>paid share of mobile, last measured day</td><td class="num">10.1%</td><td>was 4.8% on 2026-01-01</td></tr>
+      <tr><td>shredder drift (split total vs production)</td><td class="num">−2.9% / 0.0</td><td>on the oldest measured day (2024-06-01) / on the last training day (2026-10-04); unchanged from September</td></tr>
+    </table>
+    <h4>What we decided</h4>
+    <p>Add <code>--overlap-tolerance</code> to the producer with the default unchanged, rebuild at 1%, and record the measured attrition in the organic index and the spec notes rather than in the default (D-010). Carry September's Med paid curve unchanged into this first October build (D-012); the re-pull is the first pending decision above.</p>
+  </div>
+</details>
+
+<details class="section" id="decisions" open>
+  <summary><h2>Decisions</h2></summary>
+  <p class="meta">From the project's decisions log, <code>/Users/brendanwells/work/mozaic-daily/status/decisions.md</code>. Ids are stable across catch-ups. Shown: the rows touching <code>p</code> (D-004, D-008, D-010, D-015, D-016) and every row made today (D-011 to D-014, which concern the desktop build and the repo rather than <code>p</code>). Omitted: D-001 to D-003, D-005 to D-007 and D-009, September desktop and export decisions with no bearing on <code>p</code>. D-008 bundles two unrelated changes because leadership asked for both on the same day.</p>
+  <table class="decisions">
+    <tr><th>id</th><th>date</th><th>stage</th><th>decision</th><th>reason</th></tr>
+    <tr><td>D-004</td><td>2026-09-09</td><td>Mobile paid</td><td><code>p</code> reads the marketing paid-DAU file as a level; retire the lift-plus-anchor round-trip</td><td>The round-trip cancelled exactly and only added a hand-copied float</td></tr>
+    <tr><td>D-008</td><td>2026-09-15</td><td>Leadership</td><td>Ease <code>h</code> to −1,017,277 and move <code>p</code> to the workbook's Med paid scenario</td><td>Leadership request; planning decision, not a measurement</td></tr>
+    <tr><td>D-010</td><td>2026-10-06</td><td>Mobile paid</td><td>Raise the split producer's tail-overlap tolerance to 1% for October via a new <code>--overlap-tolerance</code> flag (default unchanged) and rebuild</td><td>The 0.515% gap is attrition of old paid clients in the live tables, not SQL drift; September carried the same join at 0.35%</td></tr>
+    <tr><td>D-011</td><td>2026-10-06</td><td>Inputs</td><td>Apply the existing-users Launch at Login tailwind <code>e</code> in the October desktop build (delete <code>withheld</code>)</td><td>Brendan's instruction: build with everything available as the iterative starting point</td></tr>
+    <tr><td>D-012</td><td>2026-10-06</td><td>Cycle</td><td>First October build carries September's model locks, every September overlay curve, the Med paid curve and the <code>h</code>/<code>t</code>/<code>u</code> anchors unchanged; quick update (no combinatorics)</td><td>Fresh data first, adjustments iterated afterwards. A DRAFT, not for publication: September remains the delivered forecast until this cycle is locked; possibly only a reference build for a colleague learning the forecast (the repo does not record who)</td></tr>
+    <tr><td>D-013</td><td>2026-10-06</td><td>Repo</td><td>Declare the repository shared (<code>Repo mode: shared</code> in <code>CLAUDE.md</code>)</td><td>Other people now depend on it; commits on cycle branches, no PRs without an explicit ask</td></tr>
+    <tr><td>D-014</td><td>2026-10-06</td><td>Effects</td><td>Build the October desktop adjustment combinatorics now (31 runs); hold the mobile <code>p</code> on/off pair</td><td>Isolate <code>e</code>'s realized effect; mobile waits on the paid-curve decision</td></tr>
+    <tr><td>D-015</td><td>2026-08-02</td><td>Mobile paid (backfilled)</td><td>Adopt the measured paid/organic split <code>p</code> for mobile and retire the marketing-lift overlay <code>m</code></td><td><code>m</code> absorbed 58% of any curve change; paid acquisition has no start date, so an anchor was an accounting choice</td></tr>
+    <tr><td>D-016</td><td>2026-08-03</td><td>Mobile paid (backfilled)</td><td>Add the mobile calibration tailwind <code>t</code>, +299,000 at Dec-15, as its own display-layer code</td><td>Carry the remainder of the 322,714 the <code>m</code>-to-<code>p</code> swap removed; no parameter config recovered it</td></tr>
+  </table>
+</details>
+
+<details class="section" id="glossary" open>
+  <summary><h2>Glossary</h2></summary>
+  <table class="two-col">
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td>28d-MA</td><td>Trailing 28-day mean of a daily series; every published curve and every Dec-15 number is one.</td></tr>
+    <tr><td><code>.adj-p.</code></td><td>Filename marker on a mobile forecast parquet saying the paid/organic split was applied; every artifact carries <code>.raw.</code> or <code>.adj-&lt;codes&gt;.</code> plus a sidecar <code>.meta.json</code>.</td></tr>
+    <tr><td>attrition (client-level)</td><td>Clients disappearing from the live client-level tables over time, mainly through the shredder (the data-platform job that deletes a client's rows on a user's deletion request), so a live re-query returns less DAU than a snapshot taken earlier.</td></tr>
+    <tr><td><code>ci90lo</code></td><td>Variant label for the marketing team's lower-bound twin query: 5th percentile of the 90% credible interval on forecast weeks. Pulled 2026-09-10, superseded the same day.</td></tr>
+    <tr><td>cycle</td><td>One monthly forecast, named by its month (<code>data-official/2026-10/</code>); its seam is the first forecast day.</td></tr>
+    <tr><td>Dec-15</td><td>The 28d-MA value on 2026-12-15, the KPI measurement date every build is scored on.</td></tr>
+    <tr><td>display layer</td><td>Adjustments summed onto the 28d-MA after the model (<code>h</code>, <code>t</code>, <code>u</code>); live by presence in a cycle's <code>adjustments/</code> dir, exact at Dec-15, no model rerun.</td></tr>
+    <tr><td><code>e</code></td><td>Existing-users Launch at Login desktop tailwind, a per-tile overlay; withheld in September, applied for the first time in October.</td></tr>
+    <tr><td>GMIO feed</td><td>The marketing team's cross-channel paid-DAU feed tables (<code>ahe_gmio_weekly_paid_dau_views_*</code>) behind the widget query that the September pulls ran. The repo does not record what the acronym expands to; it is the team's own name for the feed.</td></tr>
+    <tr><td><code>h</code>, <code>t</code>, <code>u</code></td><td>Display-layer codes: Win10 desktop headwind (−1,017,277), mobile calibration tailwind (+299,000), mobile terms-of-use headwind (−27,162), all linear ramps from the seam to Dec-15.</td></tr>
+    <tr><td>Low / Med / High</td><td>Scenario columns of the delivered workbook <code>Paid DAU Forecast Scenarios.xlsx</code>: point estimate minus the 3.3% worst backtest error / the 90% CI lower end / the point estimate. Med is wired.</td></tr>
+    <tr><td><code>m</code></td><td>Retired marketing-lift overlay (July and early August): paid modelled as DAU increment since 2026-03-30, subtracted from training and added back.</td></tr>
+    <tr><td>Med curve</td><td>Short for the paid level built from the workbook's Med Forecast column, imported 2026-09-15: <code>data-official/2026-10/marketing/marketing_lift_model.gmio_uac_meta_total_med.2026-09-09.pull2026-09-15.parquet</code>.</td></tr>
+    <tr><td>mirror</td><td><code>moz-fx-data-bq-data-science.brwells.fenix_dau_growth_source_v1</code>: the scratch table snapshotting Fenix DAU by day, country and growth source, built 2026-07-01, expiring 2027-04-01.</td></tr>
+    <tr><td>organic share</td><td>Organic Fenix DAU divided by total Fenix DAU, per day and country; the only column of the split the model consumes.</td></tr>
+    <tr><td><code>p</code></td><td>Adjustment code <code>paid_organic_split</code>: scale Fenix training rows to organic by the measured share, forecast organic, stack paid back (measured on training rows, marketing's level on forecast rows).</td></tr>
+    <tr><td>paid bucket</td><td>The mirror's <code>growth_source</code> values: <code>organic</code>, <code>paid_rolling_12mo</code> (paid, acquired within the last 365 days), <code>paid_prior_1yr</code> (paid, acquired earlier). The three sum to Fenix DAU.</td></tr>
+    <tr><td>paid seam step</td><td>Measured paid on the last training day minus marketing's level on the first forecast day (daily), or measured trailing 28-day mean minus marketing's first day (on means). Reported, never smoothed.</td></tr>
+    <tr><td>partition identity</td><td>Producer check that the three paid buckets sum exactly to total Fenix DAU and no unknown bucket exists.</td></tr>
+    <tr><td>per-tile overlay</td><td>Adjustment subtracted from training rows before the model and added back after (<code>e</code>, <code>i</code>, <code>j</code>, <code>l</code>, <code>o</code>, retired <code>m</code>); needs a model rerun.</td></tr>
+    <tr><td>pull</td><td>One import of marketing's paid curve into <code>marketing/</code>, suffixed by pull date (<code>pull2026-09-15</code>); pulls are never overwritten.</td></tr>
+    <tr><td>quick update</td><td>A monthly update that stops at the canonical build, notebook and CSV exports, deferring the adjustment-effects record (the 2^N overlay-subset runs).</td></tr>
+    <tr><td>seam</td><td>The forecast start date; training runs through the day before. October: 2026-10-05. September: 2026-09-09 (first 2026-09-02).</td></tr>
+    <tr><td>shredder drift</td><td>Producer check: the split's total DAU against the production aggregate the model actually uses; −2.9% at the oldest day, 0 at the edge. Why the share comes from the mirror but the level from production.</td></tr>
+    <tr><td>split, measured split</td><td><code>fenix_paid_organic.&lt;seam&gt;.parquet</code>: the per-day, per-country organic share (plus audit columns) the producer writes once per cycle.</td></tr>
+    <tr><td>tail</td><td>The producer's live re-query of the mirror's SELECT from 2026-06-25 to the day before the seam, appended to the snapshot.</td></tr>
+    <tr><td>tail-overlap check</td><td>Producer check comparing snapshot and tail total DAU on their seven shared days; raises above the tolerance (0.5% default, 1% for October).</td></tr>
+    <tr><td>training rows</td><td>Rows of a forecast parquet with <code>data_type = training</code>: the actuals the model trained on. Under <code>p</code> they are guaranteed byte-identical to raw actuals.</td></tr>
+    <tr><td>UAC, Meta</td><td>Google Universal App Campaigns and Meta (Facebook) Android campaigns, the two paid channels in marketing's feed.</td></tr>
+  </table>
+</details>
+
+<details class="section" id="more" open>
+  <summary><h2>Where to read more</h2></summary>
+  <p class="meta">Only things a person opens. Scripts and specs live in the repo's own docs.</p>
+  <table class="paths">
+    <tr><th>File</th><th>What it is</th></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/data-official/2026-10/organic/_index.md</td><td>October split record, including the attrition table and the options for the join step</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/data-official/2026-10/organic/build.2026-10-05.log</td><td>The successful producer run (four checks); <code>build.2026-10-05.failed_tol0005.log</code> beside it is the failed first attempt</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/data-official/2026-10/october_canonical.ipynb</td><td>Executed October notebook; the three mobile paid/organic cells print the seam step and the Dec-15 build-up</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/data-official/2026-10/plots/</td><td>All October plots; <code>mobile_paid_only.png</code>, <code>mobile_organic_only.png</code>, <code>mobile_organic_paid_decomposition.png</code> are the <code>p</code> views</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/data-official/2026-10/_index.md</td><td>October cycle index: working set, attribution ledger, open decisions</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/data-official/2026-09/organic/_index.md</td><td>September split record and the August-to-September comparison table</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/data-official/2026-09/marketing/_index.md</td><td>Every September paid-curve pull, what each scenario means, and the wiring procedure</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/data-official/2026-08/organic/_index.md</td><td>Why <code>p</code> replaced <code>m</code>; the paid definition; share versus level</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/research/mobile-organic/_index.md</td><td>The evidence behind the design and the open paid-seam question</td></tr>
+    <tr><td>/Users/brendanwells/work/mozaic-daily/logs/2026-10_combinatorics_desktop.log</td><td>The desktop combinatorics build started tonight (31 runs, running)</td></tr>
+  </table>
+</details>
+
+<footer>Generated by <code>/catchup</code> (timeline). Marked <span class="unverified">unverified</span> where a claim was not checked.</footer>
+</body>
+</html>
