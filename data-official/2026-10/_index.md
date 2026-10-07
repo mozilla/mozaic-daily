@@ -86,7 +86,7 @@ Verified: both parquets load with `require_state`; `parameters.json` matches Sep
 `adjustment_combinatorics/` holds all 32 desktop subsets at the canonical seam/config (D-014). **`e` realized +713,619 at
 Dec-15 (Shapley; 0.97 pass-through of its 736,935 nominal)**; raw model + `h` alone is 49,571,434 (+238,991 vs September);
 the four carried overlays net −95,000, with `o` at −117,465 (stale 2026-08-31 curve) and `l`/`i`/`j` passing through at
-5–20%. Report: `adjustment_combinatorics/index.html`. The mobile `p` on/off pair is not built; see that directory's index.
+5–20%. Report: `adjustment_combinatorics/index.html`. Mobile pair added the same day: `p` realized **+332,771** (0.17 pass-through of the 1,968,021 paid level against the total-DAU twin `mobile_raw_2026-10-05/`), up 96,168 on September.
 
 ### Open decisions (October)
 

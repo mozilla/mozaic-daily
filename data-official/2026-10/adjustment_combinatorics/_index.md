@@ -4,10 +4,10 @@ Built 2026-10-06 (Brendan's go-ahead, D-014) at the canonical 2026-10-05 seam an
 five droppable desktop overlays (`e` existing-users launch at login, `i` India excess, `j` Japan bot, `l` new-users
 launch at login, `o` MozillaOnline), 31 real desktop runs cached under `../adjustment_ladder/<codes>.<key>/` plus the
 canonical `.adj-eijlo.` build adopted as the all-in run. `h` (−1,017,277) is applied to every row at assembly time.
-**Desktop only so far** — the mobile `p` on/off pair was held back on 2026-10-06 pending the paid-curve decision, so
-`adjustment_effects.csv` has no `p` row and `compare_adjustment_effects.py` lists mobile codes as "removed" (they are
-not; the mobile half is simply unbuilt). Add it with `build_adjustment_combinatorics.py --mobile-run p=<canonical
-mobile> --mobile-run raw=<--no-organic-split twin>` and re-export.
+**Mobile pair added later on 2026-10-06** once the paid curve was re-pulled: `p` = the canonical
+`../mobile_cpr0725_paid1006_2026-10-05/` build, `raw` = its `--no-organic-split` twin `../mobile_raw_2026-10-05/`
+(a total-DAU fit with no paid treatment, Dec-15 28d-MA 17,790,480). Both currency checks pass against the canonical
+sidecars.
 
 | file | what |
 |---|---|
@@ -27,6 +27,8 @@ mobile> --mobile-run raw=<--no-organic-split twin>` and re-export.
 | `l` | 200,000 | 7,223 | 18,392 | 9,455 | 0.05 |
 | `o` | 668,839 | −123,816 | −67,642 | **−117,465** | −0.18 |
 | `h` | −1,017,277 | exact | exact | −1,017,277 | 1.00 |
+| `p` (mobile) | 1,968,021 | 332,771 | 332,771 | **332,771** | 0.17 |
+| `t`, `u` (mobile) | +299,000 / −27,162 | exact | exact | exact | 1.00 |
 
 Raw model + `h` (every overlay dropped): **49,571,434**, already +238,991 above September delivered. All-in: 50,189,791
 (+857,348). The five overlays together add +618,357, of which `e` is +713,619 and the other four net **−95,000**:
@@ -35,9 +37,14 @@ curve the subtraction steepens the trend Prophet fits by more than the add-back 
 at 5–20%. Dropping `o` alone would publish 50,257,433. No combination was selected; October ships all five pending the
 re-exports.
 
+For `p` the "raw" run is a total-DAU fit that already contains paid, so 332,771 is marketing's paid level minus the paid
+Prophet implies when it fits total DAU, not absorption: 1,968,021 − 332,771 = 1,635,250 of implied paid at Dec-15.
+
 ## Change since September (`adjustment_effects_vs_2026-09.csv`, Shapley view)
 
 Every carried curve is byte-identical to September's, so all movement is pass-through: `o` −72,628 (−44,837 → −117,465),
-`l` −51,555 (61,009 → 9,455), `j` −6,821, `i` +12,607. `e` is new (+713,619). The headline desktop delta vs September
+`l` −51,555 (61,009 → 9,455), `j` −6,821, `i` +12,607. `e` is new (+713,619). Mobile `p` +96,168 (236,603 → 332,771):
++21,370 from the curve moving (nominal 1,804,995 → 1,968,021 at September's pass-through) and +74,798 from pass-through
+moving (the total-DAU fit's implied paid grew less than measured paid did). The headline desktop delta vs September
 (+857,348) therefore decomposes as `e` +713,619, raw-model refresh +238,991 − September's raw-to-all-in gap, and the
 carried overlays losing ~118K of realized effect between them.
