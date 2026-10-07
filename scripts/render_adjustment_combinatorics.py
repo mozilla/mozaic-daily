@@ -79,6 +79,24 @@ CYCLE_SETTINGS = {
         # delta vs the prior cycle. Display layer only, so exact and no model run.
         counterfactuals=[dict(key="h_for_plus479k", target_delta_vs_prior=479_000)],
     ),
+    "2026-10": dict(
+        prior_label="Prior (Sep 2026 delivered)",
+        prior_short="September",
+        current_label="Oct 2026",
+        prior_parquet=(
+            "data-official/2026-09/desktop_g01_2026-09-09/"
+            "cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/"
+            "mozaic_daily_forecast.2026-09-09.ld-D.adj-ijlo.parquet"
+        ),
+        prior_required_state=["i", "j", "l", "o"],
+        prior_adjustments_dir="data-official/2026-09/adjustments",
+        prior_seam=pd.Timestamp("2026-09-09"),
+        prior_delivered_dec15=49_332_443,
+        targets={"Low": 49_039_852, "Baseline": 49_513_157, "Stretch": 49_772_388},
+        show_draft_watermark=True,
+        # No calibration target has been set for October; add a counterfactual here if one is chosen.
+        counterfactuals=[],
+    ),
 }
 HEADWIND_SPEC_NAME = "headwind.json"
 

@@ -81,6 +81,13 @@ Verified: both parquets load with `require_state`; `parameters.json` matches Sep
 `ALL MOBILE` = sum of four apps. Note the raw mobile pull has no upper date bound and carried a **partial seam day**
 (2026-10-05, Focus apps only); training correctly ends 2026-10-04 and the partial day is not in the forecast parquet.
 
+### Adjustment-effects record (desktop built 2026-10-06; mobile pending)
+
+`adjustment_combinatorics/` holds all 32 desktop subsets at the canonical seam/config (D-014). **`e` realized +713,619 at
+Dec-15 (Shapley; 0.97 pass-through of its 736,935 nominal)**; raw model + `h` alone is 49,571,434 (+238,991 vs September);
+the four carried overlays net −95,000, with `o` at −117,465 (stale 2026-08-31 curve) and `l`/`i`/`j` passing through at
+5–20%. Report: `adjustment_combinatorics/index.html`. The mobile `p` on/off pair is not built; see that directory's index.
+
 ### Open decisions (October)
 
 - Re-export `o`, `j`, `i`, `e` (and possibly `l`) at the October data edge. (Paid curve re-pulled and wired 2026-10-06 — done; note it is the feed's point estimate where September shipped the Med scenario, a leadership choice that may need revisiting.)

@@ -1,0 +1,83 @@
+{
+  "cycle": "2026-10",
+  "seam": "2026-10-05",
+  "measurement_date": "2026-12-15",
+  "manifest": "data-official/2026-10/adjustment_combinatorics/combinatorics_manifest.json",
+  "manifest_built_at": "2026-10-07T05:03:22+00:00",
+  "desktop_model_config": {
+    "prophet_recent_weeks": 17,
+    "prophet_changepoint_range": 0.814,
+    "prophet_n_changepoints": 40,
+    "holiday_threshold": -0.032,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_effect_floor": -0.6,
+    "seasonality_regime": "multiplicative",
+    "seasonality_corr_threshold": 0.0,
+    "prophet_changepoint_prior_scale": 0.1649,
+    "prophet_seasonality_prior_scale": 0.00825
+  },
+  "mobile_model_config": null,
+  "display_layer_specs": [
+    {
+      "code": "h",
+      "spec_file": "data-official/2026-10/adjustments/headwind.json",
+      "spec_sha1": "41734f153654f7b10ef5f3794744dab2ffcd6d4d"
+    },
+    {
+      "code": "t",
+      "spec_file": "data-official/2026-10/adjustments/tailwind.json",
+      "spec_sha1": "fdb11dd3cf51408be078ca7589c2841ffb69c8a5"
+    },
+    {
+      "code": "u",
+      "spec_file": "data-official/2026-10/adjustments/tou_mobile_headwind.json",
+      "spec_sha1": "921070bf318576b20d6ff16226cb8d4d902cbf5f"
+    }
+  ],
+  "display_layer_dec15": {
+    "desktop": {
+      "h": -1017277.0
+    },
+    "mobile": {
+      "t": 299000.0,
+      "u": -27162.0
+    }
+  },
+  "provenance": {
+    "desktop": {
+      "overlay_nominal_dec15": {
+        "e": 736934.5903571427,
+        "i": 50994.40142857143,
+        "j": 43812.83,
+        "l": 200000.0,
+        "o": 668839.25
+      },
+      "overlay_fingerprints_live": {
+        "e": "e01fd66fc10108490f9864cfe39eb38da6fa96ed",
+        "i": "817734b0f36ed4f8344fb4df548026c1fbe95f4a",
+        "j": "b6a5db286a74b75c830c608fb5b243d6b001d4c2",
+        "l": "59a3cb6d8b400550f0c2c5a3dcb34ef812d5fbdc",
+        "o": "f114fb3da904e14d0f16f38bb48d64590ea22ce9"
+      },
+      "overlay_specs": {
+        "e": "data-official/2026-10/launch_at_login_existing_users/launch_at_login_existing_users.json",
+        "i": "data-official/2026-10/india_excess/india_excess.json",
+        "j": "data-official/2026-10/japan_bot/japan_bot.json",
+        "l": "data-official/2026-10/launch_at_login_new_users/launch_at_login_new_users.json",
+        "o": "data-official/2026-10/mozillaonline/mozillaonline.json"
+      },
+      "pinned_overlay_codes": []
+    }
+  },
+  "currency_check": {
+    "desktop_canonical": "data-official/2026-10/desktop_g01_2026-10-05/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-10-05.ld-D.adj-eijlo.parquet",
+    "mobile_canonical": null,
+    "problems": {
+      "desktop": []
+    }
+  },
+  "mozaic_daily_commit": "54a656d08ead1ae9a1684e47b22ef2b4c1f1d542",
+  "exported_at": "2026-10-07T05:03:51+00:00",
+  "produced_by": "scripts/export_adjustment_effects.py"
+}

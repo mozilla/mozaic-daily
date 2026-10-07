@@ -1,0 +1,41 @@
+{
+  "adjustments_applied": [
+    {
+      "code": "e",
+      "name": "launch_at_login_existing_users",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-10/launch_at_login_existing_users/launch_at_login_existing_users.json",
+      "spec_sha1": "3e71e1e9272dd0137fcb9342e9fe54c55ef723f0"
+    },
+    {
+      "code": "i",
+      "name": "india_excess",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-10/india_excess/india_excess.json",
+      "spec_sha1": "9a177f410af36a31d416daf28fb13f08dd8ce010"
+    },
+    {
+      "code": "o",
+      "name": "mozillaonline_migration",
+      "spec_file": "/Users/brendanwells/work/mozaic-daily/data-official/2026-10/mozillaonline/mozillaonline.json",
+      "spec_sha1": "8f1cc328de02641f521030a55e67a8744b1e749e"
+    }
+  ],
+  "artifact_sha1": "04940cb51beb37901024cb386ff1457475ef187e",
+  "data_source": "legacy_desktop",
+  "forecast_start_date": "2026-10-05",
+  "model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.032,
+    "prophet_changepoint_prior_scale": 0.1649,
+    "prophet_changepoint_range": 0.814,
+    "prophet_n_changepoints": 40,
+    "prophet_recent_weeks": 17,
+    "prophet_seasonality_prior_scale": 0.00825,
+    "seasonality_corr_threshold": 0.0,
+    "seasonality_regime": "multiplicative"
+  },
+  "mozaic_daily_commit": "54a656d08ead1ae9a1684e47b22ef2b4c1f1d542",
+  "produced_at": "2026-10-07T04:39:21.733425+00:00Z",
+  "produced_by": "scripts/run_param_scan.py"
+}
