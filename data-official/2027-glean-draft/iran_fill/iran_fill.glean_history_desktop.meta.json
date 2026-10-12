@@ -1,0 +1,45 @@
+{
+  "producer": "scripts/generate_glean_history_iran_fill.py",
+  "mozaic_daily_commit": "a86d056d4be1f520c6bcd5d7bafb6a05ca6b3888",
+  "mozaic_commit": "f7d487dfc6d8066c83b9a8ead3e76ee47004a7d4",
+  "data_source": "glean_history_desktop",
+  "segment_columns": [
+    "windows",
+    "mac",
+    "linux"
+  ],
+  "forecast_start": "2026-02-28",
+  "forecast_end": "2026-12-31",
+  "fill_end_default": "2026-05-25",
+  "fill_end_by_metric": {
+    "MAU": "2026-06-21"
+  },
+  "model_config": {
+    "prophet_recent_weeks": 17,
+    "prophet_changepoint_range": 0.814,
+    "prophet_n_changepoints": 40,
+    "holiday_threshold": -0.032,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_effect_floor": -0.6,
+    "seasonality_regime": "multiplicative",
+    "seasonality_corr_threshold": 0.0,
+    "prophet_changepoint_prior_scale": 0.1649,
+    "prophet_seasonality_prior_scale": 0.00825
+  },
+  "additional_holidays": [
+    "LegacyOutage2025"
+  ],
+  "seam_scale_factors": {
+    "DAU": 1.0,
+    "MAU": 1.0
+  },
+  "weekly_reseasonalized": true,
+  "dow_reference_window": [
+    "2025-09-01",
+    "2026-02-28"
+  ],
+  "country": "IR",
+  "rows": 603,
+  "note": "IR is pool-translated on every OS in the export (factor_source win_mid / mac_small / linux_small); this fill is a counterfactual of that pooled translation."
+}
