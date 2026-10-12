@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 4)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 5)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-12 14:45 PDT</span>
+  <span><b>Generated:</b> 2026-10-12 15:20 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
-  <span><b>Data as of:</b> export 2026-09-08 (legacy-to-glean worktree <code>export-rollups</code> @ 5a7266e)</span>
-  <span><b>Status:</b> DRAFT 4 — build 1 done (seam 2026-09-09); China step is the open problem (§9)</span>
+  <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
+  <span><b>Status:</b> DRAFT 5 — builds 1 and 2 done (seams 2026-09-09 / 2026-10-10); China step is the open problem (§9)</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -293,6 +293,21 @@ the MAU holiday troughs in the forecast (CN −21%, MX −16%, BR −16%) sit a 
 (the no-fill shakedown had Iran's MAU tile going negative and pulling the 2027-12-15 world down by 22M; it is in <code>_shakedown_nofill_2026-09-09/</code> for the record).
 Two things are wrong and both trace to China (§9).</div>
 
+<h3>Build 2 — seam 2026-10-10 on the continued history (same everything else)</h3>
+<p>The export agent's D-118 continuation (2026-09-09..10-09, same cells and definitions; e(OS) and bands carried, open Linux windows extended, Fx 155 not
+re-measured) was appended through <code>glean_history.append_continuation</code> and build 2 run at seam 2026-10-10. Outputs now in <code>csv/</code> and
+<code>plots/</code>; build 1's are kept under <code>build1_seam2026-09-09/</code>. Artifacts in <code>desktop_glean_history_g01_2026-10-10/</code>.</p>
+<table>
+<tr><th>world, all OS</th><th class="num">build 1 (seam 09-09)</th><th class="num">build 2 (seam 10-10)</th><th class="num">delta</th></tr>
+<tr><td>MAU 2026-12-15</td><td class="num">157,567,444</td><td class="num">158,870,626</td><td class="num">+1,303,182 (+0.8%)</td></tr>
+<tr><td><b>MAU 2027-12-15</b></td><td class="num">152,187,309</td><td class="num"><b>156,397,703</b></td><td class="num">+4,210,394 (+2.8%)</td></tr>
+<tr><td>DAU 28d MA 2026-12-15</td><td class="num">52,687,632</td><td class="num">53,115,919</td><td class="num">+428,287 (+0.8%)</td></tr>
+<tr><td>DAU 28d MA 2027-12-15</td><td class="num">50,663,982</td><td class="num">51,865,593</td><td class="num">+1,201,611 (+2.4%)</td></tr>
+</table>
+<div class="callout warn"><b>One month of data moves the 2027 headline by +2.8%.</b> Part of that is in the inputs (the continuation note records a +0.36% MAU step
+at the 09-08/09-09 join that is in Legacy and published Glean alike, and September actuals ran above build 1's forecast), part is the trend
+re-fit on a longer post-summer recovery. It is the kind of sensitivity the combinatorics and the Legacy comparison are meant to bound; the
+China problem (§9) is unchanged in build 2.</div>
 <h2>9. Open problem: the China step (MozillaOnline migration) in a raw build</h2>
 <p>CN desktop DAU doubled in June 2026 (1.2M → 2.0–2.3M) when MozillaOnline users migrated onto mainline Firefox — the phenomenon the production
 cycle handles with the <code>o</code> overlay, which subtracts the measured migration curve from CN's training rows before mozaic and adds it back
