@@ -577,8 +577,11 @@ def test_additional_holidays_mapping():
 
     Failure indicates holidays assigned to the wrong data source or a missing/extra entry.
     """
-    assert set(ADDITIONAL_HOLIDAYS.keys()) == {DataSource.LEGACY_DESKTOP, DataSource.GLEAN_MOBILE}, (
-        f"Expected ADDITIONAL_HOLIDAYS for LEGACY_DESKTOP + GLEAN_MOBILE, got: {set(ADDITIONAL_HOLIDAYS.keys())}"
+    assert set(ADDITIONAL_HOLIDAYS.keys()) == {
+        DataSource.LEGACY_DESKTOP, DataSource.GLEAN_MOBILE, DataSource.GLEAN_HISTORY_DESKTOP,
+    }, (
+        f"Expected ADDITIONAL_HOLIDAYS for LEGACY_DESKTOP + GLEAN_MOBILE + GLEAN_HISTORY_DESKTOP, "
+        f"got: {set(ADDITIONAL_HOLIDAYS.keys())}"
     )
     assert ADDITIONAL_HOLIDAYS[DataSource.LEGACY_DESKTOP] == [DesktopBugs], (
         f"Expected [DesktopBugs] for LEGACY_DESKTOP, got: {ADDITIONAL_HOLIDAYS[DataSource.LEGACY_DESKTOP]}"
@@ -610,6 +613,7 @@ def test_data_source_short_codes():
     assert DataSource.GLEAN_DESKTOP.short_code == "gd"
     assert DataSource.LEGACY_DESKTOP.short_code == "ld"
     assert DataSource.GLEAN_MOBILE.short_code == "gm"
+    assert DataSource.GLEAN_HISTORY_DESKTOP.short_code == "gh"
 
 
 def test_metric_short_codes():
@@ -618,6 +622,7 @@ def test_metric_short_codes():
     assert Metric.NEW_PROFILES.short_code == "NP"
     assert Metric.EXISTING_ENGAGEMENT_DAU.short_code == "EED"
     assert Metric.EXISTING_ENGAGEMENT_MAU.short_code == "EEM"
+    assert Metric.MAU.short_code == "M"
 
 
 def test_all_data_sources_have_short_code():
@@ -675,8 +680,8 @@ def test_build_filter_code_all_sources_all_metrics():
     all_sources = set(DataSource)
     all_metrics = set(Metric)
     result = build_filter_code(all_sources, all_metrics)
-    # Sources sorted: gd, gm, ld; Metrics sorted: D, EED, EEM, NP
-    assert result == "gd+gm+ld-D+EED+EEM+NP"
+    # Sources sorted: gd, gh, gm, ld; Metrics sorted: D, EED, EEM, M, NP
+    assert result == "gd+gh+gm+ld-D+EED+EEM+M+NP"
 
 
 # =============================================================================

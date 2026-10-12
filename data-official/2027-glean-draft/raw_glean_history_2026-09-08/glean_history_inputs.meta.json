@@ -1,0 +1,79 @@
+{
+  "produced_by": "mozaic_daily.glean_history.write_raw_checkpoints",
+  "written_at": "2026-10-12T14:06:21",
+  "value_column": "glean_equivalent",
+  "training_start": "2020-01-01",
+  "populations": [
+    "windows",
+    "mac",
+    "linux"
+  ],
+  "inputs": {
+    "DAU": {
+      "source_file": "data-official/2027-glean-draft/inputs/legacy_to_glean_export/glean_equivalent_dau_history_cells_fc15.parquet",
+      "source_sha1": "4116ec89e38ea65692d6980c5e2b093c74bffe0b",
+      "output_file": "mozaic_parts.raw.glean_history.desktop.DAU.parquet",
+      "rows": 117264,
+      "countries": [
+        "AR",
+        "BR",
+        "CA",
+        "CN",
+        "DE",
+        "FR",
+        "ID",
+        "IN",
+        "IR",
+        "IT",
+        "JP",
+        "MX",
+        "PL",
+        "ROW",
+        "RU",
+        "US"
+      ],
+      "date_range": [
+        "2020-01-01",
+        "2026-09-08"
+      ],
+      "max_abs_diff_vs_os_total": {
+        "windows": 7.450580596923828e-09,
+        "mac": 9.313225746154785e-10,
+        "linux": 4.656612873077393e-10
+      }
+    },
+    "MAU": {
+      "source_file": "data-official/2027-glean-draft/inputs/legacy_to_glean_export/glean_equivalent_mau_history_cells_fc15.parquet",
+      "source_sha1": "6834316308cd9dd6cc3241d223308b914aa0a444",
+      "output_file": "mozaic_parts.raw.glean_history.desktop.MAU.parquet",
+      "rows": 117264,
+      "countries": [
+        "AR",
+        "BR",
+        "CA",
+        "CN",
+        "DE",
+        "FR",
+        "ID",
+        "IN",
+        "IR",
+        "IT",
+        "JP",
+        "MX",
+        "PL",
+        "ROW",
+        "RU",
+        "US"
+      ],
+      "date_range": [
+        "2020-01-01",
+        "2026-09-08"
+      ],
+      "max_abs_diff_vs_os_total": {
+        "windows": 2.9802322387695312e-08,
+        "mac": 1.862645149230957e-09,
+        "linux": 1.862645149230957e-09
+      }
+    }
+  }
+}

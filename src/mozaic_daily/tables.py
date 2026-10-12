@@ -122,6 +122,7 @@ def format_output_table(
         'New Profiles': 'new_profiles',
         'Existing Engagement DAU': 'existing_engagement_dau',
         'Existing Engagement MAU': 'existing_engagement_mau',
+        'MAU': 'mau',
     }, inplace=True)
 
     df["forecast_start_date"] = start_date

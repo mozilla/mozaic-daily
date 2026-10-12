@@ -43,11 +43,14 @@ OPTIONAL_APP_NAMES = set(['other_mobile'])
 
 # Data source values (replaces APP_CATEGORIES)
 DATA_SOURCES = set([
-    'glean_desktop', 'legacy_desktop', 'glean_mobile'
+    'glean_desktop', 'legacy_desktop', 'glean_mobile', 'glean_history_desktop'
 ])
 
+# Production desktop segments plus the OS x country layout of the file-fed Glean-history source
+# (windows / mac / linux), which has no Windows-version dimension.
 OS_VALUES = set([
-    'modern_windows', 'winX', 'other', 'ALL', None
+    'modern_windows', 'winX', 'other', 'ALL', None,
+    'windows', 'mac', 'linux',
 ])
 
 SHA1_RE = re.compile(r"^[0-9a-fA-F]{40}$")
@@ -379,6 +382,7 @@ def _validate_duplicate_rows(df: pd.DataFrame) -> None:
 _APP_NAMES_BY_DATA_SOURCE = {
     DataSource.GLEAN_DESKTOP: {'desktop'},
     DataSource.LEGACY_DESKTOP: {'desktop'},
+    DataSource.GLEAN_HISTORY_DESKTOP: {'desktop'},
     DataSource.GLEAN_MOBILE: {
         'firefox_ios', 'focus_ios', 'fenix_android', 'focus_android', 'ALL MOBILE',
     },

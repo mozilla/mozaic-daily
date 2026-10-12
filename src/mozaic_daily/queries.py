@@ -20,6 +20,8 @@ import holidays
 import pandas as pd
 from mozaic.holiday_smart import DesktopBugs, MobileEvents
 
+from .glean_history_holidays import LegacyOutage2025
+
 
 # =============================================================================
 # ENUMS
@@ -37,6 +39,10 @@ class Metric(Enum):
     NEW_PROFILES = "New Profiles"
     EXISTING_ENGAGEMENT_DAU = "Existing Engagement DAU"
     EXISTING_ENGAGEMENT_MAU = "Existing Engagement MAU"
+    # Rolling 28-day MAU of all profiles. No BigQuery QuerySpec; used only by the file-fed
+    # Glean-history desktop source (data-official/2027-glean-draft/). Distinct from
+    # EXISTING_ENGAGEMENT_MAU, which counts existing users only.
+    MAU = "MAU"
 
     @property
     def short_code(self) -> str:
@@ -46,6 +52,7 @@ class Metric(Enum):
             "New Profiles": "NP",
             "Existing Engagement DAU": "EED",
             "Existing Engagement MAU": "EEM",
+            "MAU": "M",
         }[self.value]
 
 
@@ -60,19 +67,23 @@ class DataSource(Enum):
     GLEAN_DESKTOP = "glean_desktop"
     LEGACY_DESKTOP = "legacy_desktop"
     GLEAN_MOBILE = "glean_mobile"
+    # File-fed desktop source for the 2027 Glean-history forecast: the legacy-to-glean
+    # project's Glean-equivalent history (OS x country tiles), never queried from BigQuery.
+    # Not in main.DATA_SOURCES_TO_PROCESS; driven by its own runner. See mozaic_daily.glean_history.
+    GLEAN_HISTORY_DESKTOP = "glean_history_desktop"
     # Note: LEGACY_MOBILE does not exist
 
     @property
     def platform(self) -> Platform:
         """Return the platform for this data source."""
-        if self in (DataSource.GLEAN_DESKTOP, DataSource.LEGACY_DESKTOP):
+        if self in (DataSource.GLEAN_DESKTOP, DataSource.LEGACY_DESKTOP, DataSource.GLEAN_HISTORY_DESKTOP):
             return Platform.DESKTOP
         return Platform.MOBILE
 
     @property
     def telemetry_source(self) -> TelemetrySource:
         """Return the telemetry source for this data source."""
-        if self in (DataSource.GLEAN_DESKTOP, DataSource.GLEAN_MOBILE):
+        if self in (DataSource.GLEAN_DESKTOP, DataSource.GLEAN_MOBILE, DataSource.GLEAN_HISTORY_DESKTOP):
             return TelemetrySource.GLEAN
         return TelemetrySource.LEGACY
 
@@ -83,11 +94,14 @@ class DataSource(Enum):
             "glean_desktop": "gd",
             "legacy_desktop": "ld",
             "glean_mobile": "gm",
+            "glean_history_desktop": "gh",
         }[self.value]
 
     @property
     def display_name(self) -> str:
         """Return human-readable name for logging (e.g., 'Desktop Glean')."""
+        if self == DataSource.GLEAN_HISTORY_DESKTOP:
+            return "Desktop Glean-history"
         return f"{self.platform.value.capitalize()} {self.telemetry_source.value.capitalize()}"
 
     @classmethod
@@ -470,6 +484,8 @@ QUERY_SPECS: Dict[QueryKey, QuerySpec] = {
 ADDITIONAL_HOLIDAYS: Dict[DataSource, List[Type[holidays.HolidayBase]]] = {
     DataSource.LEGACY_DESKTOP: [DesktopBugs],
     DataSource.GLEAN_MOBILE: [MobileEvents],
+    # The translated history inherits Legacy's 2025 outage dips; masked as one union window.
+    DataSource.GLEAN_HISTORY_DESKTOP: [LegacyOutage2025],
 }
 
 
