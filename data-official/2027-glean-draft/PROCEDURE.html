@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 5)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 6)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-12 15:20 PDT</span>
+  <span><b>Generated:</b> 2026-10-12 17:05 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 5 — builds 1 and 2 done (seams 2026-09-09 / 2026-10-10); China step is the open problem (§9)</span>
+  <span><b>Status:</b> DRAFT 6 — build 3 (o as data correction) done; China Mac and the 15-month Prophet band are the open problems (§9)</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -308,20 +308,47 @@ re-measured) was appended through <code>glean_history.append_continuation</code>
 at the 09-08/09-09 join that is in Legacy and published Glean alike, and September actuals ran above build 1's forecast), part is the trend
 re-fit on a longer post-summer recovery. It is the kind of sensitivity the combinatorics and the Legacy comparison are meant to bound; the
 China problem (§9) is unchanged in build 2.</div>
-<h2>9. Open problem: the China step (MozillaOnline migration) in a raw build</h2>
-<p>CN desktop DAU doubled in June 2026 (1.2M → 2.0–2.3M) when MozillaOnline users migrated onto mainline Firefox — the phenomenon the production
-cycle handles with the <code>o</code> overlay, which subtracts the measured migration curve from CN's training rows before mozaic and adds it back
-after. In this build nothing is subtracted, and the raw model cannot cope with the step:</p>
+<h3>Build 3 — seam 2026-10-10, the MozillaOnline curve applied as a data correction (<code>o</code>), 2026-10-12</h3>
+<p>Brendan chose option 1 (§9 below records the original options). Mechanism: project-local copy of the October <code>o</code> spec with
+<code>flag_column = windows</code>, filed as <code>mozillaonline/mozillaonline.glean_history.json</code> (outside the production resolver's glob, test-locked),
+applied through <code>--overlay-spec</code>; the adapter now emits whole-people integers because the overlay subtractor's Int64 arithmetic rejected floats, so
+the plain build was rerun on the identical integer inputs to make an exact on/off pair. Artifacts: <code>desktop_glean_history_g01_2026-10-10/</code> (plain,
+<code>.raw.</code>) and <code>desktop_glean_history_g01_o_2026-10-10/</code> (<code>.adj-o.</code>). Build 3's curves are the ones in <code>csv/</code> and <code>plots/</code>;
+the plain pair member's are under <code>build2_plain_seam2026-10-10/</code>. Comparison plot: <code>plots/glean2027_dau_by_country_plain_vs_o.png</code>.</p>
+<table>
+<tr><th>world, all OS</th><th class="num">plain (no o)</th><th class="num">build 3 (o)</th><th class="num">delta</th></tr>
+<tr><td><b>MAU 2027-12-15</b> (headline)</td><td class="num">156,462,943</td><td class="num"><b>156,462,943</b></td><td class="num">0 — the overlay machinery is DAU-only</td></tr>
+<tr><td>MAU 2026-12-15</td><td class="num">158,983,000</td><td class="num">158,983,000</td><td class="num">0</td></tr>
+<tr><td>DAU 28d MA 2027-12-15</td><td class="num">51,830,050</td><td class="num">50,943,464</td><td class="num">−886,586 (−1.7%)</td></tr>
+<tr><td>DAU 28d MA 2026-12-15</td><td class="num">52,954,587 *</td><td class="num">52,954,587 *</td><td class="num">(* plain build's own value 52,988,604; see CSVs)</td></tr>
+</table>
+<p>What the correction did and did not do:</p>
 <ul>
-<li><b>Point forecast:</b> CN's holiday effects are mis-estimated across the step — CN DAU falls to a 450K monthly mean in October 2027 (history: Golden Week is a −10% month), and CN MAU swings between 9M and 2M in late 2027. CN is 4.1–4.8% of the world, so the world medians survive, but the CN curves are unusable and the December 2027 world is shaded by them.</li>
-<li><b>Intervals:</b> the Prophet sample paths for CN × windows have a 90% half-width of <b>298M</b> on a 2M tile (DAU) and 2.1 <b>billion</b> on a 5M tile (MAU). They dominate the world band: DAU 28d-MA 90% half-width 27.7M around 50.7M, MAU 98M around 152M. Every other tile's band is ordinary (ROW windows 6.7M, DE 6.3M, US 2.9M). Until CN is handled, the Prophet interval is meaningless.</li>
+<li><b>CN × windows DAU is repaired.</b> The October 2027 crash is gone (monthly mean 1.74M instead of 0.84M; the plain build's daily minimum was −1.49M on 2027-10-06, build 3's is +884K); CN windows 28d-MA 2027-12-15 is 2.31M.</li>
+<li><b>Every other country's DAU moved down 1.5–8.8% at 2027-12-15</b> (IN −8.8%, IR −3.8%, ID −3.4%, US −1.5%). Mozaic reconciles top-down: removing the June 2026 step from the <em>world</em> series lowers the world trend Prophet extrapolates, and that is pushed into every tile. This is the mechanism CLAUDE.md records for mobile ("per-tile knobs cancel"), now seen on desktop. Part of the −887K world change is therefore legitimate (the step no longer inflates the world trend) and part is reallocation; the Legacy comparison (production applies <code>o</code> the same way) is the check.</li>
+<li><b>CN × mac is still broken, and the correction does not reach it.</b> The export's <code>mac_cn</code> cell also doubled in June 2026 (31K → 63K → 70K; pooled factors, <code>mac_mid</code>), so the migration is visible on Mac in the translated series even though production treats it as Windows-only. The CN mac tile's forecast goes <b>negative</b> in both builds (monthly mean −208K plain, −573K with o, on a 70K tile), and because mozaic clips only the world paths, it drags CN's total and the world by that amount in late 2027.</li>
+<li><b>MAU is untouched.</b> The per-tile overlay machinery subtracts from and adds back to DAU only (<code>overlays.py</code>, <code>metric_key = Metric.DAU.value</code>). The CN MAU tiles still carry the step and still swing 9M → 2M in late 2027. The headline metric did not get the correction.</li>
 </ul>
-<p><b>Options (decision for Brendan):</b></p>
+
+<h3>The 15-month Prophet band is not usable, and that is not specific to this forecast</h3>
+<p>The world 90% half-width on the 28d MA at 2027-12-15 is 25.2M (build 3) / 27.7M (build 1). I measured the <b>production October desktop pickle</b>
+(<code>data-official/2026-10/desktop_g01_2026-10-05/</code>, Legacy, Windows-version layout) with the same code: half-width <b>1.0M at 2026-12-15</b> but
+<b>19.9M at 2027-12-15</b>. The g01 configuration's sample paths diverge with horizon (40 changepoints, range 0.814, prior scale 0.1649, multiplicative
+regime); September's quoted ±1.97M was a three-month horizon. The CN tiles made ours worse, but even fixed it would be ~20M. For a 2027 target the Prophet
+predictive interval is not a meaningful uncertainty statement; the translation band is, and a backtest-based error (how far past 12–15-month forecasts
+missed) would be. Decision 14 ("combined") needs revisiting on that basis.</p>
+
+<h2>9. Open problems after build 3 (decision for Brendan)</h2>
 <ol>
-<li><b>Treat the step as a data correction and apply it in build 1</b> (recommended): subtract the measured MozillaOnline curve from CN's training rows before mozaic and add it back after, exactly the <code>o</code> mechanism, mapped onto the <code>windows</code> population (the migration is Windows; the spec's fixed shares put ~93% in CN). This is the one "adjustment" that is a correction of the input rather than a planning judgement, and the registry already holds the curve (<code>data-official/2026-10/mozillaonline/</code>, refreshed 2026-09-04 from the official export). It departs from decision 12 ("drop all"), so it needs your word.</li>
-<li><b>Keep CN raw and accept it</b>: world medians usable, CN curves and all intervals not. Re-add <code>o</code> later in the combinatorics.</li>
-<li><b>Fold CN into ROW</b> for this forecast: hides the step inside a 16M tile instead of fixing it; not recommended.</li>
+<li><b>CN × mac and CN MAU.</b> The <code>o</code> curve is a DAU, Windows-only correction; in the OS × country Glean-equivalent data the step is on Mac too and on MAU. Options:
+  (a) extend the correction: allocate the migration curve across CN's populations by each population's share of the June 2026 step (mac ≈ 3%), and build a MAU twin of the curve (e.g. the DAU curve × CN's MAU/DAU ratio, or the measured CN MAU step) so the headline metric is corrected as well — a modelling addition, about a day;
+  (b) fold CN into ROW for this forecast (CN is 4–5% of the world; the step would then sit inside a 16M-DAU / 50M-MAU tile and be far less harmful to the fit, but CN would not be reported separately);
+  (c) accept CN as is on MAU and report world MAU with a stated CN caveat.
+  My recommendation is (b) for the draft and (a) as the follow-up if CN must be reported, because (a) invents a MAU curve nobody has measured.</li>
+<li><b>Uncertainty (decision 14).</b> Replace the Prophet band in the deliverable with the translation band plus a backtest error, or keep the Prophet band with its horizon caveat?</li>
+<li><b>Top-down reallocation.</b> Accept that any CN correction moves every country (it is how the production <code>o</code> behaves too), or report per-country numbers from the plain build and world from the corrected one? I recommend accepting it; mixing builds is the thing the naming convention exists to prevent.</li>
 </ol>
+<p class="sub">Original options recorded 2026-10-12 before build 3: (1) apply <code>o</code> as a data correction — chosen; (2) keep CN raw; (3) fold CN into ROW.</p>
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
@@ -329,9 +356,15 @@ data-official/2027-glean-draft/
   inputs/legacy_to_glean_export/      11 files, tracked
   raw_glean_history_2026-09-08/       adapter output (regenerable, not tracked) + glean_history_inputs.meta.json
   iran_fill/                          finalized fill (tracked) + drafts, seam diagnostics, plots
-  desktop_glean_history_g01_2026-09-09/   build 1 parquet + sidecar + pickle + parameters.json
+  desktop_glean_history_g01_2026-09-09/   build 1 (float inputs)
+  _superseded_float_inputs_g01_2026-10-10/ build 2 on float inputs (superseded by the integer rerun)
+  desktop_glean_history_g01_2026-10-10/   plain build, integer inputs (pair member)
+  desktop_glean_history_g01_o_2026-10-10/ build 3, o applied (.adj-o.)
+  mozillaonline/                      the o spec copy (flag_column windows) + curve
+  raw_glean_history_2026-10-09/       adapter output with the continuation
   _shakedown_nofill_2026-09-09/       runner shakedown without the fill (record only)
-  csv/, plots/, intervals/            build-1 curves, summary, plots, Prophet bands (DAU only so far)</pre>
+  csv/, plots/                        build-3 curves, summary, plots; build1_seam2026-09-09/, build2_plain_seam2026-10-10/ keep the earlier ones
+  intervals/                          build-1 DAU Prophet bands (see the band note above)</pre>
 
 </body>
 </html>

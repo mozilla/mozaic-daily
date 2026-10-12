@@ -20,5 +20,6 @@
     "MAU"
   ],
   "raw_dir": "data-official/2027-glean-draft/raw_glean_history_2026-10-09",
-  "iran_fill": "data-official/2027-glean-draft/iran_fill/iran_fill.glean_history_desktop.parquet"
+  "iran_fill": "data-official/2027-glean-draft/iran_fill/iran_fill.glean_history_desktop.parquet",
+  "overlays": []
 }

@@ -1,6 +1,6 @@
 {
   "produced_by": "mozaic_daily.glean_history.write_raw_checkpoints",
-  "written_at": "2026-10-12T14:06:21",
+  "written_at": "2026-10-12T16:33:43",
   "value_column": "glean_equivalent",
   "training_start": "2020-01-01",
   "populations": [
@@ -12,6 +12,8 @@
     "DAU": {
       "source_file": "data-official/2027-glean-draft/inputs/legacy_to_glean_export/glean_equivalent_dau_history_cells_fc15.parquet",
       "source_sha1": "4116ec89e38ea65692d6980c5e2b093c74bffe0b",
+      "continuation_file": null,
+      "continuation_sha1": null,
       "output_file": "mozaic_parts.raw.glean_history.desktop.DAU.parquet",
       "rows": 117264,
       "countries": [
@@ -37,14 +39,16 @@
         "2026-09-08"
       ],
       "max_abs_diff_vs_os_total": {
-        "windows": 7.450580596923828e-09,
-        "mac": 9.313225746154785e-10,
-        "linux": 4.656612873077393e-10
+        "windows": 4.49844853579998,
+        "mac": 4.148129758890718,
+        "linux": 4.507529659662396
       }
     },
     "MAU": {
       "source_file": "data-official/2027-glean-draft/inputs/legacy_to_glean_export/glean_equivalent_mau_history_cells_fc15.parquet",
       "source_sha1": "6834316308cd9dd6cc3241d223308b914aa0a444",
+      "continuation_file": null,
+      "continuation_sha1": null,
       "output_file": "mozaic_parts.raw.glean_history.desktop.MAU.parquet",
       "rows": 117264,
       "countries": [
@@ -70,9 +74,9 @@
         "2026-09-08"
       ],
       "max_abs_diff_vs_os_total": {
-        "windows": 2.9802322387695312e-08,
-        "mac": 1.862645149230957e-09,
-        "linux": 1.862645149230957e-09
+        "windows": 4.033825159072876,
+        "mac": 3.611903849989176,
+        "linux": 4.098926654085517
       }
     }
   }

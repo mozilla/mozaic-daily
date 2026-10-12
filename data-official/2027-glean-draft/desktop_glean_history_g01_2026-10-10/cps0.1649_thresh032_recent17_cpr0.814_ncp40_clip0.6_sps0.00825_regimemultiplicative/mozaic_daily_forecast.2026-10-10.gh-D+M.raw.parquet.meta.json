@@ -3,7 +3,7 @@
     "LegacyOutage2025"
   ],
   "adjustments_applied": [],
-  "artifact_sha1": "580a90c29139abe3bf71bf5bfc393f4ec8ebc116",
+  "artifact_sha1": "829ce159b53cac086b53c3fdc9265e46afe1a616",
   "data_source": "glean_history_desktop",
   "forecast_start_date": "2026-10-10",
   "inputs_meta": {
@@ -34,9 +34,9 @@
           "2026-10-09"
         ],
         "max_abs_diff_vs_os_total": {
-          "linux": 4.656612873077393e-10,
-          "mac": 9.313225746154785e-10,
-          "windows": 7.450580596923828e-09
+          "linux": 4.507529659662396,
+          "mac": 4.148129758890718,
+          "windows": 4.49844853579998
         },
         "output_file": "mozaic_parts.raw.glean_history.desktop.DAU.parquet",
         "rows": 118752,
@@ -69,9 +69,9 @@
           "2026-10-09"
         ],
         "max_abs_diff_vs_os_total": {
-          "linux": 1.862645149230957e-09,
-          "mac": 1.862645149230957e-09,
-          "windows": 2.9802322387695312e-08
+          "linux": 4.098926654085517,
+          "mac": 3.611903849989176,
+          "windows": 4.033825159072876
         },
         "output_file": "mozaic_parts.raw.glean_history.desktop.MAU.parquet",
         "rows": 118752,
@@ -87,7 +87,7 @@
     "produced_by": "mozaic_daily.glean_history.write_raw_checkpoints",
     "training_start": "2020-01-01",
     "value_column": "glean_equivalent",
-    "written_at": "2026-10-12T14:28:12"
+    "written_at": "2026-10-12T16:33:44"
   },
   "iran_fill": "data-official/2027-glean-draft/iran_fill/iran_fill.glean_history_desktop.parquet",
   "metrics": [
@@ -107,13 +107,13 @@
     "seasonality_corr_threshold": 0.0,
     "seasonality_regime": "multiplicative"
   },
-  "mozaic_daily_commit": "00bb724efa96cd145f876161994130f30041ccc1",
+  "mozaic_daily_commit": "abb2e89f909ebb9514f199be0c6022ccd3738fa4",
   "populations": [
     "windows",
     "mac",
     "linux"
   ],
-  "produced_at": "2026-10-12T21:31:40.597292+00:00Z",
+  "produced_at": "2026-10-12T23:38:04.163280+00:00Z",
   "produced_by": "scripts/run_glean_history_forecast.py",
-  "run_at": "2026-10-12T14:31:40"
+  "run_at": "2026-10-12T16:38:04"
 }

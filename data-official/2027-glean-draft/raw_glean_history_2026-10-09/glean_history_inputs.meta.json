@@ -1,6 +1,6 @@
 {
   "produced_by": "mozaic_daily.glean_history.write_raw_checkpoints",
-  "written_at": "2026-10-12T14:28:12",
+  "written_at": "2026-10-12T16:33:44",
   "value_column": "glean_equivalent",
   "training_start": "2020-01-01",
   "populations": [
@@ -39,9 +39,9 @@
         "2026-10-09"
       ],
       "max_abs_diff_vs_os_total": {
-        "windows": 7.450580596923828e-09,
-        "mac": 9.313225746154785e-10,
-        "linux": 4.656612873077393e-10
+        "windows": 4.49844853579998,
+        "mac": 4.148129758890718,
+        "linux": 4.507529659662396
       }
     },
     "MAU": {
@@ -74,9 +74,9 @@
         "2026-10-09"
       ],
       "max_abs_diff_vs_os_total": {
-        "windows": 2.9802322387695312e-08,
-        "mac": 1.862645149230957e-09,
-        "linux": 1.862645149230957e-09
+        "windows": 4.033825159072876,
+        "mac": 3.611903849989176,
+        "linux": 4.098926654085517
       }
     }
   }

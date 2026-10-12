@@ -143,7 +143,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    df, meta = load_forecast(str(args.parquet), require_state=[])
+    df, meta = load_forecast(str(args.parquet))
     df["target_date"] = pd.to_datetime(df["target_date"])
     seam = pd.Timestamp(meta["forecast_start_date"])
     label = args.label or f"{args.parquet.parent.name}, seam {seam.date()}"

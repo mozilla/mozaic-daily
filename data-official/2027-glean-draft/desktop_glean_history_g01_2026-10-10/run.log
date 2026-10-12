@@ -33,6 +33,7 @@ Metrics             : ['DAU', 'MAU']
 Raw dir             : data-official/2027-glean-draft/raw_glean_history_2026-10-09
 Iran fill           : data-official/2027-glean-draft/iran_fill/iran_fill.glean_history_desktop.parquet
 Holidays            : ['LegacyOutage2025']
+Overlays            : none
 Output dir          : data-official/2027-glean-draft/desktop_glean_history_g01_2026-10-10/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative
 Config              : {
   "prophet_recent_weeks": 17,
@@ -106,12 +107,12 @@ done.
   [1/2] DAU
   [2/2] MAU
 
-Forecast took 3.4 min
+Forecast took 3.5 min
 Saved mozaic objects to data-official/2027-glean-draft/desktop_glean_history_g01_2026-10-10/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_objects.glean_history_desktop.2026-10-10.pkl
 Wrote data-official/2027-glean-draft/desktop_glean_history_g01_2026-10-10/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-10-10.gh-D+M.raw.parquet (+ sidecar)
 
 World values (country ALL, os ALL):
-  DAU 2026-12-15: 59,926,067
-  DAU 2027-12-15: 58,499,867
-  MAU 2026-12-15: 158,870,626
-  MAU 2027-12-15: 156,397,703
+  DAU 2026-12-15: 59,867,823
+  DAU 2027-12-15: 58,405,173
+  MAU 2026-12-15: 158,983,000
+  MAU 2027-12-15: 156,462,943
