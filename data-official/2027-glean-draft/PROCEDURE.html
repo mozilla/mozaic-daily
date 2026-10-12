@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 3)</title>
+<style>
+  :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
+  body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
+  .banner { background:#222; color:#eee; padding:10px 16px; margin:0 -24px 24px; font-size:13px; display:flex; gap:28px; flex-wrap:wrap; }
+  .banner b { color:#fff; }
+  h1 { font-size: 26px; margin: 8px 0 4px; }
+  h2 { font-size: 20px; margin: 36px 0 8px; border-bottom: 1px solid var(--rule); padding-bottom: 4px; }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
+  .sub { color:var(--muted); margin-bottom: 18px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; font-size: 14px; }
+  th, td { border: 1px solid var(--rule); padding: 6px 9px; vertical-align: top; text-align: left; }
+  th { background: #f3f3f3; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  code, pre { font: 13px/1.45 "SF Mono", Menlo, Consolas, monospace; }
+  code { background:#f4f4f4; padding: 1px 4px; border-radius: 3px; }
+  pre { background:#f4f4f4; padding: 10px 12px; border-radius: 4px; overflow-x: auto; }
+  .callout { border-left: 4px solid; padding: 8px 14px; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .warn { background: var(--warn-bg); border-color: var(--warn-br); }
+  .ok { background: var(--ok-bg); border-color: var(--ok-br); }
+  .q { background: var(--q-bg); border-color: var(--q-br); }
+  .tag { display:inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px; background:#e8e8e8; color:#333; margin-left: 6px; vertical-align: middle; }
+  figure { margin: 16px 0; }
+  figure img { max-width: 100%; border: 1px solid var(--rule); }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  ol li, ul li { margin: 3px 0; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <span><b>Generated:</b> 2026-10-12 14:00 PDT</span>
+  <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
+  <span><b>Data as of:</b> export 2026-09-08 (legacy-to-glean worktree <code>export-rollups</code> @ 5a7266e)</span>
+  <span><b>Status:</b> DRAFT 3 — open items 1–3, 5–8 decided 2026-10-12; building steps 0–1</span>
+</div>
+
+<h1>2027 Glean-history desktop forecast</h1>
+<div class="sub">Goal, the decisions taken so far, what the data is, the procedure proposed, and what is still open.
+Companion to <code>data-official/2027-glean-draft/_index.md</code>.</div>
+
+<h2>1. Goal</h2>
+<p>Produce a draft forecast of Firefox <b>Desktop MAU</b> (headline) and <b>Desktop DAU</b> (secondary) through
+<b>2027-12-31</b>, trained on the legacy-to-glean project's <em>Glean-equivalent</em> history as if it were real
+Glean history, because Glean desktop telemetry alone is too short to train on and Legacy telemetry shuts down
+at the end of 2026. The headline statistic is <b>raw daily MAU on 2027-12-15</b>; a 2026-12-15 value is produced
+too. This is a wholly separate exercise from the monthly refresh cycles: all head- and tailwinds are off in
+the first build and are re-added one at a time afterwards, with the combinatorics machinery ready for that.
+Mobile is not part of this; the normal cycle supplies it. Method rule from Brendan: <b>our methods on their data</b>.</p>
+
+<h2>2. Decisions taken 2026-10-12 (Brendan's answers to the 18 questions)</h2>
+<table>
+<tr><th style="width:36px">#</th><th style="width:220px">Question</th><th>Decision</th></tr>
+<tr><td>1</td><td>Metrics</td><td>Desktop DAU and desktop MAU only. Mobile comes from the normal September/October update.</td></tr>
+<tr><td>2</td><td>Headline statistic</td><td><b>Raw daily MAU on 2027-12-15</b>. DAU is a secondary track. Also produce 2026-12-15.</td></tr>
+<tr><td>3</td><td>Target series</td><td><code>glean_equivalent</code>, knowing it sits below published Glean. Corrected by the export agent: on DAU the world gap is within 0.2% through mid-2026 (−0.3 to −0.5% Aug–Sep 2026); the ~0.8% is <b>MAU</b> (Windows −0.80% on the Fx 153 test days), of which duplicate-id inflation is 0.5–0.7 and the unexplained remainder about −0.25. Decision trail in §7.</td></tr>
+<tr><td>4</td><td>Linux</td><td>In.</td></tr>
+<tr><td>5</td><td>Tile layout</td><td>OS × country (Windows / Mac / Linux per country) is acceptable for this forecast. A Windows-version split has been passed to the export project as a future to-do.</td></tr>
+<tr><td>6</td><td>Countries</td><td>Production's 15 + ROW: US BR CA MX AR IN ID JP CN DE FR PL RU IT IR.</td></tr>
+<tr><td>7</td><td>Iran</td><td>Adopt the current in-package counterfactual-fill approach (regenerated for this layout; §5 step 3).</td></tr>
+<tr><td>8</td><td>Training start</td><td><b>2020-01-01</b>. Non-stationarity of older Glean code is known and expected; the forecast is expressed in the Glean "effective version" of the most recent Firefox.</td></tr>
+<tr><td>9</td><td>Seam</td><td>The most recent data we have; splice to today if needed. Answered in §7: the history is a Fx 148–153-state counterfactual, Legacy input exists through 2026-10-10, and a headline-definition continuation can be produced by a top-up run in the export repo (needs your go-ahead there).</td></tr>
+<tr><td>10</td><td>Comparison forecasts</td><td>Against both Legacy and real Glean; <b>Legacy is more important</b>.</td></tr>
+<tr><td>11</td><td>Legacy outage windows</td><td>Mask. Brendan expects existing holidays to cover this; measurement below (§4) shows they cover only part — open item §6.</td></tr>
+<tr><td>12</td><td>Adjustments</td><td>Drop all (h t u e i j l o p), add back later; build for combinatorics from the start.</td></tr>
+<tr><td>13</td><td>Model parameters</td><td>October locked desktop config g01 (§5 step 4).</td></tr>
+<tr><td>14</td><td>Uncertainty</td><td>Combined: translation band + Prophet predictive interval.</td></tr>
+<tr><td>15</td><td>Location</td><td>Cycle-style: <code>data-official/2027-glean-draft/</code>.</td></tr>
+<tr><td>16</td><td>Branch</td><td><code>glean-2027-forecast</code> off <code>october-forecast</code>.</td></tr>
+<tr><td>17</td><td>Boundaries</td><td>Shared repo. Branch pushes are fine; nothing goes to <code>main</code>, the KPI sheet, or the BigQuery output table.</td></tr>
+<tr><td>18</td><td>Inputs</td><td>Track the export files in git (gitignore exceptions added).</td></tr>
+</table>
+
+<h2>3. The data</h2>
+<h3>3.1 Files on disk (tracked), <code>inputs/legacy_to_glean_export/</code></h3>
+<table>
+<tr><th>file</th><th>grain</th><th class="num">rows</th><th>note</th></tr>
+<tr><td><code>glean_equivalent_dau_history_cells_fc15.parquet</code></td><td>53 series × 3,173 days: 45 OS×country cells (win/mac/linux × 15 countries), win_ROW / mac_ROW / linux_ROW, 5 roll-ups</td><td class="num">168,169</td><td>cells + ROW = OS total exactly, re-verified here on every day</td></tr>
+<tr><td><code>glean_equivalent_mau_history_cells_fc15.parquet</code></td><td>same, rolling-28-day MAU</td><td class="num">168,169</td><td>same identity holds</td></tr>
+<tr><td><code>glean_equivalent_{dau,mau}_history_rollups.{parquet,csv}</code></td><td>5 roll-ups only</td><td class="num">15,865</td><td>the export of record; percent bands</td></tr>
+<tr><td><code>fc15_cells_summary.csv</code></td><td>per cell</td><td class="num">—</td><td>factor_source, pool_a_fail, mean 2026 level</td></tr>
+</table>
+<p>Date range 2018-01-01 → 2026-09-08, submission-dated. Headline column <code>glean_equivalent</code> =
+<code>translated_from_legacy</code> + <code>glean_only_steady</code>. Published Glean is in the same rows from
+2025-05-22 (<code>published_glean_dau</code> / <code>_mau</code>). Bands: percent (valid on 28-day means for DAU, daily for
+MAU) and absolute units, per cell; ROW rows carry no bands.</p>
+
+<h3>3.2 Facts that shape the design</h3>
+<ul>
+<li><b>The export's Legacy input is mozaic-daily's Legacy input.</b> World <code>legacy_dau</code> matches the sum of our
+legacy desktop pull to within 0.01% on every shared day 2020–2026. The translation is a slowly varying multiplier
+(28-day Glean/Legacy ratio 1.035–1.039 across 2020–2026) plus a constant-share Glean-only term.</li>
+<li><b>Published Glean vs the headline.</b> On DAU the world gap is small (within 0.2% through Jul 2026, −0.3/−0.5% in Aug/Sep 2026); the 2026-09-01 single-day +0.8% I first quoted is dominated by Linux temporary + day noise. On MAU the gap is real and time-varying: −7% in 2025 falling to −1.4% by Sep 2026, mostly duplicate-id inflation from pre-Fx-148 builds (see the plot's Windows MAU panel and §7).</li>
+<li><b>No Windows-version split exists</b> in the translation. Tiles must be OS × country.</li>
+<li><b>The seam is a join rule, not applied in the file.</b> Every row through 2026-09-08 is the translation. The export
+project's rule: translated through the seam (Win/Mac 2026-08-23), published Glean after, with a filter on Linux.</li>
+<li><b>Iran's 2026 shutdown crater is untreated</b> in the export; IR cells carry it raw.</li>
+<li><b>Legacy outage windows are left in</b>: Windows 2025-08-16..11-06, Mac 2025-08-28..12-10 (§4).</li>
+<li><b>Trust map (export agent):</b> own-factor and unflagged on both metrics: Windows × US BR CA DE IT, Mac × US CA DE FR JP MX.
+Pooled on both metrics: Windows × FR CN JP RU IR. Iran is pool-translated on all three OS (≈523K Windows DAU). Linux is mostly pooled and flagged, including Linux × US.</li>
+<li><b>Known small negative bias</b> of the delivered translation on the overlap test: DAU −0.14%, MAU −0.37% (accepted by the owner).</li>
+</ul>
+
+<h2>4. The 2025 Legacy outage in the translated series</h2>
+<figure>
+<img src="plots/legacy_outage_windows_2025.png" alt="2025 vs 2024 glean_equivalent per OS with outage windows">
+<figcaption><code>plots/legacy_outage_windows_2025.png</code>. Blue: 2025 headline; grey: 2024 aligned by calendar day; orange dashed: published Glean 2025. Red: the export project's outage window per OS; orange: the existing <code>DesktopBugs</code> holiday (2025-10-04..10-31).</figcaption>
+</figure>
+<table>
+<tr><th>series (28d MA, 2025 ÷ 2024)</th><th class="num">Jul 1–Aug 15</th><th class="num">inside window</th><th class="num">worst day</th><th class="num">Oct 4–31 (holiday)</th><th class="num">Dec 15–Jan 31</th></tr>
+<tr><td>Windows DAU</td><td class="num">0.953</td><td class="num">0.949</td><td class="num">0.933 (2025-10-27)</td><td class="num">0.940</td><td class="num">0.936</td></tr>
+<tr><td>Mac DAU</td><td class="num">0.994</td><td class="num">0.943</td><td class="num">0.844 (2025-11-02)</td><td class="num">0.913</td><td class="num">1.000</td></tr>
+</table>
+<div class="callout warn"><b>Reading.</b> Mac is the clear case: a 16% trough that spans late September to early December, with the
+existing holiday covering roughly a third of it. Windows is a 1–2% depression relative to published Glean from September
+to mid-November, broader than the holiday. Linux shows no outage but the translation sits ~3% <em>above</em> published
+Glean through the period, consistent with it being the noisiest OS. The Windows MAU panel shows the duplicate-id
+inflation the headline removes: published MAU is ~9% above the headline in autumn 2025 and still ~5% above in January 2026.</div>
+
+<h2>5. Procedure proposed</h2>
+<p>Each step names its artifact, its check, and the tests/docs it carries (per CLAUDE.md, plans include both).</p>
+
+<h3>Step 0 — Register a new data source, no BigQuery</h3>
+<ul>
+<li>Add <code>DataSource.GLEAN_HISTORY_DESKTOP</code> (<code>"glean_history_desktop"</code>, short code <code>gh</code>) to <code>queries.py</code>,
+with no <code>QuerySpec</code>: it is file-fed. <code>get_queries</code> skips it; the pre-flight BigQuery check is bypassed for it.</li>
+<li>Extend the desktop output contract: <code>update_desktop_format</code> is unchanged (segment JSON <code>{"os": population}</code>),
+<code>validation.py</code> gains <code>windows / mac / linux</code> as allowed <code>os</code> values <em>for this data source only</em>, so
+production validation is untouched.</li>
+<li>Tests: <code>tests/test_glean_history.py</code> — the new source is excluded from BigQuery query building; validator accepts the new
+segments only under <code>gh</code>.</li>
+</ul>
+
+<h3>Step 1 — Input adapter: export → mozaic raw frames</h3>
+<ul>
+<li>New module <code>src/mozaic_daily/glean_history.py</code>: reads the two fc15 parquets, emits per metric a frame with columns
+<code>x, country, windows, mac, linux, y</code> (exactly one flag True per row; ROW rows from the export's <code>{os}_ROW</code>),
+<code>glean_equivalent</code> as <code>y</code>, dates ≥ 2020-01-01, and writes <code>mozaic_parts.raw.glean_history.desktop.{DAU,MAU}.parquet</code>
+plus a sidecar recording source sha1s and the column choice.</li>
+<li>Metric name for the MAU track: <code>"MAU"</code> is not in the <code>Metric</code> enum (only <code>Existing Engagement MAU</code>). Add
+<code>Metric.MAU</code> (short code <code>M</code>) rather than mislabel the series.</li>
+<li>Checks: per-OS sums reproduce <code>{os}_total</code> on every day; row count = 16 countries × 3 OS × days; no NaN.</li>
+<li>Tests: adapter identity on a small fixture; one-hot invariant; ROW inclusion; date floor.</li>
+</ul>
+
+<h3>Step 2 — Seam and splice <span class="tag">decision needed, §6 item 7</span></h3>
+<p>Facts from the export agent (§7): the history is the Fx 148–153 Glean state applied to every Legacy day; the Legacy input is
+available in BigQuery through 2026-10-10 (the table stopped at 09-08 only because that was the data end at build time); the SDK 68
+step at the 2026-08-23 seam is −0.1 to −0.2 pp on DAU and MAU at OS level (Windows × US DAU: +0.01 pp), so no level correction is
+needed on Win/Mac DAU and at most −0.2 pp on MAU. Three ways to continue the series to early October, all on the headline's definition
+(published Glean minus temporary minus duplicate-id, never published verbatim):</p>
+<ol>
+<li><b>Top-up run of the translation in the export repo</b> (agent's recommendation, same object as the history): apply the delivered
+lookups to Legacy days after 09-08, recompute the temporary and duplicate-id terms. About an afternoon of agent time, under 0.1 TB,
+<b>needs your go-ahead in that repo</b> (MAU read budget and stop rule).</li>
+<li><b>Cheap approximation per cell</b>: published Glean × (1 − e(OS, month)) on MAU, published on DAU, minus the temporary term where a
+window is open; within ~0.3% for Win/Mac outside the Linux and FR/CN windows. Doable here with one BigQuery pull.</li>
+<li><b>No splice</b>: forecast start 2026-09-09, training end 2026-09-08. Loses four weeks of data; simplest and cleanest provenance.</li>
+</ol>
+<p>Whichever is chosen: horizon → 2027-12-31, seam-step diagnostic per OS, human go/no-go before adoption. The Fx 155 re-measurement
+(late October) may re-set the Win/Mac reference; the forecast would then be one version state behind, with a known offset of
+−0.4% Windows / −0.7% Mac at client level and ~0 on published.</p>
+<h3>Step 3 — Iran counterfactual fill for this layout</h3>
+<ul>
+<li>The packaged fill is keyed to <code>legacy_desktop</code> with <code>modern_windows/winX</code> columns and will not splice onto
+<code>windows/mac/linux</code> frames (mozaic's <code>splice_fill</code> requires identical columns). Regenerate with the
+<code>generate_iran_fill.py</code> method on the translated IR cells: train on IR before 2026-02-28, forecast the gap,
+harvest per-population; DAU window 2026-02-28..05-25, MAU window 2026-02-28..06-21 (the FILL_FORMAT_SPEC rule).</li>
+<li>Pass it via mozaic's <code>additional_fills</code> (no package edit). Seam-scaling stays a human go/no-go.</li>
+<li>Caveat to record: IR is pool-translated on every OS, so the fill is a counterfactual of a pooled translation.</li>
+<li>Tests: fill frame honours the spec invariants (country IR, dense window, one-hot, non-negative).</li>
+</ul>
+
+<h3>Step 4 — Legacy outage masking <span class="tag">open item §6</span></h3>
+<p>Two candidate mechanisms, recommendation first:</p>
+<ol>
+<li><b>Project-local holiday calendar</b> registered in <code>ADDITIONAL_HOLIDAYS</code> for the new source: one window per OS
+(Windows 2025-08-16..11-06, Mac 2025-08-28..12-10), applied as the union. Holidays are per country, not per population, but
+<code>holiday_smart</code> measures the effect per tile and only acts when the dip exceeds <code>holiday_threshold</code> (−3.2%),
+so Windows and Linux tiles see little effect from the Mac-only part of the window. The calendar populates 2025 only, so it
+cannot leak into the forecast years. Cheap, matches "we already handle this with holidays".</li>
+<li><b>Counterfactual gap fill</b> like Iran's, per OS. Heavier; justified only if (1) leaves a visible residual in the Mac trend.</li>
+</ol>
+<ul><li>Check: plot per-OS 2025 fitted trend with and without the mask. Tests: calendar dates lock.</li></ul>
+
+<h3>Step 5 — The raw build</h3>
+<ul>
+<li>New runner <code>scripts/run_glean_history_forecast.py</code>: injects the adapter frames (no BigQuery), uses
+<code>main(model_configs=...)</code> with the <b>October g01 lock</b>
+(<code>cps 0.1649, cpr 0.814, ncp 40, recent 17, sps 0.00825, regime multiplicative, thresh −0.032, radius 5/3, floor −0.6</code>),
+all adjustments disabled, DAU and MAU, writes <code>mozaic_daily_forecast.&lt;seam&gt;.gh-D+M.raw.parquet</code> + sidecar + fitted pickles under
+<code>desktop_glean_history_g01_&lt;seam&gt;/</code>.</li>
+<li>MAU note: mozaic treats the metric generically (no MAU special-casing in the package); the desktop model is a log-space Prophet fit with
+weekly seasonality, which a rolling-28 series lacks. First build runs it as-is; if the weekly term misbehaves on MAU, that is the one place a
+config fork is justified, and it will be reported before being tried.</li>
+<li>Checks: training rows byte-equal to the adapter frames; ALL = Σ country tiles; 2026-12-15 and 2027-12-15 values per OS and world; seam kink score.</li>
+</ul>
+
+<h3>Step 6 — Outputs and plots</h3>
+<ul>
+<li><code>csv/glean2027_canonical_curves.csv</code>: world + per-OS, DAU 28d MA (display_ma from the package) and daily MAU, actuals from 2020 and forecast to 2027-12-31;
+<code>csv/glean2027_dec15_summary.csv</code> for 2026-12-15 and 2027-12-15.</li>
+<li>Plots in the canonical format (full range + zoom on the seam and on the horizon end), world and per OS, DRAFT watermark.</li>
+<li>A review notebook <code>glean2027_canonical.ipynb</code> that reads the parquet and renders everything.</li>
+</ul>
+
+<h3>Step 7 — Intervals (combined)</h3>
+<ul>
+<li>Prophet predictive: <code>mozaic_daily.intervals</code> on the fitted pickle (1,000 world sample paths; for MAU the band is on the daily series, for DAU on the 28d MA).</li>
+<li>Translation: the export's correlated band at the roll-up level (world and per OS; cells have bands, ROW does not, so the world band comes from the <code>global_all</code> row, held at its last value through the horizon).</li>
+<li>Combination: half-widths added in quadrature (independent error sources), with both components also reported separately. The combination rule is a proposal; see §6.</li>
+</ul>
+
+<h3>Step 8 — Comparison forecasts</h3>
+<ul>
+<li><b>Legacy DAU (exists):</b> October's combinatorics manifest already holds the no-overlay raw desktop run at seam 2026-10-05 with horizon 2027-12-31 — a free Legacy comparison once <code>h</code> is left off. Caveat: it uses the Windows-version layout and a 2020 Legacy history; the comparison is in Legacy units (×~1.036 to Glean-equivalent).</li>
+<li><b>Legacy MAU (new):</b> no cycle has ever forecast plain MAU. Needs one BigQuery pull (<code>telemetry.active_users_aggregates</code>, <code>mau</code> column, same grouping) and one run of the same runner on Legacy data. Approval item.</li>
+<li><b>Real Glean (new, secondary):</b> <code>glean_telemetry.active_users_aggregates</code> from 2025-05-22 (the clean overlap), DAU and MAU, same runner. Short history, so expect it to be weak; reported for completeness.</li>
+</ul>
+
+<h3>Step 9 — Combinatorics readiness</h3>
+<ul>
+<li>No adjustment is applied in build 1. Specs are gated by <code>applies_to_forecast_start</code> today; add a <code>applies_to_data_source</code> check so a cycle spec can never leak into <code>gh</code> runs and vice versa.</li>
+<li>Display-layer codes (<code>h</code>, <code>t</code>, <code>u</code>) re-add trivially. Per-tile overlays (<code>e i j l o</code>) target the <code>modern_windows</code> segment; in the OS layout they would land on <code>windows</code>, which also contains older Windows. That mapping is a decision for when they come back, not now.</li>
+<li>The ladder/combinatorics builders are keyed on seam + config + overlay fingerprints and should work unchanged once the runner is pluggable; verify with one two-code dry run when the time comes.</li>
+</ul>
+
+<h3>Docs carried by the plan</h3>
+<ul>
+<li><code>data-official/2027-glean-draft/_index.md</code> (present), this page (regenerated each revision), <code>scripts/_index.md</code> and CLAUDE.md entries for the new runner and module, <code>tests/_index.md</code> for the new test file, <code>data-official/adjustment_codes.yaml</code> unchanged.</li>
+</ul>
+
+<h2>6. Open items — decided 2026-10-12 (second round)</h2>
+<table>
+<tr><th style="width:36px">#</th><th style="width:260px">Item</th><th>Decision</th></tr>
+<tr><td>1</td><td>Outage masking</td><td><b>Holiday-calendar union window</b> (project-local calendar, per-OS windows, 2025 only).</td></tr>
+<tr><td>2</td><td>Legacy MAU comparison pull</td><td>OK to add (one plain-MAU BigQuery pull on <code>telemetry.active_users_aggregates</code>).</td></tr>
+<tr><td>3</td><td>Real-Glean comparison start</td><td>The export project's definition: <b>2025-05-22</b>.</td></tr>
+<tr><td>4</td><td>Interval combination</td><td><b>Still open</b> — needs a plainer explanation (asked again in chat). Until then both components are reported side by side.</td></tr>
+<tr><td>5</td><td>New enum values in shared code</td><td>Fine, on a tracked branch: <code>glean-2027-forecast</code> is pushed to origin.</td></tr>
+<tr><td>6</td><td>Horizon end</td><td>2027-12-31 confirmed.</td></tr>
+<tr><td>7</td><td>Splice route</td><td><b>Top-up run</b> in the export repo; the export agent asks Brendan for the go-ahead there. Until it lands, build 1 runs with seam 2026-09-09 and is rerun on the continued history.</td></tr>
+<tr><td>8</td><td>Excluded terms as adjustment candidates</td><td>Yes: register the duplicate-id floor and the open temporary term as display-layer candidates for the combinatorics (not applied in build 1).</td></tr>
+</table>
+<div class="callout warn"><b>Two standing notes from Brendan.</b> (1) The mozaic package (<code>~/work/mozaic-forecasting-official</code>, a shared GitHub repo,
+editable-installed into this venv on branch <code>configurable-model-params</code>) must only be edited on a non-production branch. The procedure as written
+needs <b>no package edit</b>: the fill goes in through <code>additional_fills</code> and the calendar through <code>additional_holidays</code>, both existing hooks.
+If an edit becomes unavoidable it goes on a <code>glean-2027-forecast</code> branch there, in a separate worktree so this venv keeps running production code.
+(2) <b>Be open to varying the model parameters for MAU</b> — a rolling-28 series need not behave like DAU under the g01 lock; any MAU-specific
+config is announced before it is run and recorded beside the DAU lock.</div>
+<h2>7. Export agent follow-ups (answered 2026-10-12)</h2>
+<h3>A. Why the headline excludes the temporary and duplicate-id terms</h3>
+<p>Root is <b>D-076</b>: the table exists to produce the equivalent of <em>current</em> Glean telemetry for forecasting, so 2025
+instrument-state offsets are not in the mapping. <b>D-088/089/094</b> split Linux published into a linked translation plus a Glean-only
+arm, the arm into a constant base (in the headline) and an episodic excess (zero in history, carried for a Glean-side filter to act on);
+<b>D-109/110</b> made MAU the flagship and put the pre-Fx-148 duplicate-id inflation in its own column; <b>D-116/117</b> fixed the names.
+Not yet formally ratified as "canonical history" (HANDOFF lists it as the next owner decision).</p>
+<table>
+<tr><th>term</th><th>what it is, physically</th><th>size over the overlap (% of published)</th><th>expected path</th></tr>
+<tr><td><code>glean_only_steady</code> (in headline)</td><td>Glean-only clients as a constant share; on Linux, baseline-ping-only profiles (distro / container / CI builds), flat; on Win/Mac &lt;1.2%</td><td>DAU: world 0.9, win 0.8, mac 0.3, linux 3.2–3.4. MAU: world 3.0–3.4, win 2.3–2.5, mac 1.1, linux 12.7–14.3</td><td>persists; Windows share slowly declining (0.92% → 0.64%)</td></tr>
+<tr><td><code>glean_only_temporary</code> (excluded)</td><td>Linux US/DK: read as bot-like (94–97% single-day clients, step onsets Mar/Apr 2026, no root cause); FR/CN on MAU: Glean-only members</td><td>DAU: world ≤0.2, linux 1.4–3.3 (2026). MAU: world 0.4–2.3, linux 6–16 (2026), win 1.4 → 0.0–0.1</td><td>episodic, unknown end; in 2027 either filtered out of Glean or declared permanent, undecided. FR/CN shrinking, not zero</td></tr>
+<tr><td><code>duplicate_id_inflation</code> (excluded, MAU only)</td><td>duplicate Glean ids from pre-Fx-148 builds (client-id regeneration bug, fixed Fx 147/148)</td><td>MAU: world 5.7–5.9 (2025) → 0.5–0.6 (Jul–Sep 2026); win 6.5–6.7 → 0.6–0.7; mac 0; linux 0.2–0.5</td><td>slow decay to a floor near 0.5% while 14% of Windows MAU is still on pre-148 builds</td></tr>
+</table>
+<p>Implication for 2027: forecasting the headline means the published Glean MAU will sit above the forecast by the duplicate-id floor
+(~0.5%) plus whatever temporary term is still open, unless those are carried as explicit adjustments. That is a natural candidate for the
+first re-added adjustment in the combinatorics (§5 step 9).</p>
+<h3>B. Windows-version split</h3>
+<p>Recorded in the export project's open-questions list and HANDOFF as a future item attributed to you via this session.</p>
+<h3>C. What the history is, and the seam step</h3>
+<ul>
+<li>Headline = what Glean in its <b>Fx 148–153</b> state would have reported on each day's recorded Legacy activity (D-067). Not the most recent Firefox: Fx 154 (SDK 68, plateau 2026-08-23) is a sensitivity series only; Fx 155 reference pending late October.</li>
+<li>Headline minus published by month per OS is in <code>inputs/legacy_to_glean_export/fc15_overlap_gap_by_month.csv</code>; the seam step per roll-up and cell in <code>fc15_seam_step_2026-08-23.csv</code>. Linux headline runs 2–4% <em>above</em> published in 2025; treat Linux as unreliable to 2–3%.</li>
+<li>Big per-cell seam moves (win_fr −1.74 pp, win_it −0.69, mac_fr −0.95, mac_it −1.16, win_us MAU −0.55) are September episodes, not the SDK change; the post window is 14 days and contaminated by the FR surge and the Linux CH onset.</li>
+</ul>
+<h2>8. State on disk</h2>
+<pre>branch glean-2027-forecast (off october-forecast), nothing committed yet
+data-official/2027-glean-draft/
+  _index.md
+  PROCEDURE.html                      this page
+  inputs/legacy_to_glean_export/      11 files, tracked (gitignore exceptions added)
+  plots/legacy_outage_windows_2025.png</pre>
+
+</body>
+</html>

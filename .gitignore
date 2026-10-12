@@ -179,3 +179,9 @@ data-official/*/handoff/*_handoff/
 !data-official/*/launch_at_login_existing_users/source_data/*
 # KPI workbook update: the Sheets export each run read (provenance for the next cycle's diff).
 !data-official/*/kpi_sheet/source_data/*
+
+# data-official/2027-glean-draft/ — the 2027 Glean-history draft forecast tracks its delivered
+# inputs in git (Brendan, 2026-10-12): the legacy-to-glean export parquets/CSVs are the "history"
+# this forecast trains on and must be reproducible from the repo alone.
+!data-official/2027-glean-draft/inputs/legacy_to_glean_export/*.parquet
+!data-official/2027-glean-draft/inputs/legacy_to_glean_export/*.csv
