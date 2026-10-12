@@ -45,6 +45,12 @@ EXPORT_FILES = {
     "MAU": "glean_equivalent_mau_history_cells_fc15.parquet",
 }
 
+# Continuation files (legacy-to-glean D-118): the same schema and cells for dates after the history file's end.
+CONTINUATION_FILES = {
+    "DAU": "glean_equivalent_dau_history_cells_fc15_continuation.parquet",
+    "MAU": "glean_equivalent_mau_history_cells_fc15_continuation.parquet",
+}
+
 RAW_CHECKPOINT_TEMPLATE = "mozaic_parts.raw.glean_history.desktop.{metric}.parquet"
 
 
@@ -136,6 +142,22 @@ def check_sums_against_rollups(frame: pd.DataFrame, export: pd.DataFrame, *, val
     return result
 
 
+def append_continuation(history: pd.DataFrame, continuation: pd.DataFrame) -> pd.DataFrame:
+    """History + continuation rows, requiring identical cells and a contiguous, non-overlapping date join."""
+    if set(history["cell"]) != set(continuation["cell"]):
+        raise ValueError(f"continuation cells differ from history: "
+                         f"{sorted(set(history['cell']) ^ set(continuation['cell']))}")
+    missing = set(history.columns) - set(continuation.columns)
+    if missing:
+        raise ValueError(f"continuation is missing columns {sorted(missing)}")
+    last = pd.to_datetime(history["submission_date"]).max()
+    first = pd.to_datetime(continuation["submission_date"]).min()
+    if (first - last).days != 1:
+        raise ValueError(f"continuation must start the day after the history ends: history ends {last.date()}, "
+                         f"continuation starts {first.date()}")
+    return pd.concat([history, continuation[history.columns]], ignore_index=True)
+
+
 def _sha1(path: Path) -> str:
     h = hashlib.sha1()
     with open(path, "rb") as fh:
@@ -151,9 +173,11 @@ def write_raw_checkpoints(
     metrics: tuple[str, ...] = ("DAU", "MAU"),
     value_column: str = HEADLINE_COLUMN,
     training_start: str = DEFAULT_TRAINING_START,
+    with_continuation: bool = False,
 ) -> dict[str, Path]:
     """Save one raw checkpoint per metric plus a sidecar; returns metric -> parquet path.
 
+    ``with_continuation`` appends each metric's continuation file (must join the history exactly).
     Side effect: writes ``mozaic_parts.raw.glean_history.desktop.<metric>.parquet`` and
     ``glean_history_inputs.meta.json`` under ``out_dir``.
     """
@@ -164,6 +188,10 @@ def write_raw_checkpoints(
     for metric in metrics:
         source = export_dir / EXPORT_FILES[metric]
         export = pd.read_parquet(source)
+        continuation_source = None
+        if with_continuation:
+            continuation_source = export_dir / CONTINUATION_FILES[metric]
+            export = append_continuation(export, pd.read_parquet(continuation_source))
         frame = export_to_mozaic_frame(export, value_column=value_column, training_start=training_start)
         sums = check_sums_against_rollups(frame, export, value_column=value_column)
         target = out_dir / RAW_CHECKPOINT_TEMPLATE.format(metric=metric)
@@ -172,6 +200,8 @@ def write_raw_checkpoints(
         meta_inputs[metric] = {
             "source_file": str(source),
             "source_sha1": _sha1(source),
+            "continuation_file": str(continuation_source) if continuation_source else None,
+            "continuation_sha1": _sha1(continuation_source) if continuation_source else None,
             "output_file": target.name,
             "rows": int(len(frame)),
             "countries": sorted(frame["country"].unique()),

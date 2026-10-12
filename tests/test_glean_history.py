@@ -131,6 +131,41 @@ def test_write_raw_checkpoints_writes_parquets_and_meta(tmp_path):
     assert meta["inputs"]["MAU"]["max_abs_diff_vs_os_total"] == {"windows": 0.0, "mac": 0.0, "linux": 0.0}
 
 
+# ---- append_continuation -----------------------------------------------------------------------
+
+def test_append_continuation_joins_exactly_and_keeps_history_columns():
+    hist = _export(days=3, start="2020-01-01")
+    cont = _export(days=2, start="2020-01-04")
+    joined = gh.append_continuation(hist, cont)
+    assert len(joined) == len(hist) + len(cont)
+    assert list(joined.columns) == list(hist.columns)
+    frame = gh.export_to_mozaic_frame(joined)
+    assert frame["x"].max() == pd.Timestamp("2020-01-05")
+
+
+def test_append_continuation_rejects_gap_overlap_and_cell_mismatch():
+    hist = _export(days=3, start="2020-01-01")
+    with pytest.raises(ValueError, match="day after"):
+        gh.append_continuation(hist, _export(days=2, start="2020-01-05"))     # one-day gap
+    with pytest.raises(ValueError, match="day after"):
+        gh.append_continuation(hist, _export(days=2, start="2020-01-03"))     # overlap
+    with pytest.raises(ValueError, match="cells differ"):
+        gh.append_continuation(hist, _export(days=2, start="2020-01-04", countries=("us", "de")))
+
+
+def test_write_raw_checkpoints_with_continuation(tmp_path):
+    export_dir = tmp_path / "export"
+    export_dir.mkdir()
+    for metric in ("DAU", "MAU"):
+        _export(days=3).to_parquet(export_dir / gh.EXPORT_FILES[metric], index=False)
+        _export(days=2, start="2020-01-04").to_parquet(export_dir / gh.CONTINUATION_FILES[metric], index=False)
+    written = gh.write_raw_checkpoints(export_dir, tmp_path / "out", with_continuation=True)
+    dau = pd.read_parquet(written["DAU"])
+    assert dau["x"].max() == pd.Timestamp("2020-01-05") and len(dau) == 5 * 9
+    meta = json.loads((tmp_path / "out" / "glean_history_inputs.meta.json").read_text())
+    assert len(meta["inputs"]["DAU"]["continuation_sha1"]) == 40
+
+
 # ---- holiday calendar ------------------------------------------------------------------------
 
 def test_legacy_outage_calendar_is_the_union_of_the_per_os_windows_in_2025_only():

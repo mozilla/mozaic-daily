@@ -55,3 +55,15 @@ Two companion tables for the forecast's splice decision (2026-10-12, computed fr
   published reconstruction, and the difference in pp (`seam_step_*_pp`).
 
 Exclusion windows (Legacy outage Oct–Nov 2025 per OS, Linux and FR/CN Glean-only windows) are not removed from the series; see `v4/results/windows.csv`, `windows_members.csv`, `mau/results/windows_frcn.csv`.
+
+## Continuation: `glean_equivalent_{dau,mau}_history_cells_fc15_continuation.{parquet,csv}` (2026-10-12, D-118)
+
+The fc15 set extended from 2026-09-09 through 2026-10-09 (1,643 rows per metric = 53 series × 31 days), same columns,
+dtypes and cell set as the fc15 files; append to them. Built by `v4/steps_topup.py` / `mau/steps_topup.py` from fresh
+reads of the source aggregates with the delivered lookups, factor sources and flags; open windows of record extended to
+the data end (none detected); MAU duplicate-id inflation with e carried forward from 2026-09-08; bands carried forward as
+the last-day ratio to the series. `exports/CONTINUATION_NOTE.md` has the full account, sha1s, spend and what the forecast
+consumer must know (the Sep–Oct gap to published Glean is wider than August's, Linux the driver). Verify with
+`python3 tooling/verify_continuation.py` (reproduction of the delivered table on 2026-08-10..09-08 bit-exact; identities;
+contiguity; seam step; overlap gap by roll-up). Not uploaded to BigQuery; superseded by a re-run after the Fx 155
+reference re-measurement.
