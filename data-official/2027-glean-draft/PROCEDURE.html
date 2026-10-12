@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 3)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 4)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-12 14:00 PDT</span>
+  <span><b>Generated:</b> 2026-10-12 14:45 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export 2026-09-08 (legacy-to-glean worktree <code>export-rollups</code> @ 5a7266e)</span>
-  <span><b>Status:</b> DRAFT 3 — open items 1–3, 5–8 decided 2026-10-12; building steps 0–1</span>
+  <span><b>Status:</b> DRAFT 4 — build 1 done (seam 2026-09-09); China step is the open problem (§9)</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -276,13 +276,47 @@ first re-added adjustment in the combinatorics (§5 step 9).</p>
 <li>Headline minus published by month per OS is in <code>inputs/legacy_to_glean_export/fc15_overlap_gap_by_month.csv</code>; the seam step per roll-up and cell in <code>fc15_seam_step_2026-08-23.csv</code>. Linux headline runs 2–4% <em>above</em> published in 2025; treat Linux as unreliable to 2–3%.</li>
 <li>Big per-cell seam moves (win_fr −1.74 pp, win_it −0.69, mac_fr −0.95, mac_it −1.16, win_us MAU −0.55) are September episodes, not the SDK change; the post window is 14 days and contaminated by the FR surge and the Linux CH onset.</li>
 </ul>
-<h2>8. State on disk</h2>
-<pre>branch glean-2027-forecast (off october-forecast), nothing committed yet
+<h2>8. Build 1 — seam 2026-09-09, g01 lock, Iran fill, outage calendar, no adjustments (2026-10-12)</h2>
+<p>Artifacts: <code>desktop_glean_history_g01_2026-09-09/&lt;slug&gt;/mozaic_daily_forecast.2026-09-09.gh-D+M.raw.parquet</code> (+ sidecar, pickle,
+parameters.json); curves <code>csv/glean2027_canonical_curves.csv</code>, summary <code>csv/glean2027_dec15_summary.csv</code>; plots
+<code>plots/glean2027_mau_daily.png</code>, <code>plots/glean2027_dau_28ma.png</code>, <code>plots/glean2027_{dau,mau}_by_country.png</code>.
+Training rows are byte-identical to the adapter frames (Iran's crater stays in the actuals; the fill is used only for fitting). Forecast took 4 minutes.</p>
+<table>
+<tr><th>metric (world, all OS)</th><th class="num">2025-12-15 (history)</th><th class="num">2026-12-15</th><th class="num">2027-12-15</th><th>YoY 26→27</th></tr>
+<tr><td><b>MAU, raw daily</b> (headline)</td><td class="num">161,791,091</td><td class="num">157,567,444</td><td class="num"><b>152,187,309</b></td><td>−3.4%</td></tr>
+<tr><td>DAU, 28d MA</td><td class="num">53,828,767</td><td class="num">52,687,632</td><td class="num">50,663,982</td><td>−3.8%</td></tr>
+<tr><td>MAU windows / mac / linux</td><td class="num">137.4M / 10.75M / 13.6M</td><td class="num">131.1M / 10.9M / 15.5M</td><td class="num">122.7M / 11.3M / 18.2M</td><td>−6.4% / +3.5% / +17%</td></tr>
+<tr><td>DAU windows / mac / linux</td><td class="num">46.7M / 4.21M / 2.89M</td><td class="num">45.0M / 4.29M / 3.43M</td><td class="num">42.2M / 4.37M / 4.12M</td><td>−6.2% / +2.0% / +20%</td></tr>
+</table>
+<div class="callout warn"><b>These are build-1 numbers, not deliverables.</b> The world medians are plausible and continuous at the seam (MAU −1.0%, DAU +0.4% first-day step),
+the MAU holiday troughs in the forecast (CN −21%, MX −16%, BR −16%) sit a few points deeper than the history's (−13 to −19%), and the Iran fill did its job
+(the no-fill shakedown had Iran's MAU tile going negative and pulling the 2027-12-15 world down by 22M; it is in <code>_shakedown_nofill_2026-09-09/</code> for the record).
+Two things are wrong and both trace to China (§9).</div>
+
+<h2>9. Open problem: the China step (MozillaOnline migration) in a raw build</h2>
+<p>CN desktop DAU doubled in June 2026 (1.2M → 2.0–2.3M) when MozillaOnline users migrated onto mainline Firefox — the phenomenon the production
+cycle handles with the <code>o</code> overlay, which subtracts the measured migration curve from CN's training rows before mozaic and adds it back
+after. In this build nothing is subtracted, and the raw model cannot cope with the step:</p>
+<ul>
+<li><b>Point forecast:</b> CN's holiday effects are mis-estimated across the step — CN DAU falls to a 450K monthly mean in October 2027 (history: Golden Week is a −10% month), and CN MAU swings between 9M and 2M in late 2027. CN is 4.1–4.8% of the world, so the world medians survive, but the CN curves are unusable and the December 2027 world is shaded by them.</li>
+<li><b>Intervals:</b> the Prophet sample paths for CN × windows have a 90% half-width of <b>298M</b> on a 2M tile (DAU) and 2.1 <b>billion</b> on a 5M tile (MAU). They dominate the world band: DAU 28d-MA 90% half-width 27.7M around 50.7M, MAU 98M around 152M. Every other tile's band is ordinary (ROW windows 6.7M, DE 6.3M, US 2.9M). Until CN is handled, the Prophet interval is meaningless.</li>
+</ul>
+<p><b>Options (decision for Brendan):</b></p>
+<ol>
+<li><b>Treat the step as a data correction and apply it in build 1</b> (recommended): subtract the measured MozillaOnline curve from CN's training rows before mozaic and add it back after, exactly the <code>o</code> mechanism, mapped onto the <code>windows</code> population (the migration is Windows; the spec's fixed shares put ~93% in CN). This is the one "adjustment" that is a correction of the input rather than a planning judgement, and the registry already holds the curve (<code>data-official/2026-10/mozillaonline/</code>, refreshed 2026-09-04 from the official export). It departs from decision 12 ("drop all"), so it needs your word.</li>
+<li><b>Keep CN raw and accept it</b>: world medians usable, CN curves and all intervals not. Re-add <code>o</code> later in the combinatorics.</li>
+<li><b>Fold CN into ROW</b> for this forecast: hides the step inside a 16M tile instead of fixing it; not recommended.</li>
+</ol>
+<h2>10. State on disk</h2>
+<pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
-  _index.md
-  PROCEDURE.html                      this page
-  inputs/legacy_to_glean_export/      11 files, tracked (gitignore exceptions added)
-  plots/legacy_outage_windows_2025.png</pre>
+  _index.md, PROCEDURE.html
+  inputs/legacy_to_glean_export/      11 files, tracked
+  raw_glean_history_2026-09-08/       adapter output (regenerable, not tracked) + glean_history_inputs.meta.json
+  iran_fill/                          finalized fill (tracked) + drafts, seam diagnostics, plots
+  desktop_glean_history_g01_2026-09-09/   build 1 parquet + sidecar + pickle + parameters.json
+  _shakedown_nofill_2026-09-09/       runner shakedown without the fill (record only)
+  csv/, plots/, intervals/            build-1 curves, summary, plots, Prophet bands (DAU only so far)</pre>
 
 </body>
 </html>

@@ -59,7 +59,7 @@ WORLD_COUNTRY = "ALL"
 # mobile is unsegmented but carries one row per app, so the "ALL MOBILE" app row has to be selected too.
 WORLD_SEGMENT_BY_PLATFORM = {"desktop": '{"os": "ALL"}', "mobile": "{}"}
 WORLD_APP_BY_PLATFORM = {"desktop": None, "mobile": "ALL MOBILE"}
-PLATFORM_BY_FILENAME_TAG = {"ld-D": "desktop", "gm-D": "mobile"}
+PLATFORM_BY_FILENAME_TAG = {"ld-D": "desktop", "gm-D": "mobile", "gh-D+M": "desktop", "gh-D": "desktop", "gh-M": "desktop"}
 BAND_ALPHAS = {"50": 0.45, "80": 0.30, "90": 0.18}
 BAND_COLOR = "#1f77b4"
 ACTUALS_COLOR = "#333333"
@@ -86,7 +86,7 @@ def infer_platform(forecast_parquet: Path) -> str:
     return PLATFORM_BY_FILENAME_TAG[tag]
 
 
-def parquet_world_series(forecast_parquet: Path) -> tuple[pd.Series, pd.Series, dict]:
+def parquet_world_series(forecast_parquet: Path, metric_column: str = "dau") -> tuple[pd.Series, pd.Series, dict]:
     """(training actuals, forecast) for the world total, both indexed by date, plus the sidecar meta."""
     df, meta = load_forecast(str(forecast_parquet))
     platform = infer_platform(forecast_parquet)
@@ -101,8 +101,11 @@ def parquet_world_series(forecast_parquet: Path) -> tuple[pd.Series, pd.Series, 
         raise ValueError(f"World rows are not one per date in {forecast_parquet.name}; add a selector for the extra dimension.")
     world["target_date"] = pd.to_datetime(world["target_date"])
     world = world.set_index("target_date").sort_index()
-    training = world.loc[world["data_type"] == "training", "dau"]
-    forecast = world.loc[world["data_type"] == "forecast", "dau"]
+    column = metric_column
+    if column not in world.columns:
+        raise KeyError(f"{forecast_parquet.name} has no {column!r} column; columns: {sorted(world.columns)}")
+    training = world.loc[world["data_type"] == "training", column]
+    forecast = world.loc[world["data_type"] == "forecast", column]
     return training, forecast, meta
 
 
@@ -206,7 +209,7 @@ def main() -> None:
 
     print(f"Loading pickle {args.pkl} ...")
     moz = load_world_mozaic(args.pkl, args.metric)
-    training, parquet_forecast, meta = parquet_world_series(args.forecast_parquet)
+    training, parquet_forecast, meta = parquet_world_series(args.forecast_parquet, metric_column=args.metric.lower())
 
     paths = intervals.world_sample_paths(moz)
     worst = intervals.assert_median_matches_forecast(paths, parquet_forecast, tolerance=args.median_tolerance)

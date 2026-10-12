@@ -186,3 +186,5 @@ data-official/*/handoff/*_handoff/
 !data-official/2027-glean-draft/inputs/legacy_to_glean_export/*.parquet
 !data-official/2027-glean-draft/inputs/legacy_to_glean_export/*.csv
 !data-official/2027-glean-draft/iran_fill/*.parquet
+!data-official/2027-glean-draft/csv/*.csv
+!data-official/2027-glean-draft/intervals/csv/*.csv
