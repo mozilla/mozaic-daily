@@ -313,6 +313,13 @@ The `scripts/` directory contains helper scripts for common tasks:
   `--expect-dec15 product=INT`, and writes `data-official/{cycle}/kpi_sheet/official_forecast_data.<publish>.csv` +
   meta + `source_data/` export copy + a check plot. `--dry-run` prints the block inventory and plan. Never overwrites,
   never uploads. Driven by `/update-kpi-sheet`; logic in `mozaic_daily.kpi_sheet` / `kpi_sheet_checks`
+- `run_glean_history_forecast.py` / `generate_glean_history_iran_fill.py` - **The 2027 Glean-history draft** (branch
+  `glean-2027-forecast`, `data-official/2027-glean-draft/`, not a cycle): a desktop MAU (headline, raw daily on
+  2027-12-15) + DAU forecast trained on the legacy-to-glean project's Glean-equivalent history, file-fed through
+  `DataSource.GLEAN_HISTORY_DESKTOP` (OS × country tiles `windows`/`mac`/`linux`, no Windows-version split exists)
+  and the new `Metric.MAU`. The adapter is `mozaic_daily.glean_history`; the 2025 Legacy outage is masked by the
+  `LegacyOutage2025` calendar (`glean_history_holidays.py`); the Iran crater by a fill regenerated for this layout
+  and passed as `additional_fills`. All adjustments off. Read `data-official/2027-glean-draft/PROCEDURE.html` first
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
   sampled date windows. Run before using training rows as a stand-in for an actuals query (e.g. the canonical

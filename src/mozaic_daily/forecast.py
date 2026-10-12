@@ -14,7 +14,7 @@ Functions:
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any, List, Type
+from typing import Dict, Any, List, Optional, Type
 import holidays
 import pandas as pd
 import warnings
@@ -77,6 +77,7 @@ def get_forecast_dfs(
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
     config: ModelConfig = None,
     data_source: str = None,
+    additional_fills: Optional[List[pd.DataFrame]] = None,
 ) -> ForecastResult:
     """Generate forecasts using Mozaic.
 
@@ -90,6 +91,9 @@ def get_forecast_dfs(
             (default: empty list)
         data_source: Source identifier (e.g. "legacy_desktop") forwarded to populate_tiles so it
             selects the matching built-in gap fill (e.g. Iran 2026 shutdown). None = no fill selection.
+        additional_fills: Caller-supplied counterfactual gap-fill frames (long-by-metric, same
+            segment columns as the data) forwarded to populate_tiles. Used by the file-fed
+            Glean-history source, whose OS x country layout has no packaged fill.
 
     Returns:
         ForecastResult with dfs (metric -> DataFrame) and mozaics (metric -> Mozaic)
@@ -133,6 +137,7 @@ def get_forecast_dfs(
                 forecast_end_date,
                 additional_holidays=additional_holidays,
                 data_source=data_source,
+                additional_fills=additional_fills,
                 **tile_kwargs,
             )
         except Exception as e:
@@ -190,6 +195,7 @@ def get_desktop_forecast_dfs(
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
     config: DesktopModelConfig = None,
     data_source: str = None,
+    additional_fills: Optional[List[pd.DataFrame]] = None,
 ) -> ForecastResult:
     """Generate Desktop forecasts using Mozaic.
 
@@ -217,6 +223,7 @@ def get_desktop_forecast_dfs(
         additional_holidays=additional_holidays,
         config=config,
         data_source=data_source,
+        additional_fills=additional_fills,
     )
 
 

@@ -283,6 +283,7 @@ def process_data_source(
     overlays: Optional[list[ResolvedOverlay]] = None,
     organic_spec_path: Optional[Path] = None,
     model_configs: Optional[dict] = None,
+    additional_fills: Optional[list[pd.DataFrame]] = None,
 ) -> pd.DataFrame:
     """Process a single data source through the forecast pipeline.
 
@@ -311,6 +312,10 @@ def process_data_source(
             which is what routes the tuned Prophet *and* holiday parameters
             through. Omitting it uses the package's hardcoded defaults — which is
             why a plain ``run_main.py`` run cannot reproduce a tuned build.
+        additional_fills: Caller-supplied counterfactual gap fills forwarded to the
+            forecast function (desktop only today). The Glean-history runner passes its
+            regenerated Iran fill here because that source's OS x country layout has
+            no packaged fill.
         marketing_spec_path: If set and ``data_source == GLEAN_MOBILE``, applies
             the marketing-lift `m` adjustment: subtracts lift from the DAU
             training rows before mozaic and adds it back to the per-tile
@@ -380,11 +385,15 @@ def process_data_source(
     forecast_func = get_forecast_function(platform)
     additional_holidays = ADDITIONAL_HOLIDAYS.get(data_source, [])
     model_config = (model_configs or {}).get(data_source)
+    forecast_kwargs = {}
+    if additional_fills:
+        forecast_kwargs["additional_fills"] = additional_fills
     forecast_result = forecast_func(
         source_data, forecast_start, forecast_end,
         additional_holidays=additional_holidays,
         data_source=data_source.value,
         config=model_config,
+        **forecast_kwargs,
     )
 
     # Combine

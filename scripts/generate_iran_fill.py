@@ -97,14 +97,15 @@ SEGMENT_COLUMNS = {
 }
 
 
-def population_to_segments(population: str, platform: Platform) -> Dict[str, bool]:
+def population_to_segments(population: str, platform: Platform, segment_columns: List[str] = None) -> Dict[str, bool]:
     """Reverse-map a mozaic population label to its segment-boolean flags.
 
     Populations are single-label (OS buckets are mutually exclusive; an app row sets exactly one
     app flag), so at most one flag is True. ``population == 'other'`` (or any label not in the
-    platform's segment set) maps to all-False.
+    platform's segment set) maps to all-False. ``segment_columns`` overrides the platform default
+    (the Glean-history layout uses windows / mac / linux).
     """
-    cols = SEGMENT_COLUMNS[platform]
+    cols = segment_columns if segment_columns is not None else SEGMENT_COLUMNS[platform]
     return {col: (col == population) for col in cols}
 
 
@@ -190,6 +191,7 @@ def harvest_fill(
     forecast_df: pd.DataFrame,
     data_source: DataSource,
     metric: str,
+    segment_columns: List[str] = None,
 ) -> pd.DataFrame:
     """Extract per-population IR forecast rows for the metric's fill window.
 
@@ -198,6 +200,7 @@ def harvest_fill(
     """
     fill_end = FILL_END_BY_METRIC.get(metric, FILL_END_DEFAULT)
     platform = data_source.platform
+    seg_cols = segment_columns if segment_columns is not None else SEGMENT_COLUMNS[platform]
 
     df = forecast_df[
         (forecast_df["country"] == "IR") & (forecast_df["population"] != "ALL")
@@ -209,7 +212,7 @@ def harvest_fill(
         print(f"  WARNING: no IR per-population rows for {data_source.value} {metric}")
         return pd.DataFrame()
 
-    seg_rows = df["population"].apply(lambda p: pd.Series(population_to_segments(p, platform)))
+    seg_rows = df["population"].apply(lambda p: pd.Series(population_to_segments(p, platform, seg_cols)))
     out = pd.concat([df[["target_date", "value"]].reset_index(drop=True), seg_rows.reset_index(drop=True)], axis=1)
     out = out.rename(columns={"target_date": "x", "value": "y"})
     # Prophet point forecasts can dip slightly negative for tiny-count populations (e.g. focus
@@ -217,7 +220,7 @@ def harvest_fill(
     out["y"] = out["y"].clip(lower=0)
     out["metric"] = metric
     out["country"] = "IR"
-    cols = ["metric", "x", "country"] + SEGMENT_COLUMNS[platform] + ["y"]
+    cols = ["metric", "x", "country"] + seg_cols + ["y"]
     return out[cols]
 
 
@@ -272,9 +275,9 @@ def _clean_window(daily: pd.Series) -> pd.Series:
     return s[~((s.index >= pd.Timestamp(JAN_BLACKOUT[0])) & (s.index <= pd.Timestamp(JAN_BLACKOUT[1])))]
 
 
-def _population_daily(df: pd.DataFrame, platform: Platform) -> Dict[str, pd.Series]:
+def _population_daily(df: pd.DataFrame, platform: Platform, segment_columns: List[str] = None) -> Dict[str, pd.Series]:
     """Split a frame (x, segment bools, y) into {population: daily Series}, plus 'ALL' (IR total)."""
-    seg_cols = SEGMENT_COLUMNS[platform]
+    seg_cols = segment_columns if segment_columns is not None else SEGMENT_COLUMNS[platform]
     d = df.copy()
     d["x"] = pd.to_datetime(d["x"])
     d["pop"] = d.apply(lambda r: _population_of_row(r, seg_cols), axis=1)
@@ -285,13 +288,14 @@ def _population_daily(df: pd.DataFrame, platform: Platform) -> Dict[str, pd.Seri
     return out
 
 
-def compute_real_dow_factors(real_metric_df: pd.DataFrame, platform: Platform) -> Dict[str, pd.Series]:
+def compute_real_dow_factors(real_metric_df: pd.DataFrame, platform: Platform,
+                             segment_columns: List[str] = None) -> Dict[str, pd.Series]:
     """Per-population real DOW profiles from the clean pre-shutdown IR window; pooled-ALL fallback.
 
     Returns {population: profile} plus '__pooled__'. Sparse populations get the pooled profile.
     """
     ir = real_metric_df[real_metric_df["country"] == "IR"]
-    series = _population_daily(ir, platform)
+    series = _population_daily(ir, platform, segment_columns)
     pooled, _ = _dow_profile(_clean_window(series.get("ALL", pd.Series(dtype=float))))
     profiles: Dict[str, pd.Series] = {"__pooled__": pooled}
     for pop, s in series.items():
@@ -306,12 +310,13 @@ def reseasonalize_source(
     fill_smooth: pd.DataFrame,
     real_metric_dfs: Dict[str, pd.DataFrame],
     platform: Platform,
+    segment_columns: List[str] = None,
 ) -> pd.DataFrame:
     """Re-impose real DOW amplitude per (metric, population) onto the smooth fill (mean-preserving).
 
     corrected = smooth / fill_DOW_factor[dow] * real_DOW_factor[dow]
     """
-    seg_cols = SEGMENT_COLUMNS[platform]
+    seg_cols = segment_columns if segment_columns is not None else SEGMENT_COLUMNS[platform]
     work = fill_smooth.copy()
     work["x"] = pd.to_datetime(work["x"])
     work["pop"] = work.apply(lambda r: _population_of_row(r, seg_cols), axis=1)
@@ -319,7 +324,7 @@ def reseasonalize_source(
 
     corrected = []
     for metric, g in work.groupby("metric"):
-        real_prof = compute_real_dow_factors(real_metric_dfs[metric], platform)
+        real_prof = compute_real_dow_factors(real_metric_dfs[metric], platform, seg_cols)
         g = g.copy()
         fill_prof, smooth_pop_mean = {}, {}
         for pop, gg in g.groupby("pop"):
