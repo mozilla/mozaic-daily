@@ -97,10 +97,14 @@ def export_to_mozaic_frame(
 
     for flag in OS_FLAGS:
         cells[flag] = cells["os_flag"] == flag
-    cells["y"] = cells[value_column].astype(float)
-    if cells["y"].isna().any():
-        bad = cells.loc[cells["y"].isna(), ["x", "cell"]].head(5).to_dict("records")
+    values = cells[value_column].astype(float)
+    if values.isna().any():
+        bad = cells.loc[values.isna(), ["x", "cell"]].head(5).to_dict("records")
         raise ValueError(f"{value_column} has NaN values in the export, e.g. {bad}")
+    # Whole people: the export's translated values carry decimals, the production pipeline (BigQuery
+    # counts, the per-tile overlay subtractor's Int64 arithmetic) expects integers. Rounding moves each
+    # tile by < 0.5; check_sums_against_rollups allows exactly that slack.
+    cells["y"] = values.round().astype("int64")
 
     frame = cells[["x", "country", *OS_FLAGS, "y"]].sort_values(["x", "country", *OS_FLAGS]).reset_index(drop=True)
     check_one_flag_per_row(frame)
@@ -125,9 +129,14 @@ def check_dense_dates(frame: pd.DataFrame) -> None:
 
 
 def check_sums_against_rollups(frame: pd.DataFrame, export: pd.DataFrame, *, value_column: str = HEADLINE_COLUMN,
-                               tolerance: float = 1e-3) -> dict[str, float]:
-    """Assert per-OS sums of the frame reproduce the export's ``{os}_total`` rows; returns max abs diff per OS."""
+                               tolerance: float | None = None) -> dict[str, float]:
+    """Assert per-OS sums of the frame reproduce the export's ``{os}_total`` rows; returns max abs diff per OS.
+
+    Default tolerance is the rounding slack: 0.5 per country tile summed into the OS total.
+    """
     export = export.assign(x=pd.to_datetime(export["submission_date"]))
+    if tolerance is None:
+        tolerance = 0.5 * frame["country"].nunique()
     result = {}
     for prefix, flag in _PREFIX_TO_OS.items():
         ours = frame[frame[flag]].groupby("x")["y"].sum()

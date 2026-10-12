@@ -57,6 +57,7 @@ def test_parse_cell_rollups_are_none_and_unknown_prefix_raises():
 def test_frame_has_one_flag_per_row_and_drops_rollups():
     frame = gh.export_to_mozaic_frame(_export())
     assert list(frame.columns) == ["x", "country", "windows", "mac", "linux", "y"]
+    assert str(frame["y"].dtype) == "int64"                 # whole people, as the overlay subtractor expects
     assert len(frame) == 3 * 3 * 3                      # days x OS x countries, no roll-ups
     assert (frame[["windows", "mac", "linux"]].sum(axis=1) == 1).all()
     assert set(frame["country"]) == {"US", "DE", "ROW"}
@@ -79,7 +80,7 @@ def test_training_start_floor_is_applied():
 def test_alternative_value_column_is_honoured():
     frame = gh.export_to_mozaic_frame(_export(days=1), value_column="legacy_dau")
     us_mac = frame[(frame["country"] == "US") & frame["mac"]]["y"].item()
-    assert us_mac == pytest.approx(200.0 / 1.036)
+    assert us_mac == 193                                 # round(200 / 1.036): whole people
 
 
 def test_nan_value_raises():
@@ -104,7 +105,7 @@ def test_sums_match_rollups_and_a_perturbed_cell_is_caught():
     diffs = gh.check_sums_against_rollups(frame, export)
     assert diffs == {"windows": 0.0, "mac": 0.0, "linux": 0.0}
 
-    frame.loc[(frame["country"] == "US") & frame["windows"], "y"] += 0.5
+    frame.loc[(frame["country"] == "US") & frame["windows"], "y"] += 5   # beyond the 0.5-per-tile rounding slack
     with pytest.raises(ValueError, match="windows: cells sum differs"):
         gh.check_sums_against_rollups(frame, export)
 
