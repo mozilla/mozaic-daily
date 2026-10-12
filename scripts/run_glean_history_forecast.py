@@ -9,7 +9,8 @@ export instead of BigQuery. This runner is the only entry point for it:
    (``mozaic_parts.raw.glean_history.desktop.{DAU,MAU}.parquet``) -- no BigQuery, no pre-flight;
 2. optionally splices the regenerated Iran counterfactual fill (``--iran-fill``);
 3. runs ``main.process_data_source`` for ``DataSource.GLEAN_HISTORY_DESKTOP`` with the configured
-   ``DesktopModelConfig`` (default: the October 2026 g01 lock), no adjustments of any kind;
+   ``DesktopModelConfig`` (default: the October 2026 g01 lock); no adjustments unless ``--overlay-spec``
+   names a project-local per-tile overlay spec (the `o` data correction, PROCEDURE.html section 9);
 4. writes ``mozaic_daily_forecast.<seam>.gh-D+M.raw.parquet`` + sidecar meta, the fitted pickle,
    and ``parameters.json`` under ``<results-dir>/<config slug>/``; prints Dec-15 2026 / 2027 world values.
 
@@ -41,9 +42,9 @@ if str(repo_root / "src") not in sys.path:
     sys.path.insert(0, str(repo_root / "src"))
 
 from mozaic.models import DesktopModelConfig  # noqa: E402
-from mozaic_daily.adjustments import insert_state_marker, write_meta  # noqa: E402
+from mozaic_daily.adjustments import build_adjustments_applied_list, insert_state_marker, write_meta  # noqa: E402
 from mozaic_daily.config import get_runtime_config  # noqa: E402
-from mozaic_daily.glean_history import RAW_CHECKPOINT_TEMPLATE  # noqa: E402
+from mozaic_daily.glean_history import RAW_CHECKPOINT_TEMPLATE, load_project_overlay  # noqa: E402
 from mozaic_daily.main import (  # noqa: E402
     get_checkpoint_filename, get_mozaic_objects_filename, process_data_source, save_mozaic_objects,
 )
@@ -118,6 +119,9 @@ def parse_args():
                    choices=[Metric.DAU.value, Metric.MAU.value])
     p.add_argument("--iran-fill", type=Path, default=None,
                    help="regenerated IR fill parquet (generate_glean_history_iran_fill.py); omit for no fill")
+    p.add_argument("--overlay-spec", type=Path, action="append", default=[],
+                   help="project-local desktop_overlay spec to subtract pre-mozaic and add back post-mozaic (repeatable); "
+                        "must be gated to this seam and to glean_history_desktop")
     p.add_argument("--dry-run", action="store_true")
     add_knob_arguments(p, defaults=OCTOBER_G01_LOCK)
     return p.parse_args()
@@ -139,6 +143,8 @@ def main() -> None:
     print(f"Raw dir             : {args.raw_dir}")
     print(f"Iran fill           : {args.iran_fill or 'none'}")
     print(f"Holidays            : {[h.__name__ for h in ADDITIONAL_HOLIDAYS.get(DATA_SOURCE, [])]}")
+    overlays = [load_project_overlay(path, args.forecast_start_date) for path in args.overlay_spec]
+    print(f"Overlays            : {[f'{o.code} ({o.name}, {o.spec_path})' for o in overlays] or 'none'}")
     print(f"Output dir          : {slug_dir}")
     print(f"Config              : {json.dumps(config.to_dict(), indent=2)}")
 
@@ -150,6 +156,7 @@ def main() -> None:
         "metrics": sorted(args.metrics),
         "raw_dir": str(args.raw_dir),
         "iran_fill": str(args.iran_fill) if args.iran_fill else None,
+        "overlays": [{"code": o.code, "spec": str(o.spec_path)} for o in overlays],
     }, indent=2) + "\n")
     if args.dry_run:
         print("[dry-run] stopping before the forecast")
@@ -166,6 +173,7 @@ def main() -> None:
         training_end_date=runtime["training_end_date"],
         model_configs={DATA_SOURCE: config},
         additional_fills=fills,
+        overlays=overlays or None,
     )
     df = format_output_table(df, runtime["forecast_start_date"], runtime["forecast_run_dt"])
     print(f"\nForecast took {(time.time() - started) / 60:.1f} min")
@@ -173,7 +181,8 @@ def main() -> None:
     save_mozaic_objects(mozaics, get_mozaic_objects_filename(args.forecast_start_date, DATA_SOURCE, str(slug_dir)))
     unmarked = Path(get_checkpoint_filename(args.forecast_start_date, str(slug_dir),
                                             data_source_filter={DATA_SOURCE}, metric_filter=metric_filter))
-    target = insert_state_marker(unmarked, [])
+    applied_codes = [o.code for o in overlays]
+    target = insert_state_marker(unmarked, applied_codes)
     df.to_parquet(target)
     inputs_meta_path = args.raw_dir / "glean_history_inputs.meta.json"
     write_meta(
@@ -182,7 +191,7 @@ def main() -> None:
         data_source=DATA_SOURCE.value,
         produced_by="scripts/run_glean_history_forecast.py",
         model_config=config.to_dict(),
-        adjustments_applied=[],
+        adjustments_applied=build_adjustments_applied_list(applied_codes, {o.code: o.spec_path for o in overlays}) if overlays else [],
         extra={
             "metrics": sorted(args.metrics),
             "populations": ["windows", "mac", "linux"],

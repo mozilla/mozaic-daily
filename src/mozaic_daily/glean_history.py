@@ -158,6 +158,36 @@ def append_continuation(history: pd.DataFrame, continuation: pd.DataFrame) -> pd
     return pd.concat([history, continuation[history.columns]], ignore_index=True)
 
 
+def load_project_overlay(spec_path: Path, forecast_start_date: str, data_source_value: str = "glean_history_desktop",
+                         registry: dict | None = None):
+    """A ``ResolvedOverlay`` from a project-local spec, checked against this run's seam and source.
+
+    The production resolver finds specs through the registry's ``spec_glob`` under ``data-official/{cycle}/``;
+    the Glean-history draft keeps its spec copies beside its own data, so the runner names them explicitly.
+    The code is looked up from the registry by the spec's directory name (``mozillaonline`` -> ``o``).
+    """
+    from .adjustments import load_code_registry, load_overlay_spec
+    from .overlays import ResolvedOverlay, registered_overlay_codes
+
+    spec_path = Path(spec_path)
+    spec = load_overlay_spec(spec_path)
+    if spec.get("applies_to_forecast_start") != forecast_start_date:
+        raise ValueError(f"{spec_path} is gated to {spec.get('applies_to_forecast_start')!r}, not this run's seam {forecast_start_date}")
+    if spec.get("applies_to_data_source") != data_source_value:
+        raise ValueError(f"{spec_path} applies to {spec.get('applies_to_data_source')!r}, not {data_source_value}")
+    flag = spec["allocation"]["flag_column"]
+    if flag not in OS_FLAGS:
+        raise ValueError(f"{spec_path} flag_column {flag!r} is not one of the OS populations {OS_FLAGS}")
+    registry = registry if registry is not None else load_code_registry()
+    codes = registered_overlay_codes(registry)
+    matches = [(code, entry) for code, entry in codes.items()
+               if any(Path(g).parts[-2] == spec_path.parent.name for g in (entry.get("spec_glob") if isinstance(entry.get("spec_glob"), list) else [entry.get("spec_glob")]) if g)]
+    if len(matches) != 1:
+        raise ValueError(f"cannot map {spec_path.parent.name!r} to exactly one registered overlay code; candidates {[c for c, _ in matches]}")
+    code, entry = matches[0]
+    return ResolvedOverlay(code=code, name=entry["name"], spec_path=spec_path, spec=spec)
+
+
 def _sha1(path: Path) -> str:
     h = hashlib.sha1()
     with open(path, "rb") as fh:

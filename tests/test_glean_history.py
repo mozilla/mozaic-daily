@@ -203,3 +203,47 @@ def test_mau_metric_exists_with_short_code():
 
 def test_glean_history_source_gets_the_outage_calendar_only():
     assert ADDITIONAL_HOLIDAYS[DataSource.GLEAN_HISTORY_DESKTOP] == [LegacyOutage2025]
+
+
+# ---- project overlay loader (the `o` data correction) -------------------------------------------
+
+def _overlay_spec(tmp_path, **overrides):
+    import shutil
+    spec_dir = tmp_path / "mozillaonline"
+    spec_dir.mkdir()
+    curve = pd.DataFrame({"date": pd.date_range("2026-06-01", "2027-12-31"), "mozillaonline_migration_dau_daily": 600000.0})
+    curve.to_parquet(spec_dir / "curve.parquet", index=False)
+    spec = {"type": "desktop_overlay", "platform": "desktop", "data_file": "curve.parquet",
+            "value_column": "mozillaonline_migration_dau_daily",
+            "allocation": {"key": "fixed_country_shares", "flag_column": "windows", "window_days": 28, "shares": {"CN": 0.93, "ROW": 0.07}},
+            "scope": {"exclude_countries": ["IR"]}, "applies_to_forecast_start": "2026-10-10",
+            "applies_to_data_source": "glean_history_desktop", "placeholder": False}
+    spec.update(overrides)
+    path = spec_dir / "mozillaonline.glean_history.json"
+    path.write_text(json.dumps(spec))
+    return path
+
+
+def test_load_project_overlay_maps_directory_to_code_o(tmp_path):
+    overlay = gh.load_project_overlay(_overlay_spec(tmp_path), "2026-10-10")
+    assert overlay.code == "o"
+    assert overlay.name == "mozillaonline_migration"
+    assert overlay.flag_column == "windows"
+    assert overlay.data_source.value == "glean_history_desktop"
+
+
+@pytest.mark.parametrize("overrides, match", [
+    ({"applies_to_forecast_start": "2026-09-09"}, "gated to"),
+    ({"applies_to_data_source": "legacy_desktop"}, "applies to"),
+    ({"allocation": {"key": "fixed_country_shares", "flag_column": "modern_windows", "window_days": 28, "shares": {"CN": 1.0}}}, "flag_column"),
+])
+def test_load_project_overlay_rejects_wrong_seam_source_or_flag(tmp_path, overrides, match):
+    with pytest.raises(ValueError, match=match):
+        gh.load_project_overlay(_overlay_spec(tmp_path, **overrides), "2026-10-10")
+
+
+def test_production_resolver_cannot_see_the_glean_history_spec():
+    """The draft's spec must never be picked up by a cycle run: its filename is outside the registry glob."""
+    from mozaic_daily.overlays import resolve_overlays
+    seen = {str(o.spec_path) for o in resolve_overlays("2026-10-10")}
+    assert not any("2027-glean-draft" in p for p in seen), seen
