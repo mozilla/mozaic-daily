@@ -64,6 +64,13 @@ GRIDS: dict[str, dict[str, list[str]]] = {
         "cps0.005_ncp3_cpr0.8_additive": ["--changepoint-prior-scale", "0.005", "--n-changepoints", "3", "--changepoint-range", "0.8",
                                           "--seasonality-regime", "additive"],
     },
+    # Round 3 (approved 2026-10-13): is the additive result a stable region? Neighbours of (0.005, 3, 0.8) plus the locked knobs, all additive
+    "round3": {
+        **{f"cps{cps}_ncp{ncp}_cpr{cpr}_additive": ["--changepoint-prior-scale", str(cps), "--n-changepoints", str(ncp), "--changepoint-range", str(cpr),
+                                                   "--seasonality-regime", "additive"]
+           for cps, ncp, cpr in ((0.005, 3, 0.8), (0.001, 3, 0.8), (0.005, 2, 0.8), (0.001, 2, 0.8), (0.005, 3, 0.5))},
+        "locked_additive": ["--seasonality-regime", "additive"],
+    },
 }
 
 
