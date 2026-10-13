@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 10)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 11)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-12 21:30 PDT</span>
+  <span><b>Generated:</b> 2026-10-12 22:15 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 10 — build 5 (changepoint range 0.87, both metrics) is the current PRE-DRAFT; §9b corrected after the overlay-gate bug</span>
+  <span><b>Status:</b> DRAFT 11 — build 5 stays the current PRE-DRAFT; changepoint-prior-scale round (§9c) found the model insensitive</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -416,6 +416,20 @@ range), MAU −0.5% against −0.1 to +0.7% (inside). Both metrics still fall De
 <p>Artifacts: <code>desktop_glean_history_cpr087_o_2026-10-10/</code> (<code>.adj-o.</code>, sidecar records <code>prophet_changepoint_range 0.87</code>); build 4's
 outputs moved to <code>build4_g01_seam2026-10-10/</code>. REPORT.html re-rendered on build 5. <b>This is the first configuration change from the October g01 lock</b>,
 MAU-specific in motivation but applied to both metrics so the two share one configuration; recorded here as the draft's own lock candidate.</p>
+<h2>9c. Second knob: changepoint prior scale (2026-10-12, late)</h2>
+<p>Brendan asked for one more parameter to narrow the residual seam gap (−0.28% MAU / −0.13% DAU on 7-day means). The most likely lever is
+<code>prophet_changepoint_prior_scale</code> (0.1649 in the lock), which sets how much the trend may bend at the changepoints the 0.87 range just admitted
+near the end. Three full builds at cpr 0.87: cps 0.20, 0.25, 0.30 (<code>probes_cps/</code>).</p>
+<table>
+<tr><th>run (cpr 0.87)</th><th class="num">MAU seam 7d</th><th class="num">DAU seam 7d</th><th class="num">MAU Oct 9 → Dec 15</th><th class="num">MAU 2027-12-15</th><th class="num">DAU 28d MA 2027-12-15</th><th>soft constraint</th></tr>
+<tr><td><b>build 5, cps 0.1649</b></td><td class="num">−0.28%</td><td class="num">−0.13%</td><td class="num">−0.5%</td><td class="num">157,222,571</td><td class="num">52,731,308</td><td>pass (−1.9%)</td></tr>
+<tr><td>cps 0.20</td><td class="num">−0.12%</td><td class="num">−0.11%</td><td class="num">−0.3%</td><td class="num">157,642,540</td><td class="num">52,742,577</td><td>pass</td></tr>
+<tr><td>cps 0.25</td><td class="num">−0.22%</td><td class="num">−0.12%</td><td class="num">−0.4%</td><td class="num">157,378,034</td><td class="num">52,752,868</td><td>pass</td></tr>
+<tr><td>cps 0.30</td><td class="num">−0.11%</td><td class="num">+0.03%</td><td class="num">−0.3%</td><td class="num">157,731,049</td><td class="num">52,922,853</td><td>pass</td></tr>
+</table>
+<p><b>Reading: the model is insensitive to this knob here.</b> Doubling the prior scale moves the 2027 headline by at most +0.3% and the seam by a tenth
+of a percent, non-monotonically. The residual seam gap is at the level of day-to-day noise and the remaining lag is not a trend-flexibility problem.
+Recommendation: keep build 5 (cps at the lock) rather than adopt a second configuration change for a 0.1-point gain. Probes kept on disk for the record.</p>
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
@@ -430,6 +444,7 @@ data-official/2027-glean-draft/
   desktop_glean_history_g01_o_2026-10-10/ build 4, o on DAU + MAU with the windows/mac split (.adj-o.), g01 lock
   desktop_glean_history_cpr087_o_2026-10-10/ build 5 = build 4 with changepoint range 0.87 (.adj-o.) — CURRENT PRE-DRAFT
   probes_mau_cpr/                     MAU-only changepoint-range probes (cpr*/ first round WITHOUT the China correction; fixed_cpr*/ corrected)
+  probes_cps/                         full builds at cpr 0.87 with changepoint prior scale 0.20 / 0.25 / 0.30 (insensitive; not adopted)
   mozillaonline/                      the o spec copy + DAU curve + derived MAU curve + MAU_OFFSET_APPROACH.md + measurements
   raw_glean_history_2026-10-09/       adapter output with the continuation
   _shakedown_nofill_2026-09-09/       runner shakedown without the fill (record only)
