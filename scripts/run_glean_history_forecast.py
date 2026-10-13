@@ -91,6 +91,17 @@ def add_knob_arguments(parser: argparse.ArgumentParser, defaults: dict) -> None:
         g.add_argument(f"--{flag.replace('_', '-')}", dest=flag, type=typ, default=defaults[field])
 
 
+def choose_holiday_calendars(no_outage_calendar: bool) -> list[str]:
+    """Apply the calendar choice for this run (the runner is a one-shot process) and return the names in force.
+
+    The Glean-history source carries ``LegacyOutage2025`` because every Glean-equivalent input inherits the 2025 Legacy
+    outage. Real Glean telemetry has no outage in that window, so masking it throws away clean history (COMPARISONS.html §2).
+    """
+    if no_outage_calendar:
+        ADDITIONAL_HOLIDAYS[DATA_SOURCE] = []
+    return [h.__name__ for h in ADDITIONAL_HOLIDAYS.get(DATA_SOURCE, [])]
+
+
 def build_config(args: argparse.Namespace) -> DesktopModelConfig:
     return DesktopModelConfig(**{field: getattr(args, flag) for flag, (field, _) in KNOBS.items()})
 
@@ -122,6 +133,8 @@ def parse_args():
     p.add_argument("--overlay-spec", type=Path, action="append", default=[],
                    help="project-local desktop_overlay spec to subtract pre-mozaic and add back post-mozaic (repeatable); "
                         "must be gated to this seam and to glean_history_desktop")
+    p.add_argument("--no-outage-calendar", action="store_true",
+                   help="drop the LegacyOutage2025 holiday calendar; for inputs that never had the Legacy outage (real Glean)")
     p.add_argument("--dry-run", action="store_true")
     add_knob_arguments(p, defaults=OCTOBER_G01_LOCK)
     return p.parse_args()
@@ -142,7 +155,8 @@ def main() -> None:
     print(f"Metrics             : {sorted(args.metrics)}")
     print(f"Raw dir             : {args.raw_dir}")
     print(f"Iran fill           : {args.iran_fill or 'none'}")
-    print(f"Holidays            : {[h.__name__ for h in ADDITIONAL_HOLIDAYS.get(DATA_SOURCE, [])]}")
+    holiday_names = choose_holiday_calendars(args.no_outage_calendar)
+    print(f"Holidays            : {holiday_names or 'none (--no-outage-calendar)'}")
     overlays = [load_project_overlay(path, args.forecast_start_date) for path in args.overlay_spec]
     print(f"Overlays            : {[f'{o.code} ({o.name}, {o.spec_path})' for o in overlays] or 'none'}")
     print(f"Output dir          : {slug_dir}")
@@ -156,6 +170,7 @@ def main() -> None:
         "metrics": sorted(args.metrics),
         "raw_dir": str(args.raw_dir),
         "iran_fill": str(args.iran_fill) if args.iran_fill else None,
+        "additional_holidays": holiday_names,
         "overlays": [{"code": o.code, "spec": str(o.spec_path)} for o in overlays],
     }, indent=2) + "\n")
     if args.dry_run:

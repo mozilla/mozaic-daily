@@ -248,3 +248,15 @@ def test_production_resolver_cannot_see_the_glean_history_spec():
     from mozaic_daily.overlays import resolve_overlays
     seen = {str(o.spec_path) for o in resolve_overlays("2026-10-10")}
     assert not any("2027-glean-draft" in p for p in seen), seen
+
+
+def test_runner_no_outage_calendar_flag_drops_the_calendar_for_the_glean_history_source(monkeypatch):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent / "scripts"))
+    import run_glean_history_forecast as runner
+
+    monkeypatch.setitem(ADDITIONAL_HOLIDAYS, DataSource.GLEAN_HISTORY_DESKTOP, [LegacyOutage2025])
+    assert runner.choose_holiday_calendars(False) == ["LegacyOutage2025"]
+    assert runner.choose_holiday_calendars(True) == []
+    assert ADDITIONAL_HOLIDAYS[DataSource.GLEAN_HISTORY_DESKTOP] == []

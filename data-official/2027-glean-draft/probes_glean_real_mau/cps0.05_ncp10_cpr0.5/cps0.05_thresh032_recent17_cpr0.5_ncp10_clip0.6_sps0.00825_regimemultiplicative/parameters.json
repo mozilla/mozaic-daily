@@ -1,0 +1,30 @@
+{
+  "forecast_start_date": "2026-10-10",
+  "slug": "cps0.05_thresh032_recent17_cpr0.5_ncp10_clip0.6_sps0.00825_regimemultiplicative",
+  "config": {
+    "prophet_recent_weeks": 17,
+    "prophet_changepoint_range": 0.5,
+    "prophet_n_changepoints": 10,
+    "holiday_threshold": -0.032,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_effect_floor": -0.6,
+    "seasonality_regime": "multiplicative",
+    "seasonality_corr_threshold": 0.0,
+    "prophet_changepoint_prior_scale": 0.05,
+    "prophet_seasonality_prior_scale": 0.00825
+  },
+  "data_source": "glean_history_desktop",
+  "metrics": [
+    "MAU"
+  ],
+  "raw_dir": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/raw_glean_real_osxcountry_2026-10-09",
+  "iran_fill": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/iran_fill/iran_fill.glean_history_desktop.parquet",
+  "additional_holidays": [],
+  "overlays": [
+    {
+      "code": "o",
+      "spec": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/mozillaonline/mozillaonline.glean_history.json"
+    }
+  ]
+}
