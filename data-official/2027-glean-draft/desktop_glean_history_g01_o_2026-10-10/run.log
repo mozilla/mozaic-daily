@@ -48,7 +48,10 @@ Config              : {
   "prophet_changepoint_prior_scale": 0.1649,
   "prophet_seasonality_prior_scale": 0.00825
 }
-Overlay `o` (mozillaonline_migration): subtracting from DAU training (5 countries by fixed_country_shares, 39584 windows rows)
+Overlay `o` (mozillaonline_migration): subtracting from DAU training (5 countries by fixed_country_shares, 39584 windows rows, population share 0.9654)
+Overlay `o` (mozillaonline_migration): subtracting from DAU training (5 countries by fixed_country_shares, 39584 mac rows, population share 0.0346)
+Overlay `o` (mozillaonline_migration): subtracting from MAU training (5 countries by fixed_country_shares, 39584 windows rows, population share 0.9617)
+Overlay `o` (mozillaonline_migration): subtracting from MAU training (5 countries by fixed_country_shares, 39584 mac rows, population share 0.0383)
 
 --- Populate tiles
 
@@ -107,14 +110,17 @@ done.
 --- Extracting forecasts (2 metrics)
   [1/2] DAU
   [2/2] MAU
-Overlay `o` (mozillaonline_migration): added back across 198696 rows (30464 forecast + 168232 training/actual)
+Overlay `o` (mozillaonline_migration): added DAU back on windows across 198696 rows (30464 forecast + 168232 training/actual)
+Overlay `o` (mozillaonline_migration): added DAU back on mac across 198696 rows (30464 forecast + 168232 training/actual)
+Overlay `o` (mozillaonline_migration): added MAU back on windows across 198696 rows (30464 forecast + 168232 training/actual)
+Overlay `o` (mozillaonline_migration): added MAU back on mac across 198696 rows (30464 forecast + 168232 training/actual)
 
-Forecast took 3.5 min
+Forecast took 3.4 min
 Saved mozaic objects to data-official/2027-glean-draft/desktop_glean_history_g01_o_2026-10-10/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_objects.glean_history_desktop.2026-10-10.pkl
 Wrote data-official/2027-glean-draft/desktop_glean_history_g01_o_2026-10-10/cps0.1649_thresh032_recent17_cpr0.814_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2026-10-10.gh-D+M.adj-o.parquet (+ sidecar)
 
 World values (country ALL, os ALL):
-  DAU 2026-12-15: 59,712,739
-  DAU 2027-12-15: 57,358,707
-  MAU 2026-12-15: 158,983,000
-  MAU 2027-12-15: 156,462,943
+  DAU 2026-12-15: 59,846,963
+  DAU 2027-12-15: 57,450,054
+  MAU 2026-12-15: 158,657,822
+  MAU 2027-12-15: 153,962,747

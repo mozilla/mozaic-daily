@@ -7,10 +7,10 @@
       "code": "o",
       "name": "mozillaonline_migration",
       "spec_file": "data-official/2027-glean-draft/mozillaonline/mozillaonline.glean_history.json",
-      "spec_sha1": "f7ed9cec20d6b5b4c0405c6c44f91719f129a1f4"
+      "spec_sha1": "fbb5e74cc64510671089fe20af5c5c8db4066dc7"
     }
   ],
-  "artifact_sha1": "e40cf41cf066de73e070e80e9a90667e73003574",
+  "artifact_sha1": "330cc1eee78b1d7e7379596e4002ab24581d02fc",
   "data_source": "glean_history_desktop",
   "forecast_start_date": "2026-10-10",
   "inputs_meta": {
@@ -114,13 +114,13 @@
     "seasonality_corr_threshold": 0.0,
     "seasonality_regime": "multiplicative"
   },
-  "mozaic_daily_commit": "abb2e89f909ebb9514f199be0c6022ccd3738fa4",
+  "mozaic_daily_commit": "93fe604c8a6c2451cc4ca39f2d0ab3b0a73b661c",
   "populations": [
     "windows",
     "mac",
     "linux"
   ],
-  "produced_at": "2026-10-12T23:38:04.445843+00:00Z",
+  "produced_at": "2026-10-13T00:10:18.225591+00:00Z",
   "produced_by": "scripts/run_glean_history_forecast.py",
-  "run_at": "2026-10-12T16:38:04"
+  "run_at": "2026-10-12T17:10:18"
 }
