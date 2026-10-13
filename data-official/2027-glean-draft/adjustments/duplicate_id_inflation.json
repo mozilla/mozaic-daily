@@ -1,0 +1,16 @@
+{
+  "type": "step",
+  "start_date": "2026-10-10",
+  "desktop_dau": 0,
+  "mobile_dau": 0,
+  "desktop_mau": 950000,
+  "adjustment_code": "d",
+  "candidate_only": true,
+  "applies_to_data_source": "glean_history_desktop",
+  "applies_to_metric": "MAU",
+  "sizing": {
+    "basis": "legacy-to-glean D-118 continuation note: duplicate_id_inflation e(OS) frozen at 2026-09-08 = Windows 0.709%, Linux 0.253%, Mac 0 of published MAU; applied to build 5's 2027-12-15 MAU by OS (windows 128,929,265; linux 16,563,357) = 914,109 + 41,905 = 956,014, rounded",
+    "expected_path": "export agent: slow decay toward ~0.5% while ~14% of Windows MAU is still on pre-Fx-148 builds; a step is the simple carrier, a decaying ramp would be truer"
+  },
+  "notes": "CANDIDATE, NOT APPLIED (Brendan 2026-10-12, decision 8: register the excluded terms as combinatorics candidates). The headline `glean_equivalent` MAU is net of the duplicate-id inflation that published Glean MAU still carries (pre-Fx-148 builds regenerating client ids; legacy-to-glean D-109/D-110). If the 2027 KPI is compared with published Glean MAU, this term sits between them. MAU only; the display-layer machinery renders desktop_dau/mobile_dau today, so `desktop_mau` is recorded here for the combinatorics step to wire. Sized on build 5; re-size when the build changes."
+}

@@ -1,0 +1,16 @@
+{
+  "type": "step",
+  "start_date": "2026-10-10",
+  "desktop_dau": 76000,
+  "mobile_dau": 0,
+  "desktop_mau": 1375000,
+  "adjustment_code": "x",
+  "candidate_only": true,
+  "applies_to_data_source": "glean_history_desktop",
+  "applies_to_metric": "DAU+MAU",
+  "sizing": {
+    "basis": "legacy-to-glean fc15_overlap_gap_by_month.csv, 2026-09: glean_only_temporary = 1.92% of published Linux DAU and 8.3% of published Linux MAU; applied to build 5's Linux 2027-12-15 (DAU 28d MA 3,977,943; MAU 16,563,357) = 76,377 and 1,374,759, rounded",
+    "expected_path": "export agent: episodic with unknown end (Linux US/DK bot-like surges since 2026-03, new episodes CH/SG in Sep 2026); in 2027 either filtered out of Glean or declared permanent, undecided (D-088/D-094)"
+  },
+  "notes": "CANDIDATE, NOT APPLIED (Brendan 2026-10-12, decision 8). The headline excludes the Linux Glean-only temporary surges (legacy-to-glean D-094: carried in their own column 'for a Glean-side filter to act on'). If published Glean keeps counting them in 2027, this term sits between the forecast and the dashboard. Linux only. Sized on build 5 at the September 2026 share; re-size when the build changes."
+}

@@ -90,6 +90,16 @@ def main():
 
     # Build comparison (world)
 
+    # Candidates (display-layer specs marked candidate_only), rendered as a table only
+    candidate_rows = ""
+    for spec_path in sorted((DRAFT / "adjustments").glob("*.json")):
+        spec = json.loads(spec_path.read_text())
+        if not spec.get("candidate_only"):
+            continue
+        size = ", ".join(f"{k.replace('desktop_', '').upper()} {v:+,}" for k, v in spec.items() if k in ("desktop_dau", "desktop_mau") and v)
+        candidate_rows += (f"<tr><td><code>{spec['adjustment_code']}</code> {spec_path.stem}</td><td>{spec['notes'].split('. ', 1)[1].split(' MAU only')[0].split(' Linux only')[0]}</td>"
+                           f"<td class=num>{size}</td><td>{spec['sizing']['expected_path']}</td></tr>")
+
     # Seam step
     def step(col):
         a = curves.loc[pd.Timestamp(seam) - pd.Timedelta(days=1), col]; f = curves.loc[pd.Timestamp(seam), col]
@@ -154,6 +164,13 @@ and Mac. The MAU curve is derived: the DAU curve's trailing 28-day mean × {cn['
 on MAU outside China at 2027-12-15). This is how the production cycle's MozillaOnline adjustment behaves too, and was accepted for this draft. The uncorrected
 model is kept on disk for the record (<code>PROCEDURE.html</code> §8) and is not shown here.</p>
 {img(DRAFT / "plots/cn_offsets_check.png")}
+
+<h2>4b. Candidates registered, not applied</h2>
+<p>The headline is the export's <code>glean_equivalent</code>, which excludes two terms that published Glean still carries. They are registered as
+display-layer candidates (<code>adjustments/</code>, codes <code>d</code> and <code>x</code>) for the combinatorics step and are <b>not</b> in any number on this page.
+If the 2027 KPI will be read against the Glean dashboard, these sit between the two.</p>
+<table><tr><th>candidate</th><th>what</th><th class=num>size at 2027-12-15 (this build)</th><th>expected path (export project)</th></tr>
+{candidate_rows}</table>
 
 <h2>5. Method, in one paragraph each</h2>
 <ul>

@@ -242,3 +242,21 @@ codes:
       withheld: true): registered and gated on the 2026-09-09 seam but not applied until the key
       is removed; the September rerun that follows ingest must not include it.
     spec_glob: "data-official/*/launch_at_login_existing_users/launch_at_login_existing_users.json"
+
+  d:
+    name: duplicate_id_inflation
+    applier: display_layer
+    description: >
+      CANDIDATE for the 2027 Glean-history draft, not applied anywhere (2026-10-12). Pre-Fx-148 duplicate Glean
+      client ids still inflate published Glean desktop MAU (legacy-to-glean D-109/D-110); the draft's headline
+      `glean_equivalent` is net of them. A MAU-only display-layer step (desktop_mau), sized on the locked build.
+    spec_glob: "data-official/*/adjustments/duplicate_id_inflation.json"
+
+  x:
+    name: linux_glean_only_temporary
+    applier: display_layer
+    description: >
+      CANDIDATE for the 2027 Glean-history draft, not applied anywhere (2026-10-12). Linux Glean-only surges
+      (bot-like, legacy-to-glean D-088/D-094) that published Glean counts and the headline excludes; DAU and MAU
+      display-layer step on Linux, sized on the locked build at the September 2026 share.
+    spec_glob: "data-official/*/adjustments/linux_glean_only_temporary.json"
