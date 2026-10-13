@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 9)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 10)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-12 20:10 PDT</span>
+  <span><b>Generated:</b> 2026-10-12 21:30 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 9 — build 4 delivered as PRE-DRAFT; MAU seam-step probes (changepoint range) scored, decision pending (§9b)</span>
+  <span><b>Status:</b> DRAFT 10 — build 5 (changepoint range 0.87, both metrics) is the current PRE-DRAFT; §9b corrected after the overlay-gate bug</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -386,21 +386,36 @@ The daily DAU steps by the same amount (−1.2% on 7-day means) — the DAU curv
 days into the first forecast point. Cause: the autumn 2026 ramp (Aug 20 → Oct 9 <b>+8.3%</b>) was steeper than any prior year (+5.4 to +6.7%), and with
 <code>changepoint_range 0.814</code> on 6.8 years Prophet allows no trend change in the last ~15 months, so the fitted trend sits ~1.3% under the final
 actuals and the forecast starts from the fit. Prior years ran flat to +0.7% from Oct 9 to Dec 15; build 4 runs −1.5%.</p>
-<p><b>Probes (MAU only, everything else the g01 lock, same seam, same inputs; Brendan approved the round):</b> <code>probes_mau_cpr/cpr{0.87,0.90,0.95}/</code>.
-Scored on the seam step, the Oct 9 → Nov 15 / Dec 15 shape against prior years, and the Dec-15 values.</p>
+<div class="callout warn"><b>Correction (same evening).</b> The first probe round ran <em>without</em> the China correction: <code>main.process_data_source</code> gated the
+per-tile overlays on DAU being present, so a MAU-only run with a DAU + MAU spec silently skipped them. Found when the full build at 0.87 disagreed with the
+MAU-only probe (157.2M vs 159.7M at 2027-12-15); a rerun of the probe was bit-identical (all 48 tiles), so the model is deterministic and the gap was the
+missing correction. Fixed in <code>overlays.overlays_touch</code> with a regression test (commit 2519dd3); probes rerun like-for-like below. The first-round
+numbers are kept under <code>probes_mau_cpr/cpr*/</code> for the record and are not comparable.</div>
+<p><b>Probes, corrected (MAU only, China correction on, everything else the g01 lock; Brendan approved the round and set the soft constraint
+"MAU 2027-12-15 below MAU 2026-12-15"):</b> <code>probes_mau_cpr/fixed_cpr{0.87,0.90,0.95}/</code>; the 0.87 probe reproduces build 5's MAU exactly.</p>
 <table>
-<tr><th>run</th><th class="num">seam step (1 day / 7-day means)</th><th class="num">Oct 9 → Nov 15</th><th class="num">Oct 9 → Dec 15</th><th class="num">MAU 2026-12-15</th><th class="num">MAU 2027-12-15</th><th class="num">vs build 4</th></tr>
-<tr><td>build 4 (cpr 0.814)</td><td class="num">−1.75% / −1.28%</td><td class="num">−2.1%</td><td class="num">−1.5%</td><td class="num">158,657,822</td><td class="num">153,962,747</td><td class="num">—</td></tr>
-<tr><td><b>cpr 0.87</b></td><td class="num"><b>−0.52% / −0.02%</b></td><td class="num">−0.8%</td><td class="num">−0.3%</td><td class="num">160,561,514</td><td class="num">159,749,510</td><td class="num">+5,786,763 (+3.8%)</td></tr>
-<tr><td>cpr 0.90</td><td class="num">−0.17% / +0.43%</td><td class="num">+0.8%</td><td class="num">+2.4%</td><td class="num">164,960,596</td><td class="num">172,534,506</td><td class="num">+18,571,758 (+12.1%)</td></tr>
-<tr><td>cpr 0.95</td><td class="num">−0.14% / +0.47%</td><td class="num">+0.7%</td><td class="num">+2.5%</td><td class="num">165,000,528</td><td class="num">171,977,384</td><td class="num">+18,014,636 (+11.7%)</td></tr>
-<tr><td>prior years, same stretch</td><td class="num"></td><td class="num">−0.2 to −0.3%</td><td class="num">−0.1 to +0.7%</td><td colspan="3"></td></tr>
+<tr><th>run</th><th class="num">seam step (1 day / 7-day means)</th><th class="num">Oct 9 → Dec 15</th><th class="num">MAU 2026-12-15</th><th class="num">MAU 2027-12-15</th><th class="num">Dec → Dec</th><th>soft constraint</th></tr>
+<tr><td>build 4 (cpr 0.814)</td><td class="num">−1.75% / −1.28%</td><td class="num">−1.5%</td><td class="num">158,657,822</td><td class="num">153,962,747</td><td class="num">−3.0%</td><td>pass</td></tr>
+<tr><td><b>build 5 (cpr 0.87)</b></td><td class="num"><b>−0.78% / −0.28%</b></td><td class="num">−0.5%</td><td class="num">160,221,373</td><td class="num"><b>157,222,571</b></td><td class="num">−1.9%</td><td><b>pass</b></td></tr>
+<tr><td>cpr 0.90</td><td class="num">—</td><td class="num">+2.4%</td><td class="num">164,897,394</td><td class="num">170,543,885</td><td class="num">+3.4%</td><td><b>fail</b></td></tr>
+<tr><td>cpr 0.95</td><td class="num">—</td><td class="num">+2.5%</td><td class="num">165,018,502</td><td class="num">167,324,838</td><td class="num">+1.4%</td><td><b>fail</b></td></tr>
+<tr><td>prior years, Oct 9 → Dec 15</td><td></td><td class="num">−0.1 to +0.7%</td><td colspan="4"></td></tr>
 </table>
-<p>Plot <code>_internal_plots/mau_cpr_probes.png</code>. Reading: <b>0.87</b> closes the seam (7-day means within 0.02%) and lands the autumn shape inside the
-prior-year range, at the price of a 2027-12-15 MAU 3.8% above build 4 (the fitted end-level is higher and so is the extrapolated trend). <b>0.90 and 0.95</b>
-let the last changepoints sit on the autumn ramp itself and extrapolate it: +2.4% to Dec 15 where no prior year exceeded +0.7%, and 2027 MAU 12% above build 4
-with a December 2027 level above December 2026. That is the over-extrapolation risk named before the round, and it rules them out. Decision pending: adopt
-cpr 0.87 for MAU (DAU would then be the metric with the hidden seam step; a matching DAU probe is the obvious follow-up), or keep 0.814 and bridge.</p>
+<h3>Build 5 — changepoint range 0.87 on both metrics (current PRE-DRAFT)</h3>
+<p>Full scorecard: <code>scripts/score_glean_history_seam.py</code>. The DAU seam, measured on the daily series (the trailing MA hides it), closes from
+−1.18% to −0.13% on 7-day means; MAU from −1.28% to −0.28%. Autumn shape: DAU Oct 9 → Dec 15 +3.0% against +2.2 to +2.7% in prior years (slightly above the
+range), MAU −0.5% against −0.1 to +0.7% (inside). Both metrics still fall Dec 2026 → Dec 2027 (MAU −1.9%, DAU −2.2%). Mac turns up on both metrics (+4.8% /
++6.8% Dec → Dec); Linux keeps its strong trend.</p>
+<table>
+<tr><th>world, all OS</th><th class="num">build 4 (cpr 0.814)</th><th class="num"><b>build 5 (cpr 0.87)</b></th><th class="num">delta</th></tr>
+<tr><td><b>MAU 2027-12-15</b> (headline)</td><td class="num">153,962,747</td><td class="num"><b>157,222,571</b></td><td class="num">+3,259,824 (+2.1%)</td></tr>
+<tr><td>MAU 2026-12-15</td><td class="num">158,657,822</td><td class="num">160,221,373</td><td class="num">+1,563,551 (+1.0%)</td></tr>
+<tr><td>DAU 28d MA 2027-12-15</td><td class="num">51,027,985</td><td class="num">52,731,308</td><td class="num">+1,703,323 (+3.3%)</td></tr>
+<tr><td>DAU 28d MA 2026-12-15</td><td class="num">53,038,856</td><td class="num">53,891,970</td><td class="num">+853,114 (+1.6%)</td></tr>
+</table>
+<p>Artifacts: <code>desktop_glean_history_cpr087_o_2026-10-10/</code> (<code>.adj-o.</code>, sidecar records <code>prophet_changepoint_range 0.87</code>); build 4's
+outputs moved to <code>build4_g01_seam2026-10-10/</code>. REPORT.html re-rendered on build 5. <b>This is the first configuration change from the October g01 lock</b>,
+MAU-specific in motivation but applied to both metrics so the two share one configuration; recorded here as the draft's own lock candidate.</p>
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
@@ -412,11 +427,13 @@ data-official/2027-glean-draft/
   _superseded_float_inputs_g01_2026-10-10/ build 2 on float inputs (superseded by the integer rerun)
   desktop_glean_history_g01_2026-10-10/   plain build, integer inputs (pair member)
   desktop_glean_history_g01_o-dauonly_2026-10-10/ build 3, o on DAU only (.adj-o., superseded)
-  desktop_glean_history_g01_o_2026-10-10/ build 4, o on DAU + MAU with the windows/mac split (.adj-o.) — current
+  desktop_glean_history_g01_o_2026-10-10/ build 4, o on DAU + MAU with the windows/mac split (.adj-o.), g01 lock
+  desktop_glean_history_cpr087_o_2026-10-10/ build 5 = build 4 with changepoint range 0.87 (.adj-o.) — CURRENT PRE-DRAFT
+  probes_mau_cpr/                     MAU-only changepoint-range probes (cpr*/ first round WITHOUT the China correction; fixed_cpr*/ corrected)
   mozillaonline/                      the o spec copy + DAU curve + derived MAU curve + MAU_OFFSET_APPROACH.md + measurements
   raw_glean_history_2026-10-09/       adapter output with the continuation
   _shakedown_nofill_2026-09-09/       runner shakedown without the fill (record only)
-  csv/, plots/                        build-4 curves, summary, plots, 3-build comparison; build1_seam2026-09-09/, build2_plain_seam2026-10-10/, build3_o-dauonly_seam2026-10-10/ keep the earlier ones
+  csv/, plots/                        build-5 curves, summary, plots, build 4 vs 5 comparison; build1_seam2026-09-09/, build2_plain_seam2026-10-10/, build3_o-dauonly_seam2026-10-10/, build4_g01_seam2026-10-10/ keep the earlier ones
   intervals/                          build-1 DAU Prophet bands (see the band note above)</pre>
 
 </body>
