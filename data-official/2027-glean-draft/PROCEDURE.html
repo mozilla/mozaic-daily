@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 15)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 16)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-13 11:05 PDT</span>
+  <span><b>Generated:</b> 2026-10-13 14:20 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 15 — build 5 LOCKED; the two formal comparisons presented (§12, <code>COMPARISONS.html</code>); real-Glean options awaiting decision</span>
+  <span><b>Status:</b> DRAFT 16 — build 5 LOCKED; real-Glean MAU comparison re-tuned over three probe rounds and adopted temporarily (§13); Linux short-component round pending</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -506,6 +506,26 @@ still not usable at 14 months); (b) shorter horizon — not informative; (c) sho
 Legacy seasonality — the simulated-history approach by another route, not independent.</li>
 </ul>
 
+<h2>13. Real-Glean MAU comparison: re-tuning for a short history (2026-10-13)</h2>
+<p>Brendan: "switch to MAU only … Legacy is doing well, but we need to modify the parameters of real Glean. It shouldn't go wildly up and to the right when the primary trend
+is down. The mozaic parameters are tuned for like 5 years or more of data … freely adjust the changepoint parameters and trend parameters to bring that prediction to something
+reasonable" — lower than the simulated-history version, slope roughly the YoY trend of the data. Runner gained <code>--no-outage-calendar</code> (tested); driver
+<code>scripts/run_glean_real_mau_probes.py</code> (<code>run --grid roundN</code>, <code>score --grid roundN</code>); artifacts under <code>probes_glean_real_mau/</code>.</p>
+<ul>
+<li><b>Round 1</b> (10 probes, multiplicative): mask off alone is worse (345M); changepoint prior scale {0.05, 0.01} × changepoints {10, 5} × range {0.8, 0.5} tames the world total
+(151–175M) only by Windows (111–147M) and Linux (20–44M) errors cancelling; seasonality prior 0.1 sends Linux negative. Finding: the real series has a one-off Dec-2025 → Jan-2026 step
+of 13M (~8M the duplicate-id fix with Fx 148) that every probe repeats in Jan 2027 as seasonality.</li>
+<li><b>Round 2</b> (9 probes, approved): near-linear trends (0.005 / 0.001 × 3 / 2 × 0.8 / 0.5) plus one <b>additive-regime</b> run. Multiplicative compounds Linux's +50%/yr in log
+space (30–98M); the additive run (0.005, 3, 0.8) is the first result reasonable on every OS: world 158.4M (−3.0% Dec→Dec, −5.2% Oct→Oct), Windows 125.3M, Mac 11.2M, Linux 21.9M.</li>
+<li><b>Round 3</b> (6 probes, approved): additive neighbours — a stable region (155.7–158.9M world, 21.9–22.5M Linux); the locked knobs under additive give 188.7M, so the regime
+alone is not enough. <b>Centre adopted temporarily</b> (Brendan): <code>comparison_glean_real_mau_additive_2026-10-13/</code>, world MAU 2027-12-15 <b>158,436,071</b>. In real-Glean units
+the locked forecast restates to 163.5M, so the real-only build sits 3.1% below it; nominally +0.8% above 157.2M (different units).</li>
+<li><b>Linux (Brendan's caveat)</b>: LLM/bot growth on all systems, mostly Linux, is being read as trend. Measured (<code>plots/linux_real_vs_glean_equivalent.png</code>): real − Glean-equivalent
+Linux MAU is +4.2M on 14M in the last 28 days (+31%), DAU only +4% (once-a-month clients with fresh ids); ROW/DE/US carry 83% of the growth (DE 1.2M → 3.2M in Sep–Oct 2026; US two episodes).
+The export only extends recorded windows, so the newest ROW surge is partly inside Glean-equivalent too. Mechanism available: the per-tile overlay (<code>j</code> pattern). Brendan: the
+measurement must not use Glean-equivalent (circular). Options from real Glean alone are in the session message of 2026-10-13 and will be recorded here with the chosen one.</li>
+</ul>
+
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
@@ -526,7 +546,8 @@ data-official/2027-glean-draft/
   _shakedown_nofill_2026-09-09/       runner shakedown without the fill (record only)
   csv/, plots/                        build-5 curves, summary, plots, build 4 vs 5 comparison; build1_seam2026-09-09/, build2_plain_seam2026-10-10/, build3_o-dauonly_seam2026-10-10/, build4_g01_seam2026-10-10/ keep the earlier ones
   intervals/                          build-1 DAU Prophet bands (see the band note above)
-  COMPARISONS.html, plots/comparisons/ the two formal comparisons (§12); csv/glean2027_vs_glean_real_comparison.csv, csv/glean2027_in_real_glean_units.csv</pre>
+  COMPARISONS.html, plots/comparisons/ the two formal comparisons (§12, §13); csv/glean2027_vs_glean_real_comparison.csv, csv/glean2027_in_real_glean_units.csv
+  probes_glean_real_mau/              real-Glean MAU parameter probes, rounds 1–3 (scores_round*.csv, plots); comparison_glean_real_mau_additive_2026-10-13/ the adopted export</pre>
 
 </body>
 </html>

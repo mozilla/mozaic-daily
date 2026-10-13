@@ -3,17 +3,18 @@
 """The two formal comparisons of the 2027 Glean-history forecast, as one self-contained PRE-DRAFT page.
 
 (1) Legacy MAU / DAU: the same locked configuration run on Legacy telemetry, against the locked forecast.
-(2) Real Glean MAU / DAU with NO simulated history: the same configuration on the 17 months of real Glean desktop
-    telemetry that exist (2025-05-22 on). Expected poor, required because it is the data we actually have; shown
-    honestly, with the options for making it informative laid out for a decision (nothing is run here).
+(2) Real Glean MAU with NO simulated history: the 17 months of real Glean desktop telemetry that exist (2025-05-22 on).
+    The first run (locked configuration) is unusable and is kept for the record; three probe rounds on 2026-10-13
+    re-tuned the trend and seasonality parameters for a short history, and the additive-regime centre was adopted
+    "temporarily" (Brendan). MAU only from that point (Brendan, 2026-10-13).
 
 Pure rendering plus two derived tables a reader can reproduce from the cited curves CSVs, which it also writes:
-``csv/glean2027_vs_glean_real_comparison.csv`` (the real-Glean-only build against the locked one by horizon) and
+``csv/glean2027_vs_glean_real_comparison.csv`` (the adopted real-Glean build against the locked one by horizon, MAU) and
 ``csv/glean2027_in_real_glean_units.csv`` (the locked forecast × the last-30-day real ÷ Glean-equivalent ratio).
-Plots come from ``plot_glean_history_comparisons.py`` (run it first). The raw model is never shown.
+Plots come from ``plot_glean_history_comparisons.py``, ``run_glean_real_mau_probes.py score`` and
+``plot_glean_real_linux_components.py`` (run them first). The raw model is never shown.
 
 Usage:
-    python scripts/plot_glean_history_comparisons.py
     python scripts/render_glean_history_comparisons.py   # writes data-official/2027-glean-draft/COMPARISONS.html
 """
 
@@ -30,9 +31,11 @@ import pandas as pd
 repo_root = Path(__file__).resolve().parent.parent
 DRAFT = repo_root / "data-official/2027-glean-draft"
 PLOTS = DRAFT / "plots/comparisons"
+PROBES = DRAFT / "probes_glean_real_mau"
 LOCKED_CURVES = DRAFT / "csv/glean2027_canonical_curves.csv"
 LEGACY_CURVES = DRAFT / "comparison_legacy_cpr087_2026-10-10/csv/comparison_legacy_canonical_curves.csv"
-GLEAN_REAL_CURVES = DRAFT / "comparison_glean_real_cpr087_2026-10-10/csv/comparison_glean_real_canonical_curves.csv"
+GLEAN_REAL_FIRST_RUN = DRAFT / "comparison_glean_real_cpr087_2026-10-10/csv/comparison_glean_real_canonical_curves.csv"
+GLEAN_REAL_MAU_CURVES = DRAFT / "comparison_glean_real_mau_additive_2026-10-13/csv/comparison_glean_real_mau_canonical_curves.csv"
 LEGACY_TABLE = DRAFT / "csv/glean2027_vs_legacy_comparison.csv"
 SEAM = pd.Timestamp("2026-10-10")
 DEC26, DEC27 = pd.Timestamp("2026-12-15"), pd.Timestamp("2027-12-15")
@@ -40,6 +43,7 @@ OS_ORDER = ["world", "windows", "mac", "linux"]
 METRIC_COLS = {"mau": "MAU (raw daily)", "dau_28ma": "DAU (28-day MA)"}
 HORIZONS = [("1 month", "2026-11-10"), ("Dec 15 2026", "2026-12-15"), ("3 months", "2027-01-10"), ("6 months", "2027-04-10"),
             ("9 months", "2027-07-10"), ("Dec 15 2027 (headline)", "2027-12-15")]
+ADOPTED = "cps0.005_ncp3_cpr0.8_additive"
 
 
 def img(path: Path) -> str:
@@ -64,9 +68,10 @@ def legacy_table_html(table: pd.DataFrame) -> str:
     return f"<table><tr>{head}</tr>{''.join(rows)}</table>"
 
 
-def real_vs_locked(locked: pd.DataFrame, real: pd.DataFrame) -> pd.DataFrame:
+def real_vs_locked(locked: pd.DataFrame, real: pd.DataFrame, metrics: dict[str, str] | None = None) -> pd.DataFrame:
+    """The real-Glean build against the locked one at fixed horizons, with the build's own last actual as a second reference."""
     rows = []
-    for metric, label in METRIC_COLS.items():
+    for metric, label in (metrics or METRIC_COLS).items():
         for os_name in OS_ORDER:
             col = f"{metric}_{os_name}"
             last_actual = real.loc[real["data_type"] == "training", col].dropna().iloc[-1]
@@ -94,44 +99,64 @@ def in_real_units(locked: pd.DataFrame, real: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def probe_rows(scores: pd.DataFrame, highlight: str) -> str:
+    rows = []
+    for _, r in scores.sort_values("world_2027-12-15").iterrows():
+        style = ' style="background:#eef7ee;font-weight:600"' if r.probe == highlight else ""
+        regime = "additive" if "additive" in r.probe else "multiplicative"
+        rows.append(f"<tr{style}><td>{r.probe}</td><td>{regime}</td><td class=num>{r.cps:g} / {int(r.ncp)} / {r.cpr:g}</td>"
+                    f"<td class=num>{fmt(r['world_2027-12-15'])}</td><td class=num>{r.world_dec_to_dec:+.1%}</td><td class=num>{r.world_oct27_vs_oct26_actual:+.1%}</td>"
+                    f"<td class=num>{fmt(r['windows_2027-12-15'])}</td><td class=num>{fmt(r['linux_2027-12-15'])}</td><td>{'yes' if r.any_negative else ''}</td></tr>")
+    return "".join(rows)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--out", type=Path, default=DRAFT / "COMPARISONS.html")
     args = p.parse_args()
-    locked, legacy, real = load(LOCKED_CURVES), load(LEGACY_CURVES), load(GLEAN_REAL_CURVES)
+    locked, legacy = load(LOCKED_CURVES), load(LEGACY_CURVES)
+    first_run, real = load(GLEAN_REAL_FIRST_RUN), load(GLEAN_REAL_MAU_CURVES)
     legacy_table = pd.read_csv(LEGACY_TABLE)
-    rvl = real_vs_locked(locked, real)
-    units = in_real_units(locked, real)
+    rvl = real_vs_locked(locked, real, {"mau": METRIC_COLS["mau"]})
+    rvl_first = real_vs_locked(locked, first_run, {"mau": METRIC_COLS["mau"]})
+    units = in_real_units(locked, first_run)     # the overlap actuals are the same real series in both runs
     rvl.to_csv(DRAFT / "csv/glean2027_vs_glean_real_comparison.csv", index=False)
     units.to_csv(DRAFT / "csv/glean2027_in_real_glean_units.csv", index=False)
+    scores = {n: pd.read_csv(PROBES / f"scores_{n}.csv") if (PROBES / f"scores_{n}.csv").exists() else None for n in ("round1", "round2", "round3")}
+    if scores["round1"] is None:
+        all_scores = pd.read_csv(PROBES / "scores.csv")
+        scores["round1"] = all_scores[~all_scores.probe.isin(set(scores["round2"].probe) | set(scores["round3"].probe))]
 
     commit = subprocess.check_output(["git", "-C", str(repo_root), "rev-parse", "--short", "HEAD"], text=True).strip()
     data_end = locked[locked["data_type"] == "training"].index.max().date()
     real_start = real[real["data_type"] == "training"].index.min().date()
     now = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
+    real_last = real.loc[real["data_type"] == "training", "mau_world"].dropna().iloc[-1]
+    adopted_27, adopted_26 = real.loc[DEC27, "mau_world"], real.loc[DEC26, "mau_world"]
+    restated_27 = units[(units.os == "world") & (units.metric == METRIC_COLS["mau"])]["restated_2027-12-15"].item()
+    first_1m = rvl_first[(rvl_first.os == "world") & (rvl_first.horizon == "1 month")].iloc[0]
 
-    # Real-Glean Dec-15 table (both builds, per OS)
+    # Real-Glean Dec-15 table (adopted build vs locked, MAU per OS)
     dec_rows = []
-    for metric, label in METRIC_COLS.items():
-        for os_name in OS_ORDER:
-            col = f"{metric}_{os_name}"
-            last = real.loc[real["data_type"] == "training", col].dropna().iloc[-1]
-            r26, r27, l26, l27 = real.loc[DEC26, col], real.loc[DEC27, col], locked.loc[DEC26, col], locked.loc[DEC27, col]
-            dec_rows.append(f"<tr><td>{label if os_name == 'world' else ''}</td><td>{os_name}</td><td class=num>{fmt(last)}</td>"
-                            f"<td class=num>{fmt(r26)}</td><td class=num>{fmt(r27)}</td><td class=num>{r27 / r26 - 1:+.0%}</td>"
-                            f"<td class=num>{fmt(l26)}</td><td class=num>{fmt(l27)}</td><td class=num>{l27 / l26 - 1:+.1%}</td></tr>")
-    # Horizon table, world only
+    for os_name in OS_ORDER:
+        col = f"mau_{os_name}"
+        last = real.loc[real["data_type"] == "training", col].dropna().iloc[-1]
+        r26, r27, l26, l27 = real.loc[DEC26, col], real.loc[DEC27, col], locked.loc[DEC26, col], locked.loc[DEC27, col]
+        yoy = real.loc[real["data_type"] == "training", col].loc["2026-09-10":"2026-10-09"].mean() / real.loc[real["data_type"] == "training", col].loc["2025-09-10":"2025-10-09"].mean() - 1
+        dec_rows.append(f"<tr><td>{os_name}</td><td class=num>{fmt(last)}</td><td class=num>{yoy:+.1%}</td>"
+                        f"<td class=num>{fmt(r26)}</td><td class=num><b>{fmt(r27)}</b></td><td class=num>{r27 / r26 - 1:+.1%}</td>"
+                        f"<td class=num>{fmt(l26)}</td><td class=num>{fmt(l27)}</td><td class=num>{l27 / l26 - 1:+.1%}</td></tr>")
     hz_rows = []
-    for metric, label in METRIC_COLS.items():
-        sub = rvl[(rvl.metric == label) & (rvl.os == "world")]
-        for _, r in sub.iterrows():
-            hz_rows.append(f"<tr><td>{label if r.horizon == HORIZONS[0][0] else ''}</td><td>{r.horizon} ({r.date})</td><td class=num>{fmt(r.real_glean_only)}</td>"
-                           f"<td class=num>{fmt(r.locked)}</td><td class=num>{r.ratio_real_to_locked - 1:+.1%}</td><td class=num>{r.ratio_to_own_last_actual - 1:+.1%}</td></tr>")
-    # Restatement table
+    for (_, a), (_, f) in zip(rvl[rvl.os == "world"].iterrows(), rvl_first[rvl_first.os == "world"].iterrows()):
+        hz_rows.append(f"<tr><td>{a.horizon} ({a.date})</td><td class=num>{fmt(a.locked)}</td><td class=num>{fmt(a.real_glean_only)}</td>"
+                       f"<td class=num>{a.ratio_real_to_locked - 1:+.1%}</td><td class=num>{a.ratio_to_own_last_actual - 1:+.1%}</td>"
+                       f"<td class=num>{fmt(f.real_glean_only)}</td><td class=num>{f.ratio_to_own_last_actual - 1:+.1%}</td></tr>")
     unit_rows = []
     for _, r in units.iterrows():
         unit_rows.append(f"<tr><td>{r.metric if r.os == 'world' else ''}</td><td>{r.os}</td><td class=num>{r['ratio_first30d_2025']:.3f}</td><td class=num>{r['ratio_last30d_2026']:.3f}</td>"
                          f"<td class=num>{r.ratio_min:.3f} – {r.ratio_max:.3f}</td><td class=num>{fmt(r['locked_2027-12-15'])}</td><td class=num><b>{fmt(r['restated_2027-12-15'])}</b></td></tr>")
+    probe_head = ("<tr><th>probe</th><th>regime</th><th class=num>cps / changepoints / range</th><th class=num>world 2027-12-15</th><th class=num>Dec→Dec</th>"
+                  "<th class=num>Oct 27 vs Oct 26 actual</th><th class=num>Windows 2027-12-15</th><th class=num>Linux 2027-12-15</th><th>negative values</th></tr>")
 
     w = legacy_table[legacy_table.series == "mau_world"].iloc[0]
     html = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
@@ -147,16 +172,16 @@ figure{{margin:16px 0}} figure img{{max-width:100%;border:1px solid #d9d9d9}} fi
 .wm{{position:fixed;top:40%;left:4%;font-size:150px;color:rgba(106,27,154,.10);transform:rotate(-20deg);pointer-events:none;z-index:0}}
 </style></head><body>
 <div class="wm">PRE-DRAFT</div>
-<div class="banner"><span><b>Generated:</b> {now}</span><span><b>Source:</b> <code>scripts/render_glean_history_comparisons.py</code> (plots: <code>scripts/plot_glean_history_comparisons.py</code>), mozaic-daily <code>{commit}</code>, branch glean-2027-forecast</span><span><b>Data as of:</b> {data_end} (all three inputs)</span><span><b>Status:</b> PRE-DRAFT — comparisons against the LOCKED build 5 (<code>LOCK.md</code>); nothing here changes the locked forecast</span></div>
+<div class="banner"><span><b>Generated:</b> {now}</span><span><b>Source:</b> <code>scripts/render_glean_history_comparisons.py</code> (plots: <code>plot_glean_history_comparisons.py</code>, <code>run_glean_real_mau_probes.py score</code>, <code>plot_glean_real_linux_components.py</code>), mozaic-daily <code>{commit}</code>, branch glean-2027-forecast</span><span><b>Data as of:</b> {data_end} (all inputs)</span><span><b>Status:</b> PRE-DRAFT — comparisons against the LOCKED build 5 (<code>LOCK.md</code>); real-Glean build adopted temporarily (2026-10-13), Linux overlay round pending</span></div>
 
 <h1>PRE-DRAFT — The two comparisons for the 2027 Glean-history forecast</h1>
 <p>The locked 2027 forecast (world MAU 2027-12-15 <b>{fmt(locked.loc[DEC27, 'mau_world'])}</b>) is trained on a <em>simulated</em> Glean history: Legacy telemetry restated
-the way Glean counts. Two comparisons test that choice, both with the identical locked configuration (g01 lock, changepoint range 0.87, Iran fill, 2025 outage calendar,
-China correction) and the identical seam {SEAM.date()}:</p>
+the way Glean counts. Two comparisons test that choice, both at the identical seam {SEAM.date()}:</p>
 <ol>
-<li><b>Legacy telemetry</b> (2020-01-01 → {data_end}) — the data the simulated history was made from. If the model is doing the same thing on both, the two
+<li><b>Legacy telemetry</b> (2020-01-01 → {data_end}), the identical locked configuration. If the model is doing the same thing on both, the two
 forecasts should differ by the translation factor and nothing else.</li>
-<li><b>Real Glean telemetry, no simulated history</b> ({real_start} → {data_end}, 17 months) — the data we actually have. Expected to be poor, required anyway.</li>
+<li><b>Real Glean telemetry, no simulated history</b> ({real_start} → {data_end}, 17 months), the data we actually have. The locked configuration is unusable on it
+(§2); the trend and seasonality parameters were re-tuned for a short history (§3) and the result adopted temporarily (§4). MAU only.</li>
 </ol>
 
 <h2>1. Legacy MAU and DAU — same model, Legacy telemetry</h2>
@@ -175,74 +200,87 @@ the solid one is what "translation-invariant" looks like; Mac's small drift (0.9
 macOS as <code>Darwin</code>); its own Iran fill in Legacy units (<code>iran_fill_legacy/</code>); build <code>comparison_legacy_cpr087_2026-10-10/</code>. Both
 histories carry the 2025 Legacy outage crater (shaded), because the simulated history is derived from Legacy; both runs mask it with the same calendar.</p>
 
-<h2>2. Real Glean MAU and DAU — same model, real Glean only, no simulated history</h2>
-<div class="callout bad"><b>Result: unusable, as expected.</b> With 17 months of history the model's "forecast" takes world MAU from {fmt(real.loc[real['data_type'] == 'training', 'mau_world'].dropna().iloc[-1])}
-on {data_end} to <b>{fmt(real.loc[DEC27, 'mau_world'])}</b> on 2027-12-15 (+{real.loc[DEC27, 'mau_world'] / locked.loc[DEC27, 'mau_world'] - 1:.0%} over the locked forecast); Windows DAU goes
-negative; Linux MAU goes negative. These are not forecasts of anything. The page shows them because they are what the real data, treated the same way, produces.</div>
+<h2>2. Real Glean, first run: the locked configuration on 17 months (for the record)</h2>
+<div class="callout bad"><b>Unusable, as expected.</b> World MAU from {fmt(first_run.loc[first_run['data_type'] == 'training', 'mau_world'].dropna().iloc[-1])} on {data_end} to
+{fmt(first_run.loc[DEC27, 'mau_world'])} on 2027-12-15; Windows DAU and Linux MAU negative. Already +{first_1m.ratio_to_own_last_actual - 1:.0%} over its own last actual after one month, so no
+horizon is short enough to make it informative. Build <code>comparison_glean_real_cpr087_2026-10-10/</code>; it is the dotted red line in §4's chart.</div>
+<p>Three reasons, in order of size. <b>(1) One autumn, seen once:</b> with 17 months Prophet cannot separate yearly seasonality from trend, so the Aug–Oct 2026 ramp
+is read as trend; the round-1 backtest of the locked configuration said the same for every seam with under four years of history. <b>(2) The run masked three months
+it should not have:</b> the <code>LegacyOutage2025</code> calendar (Windows 2025-08-16 → 11-06, Mac 08-28 → 12-10) was applied unconditionally; real Glean has no outage there.
+Fixed with the runner's <code>--no-outage-calendar</code> flag; on its own, removing the mask makes the locked configuration <em>worse</em> (345M), so the mask was not
+the cause. <b>(3) The Iran fill is in Glean-equivalent units</b> (DAU ratio within 1%; small; a clean run would regenerate it from the real frames).</p>
+
+<h2>3. Re-tuning for a short history: three probe rounds (2026-10-13, MAU only)</h2>
+<p>Brendan: the locked parameters are tuned for five-plus years of data; adjust the changepoint and trend parameters freely until the real-Glean forecast is
+reasonable — lower than the simulated-history version, slope roughly the data's year-over-year trend (world MAU −3.8% in the last month, Windows −8.7%, Mac +3.6%,
+Linux +51%). All probes: outage mask off, Iran fill and China correction as before, seam {SEAM.date()}, MAU only. Driver
+<code>scripts/run_glean_real_mau_probes.py</code>; every probe's parquet, sidecar and pickle under <code>probes_glean_real_mau/</code>.</p>
+<h3>Round 1 — looser-to-tighter changepoints, multiplicative regime</h3>
+<table>{probe_head}{probe_rows(scores['round1'], '')}</table>
+<p>Tightening the changepoints tames the world total, but only because <b>Windows and Linux errors cancel</b>: Linux is sent to 20–44M (actual 17.7M; the bot-like
+surge extrapolated) and Windows down to 111–147M. Loosening the seasonality prior sends Linux negative.</p>
+{img(PROBES / 'probes_by_os_mau_round1.png')}
+<h3>Round 2 — near-linear trend, plus one additive-regime run</h3>
+<table>{probe_head}{probe_rows(scores['round2'], ADOPTED)}</table>
+<p>Near-linear trends give each OS its mean slope, but under the <b>multiplicative</b> regime the slope is applied in log space, so Linux's +50%/yr compounds
+(30–98M by Dec 2027) and drags the world up. <b>The one additive-regime run is the first result reasonable on every OS.</b></p>
+{img(PROBES / 'probes_by_os_mau_round2.png')}
+<h3>Round 3 — is the additive result a stable region?</h3>
+<table>{probe_head}{probe_rows(scores['round3'], ADOPTED)}</table>
+<p>Yes: the five near-linear additive probes land within 155.7–158.9M world and 21.9–22.5M Linux. The regime alone is not enough (the locked knobs under additive
+give 188.7M). The centre, <b>additive, changepoint prior scale 0.005, 3 changepoints, range 0.8</b>, was adopted temporarily.</p>
+{img(PROBES / 'probes_by_os_mau_round3.png')}
+<div class="callout warn"><b>One thing no parameter fixes.</b> Real Glean MAU dropped 13M between mid-December 2025 and mid-January 2026; about 8M of that was the
+duplicate-id fix arriving with Firefox 148 (real ÷ Glean-equivalent fell from 1.068 to 1.024 over those weeks), a one-off step. With one observed year the model can
+only read it as seasonal, so every probe repeats the drop in January 2027.</div>
+
+<h2>4. The real-Glean MAU comparison as adopted (temporarily)</h2>
+<div class="callout ok"><b>World MAU 2027-12-15 = {fmt(adopted_27)}</b> (2026-12-15 {fmt(adopted_26)}, {adopted_27 / adopted_26 - 1:+.1%}). Against the two criteria: the
+slope matches the data's YoY on every OS. On "lower than the simulated-history version": it is {adopted_27 / locked.loc[DEC27, 'mau_world'] - 1:+.1%} against the locked
+{fmt(locked.loc[DEC27, 'mau_world'])} in nominal terms, but the two are in different units — real Glean counts about 4% more MAU than Glean-equivalent today (§5), so the locked
+forecast restated in real-Glean units is {fmt(restated_27)}, and the real-only build sits {adopted_27 / restated_27 - 1:+.1%} below that.
+Build <code>comparison_glean_real_mau_additive_2026-10-13/</code>.</div>
 {img(PLOTS / 'glean_real_vs_locked_mau_by_os.png')}
-{img(PLOTS / 'glean_real_vs_locked_dau_28ma_by_os.png')}
-<h3>Table: Dec 15 values, real-Glean-only build vs the locked build</h3>
-<table><tr><th>metric</th><th>OS</th><th class=num>real Glean actual {data_end}</th><th class=num>real-only 2026-12-15</th><th class=num>real-only 2027-12-15</th><th class=num>Dec→Dec</th>
-<th class=num>locked 2026-12-15</th><th class=num>locked 2027-12-15</th><th class=num>Dec→Dec</th></tr>
-{''.join(dec_rows)}</table>
-
-<h3>Why it fails (three reasons, in order of size)</h3>
-<ol>
-<li><b>One autumn, seen once.</b> Prophet needs at least two passes through a season to separate yearly seasonality from trend. The only autumn ramp this run saw
-(Aug–Oct 2026, +12% in world MAU) is read as trend and extrapolated for 15 months. The backtest of the locked configuration said the same thing: seams with
-under four years of history missed by 30–90% at 14 months (<code>backtest_round1/</code>), which is why the stated error band uses only seams with ≥ 4 years.</li>
-<li><b>The run masked three months it should not have.</b> The <code>LegacyOutage2025</code> holiday calendar (Windows 2025-08-16 → 11-06, Mac 08-28 → 12-10, applied
-as one union window) is wired into the runner unconditionally because every Glean-history input inherits the Legacy outage. Real Glean has no outage in that window
-(the black line in the shaded region is clean), so the mask threw away the <em>first</em> autumn too, leaving the model with no 2025 autumn at all. This is a
-defect of the run as executed, separate from the short-history problem; fixing it needs a runner flag and a one-minute rerun.</li>
-<li><b>The Iran fill is in Glean-equivalent units</b> (the locked build's fill was passed through). Real Glean ÷ Glean-equivalent is within ±1% on DAU, so this is
-small, but a clean run would regenerate the fill from the real-Glean frames.</li>
-</ol>
-
-<h3>Does a shorter horizon help? No — it is already wrong at one month</h3>
-<p>The real-Glean-only build against the locked one, world, by horizon (<code>csv/glean2027_vs_glean_real_comparison.csv</code>). The last column is the build against its
-own last actual, so no translation question enters: world MAU is +{rvl[(rvl.metric == 'MAU (raw daily)') & (rvl.os == 'world') & (rvl.horizon == '1 month')].ratio_to_own_last_actual.item() - 1:.0%}
-above its own October level after one month, in a season where the locked build and every prior year flatten. The trend misread happens at the seam, not at the horizon,
-so cutting the horizon only hides it.</p>
-<table><tr><th>metric</th><th>horizon</th><th class=num>real-Glean-only</th><th class=num>locked</th><th class=num>real ÷ locked − 1</th><th class=num>real ÷ own last actual − 1</th></tr>
+<h3>Table: MAU per OS, adopted real-Glean build vs the locked build</h3>
+<table><tr><th>OS</th><th class=num>real actual {data_end}</th><th class=num>data YoY (Sep 10–Oct 9)</th><th class=num>real-only 2026-12-15</th><th class=num>real-only 2027-12-15</th><th class=num>Dec→Dec</th>
+<th class=num>locked 2026-12-15</th><th class=num>locked 2027-12-15</th><th class=num>Dec→Dec</th></tr>{''.join(dec_rows)}</table>
+<h3>Table: world MAU by horizon, adopted build and first run (<code>csv/glean2027_vs_glean_real_comparison.csv</code>)</h3>
+<table><tr><th>horizon</th><th class=num>locked</th><th class=num>adopted real-only</th><th class=num>vs locked</th><th class=num>vs own last actual</th><th class=num>first run</th><th class=num>first run vs own last actual</th></tr>
 {''.join(hz_rows)}</table>
+<div class="callout warn"><b>Still open: Linux.</b> The adopted build still extrapolates Linux's bot-like surge as trend (19.9M at the seam → 21.9M), only more gently.
+That is a trend misread by construction: the surge is a short component (§5), not a trend marker. The next round separates it.</div>
 
-<h3>What the real data does tell us: the units</h3>
-<p>Over the 17-month overlap, real Glean ÷ Glean-equivalent (<code>csv/glean2027_in_real_glean_units.csv</code>, plot below) is the part of real Glean the
-<code>glean_equivalent</code> column deliberately excludes: the pre-Fx-148 duplicate-id MAU inflation (world MAU ratio 1.077 in mid-2025, falling to ~1.02 by spring 2026
-as Fx 148+ rolled out) and the Linux Glean-only temporary term (Linux MAU ratio 1.40 at the seam, still rising). DAU is within 1% throughout. These are the two
-combinatorics candidates registered in <code>adjustments/</code> (<code>d</code>, <code>x</code>), measured.</p>
+<h2>5. What the real data does tell us: the units, and the Linux short component</h2>
+<p>Over the 17-month overlap, real Glean ÷ Glean-equivalent (<code>csv/glean2027_in_real_glean_units.csv</code>) is the part of real Glean the <code>glean_equivalent</code>
+column deliberately excludes: the pre-Fx-148 duplicate-id MAU inflation (world MAU ratio 1.077 in mid-2025, falling to ~1.02 by spring 2026 as Fx 148+ rolled out) and
+the Linux Glean-only temporary term (Linux MAU ratio 1.40 at the seam, still rising). DAU is within 1% throughout. These are the two combinatorics candidates
+registered in <code>adjustments/</code> (<code>d</code>, <code>x</code>), measured.</p>
 {img(PLOTS / 'glean_real_ratio_by_os.png')}
 <table><tr><th>metric</th><th>OS</th><th class=num>ratio, first 30 d (2025)</th><th class=num>ratio, last 30 d (2026)</th><th class=num>range</th><th class=num>locked 2027-12-15</th><th class=num>× last-30-d ratio</th></tr>
 {''.join(unit_rows)}</table>
 <p>The last column is the locked forecast <em>restated</em> in real-Glean units at today's ratio — arithmetic, not a forecast, and an upper bound for Windows (the
-duplicate-id term is still shrinking) and a guess for Linux (the temporary term has no settled level). It is the honest answer to "what would the real Glean MAU number
-read on 2027-12-15": world {fmt(units[(units.os == 'world') & (units.metric == 'MAU (raw daily)')]['restated_2027-12-15'].item())} rather than
-{fmt(locked.loc[DEC27, 'mau_world'])}, if nothing about the two excluded terms changes.</p>
+duplicate-id term is still shrinking) and a guess for Linux (the temporary term has no settled level).</p>
+<h3>Linux: where the surge is</h3>
+<p>Real minus Glean-equivalent Linux, per country, is a daily series of the bot-like component the export project excludes. In the last 28 days it is +4.2M MAU on a
+14M base (+31%) but only +4% of DAU: these are mostly once-a-month clients with fresh ids. ROW, DE and US carry 83% of Linux's growth since mid-2025 (DE 1.2M → 3.2M in
+September–October alone; US in two episodes, July 2025 and March–October 2026); the other 13 countries sit within a few percent of Glean-equivalent. Caveat: the export
+only extends windows it already recorded, so the newest ROW surge is partly inside Glean-equivalent too — the separation is good but not complete at the edge, which is
+also why the locked build's Linux climbs to 16.6M.</p>
+{img(DRAFT / 'plots/linux_real_vs_glean_equivalent.png')}
+<div class="callout ask"><b>Next round (pending): a Linux short-component overlay on the adopted build</b> — the per-tile overlay mechanism the production cycle uses
+for the Japan bot population (<code>j</code>): subtract a measured bot-like curve from the Linux training rows before the model, add back a chosen path after. Brendan
+asked that the measurement <em>not</em> use the Glean-equivalent series (circular); the candidate measurements from real Glean alone are listed in the session notes and
+PROCEDURE.html §13.</div>
 
-<h2>3. Options for the real-Glean comparison — for decision, nothing run</h2>
-<div class="callout ask"><b>Recommendation: do (a), present (c) beside it, and record (b) and (d) as not informative.</b> (a) is a model run and waits for the word.</div>
-<table><tr><th>option</th><th>what</th><th>needs a model run?</th><th>expected outcome</th></tr>
-<tr><td><b>(a) Rerun real Glean without the outage mask, with a real-Glean Iran fill</b></td><td>Add a <code>--no-outage-calendar</code> flag to the runner; regenerate the fill from
-<code>raw_glean_real_osxcountry_2026-10-09/</code>; same configuration otherwise.</td><td>Yes (~1 min)</td><td>Still not usable at 14 months — reason 1 stands — but the run is then
-a fair statement of what the real data gives, with no treatment designed for the simulated history left in it. Worth doing for the record.</td></tr>
-<tr><td><b>(b) Shorter horizon</b></td><td>Report the real-Glean-only build to, say, 2027-01 or 2027-03 only.</td><td>No</td><td>Not informative: the table above shows the build is already
-+{rvl[(rvl.metric == 'MAU (raw daily)') & (rvl.os == 'world') & (rvl.horizon == '1 month')].ratio_real_to_locked.item() - 1:.0%} over the locked forecast at one month. The error is a trend misread at the seam.</td></tr>
-<tr><td><b>(c) Restate the locked forecast in real-Glean units</b></td><td>Locked forecast × the seam-time real ÷ Glean-equivalent ratio per OS and metric (the table above; already written).</td><td>No</td>
-<td>Informative as a reading aid, not as a forecast: it says what the dashboard would show on 2027-12-15 if the duplicate-id and Linux terms stayed where they are. Could be
-shown beside the headline with that caveat.</td></tr>
-<tr><td><b>(d) Real Glean trend + seasonality borrowed from Legacy</b></td><td>Fit the level/trend on real Glean, take yearly seasonality and holidays from the Legacy (or Glean-equivalent) tiles.</td>
-<td>Yes, plus mozaic code</td><td>This is the simulated-history approach by another route: the seasonality would come from the same Legacy data. It would not be an independent check.</td></tr>
-</table>
-
-<h2>4. Provenance</h2>
+<h2>6. Provenance</h2>
 <ul>
 <li>Locked build: <code>desktop_glean_history_cpr087_o_2026-10-10/</code>, curves <code>csv/glean2027_canonical_curves.csv</code> (<code>LOCK.md</code>).</li>
 <li>Legacy: <code>comparison_legacy_cpr087_2026-10-10/</code> on <code>raw_legacy_osxcountry_2026-10-09/</code>, Iran fill <code>iran_fill_legacy/</code>, same China correction.</li>
-<li>Real Glean: <code>comparison_glean_real_cpr087_2026-10-10/</code> on <code>raw_glean_real_osxcountry_2026-10-09/</code> (<code>glean_telemetry.active_users_aggregates</code>,
-Firefox Desktop, from {real_start}), the locked build's Iran fill, the <code>LegacyOutage2025</code> calendar (see reason 2), same China correction.</li>
+<li>Real Glean, first run: <code>comparison_glean_real_cpr087_2026-10-10/</code> on <code>raw_glean_real_osxcountry_2026-10-09/</code> (<code>glean_telemetry.active_users_aggregates</code>,
+Firefox Desktop, from {real_start}), locked knobs, the locked build's Iran fill, the <code>LegacyOutage2025</code> calendar (§2), same China correction.</li>
+<li>Real Glean, adopted: <code>comparison_glean_real_mau_additive_2026-10-13/</code> (README there), the probe <code>probes_glean_real_mau/{ADOPTED}/</code>, MAU only, mask off.</li>
 <li>Both comparison pulls: <code>scripts/sql/glean_history_comparison_*.sql</code> through <code>bq_query.py</code>, framed by <code>scripts/build_comparison_raw_frames.py</code>, run by
-<code>scripts/run_glean_history_forecast.py</code>, exported by <code>scripts/export_glean_history_curves.py</code>. Full record: <code>PROCEDURE.html</code> §11b and §12.</li>
+<code>scripts/run_glean_history_forecast.py</code>, exported by <code>scripts/export_glean_history_curves.py</code>. Full record: <code>PROCEDURE.html</code> §11b, §12, §13.</li>
 </ul>
 </body></html>
 """

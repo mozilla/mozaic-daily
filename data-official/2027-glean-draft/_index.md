@@ -17,13 +17,14 @@ Start with `LOCK.md` (what is locked and why), then `PROCEDURE.html` (every deci
 | uncertainty | backtest of the locked config at 8 seams (≥ 4 y history): MAU 431-day \|error\| p50 6.7% / p90 9.9%, forecasts ran low ~3%; translation band ±~1.3% |
 | validation | same model on Legacy telemetry = this forecast ÷ the translation factor (MAU 1.030, DAU 1.040), Dec→Dec equal |
 | comparisons | `COMPARISONS.html` (2026-10-13): Legacy = the same forecast ÷ the translation factor; real Glean with no simulated history = unusable at 17 months (world MAU 169M → 229M), already +15% at one month so a shorter horizon does not help; the run also masked Aug–Dec 2025 with the Legacy-outage calendar, which real Glean does not need |
-| next | Brendan's decision on the real-Glean options in `COMPARISONS.html` §3 (recommended: rerun without the outage mask + a real-Glean Iran fill, for the record; show the real-units restatement beside the headline with its caveat) |
+| real Glean | re-tuned for 17 months (additive regime, cps 0.005, 3 changepoints, range 0.8, outage mask off) and adopted temporarily 2026-10-13: world MAU 2027-12-15 158,436,071, −3.0% Dec→Dec |
+| next | Linux short-component overlay on the adopted real-Glean build, measured from real Glean alone (not Glean-equivalent); Brendan to pick the measurement (COMPARISONS.html §5, PROCEDURE §13) |
 
 ## What's here
 
 | path | what |
 |---|---|
-| `LOCK.md`, `PROCEDURE.html`, `REPORT.html` | lock record; full record (draft 15); external PRE-DRAFT copy (`scripts/render_glean_history_report.py`) |
+| `LOCK.md`, `PROCEDURE.html`, `REPORT.html` | lock record; full record (draft 16); external PRE-DRAFT copy (`scripts/render_glean_history_report.py`) |
 | `COMPARISONS.html` | the two formal comparisons as one PRE-DRAFT page (`scripts/render_glean_history_comparisons.py`; plots `plots/comparisons/` from `scripts/plot_glean_history_comparisons.py`) |
 | `handoff/` | per-metric packages for coworkers: `glean2027_{mau,dau}_handoff/` + `.zip` (page, forecast CSVs, plots, README); `scripts/render_glean_history_handoff.py` |
 | `inputs/legacy_to_glean_export/` | the delivered export, **tracked**: fc15 per-cell parquets (DAU, MAU) + D-118 continuation to 2026-10-09, roll-ups, cell summary, gap/seam CSVs, the export project's notes. Source: `~/work/experiments/legacy-to-glean/.claude/worktrees/export-rollups/exports/` @ 22e01e2 |
@@ -36,7 +37,8 @@ Start with `LOCK.md` (what is locked and why), then `PROCEDURE.html` (every deci
 | `desktop_glean_history_g01_*`, `build*_seam*/` | earlier builds and their exported outputs (build 1 seam 09-09; build 2 plain; build 3 o on DAU only; build 4 o on both, g01) |
 | `probes_mau_cpr/`, `probes_cps/` | parameter probes (changepoint range; changepoint prior scale); `probes_mau_cpr/cpr*/` ran without the China correction (gate bug, fixed) — use `fixed_cpr*/` |
 | `backtest/`, `backtest_round1/` | backtest of the locked config: round 2 (≥ 4 y seams, inputs cut at seam) is the stated one; round 1 kept for the record |
-| `comparison_legacy_cpr087_2026-10-10/`, `comparison_glean_real_cpr087_2026-10-10/` | the same model on Legacy telemetry (validates the translation factor) and on real Glean from 2025-05-22 (unusable, 17 months) |
+| `comparison_legacy_cpr087_2026-10-10/`, `comparison_glean_real_cpr087_2026-10-10/` | the same model on Legacy telemetry (validates the translation factor) and on real Glean from 2025-05-22 (first run, locked knobs: unusable, kept for the record) |
+| `probes_glean_real_mau/`, `comparison_glean_real_mau_additive_2026-10-13/` | real-Glean MAU parameter probes (rounds 1–3, `scripts/run_glean_real_mau_probes.py`) and the adopted additive-regime build (world MAU 2027-12-15 158,436,071; README) |
 | `csv/`, `plots/`, `plots/canonical/`, `plots/comparisons/` | the locked build's curves, Dec-15 summary, build comparison, Legacy comparison table, real-Glean comparison by horizon, real-units restatement, Easter alignment; canonical-format plots (purple PRE-DRAFT); comparison plots |
 | `intervals/` | build-1 DAU Prophet bands (kept; the Prophet band is not usable at this horizon) |
 | `_internal_plots/`, `_shakedown_nofill_*`, `_superseded_float_inputs_*` | internal diagnostics and records; not for circulation |

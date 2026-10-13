@@ -40,7 +40,8 @@ from mozaic_daily.glean_history_holidays import LEGACY_OUTAGE_WINDOWS_2025  # no
 DRAFT = repo_root / "data-official/2027-glean-draft"
 LOCKED_CURVES = DRAFT / "csv/glean2027_canonical_curves.csv"
 LEGACY_CURVES = DRAFT / "comparison_legacy_cpr087_2026-10-10/csv/comparison_legacy_canonical_curves.csv"
-GLEAN_REAL_CURVES = DRAFT / "comparison_glean_real_cpr087_2026-10-10/csv/comparison_glean_real_canonical_curves.csv"
+GLEAN_REAL_CURVES = DRAFT / "comparison_glean_real_cpr087_2026-10-10/csv/comparison_glean_real_canonical_curves.csv"   # first run (locked knobs, mask on); history + DAU
+GLEAN_REAL_MAU_CURVES = DRAFT / "comparison_glean_real_mau_additive_2026-10-13/csv/comparison_glean_real_mau_canonical_curves.csv"   # adopted MAU build
 SEAM = pd.Timestamp("2026-10-10")
 HORIZON_END = pd.Timestamp("2027-12-31")
 COMPARISON_COLOR = "blue"
@@ -71,12 +72,15 @@ def mark_dates(ax, start: pd.Timestamp, end: pd.Timestamp = HORIZON_END):
     ax.axvline(SEAM, color="grey", linestyle="--", alpha=0.6, label=f"Seam {SEAM.date()}")
 
 
-def draw_pair(ax, *, locked, other, col, start, locked_history_label, other_history_label, other_forecast_label, shade=False):
-    """Two builds on one axis from ``start``: both histories, the locked forecast (green), the other (blue)."""
+def draw_pair(ax, *, locked, other, col, start, locked_history_label, other_history_label, other_forecast_label, shade=False, reference=None):
+    """Two builds on one axis from ``start``: both histories, the locked forecast (green), the other (blue), an optional dotted reference."""
     l_act, l_fc = split(locked, col)
     o_act, o_fc = split(other, col)
     if shade:
         shade_outage(ax)
+    if reference is not None:
+        _, r_fc = split(reference[0], col)
+        ax.plot(r_fc, color="tab:red", linewidth=0.8, linestyle=":", alpha=0.8, label=reference[1])
     ax.plot(l_act[l_act.index >= start], color="dimgrey", linewidth=1.2, alpha=0.8, label=locked_history_label)
     ax.plot(o_act[o_act.index >= start], color="black", linewidth=2, label=other_history_label)
     ax.plot(l_fc, color="green", linewidth=1.4, label="Forecast (locked build, Glean-equivalent history)")
@@ -90,11 +94,11 @@ def draw_pair(ax, *, locked, other, col, start, locked_history_label, other_hist
                         textcoords="offset points", fontsize=8, color=color)
 
 
-def pair_figure(*, locked, other, metric_key, start, labels, shade, title, out):
+def pair_figure(*, locked, other, metric_key, start, labels, shade, title, out, reference=None):
     metric_name, statistic = METRICS[metric_key]
     fig, axes = plt.subplots(2, 2, figsize=(16, 9))
     for ax, os_name in zip(axes.ravel(), OS_ORDER):
-        draw_pair(ax, locked=locked, other=other, col=f"{metric_key}_{os_name}", start=start, shade=shade, **labels)
+        draw_pair(ax, locked=locked, other=other, col=f"{metric_key}_{os_name}", start=start, shade=shade, reference=reference, **labels)
         scope = "Desktop" if os_name == "world" else f"Desktop {os_name}"
         style_time_axis(ax, title=f"{scope} {metric_name}: {title}", ylabel=f"{metric_name}, {statistic}",
                         legend_loc="lower left" if metric_key == "dau_28ma" else "upper left")
@@ -141,6 +145,7 @@ def main():
     p.add_argument("--out-dir", type=Path, default=DRAFT / "plots/comparisons")
     args = p.parse_args()
     locked, legacy, real = load_curves(LOCKED_CURVES), load_curves(LEGACY_CURVES), load_curves(GLEAN_REAL_CURVES)
+    real_mau = load_curves(GLEAN_REAL_MAU_CURVES)
     out = args.out_dir
 
     # (1) Legacy
@@ -158,10 +163,11 @@ def main():
     real_start = real[real["data_type"] == "training"].index.min()
     real_labels = dict(locked_history_label="Glean-equivalent history (what the locked build trained on; NOT seen by this run)",
                        other_history_label="Actuals, real Glean telemetry (all this run saw)",
-                       other_forecast_label="Forecast (same model on real Glean only, no simulated history)")
-    for metric_key in METRICS:
-        pair_figure(locked=locked, other=real, metric_key=metric_key, start=real_start, labels=real_labels,
-                    shade=True, title="real Glean only vs locked", out=out / f"glean_real_vs_locked_{metric_key}_by_os.png")
+                       other_forecast_label="Forecast (real Glean only: additive regime, cps 0.005, 3 changepoints, range 0.8, mask off)")
+    # MAU only (Brendan, 2026-10-13); the first run (locked knobs, outage mask on) stays as a dotted reference
+    pair_figure(locked=locked, other=real_mau, metric_key="mau", start=real_start, labels=real_labels, shade=True,
+                title="real Glean only vs locked", out=out / "glean_real_vs_locked_mau_by_os.png",
+                reference=(real, "First run: locked knobs, outage mask on (COMPARISONS §2, for the record)"))
     ratio_figure(numerator=real, denominator=locked, start=real_start, end=SEAM - pd.Timedelta(days=1),
                  title="real Glean ÷ Glean-equivalent, overlap only", label="ratio", hline_label="last 30 days →",
                  shade=True, out=out / "glean_real_ratio_by_os.png")

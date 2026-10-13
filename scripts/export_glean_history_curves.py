@@ -60,15 +60,26 @@ def world_series(df: pd.DataFrame, metric_col: str, os_name: str) -> pd.DataFram
     return rows.set_index("target_date")[[metric_col, "data_type"]]
 
 
+def metrics_present(df: pd.DataFrame) -> list[str]:
+    """Which of dau / mau the parquet carries (a MAU-only probe has no usable dau column)."""
+    return [m for m in ("dau", "mau") if m in df.columns and df[m].notna().any()]
+
+
 def build_curves(df: pd.DataFrame, seam: pd.Timestamp) -> pd.DataFrame:
     out = None
+    metrics = metrics_present(df)
     for os_name in OS_ORDER:
-        dau = world_series(df, "dau", os_name)
-        mau = world_series(df, "mau", os_name)
-        ma = display_ma(pd.Series(dau.index), dau["dau"], seam)
-        part = pd.DataFrame({f"dau_28ma_{os_name}": ma, f"mau_{os_name}": mau["mau"]})
+        cols = {}
+        if "dau" in metrics:
+            dau = world_series(df, "dau", os_name)
+            cols[f"dau_28ma_{os_name}"] = display_ma(pd.Series(dau.index), dau["dau"], seam)
+        mau = world_series(df, "mau", os_name) if "mau" in metrics else None
+        if mau is not None:
+            cols[f"mau_{os_name}"] = mau["mau"]
+        base = dau if "dau" in metrics else mau
+        part = pd.DataFrame(cols)
         if out is None:
-            out = pd.DataFrame({"data_type": dau["data_type"]}).join(part)
+            out = pd.DataFrame({"data_type": base["data_type"]}).join(part)
         else:
             out = out.join(part)
     out.index.name = "date"
@@ -85,7 +96,7 @@ def translation_band_pct(metric: str, os_name: str) -> float:
 
 def build_summary(curves: pd.DataFrame) -> pd.DataFrame:
     rows = []
-    for metric in ("dau", "mau"):
+    for metric in [m for m in ("dau", "mau") if f"{m}_28ma_world" in curves.columns or f"{m}_world" in curves.columns]:
         for os_name in OS_ORDER:
             col = f"dau_28ma_{os_name}" if metric == "dau" else f"mau_{os_name}"
             band = translation_band_pct(metric, os_name)
@@ -141,7 +152,7 @@ def plot_by_country(df: pd.DataFrame, seam: pd.Timestamp, label: str, out_dir: P
     countries = [c for c in sorted(df["country"].unique()) if c != "ALL"]
     seg = json.dumps({"os": "ALL"})
     written = []
-    for col, title in [("mau", "MAU daily"), ("dau", "DAU 28d MA")]:
+    for col, title in [(m, t) for m, t in (("mau", "MAU daily"), ("dau", "DAU 28d MA")) if m in metrics_present(df)]:
         fig, axes = plt.subplots(4, 4, figsize=(22, 14))
         for ax, c in zip(axes.ravel(), countries):
             w = df[(df["country"] == c) & (df["segment"] == seg)].set_index("target_date").sort_index()
@@ -190,7 +201,7 @@ def main():
     summary_path = args.out_dir / "csv" / f"{args.stem}_dec15_summary.csv"
     curves.to_csv(curves_path, float_format="%.3f")
     summary.to_csv(summary_path, index=False)
-    for metric in ("dau", "mau"):
+    for metric in metrics_present(df):
         out = args.out_dir / "plots" / f"{args.stem}_{'dau_28ma' if metric == 'dau' else 'mau_daily'}.png"
         plot_metric(curves, metric, seam, label, out)
         print(f"plot  {out}")
@@ -198,7 +209,7 @@ def main():
         print(f"plot  {out}")
     print(f"csv   {curves_path}\ncsv   {summary_path}\n")
     print(summary.pivot_table(index=["metric", "os"], columns="date", values="value").reindex(
-        [(m, o) for m in ("mau", "dau") for o in OS_ORDER]).to_string())
+        [(m, o) for m in ("mau", "dau") if m in metrics_present(df) for o in OS_ORDER]).to_string())
 
 
 if __name__ == "__main__":
