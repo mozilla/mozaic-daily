@@ -106,7 +106,7 @@ def draw_year(ax, *, year, current, actual_mask, comparison, seam, ylabel):
     if comparison is not None:
         cmp_window = comparison[(comparison.index >= max(start, seam)) & (comparison.index <= end)]
         ax.plot(cmp_window, color="blue", linewidth=1, label="Raw model, no China correction (same seam)")
-    ax.plot(forecast, color="green", linewidth=1, label="Current draft (build 4)")
+    ax.plot(forecast, color="green", linewidth=1, label="Forecast")
     ax.axvline(measurement, color="red", linestyle=":", alpha=0.5, label="Dec 15")
     if start <= seam <= end:
         ax.axvline(seam, color="grey", linestyle="--", alpha=0.6, label=f"Seam {seam.date()}")
