@@ -431,3 +431,18 @@ class TestMetricCurvesAndPopulationShares:
         spec["allocation"]["population_shares"]["DAU"] = {"windows": 0.5, "mac": 0.1}
         with pytest.raises(ValueError, match="sum to"):
             overlay_population_shares(spec, "DAU")
+
+
+    def test_overlays_touch_sees_any_spec_metric_present(self, tmp_path):
+        """A MAU-only run with a DAU+MAU spec must still apply the overlay (the old gate checked DAU only)."""
+        from mozaic_daily.overlays import ResolvedOverlay, overlays_touch
+        path, spec = self._spec_dir(tmp_path, with_extension=True)
+        overlay = ResolvedOverlay(code="o", name="mozillaonline_migration", spec_path=path, spec=spec)
+        frames = self._frames()
+        assert overlays_touch({"MAU": frames["MAU"]}, [overlay])
+        assert overlays_touch({"DAU": frames["DAU"]}, [overlay])
+        assert not overlays_touch({"New Profiles": frames["DAU"]}, [overlay])
+        (tmp_path / "b").mkdir()
+        _, dau_only_spec = self._spec_dir(tmp_path / "b", with_extension=False)
+        dau_only = ResolvedOverlay(code="o", name="mozillaonline_migration", spec_path=path, spec=dau_only_spec)
+        assert not overlays_touch({"MAU": frames["MAU"]}, [dau_only])

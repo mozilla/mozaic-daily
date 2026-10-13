@@ -261,6 +261,15 @@ def overlay_population_shares(spec: dict, metric: str) -> dict[str, float]:
     return {pop: float(v) for pop, v in split.items()}
 
 
+def overlays_touch(source_data: dict, overlays: list[ResolvedOverlay]) -> bool:
+    """True when at least one overlay has a curve for a metric present in ``source_data``.
+
+    The appliers used to be gated on DAU alone; a MAU-only run with a DAU+MAU spec silently skipped the
+    overlay (found 2026-10-12 when MAU-only probes disagreed with the full build).
+    """
+    return any(metric in source_data for o in overlays for metric in overlay_metric_curves(o.spec))
+
+
 def subtract_overlays_pre_mozaic(
     source_data: dict,
     overlays: list[ResolvedOverlay],

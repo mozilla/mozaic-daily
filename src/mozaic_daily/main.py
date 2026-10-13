@@ -45,6 +45,7 @@ from .overlays import (
     registered_overlay_codes,
     resolve_overlays,
     subtract_overlays_pre_mozaic,
+    overlays_touch,
 )
 from .config import get_runtime_config, STATIC_CONFIG, build_filter_code
 from .data import get_queries, get_aggregate_data, check_training_data_availability
@@ -374,7 +375,7 @@ def process_data_source(
 
     overlay_contexts: list[dict] = []
     overlays_for_source = [o for o in (overlays or []) if o.data_source == data_source]
-    if overlays_for_source and Metric.DAU.value in source_data:
+    if overlays_for_source and overlays_touch(source_data, overlays_for_source):
         if training_end_date is None:
             raise ValueError("training_end_date is required when overlays are set")
         source_data, overlay_contexts = subtract_overlays_pre_mozaic(
