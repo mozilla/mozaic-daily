@@ -55,7 +55,7 @@ One-off runners, backfill tools, and utilities for local development. Not part o
 
 | Path | What's in it |
 |---|---|
-| `sql/` | Standalone SQL consumed by `build_fenix_organic_split.py`: `fenix_growth_source_mirror.sql` (client-level paid/organic attribution mirror) and `fenix_growth_source_tail.sql` (the tail extension to `training_end_date`). Kept as files rather than inline strings because they are large and reviewed independently of the Python |
+| `sql/` | Standalone SQL consumed by `build_fenix_organic_split.py`: `fenix_growth_source_mirror.sql` (client-level paid/organic attribution mirror) and `fenix_growth_source_tail.sql` (the tail extension to `training_end_date`). Kept as files rather than inline strings because they are large and reviewed independently of the Python. Plus the 2027 Glean-history comparison pulls, run through `bq_query.py --machine`: `glean_history_comparison_legacy_desktop_os_country.sql` (Legacy, 2020-01-01 on; macOS is `Darwin` there) and `glean_history_comparison_glean_desktop_os_country.sql` (real Glean from 2025-05-22), both country × OS with DAU and MAU, consumed by `build_comparison_raw_frames.py` |
 
 ## Where new code goes
 
@@ -72,3 +72,6 @@ One-off runners, backfill tools, and utilities for local development. Not part o
 - `export_glean_history_curves.py` — canonical curves CSV (DAU `display_ma`, MAU raw daily, world + per OS), Dec-15 summary with the export's translation band, DRAFT-watermarked plots, for one Glean-history build
 - `plot_glean_history_canonical.py` — the monthly canonical notebook's plot format (14×6, prior year grey calendar-aligned, actuals black, comparison blue, current green, Dec 15 / seam lines, 2-decimal millions axis, red DRAFT stamp) for the Glean-history draft: one PNG per metric × OS × calendar year plus per-OS small multiples, under `plots/canonical/`
 - `render_glean_history_report.py` — the self-contained deliverable `REPORT.html` for the current Glean-history build (freshness banner, headline + per-OS + per-country tables, translation band, canonical plots embedded, method, caveats, provenance)
+- `run_glean_history_backtest.py` — `run`: the locked Glean-history configuration at historical seams (default eight, Apr/Oct 2022–2025, three at a time); `score`: forecast vs the Glean-equivalent history by horizon, `backtest/errors_by_horizon.csv`, `errors_summary.csv` (|error| quantiles at 30-day steps and the 431-day headline horizon) and `plots/backtest_error_by_horizon.png`. The empirical forecast uncertainty for the deliverable
+- `build_comparison_raw_frames.py` — a `bq_query.py --machine` JSON pull (country × OS, dau + mau) → Glean-history-style raw checkpoints + inputs meta, so the same runner can forecast Legacy or real Glean for the comparison
+- `score_glean_history_seam.py` — seam/shape scorecard per build (7-day-mean seam step, Oct 9 → Dec 15 vs prior years, Dec-15 values, the MAU-must-not-grow soft constraint)
