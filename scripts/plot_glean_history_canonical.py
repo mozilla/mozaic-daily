@@ -5,7 +5,7 @@
 Same conventions as ``data-official/2026-10/october_canonical.ipynb`` ``[helpers]`` / ``[plot-headline]``:
 14x6 figure, prior-year series in faint grey calendar-aligned, actuals black (lw 2), comparison forecast blue,
 current forecast green, Dec 15 red dotted, seam grey dashed, two-decimal millions axis, month ticks rotated 45,
-grid, legend, and the red DRAFT stamp through ``save`` in exactly one place. No targets exist for 2027, so no
+grid, legend, and the purple PRE-DRAFT stamp through ``save`` in exactly one place. No targets exist for 2027, so no
 gold markers.
 
 Differences forced by a two-year horizon: one figure per calendar year. The 2026 view has actuals through the
@@ -39,6 +39,8 @@ import pandas as pd
 OS_ORDER = ["world", "windows", "mac", "linux"]
 METRICS = {"dau_28ma": ("DAU", "28-Day MA"), "mau": ("MAU", "raw daily (rolling 28-day metric)")}
 SHOW_DRAFT_WATERMARK = True
+WATERMARK_TEXT = "PRE-DRAFT"      # Brendan, 2026-10-12: louder than the monthly DRAFT; purple so it cannot be mistaken for a cycle plot
+WATERMARK_COLOR = "#6a1b9a"
 MEASUREMENT_DAY = (12, 15)
 
 
@@ -46,10 +48,11 @@ def millions_formatter(x, pos):
     return f"{x / 1e6:.2f}M"   # two decimals so 0.5M-spaced ticks stay distinct
 
 
-def add_draft_watermark(ax, text="DRAFT"):
+def add_draft_watermark(ax, text=None):
+    text = text or WATERMARK_TEXT
     if not SHOW_DRAFT_WATERMARK:
         return
-    ax.text(0.5, 0.5, text, transform=ax.transAxes, fontsize=120, color="#c0392b", alpha=0.16,
+    ax.text(0.5, 0.5, text, transform=ax.transAxes, fontsize=96, color=WATERMARK_COLOR, alpha=0.16,
             ha="center", va="center", rotation=28, zorder=100, fontweight="bold", clip_on=True)
 
 

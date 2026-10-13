@@ -12,8 +12,8 @@ Reads one ``mozaic_daily_forecast.<seam>.gh-*.raw.parquet`` (through ``load_fore
 
 DAU is shown as the package's ``display_ma`` (variance-matched seam transition, byte-identical to a plain
 trailing mean from seam+27 on). MAU is the raw daily value: it is already a 28-day quantity and the
-headline statistic is "raw daily MAU on 2027-12-15" (Brendan, 2026-10-12). Every plot carries a DRAFT
-watermark until the build is locked.
+headline statistic is "raw daily MAU on 2027-12-15" (Brendan, 2026-10-12). Every plot carries a PRE-DRAFT
+watermark (purple) until the build is locked.
 
 Usage:
     python scripts/export_glean_history_curves.py \\
@@ -43,6 +43,8 @@ from mozaic_daily.adjustments import load_forecast  # noqa: E402
 from mozaic_daily.seam_ma import display_ma  # noqa: E402
 
 OS_ORDER = ["world", "windows", "mac", "linux"]
+WATERMARK_TEXT = "PRE-DRAFT"
+WATERMARK_COLOR = "#6a1b9a"
 SEGMENT_FOR = {"world": "ALL", "windows": "windows", "mac": "mac", "linux": "linux"}
 HEADLINE_DATES = ["2026-12-15", "2027-12-15"]
 EXPORT_DIR = repo_root / "data-official/2027-glean-draft/inputs/legacy_to_glean_export"
@@ -126,7 +128,7 @@ def plot_metric(curves: pd.DataFrame, metric: str, seam: pd.Timestamp, label: st
             if i == 0 and j == 0:
                 ax.legend(fontsize=8)
     fig.suptitle(f"{title} — {label}", fontsize=13)
-    fig.text(0.5, 0.5, "DRAFT", fontsize=120, color="gray", alpha=0.15, ha="center", va="center", rotation=25)
+    fig.text(0.5, 0.5, WATERMARK_TEXT, fontsize=110, color=WATERMARK_COLOR, alpha=0.15, ha="center", va="center", rotation=25)
     fig.tight_layout(rect=(0, 0, 1, 0.96))
     fig.savefig(out_path, dpi=100)
     plt.close(fig)

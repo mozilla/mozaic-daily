@@ -96,7 +96,7 @@ def main():
         return f"{fmt(a)} → {fmt(f)} ({f / a - 1:+.2%})"
 
     html = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<title>Firefox Desktop 2027 forecast on Glean-equivalent history — DRAFT (build 4, seam {seam})</title>
+<title>Firefox Desktop 2027 forecast on Glean-equivalent history — PRE-DRAFT (build 4, seam {seam})</title>
 <style>
 body{{font:15px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:#1c1c1c;max-width:1100px;margin:0 auto;padding:0 24px 64px;position:relative}}
 .banner{{background:#222;color:#eee;padding:10px 16px;margin:0 -24px 24px;font-size:13px;display:flex;gap:28px;flex-wrap:wrap}} .banner b{{color:#fff}} .banner code{{background:#444;color:#fff}}
@@ -105,12 +105,12 @@ table{{border-collapse:collapse;width:100%;margin:10px 0 18px;font-size:14px}} t
 code{{font:13px Menlo,Consolas,monospace;background:#f4f4f4;padding:1px 4px;border-radius:3px}}
 .callout{{border-left:4px solid;padding:8px 14px;margin:14px 0;border-radius:0 4px 4px 0}} .warn{{background:#fff6e0;border-color:#e0a800}} .ok{{background:#eef7ee;border-color:#3a8a3a}}
 figure{{margin:16px 0}} figure img{{max-width:100%;border:1px solid #d9d9d9}} figcaption{{font-size:13px;color:#5a5a5a;margin-top:6px}}
-.wm{{position:fixed;top:40%;left:10%;font-size:160px;color:rgba(120,120,120,.08);transform:rotate(-20deg);pointer-events:none;z-index:0}}
+.wm{{position:fixed;top:40%;left:4%;font-size:150px;color:rgba(106,27,154,.10);transform:rotate(-20deg);pointer-events:none;z-index:0}}
 </style></head><body>
-<div class="wm">DRAFT</div>
-<div class="banner"><span><b>Generated:</b> {now}</span><span><b>Source:</b> <code>scripts/render_glean_history_report.py</code> on <code>{args.parquet.relative_to(repo_root)}</code>, mozaic-daily <code>{commit}</code>, branch glean-2027-forecast</span><span><b>Data as of:</b> {data_end} (legacy-to-glean export + D-118 continuation)</span><span><b>Status:</b> DRAFT, build 4</span></div>
+<div class="wm">PRE-DRAFT</div>
+<div class="banner"><span><b>Generated:</b> {now}</span><span><b>Source:</b> <code>scripts/render_glean_history_report.py</code> on <code>{args.parquet.relative_to(repo_root)}</code>, mozaic-daily <code>{commit}</code>, branch glean-2027-forecast</span><span><b>Data as of:</b> {data_end} (legacy-to-glean export + D-118 continuation)</span><span><b>Status:</b> PRE-DRAFT, build 4 — simulated (translated) history, not for circulation</span></div>
 
-<h1>Firefox Desktop DAU and MAU through 2027, on Glean-equivalent history</h1>
+<h1>PRE-DRAFT — Firefox Desktop DAU and MAU through 2027, on Glean-equivalent history</h1>
 <p>A draft forecast of desktop <b>MAU</b> (headline, raw daily rolling-28 MAU on 2027-12-15) and <b>DAU</b> (28-day trailing mean), trained on the
 legacy-to-glean project's Glean-equivalent history (Legacy telemetry restated the way Glean counts, Fx 148–153 reference state) as if it were real Glean
 history, because Glean desktop telemetry is too short to train on and Legacy ends in 2026. Not a monthly cycle: no head- or tailwinds are applied; the one
