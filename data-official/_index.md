@@ -45,6 +45,7 @@ cycle's branch history. See each cycle's `_index.md` "Present vs Archived" secti
 
 | cycle | state |
 |---|---|
+| `2027-glean-draft` | **not a cycle** — the 2027 desktop MAU/DAU pre-draft on the legacy-to-glean Glean-equivalent history (branch `glean-2027-forecast`, locked 2026-10-12 at build 5; see its `LOCK.md` / `_index.md`) |
 | `2026-10` | current — opened 2026-10-05 on the `october-forecast` branch with every September adjustment carried forward PROVISIONALLY (seams not yet set), the canonical-notebook template and the stale-reference report |
 | `2026-09` | N-1, retained. Every forecast + raw-pull parquet (117), sidecar, spec, CSV, notebook and plot is on disk; the 43 fitted pickles are in GCS `september-2026/` (verified 490/495 objects, pickle size lists identical). The prior-forecast comparison series for October comes from `2026-09/csv/september_canonical_curves.csv` |
 | `2026-08` | N-2, retained. Parquets, sidecars, specs, CSVs, notebooks on disk; all pickles in GCS `august-2026/` (the 7 re-pulled or made after its button-down were pruned again 2026-10-05) |

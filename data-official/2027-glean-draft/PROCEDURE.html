@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 13)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 14)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-13 01:05 PDT</span>
+  <span><b>Generated:</b> 2026-10-13 09:30 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 13 — build 5 LOCKED; all remaining items closed (§11): backtest uncertainty, Legacy comparison, candidates</span>
+  <span><b>Status:</b> DRAFT 14 — build 5 LOCKED; items closed (§11); Easter/May-Day shape checked (§11e); handoff packages delivered</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -476,6 +476,17 @@ the Legacy outage in the "actuals"; the backtests have no China correction and t
 <p>Everything Brendan listed is closed: lock (LOCK.md), forecasts produced and exported (csv/, plots/canonical/, REPORT.html), backtest uncertainty (11c), comparisons (11b),
 candidates registered (11a). Open for a later session: wiring <code>desktop_mau</code> into the display-layer renderer so the candidates can enter a combinatorics run; a
 Fx 155 re-issue of the history (export project, late October) would mean a rebuild on the new reference state.</p>
+<h3>11e. The April–May shape (2026-10-12/13)</h3>
+<p>Brendan noticed a bottom-then-peak in the 2027 DAU 28d MA. Mechanics: Good Friday/Easter (Mar 26–28, daily −25%/−12%) enter the window and hold the mean
+~4% low; they roll out Apr 23–29 (the "peak"); May Day (May 1, a Saturday, −31%) and the spring slide pull it down again. Years with the same arrangement
+(Easter ≈ Mar 28–Apr 1, May Day five weeks later: 2018, 2024, 2021) show the same trough (−4.1 to −5.6% vs pre-Easter; forecast −4.2%) and the same May
+low (−6.8 to −8.3%; forecast −7.5%), but their rebound never gets above −3% of the pre-Easter level, while the forecast rebounds to −1.4%: the late-April
+peak is overstated by ~1.5 points for about a week, because the model attributes the whole April dip to Easter and snaps back to trend when it clears.
+Holiday depths are measured from the data (Good Friday −18..−19% in history vs −24% forecast; May Day −27..−28% vs −31%). Does not touch December.
+Plot <code>plots/easter_mayday_alignment.png</code>. Noted, not changed (holiday knobs are policy-excluded).</p>
+<h3>11f. Handoff packages (2026-10-12)</h3>
+<p><code>handoff/glean2027_{mau,dau}_handoff.zip</code>: one short page per metric (current state only, no history, no seam/China detail), the forecast CSVs
+(daily 2020..2027 world + per OS, per country, DAU also unsmoothed), canonical plots, README. <code>scripts/render_glean_history_handoff.py</code>.</p>
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
