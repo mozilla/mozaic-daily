@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 11)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 12)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-12 22:15 PDT</span>
+  <span><b>Generated:</b> 2026-10-12 23:40 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 11 — build 5 stays the current PRE-DRAFT; changepoint-prior-scale round (§9c) found the model insensitive</span>
+  <span><b>Status:</b> DRAFT 12 — build 5 LOCKED (LOCK.md); remaining items in progress: backtest uncertainty, comparisons, candidates (§11)</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -430,6 +430,24 @@ near the end. Three full builds at cpr 0.87: cps 0.20, 0.25, 0.30 (<code>probes_
 <p><b>Reading: the model is insensitive to this knob here.</b> Doubling the prior scale moves the 2027 headline by at most +0.3% and the seam by a tenth
 of a percent, non-monotonically. The residual seam gap is at the level of day-to-day noise and the remaining lag is not a trend-flexibility problem.
 Recommendation: keep build 5 (cps at the lock) rather than adopt a second configuration change for a 0.1-point gain. Probes kept on disk for the record.</p>
+<h2>11. After the lock (2026-10-12 night): the remaining items</h2>
+<h3>11a. Candidates registered, not applied</h3>
+<p>Decision 8 done early because the lock closed the build: <code>adjustments/duplicate_id_inflation.json</code> (code <code>d</code>, MAU +950,000 at 2027-12-15 =
+the frozen e(OS) of the continuation note applied to build 5's OS mix) and <code>adjustments/linux_glean_only_temporary.json</code> (code <code>x</code>, DAU +76,000 /
+MAU +1,375,000 = the September 2026 Linux temporary shares applied to build 5's Linux). Both are <code>step</code> specs marked <code>candidate_only</code>; the
+registry has the codes; REPORT.html lists them in a "not applied" table. The display-layer renderer handles DAU only, so wiring <code>desktop_mau</code> is the
+first task of the combinatorics step. Sizes are pinned to build 5 (<code>sizing.basis</code> says how to re-derive).</p>
+<h3>11b. Comparison forecasts (step 8)</h3>
+<p>Both comparison inputs were pulled 2026-10-12 with the same country × OS bucketing as the export (SQL under <code>scripts/sql/</code>; Legacy reports macOS
+as <code>Darwin</code>, caught on the first pull because Mac was missing). The Legacy frames reproduce the export's input: Glean-equivalent / Legacy = 1.035
+on the world in early September 2026 (Windows 1.036, Mac 1.011, Linux 1.058), the translation factor the export project quotes.</p>
+<ul>
+<li><b>Real Glean from 2025-05-22, same configuration</b> (<code>comparison_glean_real_cpr087_2026-10-10/</code>): <b>unusable, as expected</b>. Seventeen months of
+history give Prophet no second year to pin yearly seasonality; the world MAU "forecast" rises from 169M to 229M by December 2027, Linux MAU goes negative, DAU
+collapses. Kept for the record as the demonstration of why the translated history exists; not shown in the report.</li>
+<li><b>Legacy telemetry through 2026-10-09, same configuration, Legacy-unit Iran fill</b> (<code>comparison_legacy_cpr087_2026-10-10/</code>): running; result in §11c when it lands.
+It is the comparison that matters (decision 10); the expected relation is the translation factor (~×1.035 on DAU) plus whatever the Glean-only steady term does to the trend.</li>
+</ul>
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
