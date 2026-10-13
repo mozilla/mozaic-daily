@@ -1,9 +1,9 @@
 {
   "produced_by": "scripts/build_comparison_raw_frames.py",
-  "written_at": "2026-10-12T18:14:30",
-  "source": "Legacy telemetry: moz-fx-data-shared-prod.telemetry.active_users_aggregates, Firefox Desktop, country x os, pulled 2026-10-12",
+  "written_at": "2026-10-12T18:16:36",
+  "source": "Legacy telemetry: moz-fx-data-shared-prod.telemetry.active_users_aggregates, Firefox Desktop, country x os (Darwin=mac), pulled 2026-10-12",
   "value_column": "dau/mau from the aggregates table (whole people)",
-  "rows_dropped_other_os": 39584,
+  "rows_dropped_other_os": 35097,
   "populations": [
     "windows",
     "mac",
@@ -11,10 +11,10 @@
   ],
   "inputs": {
     "DAU": {
-      "source_file": "tmp/comparison_pulls/legacy_desktop_os_country.json",
-      "source_sha1": "889505a3131ad4f8585bd7d8719c5d278166f09e",
+      "source_file": "tmp/comparison_pulls/legacy_desktop_os_country.v2.json",
+      "source_sha1": "4873c1c7967a7aa3282588b029ee5744b6c9c767",
       "output_file": "mozaic_parts.raw.glean_history.desktop.DAU.parquet",
-      "rows": 79168,
+      "rows": 118752,
       "countries": [
         "AR",
         "BR",
@@ -37,13 +37,13 @@
         "2020-01-01",
         "2026-10-09"
       ],
-      "world_last_day": 49896131.0
+      "world_last_day": 54438234.0
     },
     "MAU": {
-      "source_file": "tmp/comparison_pulls/legacy_desktop_os_country.json",
-      "source_sha1": "889505a3131ad4f8585bd7d8719c5d278166f09e",
+      "source_file": "tmp/comparison_pulls/legacy_desktop_os_country.v2.json",
+      "source_sha1": "4873c1c7967a7aa3282588b029ee5744b6c9c767",
       "output_file": "mozaic_parts.raw.glean_history.desktop.MAU.parquet",
-      "rows": 79168,
+      "rows": 118752,
       "countries": [
         "AR",
         "BR",
@@ -66,7 +66,7 @@
         "2020-01-01",
         "2026-10-09"
       ],
-      "world_last_day": 144922286.0
+      "world_last_day": 156046315.0
     }
   }
 }

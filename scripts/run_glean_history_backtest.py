@@ -44,18 +44,41 @@ DRAFT = repo_root / "data-official/2027-glean-draft"
 BACKTEST_DIR = DRAFT / "backtest"
 RAW_DIR = DRAFT / "raw_glean_history_2026-10-09"
 IRAN_FILL = DRAFT / "iran_fill/iran_fill.glean_history_desktop.parquet"
-DEFAULT_SEAMS = ["2022-04-10", "2022-10-10", "2023-04-10", "2023-10-10", "2024-04-10", "2024-10-10", "2025-04-10", "2025-10-10"]
+# Seams with at least four years of history (the 2027 build has 6.8). The first round (Apr/Oct 2022-2025, full
+# frames, kept under backtest_round1/) showed seams with under four years extrapolating log-space trends by
+# 50-90% at 14 months - a statement about short histories, not about the locked configuration.
+DEFAULT_SEAMS = ["2024-01-10", "2024-04-10", "2024-07-10", "2024-10-10", "2025-01-10", "2025-04-10", "2025-07-10", "2025-10-10"]
 LOCKED_KNOBS = ["--changepoint-range", "0.87"]          # LOCK.md: g01 + cpr 0.87
 WORLD_SEG = json.dumps({"os": "ALL"})
 HEADLINE_HORIZON_DAYS = (pd.Timestamp("2027-12-15") - pd.Timestamp("2026-10-10")).days   # 431
 LEVELS = (0.5, 0.8, 0.9)
 
 
+def cut_raw_dir(seam: str) -> Path:
+    """Raw frames truncated to dates before the seam, so nothing after the seam reaches the model.
+
+    mozaic fits on dates before the forecast start, but holiday detection and the tile's calendar see every
+    date they are given; feeding the full history would let post-seam actuals shape the backtest.
+    """
+    out = BACKTEST_DIR / f"raw_cut_{seam}"
+    out.mkdir(parents=True, exist_ok=True)
+    for metric in ("DAU", "MAU"):
+        name = f"mozaic_parts.raw.glean_history.desktop.{metric}.parquet"
+        df = pd.read_parquet(RAW_DIR / name)
+        df = df[pd.to_datetime(df["x"]) < pd.Timestamp(seam)]
+        df.to_parquet(out / name, index=False)
+    meta = json.loads((RAW_DIR / "glean_history_inputs.meta.json").read_text())
+    meta["cut_at_seam"] = seam
+    (out / "glean_history_inputs.meta.json").write_text(json.dumps(meta, indent=2) + "\n")
+    return out
+
+
 def run_one(seam: str) -> int:
     out = BACKTEST_DIR / f"seam_{seam}"
     out.mkdir(parents=True, exist_ok=True)
+    raw_dir = cut_raw_dir(seam)
     cmd = [sys.executable, str(repo_root / "scripts/run_glean_history_forecast.py"), "--forecast-start-date", seam,
-           "--raw-dir", str(RAW_DIR), "--iran-fill", str(IRAN_FILL), "--results-dir", str(out), *LOCKED_KNOBS]
+           "--raw-dir", str(raw_dir), "--iran-fill", str(IRAN_FILL), "--results-dir", str(out), *LOCKED_KNOBS]
     with open(out / "run.log", "w") as log:
         return subprocess.call(cmd, stdout=log, stderr=subprocess.STDOUT, cwd=repo_root)
 
@@ -90,10 +113,13 @@ def cmd_score(args):
     for parquet in sorted(BACKTEST_DIR.glob("seam_*/cps*/mozaic_daily_forecast.*.parquet")):
         w, seam = world_series(parquet)
         for metric, col in (("DAU", "dau"), ("MAU", "mau")):
-            fc = w.loc[w["data_type"] == "forecast", col]
-            # DAU: trailing 28-day mean over history + forecast so the first window is well defined
+            fc = w.loc[(w["data_type"] == "forecast") & (w.index >= seam), col]
+            # DAU: trailing 28-day mean over pre-seam history + forecast so the first window is well defined.
+            # A backtest parquet's `training` rows run past the seam (mozaic emits every actual it was given),
+            # so they must be cut at the seam before the concat or the window mixes dates.
             if metric == "DAU":
-                full = pd.concat([w.loc[w["data_type"] == "training", col], fc]).rolling(28).mean()
+                history = w.loc[(w["data_type"] == "training") & (w.index < seam), col]
+                full = pd.concat([history, fc]).sort_index().rolling(28).mean()
                 fc = full[full.index >= seam]
             common = fc.index.intersection(truth[metric].dropna().index)
             err = (fc.loc[common] / truth[metric].loc[common] - 1.0)

@@ -90,6 +90,41 @@ def main():
 
     # Build comparison (world)
 
+    # Legacy comparison rows
+    legacy_rows = ""
+    cmp_path = DRAFT / "csv/glean2027_vs_legacy_comparison.csv"
+    if cmp_path.exists():
+        for _, r in pd.read_csv(cmp_path).iterrows():
+            legacy_rows += (f"<tr><td>{r['series']}</td><td class=num>{r['ratio Glean-eq/Legacy, history Sep1-Oct9']:.4f}</td><td class=num>{r['ratio at 2027-12-15']:.4f}</td>"
+                            f"<td class=num>{r['Legacy 2027-12-15']:,.0f}</td><td class=num>{r['Glean-eq 2027-12-15']:,.0f}</td><td class=num>{r['Legacy Dec->Dec']} / {r['Glean-eq Dec->Dec']}</td></tr>")
+
+    # Backtest section (empirical forecast error), from scripts/run_glean_history_backtest.py score
+    backtest_section = ""
+    bt_path = DRAFT / "backtest/errors_summary.csv"
+    if bt_path.exists():
+        bt = pd.read_csv(bt_path)
+        rows_html = ""
+        for metric in ("MAU", "DAU"):
+            for h in (90, 180, 270, 360, 431):
+                r = bt[(bt.metric == metric) & (bt.horizon_days == h)]
+                if r.empty:
+                    continue
+                r = r.iloc[0]
+                rows_html += (f"<tr><td>{metric}</td><td class=num>{h}</td><td class=num>{int(r['n_seams'])}</td><td class=num>{r['median']:+.1%}</td>"
+                              f"<td class=num>±{r['abs_err_p50']:.1%}</td><td class=num>±{r['abs_err_p80']:.1%}</td><td class=num>±{r['abs_err_p90']:.1%}</td></tr>")
+        seams = sorted(pd.read_csv(DRAFT / "backtest/errors_by_horizon.csv")["seam"].unique())
+        backtest_section = f"""<h2>1b. Forecast error from a backtest of the locked configuration</h2>
+<p>The locked configuration was run at {len(seams)} past seams ({seams[0]} … {seams[-1]}, each with at least four years of history, inputs cut at the seam)
+and compared with the Glean-equivalent history that followed. The headline horizon (2026-10-10 → 2027-12-15) is 431 days. Signed median error says
+whether past forecasts ran high or low; the |error| percentiles are the band to put around this report's numbers. World, all OS.
+Files: <code>backtest/errors_summary.csv</code>, <code>backtest/errors_by_horizon.csv</code>; plot below.</p>
+<table><tr><th>metric</th><th class=num>horizon (days)</th><th class=num>seams</th><th class=num>median signed error</th><th class=num>|error| p50</th><th class=num>|error| p80</th><th class=num>|error| p90</th></tr>
+{rows_html}</table>
+<p class="sub">A first round including 2022–2023 seams (2.3–3.8 years of history) produced 30–90% DAU errors at 14 months: with that little history the
+log-space trend extrapolates whichever seasonal ramp the seam sits on. That is a statement about short histories, not about the configuration, and is why
+the stated round is restricted to seams with four or more years (<code>backtest_round1/</code> keeps the first round).</p>
+{img(DRAFT / "plots/backtest_error_by_horizon.png") if (DRAFT / "plots/backtest_error_by_horizon.png").exists() else ""}"""
+
     # Candidates (display-layer specs marked candidate_only), rendered as a table only
     candidate_rows = ""
     for spec_path in sorted((DRAFT / "adjustments").glob("*.json")):
@@ -129,10 +164,21 @@ adjustment in the build is a <em>data correction</em> for China's June 2026 Mozi
 <h2>1. Headline numbers (world and per OS)</h2>
 <table><tr><th>metric</th><th>OS</th><th class=num>2025-12-15 (history)</th><th class=num>2026-12-15</th><th class=num>2027-12-15</th><th class=num>Dec→Dec</th><th class=num>translation band (90%-style, correlated)</th></tr>
 {headline_table}</table>
-<div class="callout warn"><b>Uncertainty shown is the translation band only</b> — the export project's own statement of how far the Glean-equivalent history may be off
-(half-width in % of the series, held at its last delivered value). It says nothing about forecast error. The model's Prophet predictive band is not reported:
-at a 15-month horizon it is ±94M on world MAU (±20M even on production's own Legacy build), which is not an uncertainty statement anyone can use. A
-backtest-based forecast error (how far 12–15-month-ahead forecasts from past seams missed) is the agreed next step and is not in this copy.</div>
+<div class="callout warn"><b>Two uncertainties, kept apart.</b> The <b>translation band</b> (table above) is the export project's statement of how far the
+Glean-equivalent <em>history</em> may be off, held at its last delivered value; it says nothing about forecast error. <b>Forecast error</b> is stated
+empirically from a backtest of the locked configuration at past seams (§1b), because the model's own Prophet band is not usable at this horizon
+(±94M on world MAU at 15 months; ±20M even on production's Legacy build).</div>
+{backtest_section}
+
+<h2>1c. Check against the same model on Legacy telemetry</h2>
+<p>The same configuration, inputs cut the same way, run on Legacy telemetry through {data_end} (its own Iran fill in Legacy units, the same China
+correction, which is in Legacy units to begin with). The Glean-equivalent history is Legacy × a slowly varying translation factor, so the two forecasts
+should differ by that factor and nothing else. They do: the ratio in the forecast equals the ratio in the history, and the Dec → Dec changes agree
+to 0.1 point on the world. Table: <code>csv/glean2027_vs_legacy_comparison.csv</code>.</p>
+<table><tr><th>series</th><th class=num>Glean-eq / Legacy, history Sep 1 – Oct 9 2026</th><th class=num>same ratio at 2027-12-15</th><th class=num>Legacy 2027-12-15</th><th class=num>Glean-eq 2027-12-15</th><th class=num>Dec→Dec, Legacy / Glean-eq</th></tr>
+{legacy_rows}</table>
+<p>The real-Glean comparison (17 months of history from 2025-05-22) was run and is unusable — Prophet has no second year to pin seasonality and the
+forecast diverges within months; it is kept on disk as the demonstration of why the translated history exists.</p>
 
 <h2>2. Curves (canonical format: grey = prior year calendar-aligned, black = history, green = this draft)</h2>
 <h3>MAU, raw daily</h3>

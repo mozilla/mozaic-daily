@@ -1,0 +1,115 @@
+{
+  "additional_holidays": [
+    "LegacyOutage2025"
+  ],
+  "adjustments_applied": [
+    {
+      "code": "o",
+      "name": "mozillaonline_migration",
+      "spec_file": "data-official/2027-glean-draft/mozillaonline/mozillaonline.glean_history.json",
+      "spec_sha1": "fbb5e74cc64510671089fe20af5c5c8db4066dc7"
+    }
+  ],
+  "artifact_sha1": "fefdcf71bce333288ae7c0ccf527e3636c9374d5",
+  "data_source": "glean_history_desktop",
+  "forecast_start_date": "2026-10-10",
+  "inputs_meta": {
+    "inputs": {
+      "DAU": {
+        "countries": [
+          "AR",
+          "BR",
+          "CA",
+          "CN",
+          "DE",
+          "FR",
+          "ID",
+          "IN",
+          "IR",
+          "IT",
+          "JP",
+          "MX",
+          "PL",
+          "ROW",
+          "RU",
+          "US"
+        ],
+        "date_range": [
+          "2020-01-01",
+          "2026-10-09"
+        ],
+        "output_file": "mozaic_parts.raw.glean_history.desktop.DAU.parquet",
+        "rows": 118752,
+        "source_file": "tmp/comparison_pulls/legacy_desktop_os_country.v2.json",
+        "source_sha1": "4873c1c7967a7aa3282588b029ee5744b6c9c767",
+        "world_last_day": 54438234.0
+      },
+      "MAU": {
+        "countries": [
+          "AR",
+          "BR",
+          "CA",
+          "CN",
+          "DE",
+          "FR",
+          "ID",
+          "IN",
+          "IR",
+          "IT",
+          "JP",
+          "MX",
+          "PL",
+          "ROW",
+          "RU",
+          "US"
+        ],
+        "date_range": [
+          "2020-01-01",
+          "2026-10-09"
+        ],
+        "output_file": "mozaic_parts.raw.glean_history.desktop.MAU.parquet",
+        "rows": 118752,
+        "source_file": "tmp/comparison_pulls/legacy_desktop_os_country.v2.json",
+        "source_sha1": "4873c1c7967a7aa3282588b029ee5744b6c9c767",
+        "world_last_day": 156046315.0
+      }
+    },
+    "populations": [
+      "windows",
+      "mac",
+      "linux"
+    ],
+    "produced_by": "scripts/build_comparison_raw_frames.py",
+    "rows_dropped_other_os": 35097,
+    "source": "Legacy telemetry: moz-fx-data-shared-prod.telemetry.active_users_aggregates, Firefox Desktop, country x os (Darwin=mac), pulled 2026-10-12",
+    "value_column": "dau/mau from the aggregates table (whole people)",
+    "written_at": "2026-10-12T18:16:36"
+  },
+  "iran_fill": "data-official/2027-glean-draft/iran_fill_legacy/iran_fill.glean_history_desktop.parquet",
+  "metrics": [
+    "DAU",
+    "MAU"
+  ],
+  "model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.032,
+    "prophet_changepoint_prior_scale": 0.1649,
+    "prophet_changepoint_range": 0.87,
+    "prophet_n_changepoints": 40,
+    "prophet_recent_weeks": 17,
+    "prophet_seasonality_prior_scale": 0.00825,
+    "seasonality_corr_threshold": 0.0,
+    "seasonality_regime": "multiplicative"
+  },
+  "mozaic_daily_commit": "43aac5804cf80c36c83826e3a0b3df235c8ab4c3",
+  "populations": [
+    "windows",
+    "mac",
+    "linux"
+  ],
+  "produced_at": "2026-10-13T01:20:32.275236+00:00Z",
+  "produced_by": "scripts/run_glean_history_forecast.py",
+  "run_at": "2026-10-12T18:20:32"
+}

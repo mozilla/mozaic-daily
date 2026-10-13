@@ -1,0 +1,122 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.10.19). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.11, and then update google.api_core.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.10.19). Google will not post any further updates to google.cloud.bigquery_storage_v1 supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.11, and then update google.cloud.bigquery_storage_v1.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2023-02-20 (-0.879), 2023-02-21 (-0.708), 2023-12-25 (-0.738)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2023-04-07 (-0.731), 2023-10-12 (-0.615), 2023-12-25 (-0.638)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2022-12-26 (-0.604)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2023-05-29 (-1.113)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2023-05-29 (-0.760)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2023-03-23 (-0.617), 2023-04-02 (-0.659), 2023-07-27 (-0.651)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2023-04-10 (-0.847), 2023-12-25 (-0.632)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2023-04-07 (-0.612), 2023-12-25 (-0.706)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2023-06-08 (-0.650)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2022-12-26 (-0.624)
+  unmatched = self._predict_holiday_effects()
+============================================================
+Glean-history desktop forecast
+============================================================
+Seam / training end : 2022-10-10 / 2022-10-09
+Horizon end         : 2023-12-31
+Metrics             : ['DAU', 'MAU']
+Raw dir             : /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/raw_glean_history_2026-10-09
+Iran fill           : /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/iran_fill/iran_fill.glean_history_desktop.parquet
+Holidays            : ['LegacyOutage2025']
+Overlays            : none
+Output dir          : /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/backtest/seam_2022-10-10/cps0.1649_thresh032_recent17_cpr0.87_ncp40_clip0.6_sps0.00825_regimemultiplicative
+Config              : {
+  "prophet_recent_weeks": 17,
+  "prophet_changepoint_range": 0.87,
+  "prophet_n_changepoints": 40,
+  "holiday_threshold": -0.032,
+  "holiday_max_radius": 5,
+  "holiday_min_radius": 3,
+  "holiday_effect_floor": -0.6,
+  "seasonality_regime": "multiplicative",
+  "seasonality_corr_threshold": 0.0,
+  "prophet_changepoint_prior_scale": 0.1649,
+  "prophet_seasonality_prior_scale": 0.00825
+}
+
+--- Populate tiles
+
+
+DAU
+
+ AR: linux, mac, windows, 
+ BR: linux, mac, windows, 
+ CA: linux, mac, windows, 
+ CN: linux, mac, windows, 
+ DE: linux, mac, windows, 
+ FR: linux, mac, windows, 
+ ID: linux, mac, windows, 
+ IN: linux, mac, windows, 
+ IR: linux, mac, windows, 
+ IT: linux, mac, windows, 
+ JP: linux, mac, windows, 
+ MX: linux, mac, windows, 
+ PL: linux, mac, windows, 
+ROW: linux, mac, windows, 
+ RU: linux, mac, windows, 
+ US: linux, mac, windows, 
+
+MAU
+
+ AR: linux, mac, windows, 
+ BR: linux, mac, windows, 
+ CA: linux, mac, windows, 
+ CN: linux, mac, windows, 
+ DE: linux, mac, windows, 
+ FR: linux, mac, windows, 
+ ID: linux, mac, windows, 
+ IN: linux, mac, windows, 
+ IR: linux, mac, windows, 
+ IT: linux, mac, windows, 
+ JP: linux, mac, windows, 
+ MX: linux, mac, windows, 
+ PL: linux, mac, windows, 
+ROW: linux, mac, windows, 
+ RU: linux, mac, windows, 
+ US: linux, mac, windows, 
+
+--- Curate Mozaics
+
+DAU
+   countries: AR, BR, CA, CN, DE, FR, ID, IN, IR, IT, JP, MX, PL, ROW, RU, US, 
+   populations: linux, mac, windows, 
+   reconciling...
+
+⚠️ New holidays in forecasted dates:
+ - AR FIFA World Cup 2022 Victory Day
+MAU
+   countries: AR, BR, CA, CN, DE, FR, ID, IN, IR, IT, JP, MX, PL, ROW, RU, US, 
+   populations: linux, mac, windows, 
+   reconciling...
+
+⚠️ New holidays in forecasted dates:
+ - AR FIFA World Cup 2022 Victory Day
+
+done.
+
+--- Extracting forecasts (2 metrics)
+  [1/2] DAU
+  [2/2] MAU
+
+Forecast took 2.0 min
+Saved mozaic objects to /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/backtest/seam_2022-10-10/cps0.1649_thresh032_recent17_cpr0.87_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_objects.glean_history_desktop.2022-10-10.pkl
+Wrote /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/backtest/seam_2022-10-10/cps0.1649_thresh032_recent17_cpr0.87_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2022-10-10.gh-D+M.raw.parquet (+ sidecar)
+
+World values (country ALL, os ALL):
+  DAU 2026-12-15: nan
+  DAU 2027-12-15: nan
+  MAU 2026-12-15: nan
+  MAU 2027-12-15: nan

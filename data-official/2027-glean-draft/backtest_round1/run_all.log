@@ -1,0 +1,12 @@
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.10.19). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.11, and then update google.api_core.
+  warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.10.19). Google will not post any further updates to google.cloud.bigquery_storage_v1 supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.11, and then update google.cloud.bigquery_storage_v1.
+  warnings.warn(message, FutureWarning)
+seam 2022-04-10: exit 0
+seam 2022-10-10: exit 0
+seam 2023-04-10: exit 0
+seam 2023-10-10: exit 0
+seam 2024-04-10: exit 0
+seam 2024-10-10: exit 0
+seam 2025-04-10: exit 0
+seam 2025-10-10: exit 0
