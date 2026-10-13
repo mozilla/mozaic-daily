@@ -11,8 +11,8 @@ gold markers.
 Differences forced by a two-year horizon: one figure per calendar year. The 2026 view has actuals through the
 seam and the forecast after it, with 2025 actuals as the grey reference. The 2027 view is forecast only, with
 the 2026 series (actuals to the seam, forecast after) as the grey reference and 2025 actuals fainter behind it.
-The blue comparison line is the raw model without the China correction (same seam), the nearest thing this
-draft has to a "prior".
+An optional blue comparison line (``--comparison-curves``) is for internal diagnostics only; external outputs
+never carry the raw model.
 
 Outputs (``<out-dir>/canonical/``): ``{metric}_{os}_{year}.png`` for metric in {dau_28ma, mau}, os in {world,
 windows, mac, linux}, year in {2026, 2027}; plus ``{metric}_by_os_2027.png`` small multiples.
@@ -117,7 +117,8 @@ def draw_year(ax, *, year, current, actual_mask, comparison, seam, ylabel):
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--curves", type=Path, required=True)
-    p.add_argument("--comparison-curves", type=Path, default=None)
+    p.add_argument("--comparison-curves", type=Path, default=None,
+                   help="INTERNAL ONLY: draw a second build in blue. External outputs never carry the raw model (Brendan, 2026-10-12)")
     p.add_argument("--seam", required=True)
     p.add_argument("--out-dir", type=Path, required=True)
     p.add_argument("--label", default="Glean-history draft")

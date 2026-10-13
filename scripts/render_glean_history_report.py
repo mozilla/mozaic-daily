@@ -89,10 +89,6 @@ def main():
     country_table = "\n".join(pc_rows)
 
     # Build comparison (world)
-    world = comparison[comparison.country == "ALL"].pivot_table(index="build", columns="date", values=["mau", "dau_28ma"]).loc[["plain", "o_dau_only", "o_both"]]
-    labels = {"plain": "raw model, no China correction", "o_dau_only": "China correction on DAU only", "o_both": "China correction on DAU + MAU (this report)"}
-    cmp_rows = "\n".join(f"<tr><td>{labels[b]}</td><td class=num>{fmt(world.loc[b, ('mau', '2026-12-15')])}</td><td class=num>{fmt(world.loc[b, ('mau', '2027-12-15')])}</td>"
-                         f"<td class=num>{fmt(world.loc[b, ('dau_28ma', '2026-12-15')])}</td><td class=num>{fmt(world.loc[b, ('dau_28ma', '2027-12-15')])}</td></tr>" for b in world.index)
 
     # Seam step
     def step(col):
@@ -128,7 +124,7 @@ adjustment in the build is a <em>data correction</em> for China's June 2026 Mozi
 at a 15-month horizon it is ±94M on world MAU (±20M even on production's own Legacy build), which is not an uncertainty statement anyone can use. A
 backtest-based forecast error (how far 12–15-month-ahead forecasts from past seams missed) is the agreed next step and is not in this copy.</div>
 
-<h2>2. Curves (canonical format: grey = prior year calendar-aligned, black = history, blue = raw model without the China correction, green = this draft)</h2>
+<h2>2. Curves (canonical format: grey = prior year calendar-aligned, black = history, green = this draft)</h2>
 <h3>MAU, raw daily</h3>
 {img(DRAFT / "plots/canonical/mau_world_2027.png")}
 {img(DRAFT / "plots/canonical/mau_world_2026.png")}
@@ -144,8 +140,8 @@ history's final weeks rose steeply (autumn recovery, plus a +0.36% input step at
 <h2>3. By country (2026-12-15 and 2027-12-15)</h2>
 <table><tr><th>country</th><th class=num>MAU 2026-12-15</th><th class=num>MAU 2027-12-15</th><th class=num>Dec→Dec</th><th class=num>DAU 28d MA 2026-12-15</th><th class=num>DAU 28d MA 2027-12-15</th></tr>
 {country_table}</table>
-{img(DRAFT / "plots/glean2027_mau_by_country_plain_vs_o.png")}
-{img(DRAFT / "plots/glean2027_dau_by_country_plain_vs_o.png")}
+{img(DRAFT / "plots/glean2027_mau_by_country.png")}
+{img(DRAFT / "plots/glean2027_dau_by_country.png")}
 
 <h2>4. What the China correction did</h2>
 <p>China's desktop DAU doubled in June 2026 when MozillaOnline users migrated onto mainline Firefox (visible on Windows and Mac, and on MAU, in the Glean-equivalent data).
@@ -154,10 +150,9 @@ and let China's sample paths dominate every interval. The correction subtracts t
 and adds it back after, on both metrics, split across Windows ({cn['measurements']['population_shares']['DAU']['windows']:.1%} DAU / {cn['measurements']['population_shares']['MAU']['windows']:.1%} MAU)
 and Mac. The MAU curve is derived: the DAU curve's trailing 28-day mean × {cn['measurements']['ratio_world']:.3f}, China's own measured MAU-per-DAU of the migrated users
 (windows {cn['measurements']['ratios']['windows']:.2f}, mac {cn['measurements']['ratios']['mac']:.2f}, against baselines of 3.74 / 3.41). Nobody has measured MozillaOnline MAU directly.</p>
-<table><tr><th>build (seam {seam})</th><th class=num>MAU 2026-12-15</th><th class=num>MAU 2027-12-15</th><th class=num>DAU 28d MA 2026-12-15</th><th class=num>DAU 28d MA 2027-12-15</th></tr>
-{cmp_rows}</table>
-<p>Because mozaic reconciles top-down, removing the step from the world series lowers the world trend and that is pushed into every country: MAU 2027-12-15
-moved −1 to −3% outside China (India −6%). This is how the production cycle's MozillaOnline adjustment behaves too, and was accepted for this draft.</p>
+<p>Because mozaic reconciles top-down, removing the step from the world series lowers the world trend and that is pushed into every country (about −1 to −3%
+on MAU outside China at 2027-12-15). This is how the production cycle's MozillaOnline adjustment behaves too, and was accepted for this draft. The uncorrected
+model is kept on disk for the record (<code>PROCEDURE.html</code> §8) and is not shown here.</p>
 {img(DRAFT / "plots/cn_offsets_check.png")}
 
 <h2>5. Method, in one paragraph each</h2>
