@@ -103,7 +103,7 @@ def main():
 <title>Firefox Desktop 2027 forecast on Glean-equivalent history — DRAFT (build 4, seam {seam})</title>
 <style>
 body{{font:15px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:#1c1c1c;max-width:1100px;margin:0 auto;padding:0 24px 64px;position:relative}}
-.banner{{background:#222;color:#eee;padding:10px 16px;margin:0 -24px 24px;font-size:13px;display:flex;gap:28px;flex-wrap:wrap}} .banner b{{color:#fff}}
+.banner{{background:#222;color:#eee;padding:10px 16px;margin:0 -24px 24px;font-size:13px;display:flex;gap:28px;flex-wrap:wrap}} .banner b{{color:#fff}} .banner code{{background:#444;color:#fff}}
 h1{{font-size:26px;margin:8px 0 4px}} h2{{font-size:20px;margin:36px 0 8px;border-bottom:1px solid #d9d9d9;padding-bottom:4px}} h3{{font-size:16px;margin:22px 0 6px}}
 table{{border-collapse:collapse;width:100%;margin:10px 0 18px;font-size:14px}} th,td{{border:1px solid #d9d9d9;padding:6px 9px;vertical-align:top;text-align:left}} th{{background:#f3f3f3}} td.num,th.num{{text-align:right;font-variant-numeric:tabular-nums}}
 code{{font:13px Menlo,Consolas,monospace;background:#f4f4f4;padding:1px 4px;border-radius:3px}}
