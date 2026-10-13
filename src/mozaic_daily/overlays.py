@@ -232,37 +232,82 @@ def overlay_country_shares(
     return fixed_country_shares_from_spec(overlay.spec, present_countries)
 
 
+def overlay_metric_curves(spec: dict) -> dict[str, dict]:
+    """``{metric: {"data_file", "value_column"}}`` for the overlay.
+
+    A spec is DAU-only by default (its top-level ``data_file`` / ``value_column``); an optional
+    ``metrics`` block adds other metrics with their own curve files, e.g. the Glean-history
+    draft's MAU twin of the MozillaOnline curve. Production specs carry no ``metrics`` block.
+    """
+    if "metrics" in spec:
+        return {metric: {"data_file": entry["data_file"], "value_column": entry["value_column"]}
+                for metric, entry in spec["metrics"].items()}
+    return {Metric.DAU.value: {"data_file": spec["data_file"], "value_column": spec["value_column"]}}
+
+
+def overlay_population_shares(spec: dict, metric: str) -> dict[str, float]:
+    """``{flag_column: share}`` — how one metric's curve splits across segment populations.
+
+    Default is the whole curve on ``allocation.flag_column`` (every production overlay). An optional
+    ``allocation.population_shares[metric]`` splits it, e.g. the China migration across ``windows``
+    and ``mac`` in the OS x country layout. Shares must sum to 1.
+    """
+    split = spec["allocation"].get("population_shares", {}).get(metric)
+    if not split:
+        return {spec["allocation"]["flag_column"]: 1.0}
+    total = sum(float(v) for v in split.values())
+    if abs(total - 1.0) > 1e-6:
+        raise ValueError(f"population_shares for {metric} sum to {total}, not 1: {split}")
+    return {pop: float(v) for pop, v in split.items()}
+
+
 def subtract_overlays_pre_mozaic(
     source_data: dict,
     overlays: list[ResolvedOverlay],
     training_end_date: str,
 ) -> tuple[dict, list[dict]]:
-    """Subtract each overlay's curve from the DAU training rows before mozaic runs.
+    """Subtract each overlay's curve(s) from the training rows before mozaic runs.
 
-    Returns ``(modified_source_data, contexts)``; each context carries the exact
-    series and shares the add-back must reuse so subtract and add stay symmetric.
+    One piece per (overlay, metric, population): the metric's curve times the population's
+    share, allocated across countries, subtracted from that population's rows. Returns
+    ``(modified_source_data, contexts)``; each context carries the exact pieces the add-back
+    must reuse so subtract and add stay symmetric.
     """
-    metric_key = Metric.DAU.value
     modified = dict(source_data)
     contexts = []
     for overlay in overlays:
-        training_df = modified[metric_key]
-        shares = overlay_country_shares(overlay, training_df, pd.Timestamp(training_end_date))
-        daily_lift_series = load_lift_series(overlay.spec, overlay.spec_path.parent)
-        n_flagged = int((training_df[overlay.flag_column] == True).sum())  # noqa: E712
-        print(
-            f"Overlay `{overlay.code}` ({overlay.name}): subtracting from {metric_key} training "
-            f"({len(shares)} countries by {overlay.spec['allocation']['key']}, "
-            f"{n_flagged} {overlay.flag_column} rows)"
-        )
-        modified[metric_key] = subtract_lift_from_training(
-            training_df,
-            daily_lift_series=daily_lift_series,
-            country_shares=shares,
-            flag_column=overlay.flag_column,
-            sentinel_attr=overlay.sentinel_attr,
-        )
-        contexts.append({"overlay": overlay, "daily_lift_series": daily_lift_series, "country_shares": shares})
+        pieces = []
+        for metric, curve in overlay_metric_curves(overlay.spec).items():
+            if metric not in modified:
+                continue
+            training_df = modified[metric]
+            shares = overlay_country_shares(overlay, training_df, pd.Timestamp(training_end_date))
+            daily_series = load_lift_series(curve, overlay.spec_path.parent)
+            for population, population_share in overlay_population_shares(overlay.spec, metric).items():
+                piece_series = daily_series * population_share
+                n_flagged = int((training_df[population] == True).sum())  # noqa: E712
+                print(
+                    f"Overlay `{overlay.code}` ({overlay.name}): subtracting from {metric} training "
+                    f"({len(shares)} countries by {overlay.spec['allocation']['key']}, "
+                    f"{n_flagged} {population} rows, population share {population_share:.4f})"
+                )
+                # The first piece keeps the overlay's historical sentinel (``<name>_subtracted``) so a
+                # double application still raises and existing readers of the attr still find it.
+                sentinel = overlay.sentinel_attr if not pieces else f"{overlay.sentinel_attr}:{metric}:{population}"
+                training_df = subtract_lift_from_training(
+                    training_df,
+                    daily_lift_series=piece_series,
+                    country_shares=shares,
+                    flag_column=population,
+                    sentinel_attr=sentinel,
+                )
+                pieces.append({"metric": metric, "population": population,
+                               "daily_lift_series": piece_series, "country_shares": shares})
+            modified[metric] = training_df
+        # Back-compat keys: the DAU / flag_column piece is what older callers read.
+        first = pieces[0] if pieces else {"daily_lift_series": None, "country_shares": None}
+        contexts.append({"overlay": overlay, "pieces": pieces,
+                         "daily_lift_series": first["daily_lift_series"], "country_shares": first["country_shares"]})
     return modified, contexts
 
 
@@ -271,24 +316,24 @@ def add_overlays_post_mozaic(
     contexts: list[dict],
     forecast_start: pd.Timestamp,
 ) -> pd.DataFrame:
-    """Add each subtracted curve back to the per-tile forecast (before the format function)."""
-    metric_key = Metric.DAU.value
-    if metric_key not in df_combined.columns:
-        return df_combined
+    """Add each subtracted piece back to the per-tile forecast (before the format function)."""
     for context in contexts:
         overlay = context["overlay"]
-        df_combined = add_lift_to_forecast(
-            df_combined,
-            daily_lift_series=context["daily_lift_series"],
-            country_shares=context["country_shares"],
-            forecast_start=pd.Timestamp(forecast_start),
-            metric_column=metric_key,
-            population_value=overlay.flag_column,
-        )
-        n_total = len(df_combined)
-        n_forecast = int((df_combined["source"] == "forecast").sum())
-        print(
-            f"Overlay `{overlay.code}` ({overlay.name}): added back across {n_total} rows "
-            f"({n_forecast} forecast + {n_total - n_forecast} training/actual)"
-        )
+        for piece in context.get("pieces", []):
+            if piece["metric"] not in df_combined.columns:
+                continue
+            df_combined = add_lift_to_forecast(
+                df_combined,
+                daily_lift_series=piece["daily_lift_series"],
+                country_shares=piece["country_shares"],
+                forecast_start=pd.Timestamp(forecast_start),
+                metric_column=piece["metric"],
+                population_value=piece["population"],
+            )
+            n_total = len(df_combined)
+            n_forecast = int((df_combined["source"] == "forecast").sum())
+            print(
+                f"Overlay `{overlay.code}` ({overlay.name}): added {piece['metric']} back on {piece['population']} "
+                f"across {n_total} rows ({n_forecast} forecast + {n_total - n_forecast} training/actual)"
+            )
     return df_combined

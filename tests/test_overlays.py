@@ -347,3 +347,87 @@ class TestCommittedRegistryAndSpecs:
 
     def test_repo_root_points_at_the_checkout(self):
         assert (overlays.repo_root() / "data-official" / "adjustment_codes.yaml").exists()
+
+
+# ---- per-metric curves and population shares (Glean-history `o` extension) ---------------------
+
+class TestMetricCurvesAndPopulationShares:
+    """A spec may carry a `metrics` block (one curve per metric) and `allocation.population_shares`
+    (how each metric's curve splits across segment populations). Specs without them behave as before."""
+
+    @staticmethod
+    def _spec_dir(tmp_path, with_extension):
+        import json
+        d = tmp_path / "mozillaonline"
+        d.mkdir()
+        idx = pd.date_range("2026-06-01", "2026-06-10")
+        pd.DataFrame({"dau_daily": 1000.0}, index=idx).rename_axis("target_date").to_parquet(d / "dau.parquet")
+        pd.DataFrame({"mau_daily": 3000.0}, index=idx).rename_axis("target_date").to_parquet(d / "mau.parquet")
+        spec = {"type": "desktop_overlay", "platform": "desktop", "data_file": "dau.parquet", "value_column": "dau_daily",
+                "allocation": {"key": "fixed_country_shares", "flag_column": "windows", "window_days": 28, "shares": {"CN": 1.0}},
+                "scope": {"exclude_countries": []}, "applies_to_forecast_start": "2026-06-11",
+                "applies_to_data_source": "glean_history_desktop", "placeholder": False}
+        if with_extension:
+            spec["metrics"] = {"DAU": {"data_file": "dau.parquet", "value_column": "dau_daily"},
+                               "MAU": {"data_file": "mau.parquet", "value_column": "mau_daily"}}
+            spec["allocation"]["population_shares"] = {"DAU": {"windows": 0.9, "mac": 0.1}, "MAU": {"windows": 0.8, "mac": 0.2}}
+        path = d / "mozillaonline.glean_history.json"
+        path.write_text(json.dumps(spec))
+        return path, spec
+
+    @staticmethod
+    def _frames():
+        idx = pd.date_range("2026-06-01", "2026-06-10")
+        rows = []
+        for day in idx:
+            for pop in ("windows", "mac", "linux"):
+                rows.append({"x": day, "country": "CN", "windows": pop == "windows", "mac": pop == "mac", "linux": pop == "linux", "y": 10000})
+        dau = pd.DataFrame(rows)
+        mau = dau.assign(y=50000)
+        return {"DAU": dau, "MAU": mau}
+
+    def test_default_spec_is_dau_only_on_the_flag_column(self, tmp_path):
+        from mozaic_daily.overlays import ResolvedOverlay, overlay_metric_curves, overlay_population_shares, subtract_overlays_pre_mozaic
+        path, spec = self._spec_dir(tmp_path, with_extension=False)
+        assert overlay_metric_curves(spec) == {"DAU": {"data_file": "dau.parquet", "value_column": "dau_daily"}}
+        assert overlay_population_shares(spec, "DAU") == {"windows": 1.0}
+        overlay = ResolvedOverlay(code="o", name="mozillaonline_migration", spec_path=path, spec=spec)
+        modified, contexts = subtract_overlays_pre_mozaic(self._frames(), [overlay], "2026-06-10")
+        assert modified["DAU"][modified["DAU"]["windows"]]["y"].eq(9000).all()
+        assert modified["DAU"][modified["DAU"]["mac"]]["y"].eq(10000).all()
+        assert modified["MAU"]["y"].eq(50000).all()                       # MAU untouched without a metrics block
+        assert modified["DAU"].attrs["mozillaonline_migration_subtracted"]
+        assert len(contexts[0]["pieces"]) == 1
+
+    def test_extension_splits_each_metric_across_populations_and_round_trips(self, tmp_path):
+        from mozaic_daily.overlays import ResolvedOverlay, add_overlays_post_mozaic, subtract_overlays_pre_mozaic
+        path, spec = self._spec_dir(tmp_path, with_extension=True)
+        overlay = ResolvedOverlay(code="o", name="mozillaonline_migration", spec_path=path, spec=spec)
+        modified, contexts = subtract_overlays_pre_mozaic(self._frames(), [overlay], "2026-06-10")
+        d, m = modified["DAU"], modified["MAU"]
+        assert d[d["windows"]]["y"].eq(10000 - 900).all() and d[d["mac"]]["y"].eq(10000 - 100).all() and d[d["linux"]]["y"].eq(10000).all()
+        assert m[m["windows"]]["y"].eq(50000 - 2400).all() and m[m["mac"]]["y"].eq(50000 - 600).all() and m[m["linux"]]["y"].eq(50000).all()
+        assert len(contexts[0]["pieces"]) == 4
+
+        # add-back on a forecast-shaped frame restores every tile and adds the whole curve to the world rows
+        def shaped(df, metric):
+            out = df.rename(columns={"x": "target_date"}).copy()
+            out["population"] = out[["windows", "mac", "linux"]].idxmax(axis=1)
+            out[metric] = out["y"].astype(float)
+            out["source"] = "actual"
+            return out[["target_date", "country", "population", "source", metric]]
+        combined = shaped(d, "DAU").merge(shaped(m, "MAU"), on=["target_date", "country", "population", "source"])
+        world = combined[combined["population"] == "windows"].assign(country="ALL", population="ALL", DAU=0.0, MAU=0.0)
+        combined = pd.concat([combined, world], ignore_index=True)
+        back = add_overlays_post_mozaic(combined, contexts, pd.Timestamp("2026-06-11"))
+        tiles = back[back["country"] == "CN"]
+        assert tiles["DAU"].eq(10000).all() and tiles["MAU"].eq(50000).all()
+        world_rows = back[back["country"] == "ALL"]
+        assert world_rows["DAU"].eq(1000).all() and world_rows["MAU"].eq(3000).all()
+
+    def test_population_shares_must_sum_to_one(self, tmp_path):
+        from mozaic_daily.overlays import overlay_population_shares
+        _, spec = self._spec_dir(tmp_path, with_extension=True)
+        spec["allocation"]["population_shares"]["DAU"] = {"windows": 0.5, "mac": 0.1}
+        with pytest.raises(ValueError, match="sum to"):
+            overlay_population_shares(spec, "DAU")

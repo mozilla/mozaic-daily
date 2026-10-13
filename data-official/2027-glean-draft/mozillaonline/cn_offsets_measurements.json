@@ -1,0 +1,76 @@
+{
+  "measurements": {
+    "steps": {
+      "DAU": {
+        "windows": {
+          "pre": 1067046.4683083498,
+          "post": 1837045.876886853,
+          "step": 769999.4085785032
+        },
+        "mac": {
+          "pre": 37003.38071972587,
+          "post": 64613.51743947899,
+          "step": 27610.136719753114
+        },
+        "linux": {
+          "pre": 89111.1974781296,
+          "post": 88998.65268685493,
+          "step": -112.54479127467494
+        }
+      },
+      "MAU": {
+        "windows": {
+          "pre": 3995641.304207174,
+          "post": 6215726.652193219,
+          "step": 2220085.3479860453
+        },
+        "mac": {
+          "pre": 126025.31393896953,
+          "post": 214507.37597297656,
+          "step": 88482.06203400703
+        },
+        "linux": {
+          "pre": 687622.8013127156,
+          "post": 593522.9313459075,
+          "step": -94099.86996680812
+        }
+      }
+    },
+    "ratios": {
+      "windows": 2.883229939208067,
+      "mac": 3.204694816694056,
+      "linux": null
+    },
+    "population_shares": {
+      "DAU": {
+        "windows": 0.9654,
+        "mac": 0.0346
+      },
+      "MAU": {
+        "windows": 0.9617,
+        "mac": 0.0383
+      }
+    },
+    "ratio_world": 2.8943578015441025
+  },
+  "checks": {
+    "DAU:windows": {
+      "raw_step_pct": 72.62,
+      "residual_step_pct": 5.34
+    },
+    "DAU:mac": {
+      "raw_step_pct": 73.1,
+      "residual_step_pct": 3.57
+    },
+    "DAU:round_trip_max_abs": 0.4990635826106882,
+    "MAU:windows": {
+      "raw_step_pct": 56.27,
+      "residual_step_pct": 3.83
+    },
+    "MAU:mac": {
+      "raw_step_pct": 68.24,
+      "residual_step_pct": 2.03
+    },
+    "MAU:round_trip_max_abs": 0.49633796856505796
+  }
+}

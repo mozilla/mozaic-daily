@@ -1,0 +1,90 @@
+{
+  "producer": "scripts/build_glean_history_cn_offsets.py",
+  "approach": "mozillaonline/MAU_OFFSET_APPROACH.md",
+  "built_on": "2026-10-12",
+  "dau_curve_file": "mozillaonline_migration.2026-08-31.parquet",
+  "dau_curve_sha1": "e70de6ecb43cd50fed5c48696e02d1dd16cd3bcc",
+  "export_sha1": {
+    "DAU": "4116ec89e38ea65692d6980c5e2b093c74bffe0b",
+    "MAU": "6834316308cd9dd6cc3241d223308b914aa0a444"
+  },
+  "construction": "trailing 28-day mean of the DAU world curve x ratio_world; held flat where the DAU curve is",
+  "measurement_windows": {
+    "pre": {
+      "DAU": [
+        "2026-04-15",
+        "2026-05-31"
+      ],
+      "MAU": [
+        "2026-05-15",
+        "2026-05-31"
+      ]
+    },
+    "post": {
+      "DAU": [
+        "2026-08-01",
+        "2026-09-08"
+      ],
+      "MAU": [
+        "2026-08-15",
+        "2026-09-08"
+      ]
+    }
+  },
+  "measurements": {
+    "steps": {
+      "DAU": {
+        "windows": {
+          "pre": 1067046.4683083498,
+          "post": 1837045.876886853,
+          "step": 769999.4085785032
+        },
+        "mac": {
+          "pre": 37003.38071972587,
+          "post": 64613.51743947899,
+          "step": 27610.136719753114
+        },
+        "linux": {
+          "pre": 89111.1974781296,
+          "post": 88998.65268685493,
+          "step": -112.54479127467494
+        }
+      },
+      "MAU": {
+        "windows": {
+          "pre": 3995641.304207174,
+          "post": 6215726.652193219,
+          "step": 2220085.3479860453
+        },
+        "mac": {
+          "pre": 126025.31393896953,
+          "post": 214507.37597297656,
+          "step": 88482.06203400703
+        },
+        "linux": {
+          "pre": 687622.8013127156,
+          "post": 593522.9313459075,
+          "step": -94099.86996680812
+        }
+      }
+    },
+    "ratios": {
+      "windows": 2.883229939208067,
+      "mac": 3.204694816694056,
+      "linux": null
+    },
+    "population_shares": {
+      "DAU": {
+        "windows": 0.9654,
+        "mac": 0.0346
+      },
+      "MAU": {
+        "windows": 0.9617,
+        "mac": 0.0383
+      }
+    },
+    "ratio_world": 2.8943578015441025
+  },
+  "dec15_2027_mau_offset_world": 1864456.8111019207,
+  "derived_not_measured": "Nobody has measured MozillaOnline MAU directly; this curve is the DAU curve scaled by China's own step ratio."
+}
