@@ -9,6 +9,7 @@ Reads one ``mozaic_daily_forecast.<seam>.gh-*.raw.parquet`` (through ``load_fore
                                                  translation band (correlated, % of series, held at its last value)
     <out>/plots/glean2027_dau_28ma.png           world + per-OS, full range from 2024 and a seam zoom
     <out>/plots/glean2027_mau_daily.png          same for MAU (raw daily rolling-28 MAU, no further smoothing)
+    <out>/plots/glean2027_{mau,dau}_by_country.png  4x4 per-country panels, history + forecast
 
 DAU is shown as the package's ``display_ma`` (variance-matched seam transition, byte-identical to a plain
 trailing mean from seam+27 on). MAU is the raw daily value: it is already a 28-day quantity and the
@@ -134,6 +135,37 @@ def plot_metric(curves: pd.DataFrame, metric: str, seam: pd.Timestamp, label: st
     plt.close(fig)
 
 
+def plot_by_country(df: pd.DataFrame, seam: pd.Timestamp, label: str, out_dir: Path, stem: str) -> list[Path]:
+    """4x4 per-country panels (all OS), MAU daily and DAU 28d MA: history black, forecast green, seam and Dec-15 lines."""
+    import matplotlib.ticker as mt
+    countries = [c for c in sorted(df["country"].unique()) if c != "ALL"]
+    seg = json.dumps({"os": "ALL"})
+    written = []
+    for col, title in [("mau", "MAU daily"), ("dau", "DAU 28d MA")]:
+        fig, axes = plt.subplots(4, 4, figsize=(22, 14))
+        for ax, c in zip(axes.ravel(), countries):
+            w = df[(df["country"] == c) & (df["segment"] == seg)].set_index("target_date").sort_index()
+            s = w[col].rolling(28).mean() if col == "dau" else w[col]
+            h = s[w["data_type"] == "training"][pd.Timestamp("2025-01-01"):]
+            f = s[w["data_type"] == "forecast"]
+            ax.plot(h.index, h.values, color="black", lw=1.2, label="history")
+            ax.plot(f.index, f.values, color="green", lw=1.1, label="forecast")
+            ax.axvline(seam, color="grey", ls="--", lw=0.8)
+            ax.axvline(pd.Timestamp("2027-12-15"), color="red", ls=":", lw=0.8)
+            ax.set_title(f"{c} — {title}", fontsize=10)
+            ax.grid(alpha=0.3)
+            _fmt_axis(ax)
+            ax.text(0.5, 0.5, WATERMARK_TEXT, transform=ax.transAxes, fontsize=30, color=WATERMARK_COLOR, alpha=0.14,
+                    ha="center", va="center", rotation=28, fontweight="bold")
+        fig.suptitle(f"By country — {title} ({label})")
+        fig.tight_layout(rect=(0, 0, 1, 0.97))
+        out = out_dir / "plots" / f"{stem}_{col}_by_country.png"
+        fig.savefig(out, dpi=90)
+        plt.close(fig)
+        written.append(out)
+    return written
+
+
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--parquet", type=Path, required=True)
@@ -161,6 +193,8 @@ def main():
     for metric in ("dau", "mau"):
         out = args.out_dir / "plots" / f"{args.stem}_{'dau_28ma' if metric == 'dau' else 'mau_daily'}.png"
         plot_metric(curves, metric, seam, label, out)
+        print(f"plot  {out}")
+    for out in plot_by_country(df, seam, label, args.out_dir, args.stem):
         print(f"plot  {out}")
     print(f"csv   {curves_path}\ncsv   {summary_path}\n")
     print(summary.pivot_table(index=["metric", "os"], columns="date", values="value").reindex(
