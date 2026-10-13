@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 7)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 8)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-12 18:30 PDT</span>
+  <span><b>Generated:</b> 2026-10-12 18:50 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 7 — build 4 (o on DAU + MAU, windows/mac split) is the current draft number; §9 lists what is still open</span>
+  <span><b>Status:</b> DRAFT 8 — build 4 is the deliverable copy (REPORT.html); §9 decisions taken, next: backtest uncertainty, comparisons, candidates</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -363,7 +363,15 @@ June 2026. Plot <code>plots/cn_offsets_check.png</code>. One visible residual: t
 <li><b>Prophet bands, measured on the fitted objects</b> (pre add-back): world DAU 28d-MA 90% half-width 31M, world MAU 94M at 2027-12-15, of which China × windows MAU alone contributes a 76M half-width. The interval script's parquet checks also reject an overlay build by design (pickles hold pre-overlay forecasts), so no band files were written for build 4. See the band note under build 3: at this horizon the Prophet band is not a usable uncertainty statement.</li>
 </ul>
 
-<h2>9. Still open after build 4 (decisions for Brendan)</h2>
+<h2>9. Decisions after build 4 (Brendan, 2026-10-12 evening)</h2>
+<table><tr><th>#</th><th>item</th><th>decision</th></tr>
+<tr><td>1</td><td>Uncertainty</td><td>Take the suggestion: translation band + backtest-based forecast error; drop the Prophet band. Not in the EOD copy; next step.</td></tr>
+<tr><td>2</td><td>Top-down reallocation</td><td>Accept.</td></tr>
+<tr><td>3</td><td>China MAU trend</td><td>Accept for the draft.</td></tr>
+<tr><td>4</td><td>Comparison forecasts</td><td>After the copy: "make this solid first; I need a copy by EOD". The copy is <code>REPORT.html</code> (self-contained, DRAFT), rendered by <code>scripts/render_glean_history_report.py</code>.</td></tr>
+<tr><td>5</td><td>Combinatorics candidates</td><td>After the comparisons.</td></tr></table>
+<p class="sub">Verification of build 4 before the copy: state marker loads with <code>require_state=['o']</code>; world = Σ countries and Σ OS to 1e-4 on both metrics; no NaN or negative forecast values; training rows equal the export within one person per row (0.985 worst: rounding to whole people plus the overlay's rounded subtraction vs unrounded add-back).</p>
+<h3>As they were asked</h3>
 <ol>
 <li><b>Uncertainty (decision 14).</b> The Prophet band is unusable at 15 months (production's own pickle: ±19.9M). Proposal: deliver the translation band plus a backtest error (how far 12–15-month-ahead forecasts from past seams missed), and drop the Prophet band from the deliverable. Needs your word; the backtest is about a day (several historical seams, each a four-minute run).</li>
 <li><b>Top-down reallocation.</b> Accept that the China correction moves every country (it is how production's <code>o</code> behaves), or not? I recommend accepting.</li>
