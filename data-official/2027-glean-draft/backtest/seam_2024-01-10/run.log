@@ -2,3 +2,165 @@
   warnings.warn(message, FutureWarning)
 /Users/brendanwells/work/mozaic-daily/.venv/lib/python3.10/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.10.19). Google will not post any further updates to google.cloud.bigquery_storage_v1 supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.11, and then update google.cloud.bigquery_storage_v1.
   warnings.warn(message, FutureWarning)
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-02-12 (-1.014), 2024-02-13 (-0.730), 2025-03-03 (-0.963), 2025-03-04 (-0.689)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-03-29 (-0.626), 2025-01-01 (-0.738), 2025-04-18 (-0.626), 2025-05-01 (-0.622)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-05-20 (-1.169), 2025-06-09 (-1.169)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-05-20 (-0.827), 2025-06-09 (-0.827)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-02-10 (-0.657), 2024-04-11 (-0.668), 2024-05-01 (-0.607), 2025-01-01 (-0.604), 2025-01-29 (-0.651), 2025-05-01 (-0.721)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-03-21 (-0.647), 2024-04-01 (-0.779), 2024-08-25 (-0.630), 2025-03-20 (-0.730), 2025-03-21 (-0.698), 2025-03-22 (-1.146), 2025-03-23 (-0.759), 2025-03-31 (-0.741), 2025-04-01 (-0.866), 2025-04-02 (-0.629), 2025-07-05 (-0.659)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-04-01 (-0.923), 2024-08-15 (-0.723), 2024-11-01 (-0.708), 2025-01-06 (-0.841), 2025-04-21 (-0.931), 2025-08-15 (-0.757), 2025-08-18 (-0.722), 2025-11-01 (-0.700), 2025-12-08 (-0.656)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-03-18 (-0.601), 2025-03-17 (-0.601)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-04-01 (-0.635), 2025-04-21 (-0.635)
+  unmatched = self._predict_holiday_effects()
+/Users/brendanwells/work/mozaic-forecasting-official/mozaic/core.py:334: UserWarning: Holiday effects clipped at -0.6 boundary for dates: 2024-12-30 (-0.699)
+  unmatched = self._predict_holiday_effects()
+============================================================
+Glean-history desktop forecast
+============================================================
+Seam / training end : 2024-01-10 / 2024-01-09
+Horizon end         : 2025-12-31
+Metrics             : ['DAU', 'MAU']
+Raw dir             : /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/backtest/raw_cut_2024-01-10
+Iran fill           : /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/iran_fill/iran_fill.glean_history_desktop.parquet
+Holidays            : ['LegacyOutage2025']
+Overlays            : none
+Output dir          : /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/backtest/seam_2024-01-10/cps0.1649_thresh032_recent17_cpr0.87_ncp40_clip0.6_sps0.00825_regimemultiplicative
+Config              : {
+  "prophet_recent_weeks": 17,
+  "prophet_changepoint_range": 0.87,
+  "prophet_n_changepoints": 40,
+  "holiday_threshold": -0.032,
+  "holiday_max_radius": 5,
+  "holiday_min_radius": 3,
+  "holiday_effect_floor": -0.6,
+  "seasonality_regime": "multiplicative",
+  "seasonality_corr_threshold": 0.0,
+  "prophet_changepoint_prior_scale": 0.1649,
+  "prophet_seasonality_prior_scale": 0.00825
+}
+
+--- Populate tiles
+
+⚠️  DAU: no real IR rows after 2026-05-25 to anchor the seam
+⚠️  MAU: no real IR rows after 2026-06-21 to anchor the seam
+
+DAU
+
+ AR: linux, mac, windows, 
+ BR: linux, mac, windows, 
+ CA: linux, mac, windows, 
+ CN: linux, mac, windows, 
+ DE: linux, mac, windows, 
+ FR: linux, mac, windows, 
+ ID: linux, mac, windows, 
+ IN: linux, mac, windows, 
+ IR: linux, mac, windows, 
+ IT: linux, mac, windows, 
+ JP: linux, mac, windows, 
+ MX: linux, mac, windows, 
+ PL: linux, mac, windows, 
+ROW: linux, mac, windows, 
+ RU: linux, mac, windows, 
+ US: linux, mac, windows, 
+
+MAU
+
+ AR: linux, mac, windows, 
+ BR: linux, mac, windows, 
+ CA: linux, mac, windows, 
+ CN: linux, mac, windows, 
+ DE: linux, mac, windows, 
+ FR: linux, mac, windows, 
+ ID: linux, mac, windows, 
+ IN: linux, mac, windows, 
+ IR: linux, mac, windows, 
+ IT: linux, mac, windows, 
+ JP: linux, mac, windows, 
+ MX: linux, mac, windows, 
+ PL: linux, mac, windows, 
+ROW: linux, mac, windows, 
+ RU: linux, mac, windows, 
+ US: linux, mac, windows, 
+
+--- Curate Mozaics
+
+DAU
+   countries: AR, BR, CA, CN, DE, FR, ID, IN, IR, IT, JP, MX, PL, ROW, RU, US, 
+   populations: linux, mac, windows, 
+   reconciling...
+
+⚠️ New holidays in forecasted dates:
+ - AR Legacy telemetry outage 2025 (translated series)
+ - BR Legacy telemetry outage 2025 (translated series)
+ - BR National Day of Zumbi and Black Awareness
+ - CA Legacy telemetry outage 2025 (translated series)
+ - CN Chinese New Year's Eve
+ - CN Legacy telemetry outage 2025 (translated series)
+ - DE Legacy telemetry outage 2025 (translated series)
+ - FR Legacy telemetry outage 2025 (translated series)
+ - ID General Election Day
+ - ID Legacy telemetry outage 2025 (translated series)
+ - IN Legacy telemetry outage 2025 (translated series)
+ - IR Blackout
+ - IR Legacy telemetry outage 2025 (translated series)
+ - IT Legacy telemetry outage 2025 (translated series)
+ - JP Legacy telemetry outage 2025 (translated series)
+ - MX Change of Federal Government
+ - MX Legacy telemetry outage 2025 (translated series)
+ - PL Christmas Eve
+ - PL Legacy telemetry outage 2025 (translated series)
+ - ROW Legacy telemetry outage 2025 (translated series)
+ - RU Legacy telemetry outage 2025 (translated series)
+ - US Legacy telemetry outage 2025 (translated series)
+MAU
+   countries: AR, BR, CA, CN, DE, FR, ID, IN, IR, IT, JP, MX, PL, ROW, RU, US, 
+   populations: linux, mac, windows, 
+   reconciling...
+
+⚠️ New holidays in forecasted dates:
+ - AR Legacy telemetry outage 2025 (translated series)
+ - BR Legacy telemetry outage 2025 (translated series)
+ - BR National Day of Zumbi and Black Awareness
+ - CA Legacy telemetry outage 2025 (translated series)
+ - CN Chinese New Year's Eve
+ - CN Legacy telemetry outage 2025 (translated series)
+ - DE Legacy telemetry outage 2025 (translated series)
+ - FR Legacy telemetry outage 2025 (translated series)
+ - ID General Election Day
+ - ID Legacy telemetry outage 2025 (translated series)
+ - IN Legacy telemetry outage 2025 (translated series)
+ - IR Blackout
+ - IR Legacy telemetry outage 2025 (translated series)
+ - IT Legacy telemetry outage 2025 (translated series)
+ - JP Legacy telemetry outage 2025 (translated series)
+ - MX Change of Federal Government
+ - MX Legacy telemetry outage 2025 (translated series)
+ - PL Christmas Eve
+ - PL Legacy telemetry outage 2025 (translated series)
+ - ROW Legacy telemetry outage 2025 (translated series)
+ - RU Legacy telemetry outage 2025 (translated series)
+ - US Legacy telemetry outage 2025 (translated series)
+
+done.
+
+--- Extracting forecasts (2 metrics)
+  [1/2] DAU
+  [2/2] MAU
+
+Forecast took 2.7 min
+Saved mozaic objects to /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/backtest/seam_2024-01-10/cps0.1649_thresh032_recent17_cpr0.87_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_objects.glean_history_desktop.2024-01-10.pkl
+Wrote /Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/backtest/seam_2024-01-10/cps0.1649_thresh032_recent17_cpr0.87_ncp40_clip0.6_sps0.00825_regimemultiplicative/mozaic_daily_forecast.2024-01-10.gh-D+M.raw.parquet (+ sidecar)
+
+World values (country ALL, os ALL):
+  DAU 2026-12-15: nan
+  DAU 2027-12-15: nan
+  MAU 2026-12-15: nan
+  MAU 2027-12-15: nan

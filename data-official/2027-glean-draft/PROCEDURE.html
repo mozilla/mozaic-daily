@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 12)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 13)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-12 23:40 PDT</span>
+  <span><b>Generated:</b> 2026-10-13 01:05 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 12 — build 5 LOCKED (LOCK.md); remaining items in progress: backtest uncertainty, comparisons, candidates (§11)</span>
+  <span><b>Status:</b> DRAFT 13 — build 5 LOCKED; all remaining items closed (§11): backtest uncertainty, Legacy comparison, candidates</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -445,9 +445,37 @@ on the world in early September 2026 (Windows 1.036, Mac 1.011, Linux 1.058), th
 <li><b>Real Glean from 2025-05-22, same configuration</b> (<code>comparison_glean_real_cpr087_2026-10-10/</code>): <b>unusable, as expected</b>. Seventeen months of
 history give Prophet no second year to pin yearly seasonality; the world MAU "forecast" rises from 169M to 229M by December 2027, Linux MAU goes negative, DAU
 collapses. Kept for the record as the demonstration of why the translated history exists; not shown in the report.</li>
-<li><b>Legacy telemetry through 2026-10-09, same configuration, Legacy-unit Iran fill</b> (<code>comparison_legacy_cpr087_2026-10-10/</code>): running; result in §11c when it lands.
-It is the comparison that matters (decision 10); the expected relation is the translation factor (~×1.035 on DAU) plus whatever the Glean-only steady term does to the trend.</li>
+<li><b>Legacy telemetry through 2026-10-09, same configuration, Legacy-unit Iran fill, same China correction</b> (<code>comparison_legacy_cpr087_2026-10-10/</code>):
+<b>the forecasts differ by the translation factor and nothing else.</b> Glean-equivalent / Legacy in the history (Sep 1 – Oct 9 2026): MAU 1.032, DAU 28d-MA 1.037; at
+2027-12-15: MAU 1.030, DAU 1.041. Dec → Dec: Legacy MAU −1.9% / DAU −2.3% vs Glean-equivalent −1.9% / −2.2%. Per OS the same (Linux MAU ratio 1.145 in both history and
+forecast). Legacy MAU 2027-12-15 152,662,190; DAU 28d-MA 50,666,965. Table <code>csv/glean2027_vs_legacy_comparison.csv</code>. This is the validation decision 10 asked for:
+the translated history does not change what the model does, it changes the units.</li>
 </ul>
+<h3>11c. Backtest-based forecast error (decision 14 as revised: translation band + backtest, no Prophet band)</h3>
+<p><code>scripts/run_glean_history_backtest.py</code>. <b>Round 1</b> (Apr/Oct seams 2022–2025, full input frames) gave DAU errors of 30–90% at 14 months for the 2022–2023
+seams: with 2.3–3.8 years of history the log-space trend extrapolates whichever seasonal ramp the seam sits on (April seams −60%, October seams +50–90%, all OS
+together). A statement about short histories, not the configuration; kept under <code>backtest_round1/</code>. <b>Round 2</b> (the stated one): eight seams
+2024-01-10 … 2025-10-10, each with ≥ 4 years of history, <b>input frames cut at the seam</b> so holiday detection cannot see the future, locked configuration,
+Iran fill passed (a no-op before 2026), no China correction (the step is after every seam). Compared with the Glean-equivalent history at every horizon day;
+headline horizon 431 days (seam → 2027-12-15).</p>
+<table>
+<tr><th>metric</th><th class="num">horizon</th><th class="num">seams</th><th class="num">median signed error</th><th class="num">|error| p50</th><th class="num">|error| p80</th><th class="num">|error| p90</th></tr>
+<tr><td>MAU</td><td class="num">180 d</td><td class="num">8</td><td class="num">−1.3%</td><td class="num">2.4%</td><td class="num">4.3%</td><td class="num">5.1%</td></tr>
+<tr><td>MAU</td><td class="num">360 d</td><td class="num">8</td><td class="num">−4.2%</td><td class="num">4.2%</td><td class="num">5.9%</td><td class="num">6.4%</td></tr>
+<tr><td><b>MAU</b></td><td class="num"><b>431 d</b></td><td class="num">7</td><td class="num"><b>−3.1%</b></td><td class="num"><b>6.7%</b></td><td class="num"><b>9.5%</b></td><td class="num"><b>9.9%</b></td></tr>
+<tr><td>DAU 28d MA</td><td class="num">180 d</td><td class="num">8</td><td class="num">−1.4%</td><td class="num">4.3%</td><td class="num">11.7%</td><td class="num">13.4%</td></tr>
+<tr><td>DAU 28d MA</td><td class="num">360 d</td><td class="num">8</td><td class="num">−2.6%</td><td class="num">2.8%</td><td class="num">12.2%</td><td class="num">13.7%</td></tr>
+<tr><td>DAU 28d MA</td><td class="num">431 d</td><td class="num">7</td><td class="num">−3.8%</td><td class="num">8.6%</td><td class="num">17.0%</td><td class="num">18.8%</td></tr>
+</table>
+<p>Two readings. (1) <b>Past forecasts ran low</b>: the signed median is −3 to −4% at a year, on both metrics, in seven of eight seams for MAU. The soft constraint
+"MAU must not grow" points the other way from this bias; worth knowing when the number is read. (2) The honest band around world MAU 2027-12-15 is roughly
+<b>±7% (half the seams) to ±10% (nine in ten)</b>, i.e. about ±11M to ±16M around 157.2M; DAU is wider (±9% to ±19%). Plot <code>plots/backtest_error_by_horizon.png</code>;
+files <code>backtest/errors_summary.csv</code>, <code>backtest/errors_by_horizon.csv</code>. Caveats: eight seams is a small sample; 2024–2025 contain the Iran shutdown and
+the Legacy outage in the "actuals"; the backtests have no China correction and the 2027 build does.</p>
+<h3>11d. Status after the lock</h3>
+<p>Everything Brendan listed is closed: lock (LOCK.md), forecasts produced and exported (csv/, plots/canonical/, REPORT.html), backtest uncertainty (11c), comparisons (11b),
+candidates registered (11a). Open for a later session: wiring <code>desktop_mau</code> into the display-layer renderer so the candidates can enter a combinatorics run; a
+Fx 155 re-issue of the history (export project, late October) would mean a rebuild on the new reference state.</p>
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
