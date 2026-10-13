@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 14)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 15)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-13 09:30 PDT</span>
+  <span><b>Generated:</b> 2026-10-13 11:05 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 14 — build 5 LOCKED; items closed (§11); Easter/May-Day shape checked (§11e); handoff packages delivered</span>
+  <span><b>Status:</b> DRAFT 15 — build 5 LOCKED; the two formal comparisons presented (§12, <code>COMPARISONS.html</code>); real-Glean options awaiting decision</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -487,6 +487,25 @@ Plot <code>plots/easter_mayday_alignment.png</code>. Noted, not changed (holiday
 <h3>11f. Handoff packages (2026-10-12)</h3>
 <p><code>handoff/glean2027_{mau,dau}_handoff.zip</code>: one short page per metric (current state only, no history, no seam/China detail), the forecast CSVs
 (daily 2020..2027 world + per OS, per country, DAU also unsmoothed), canonical plots, README. <code>scripts/render_glean_history_handoff.py</code>.</p>
+<h2>12. The two formal comparisons as presentable outputs (2026-10-13)</h2>
+<p>Brendan: "one comparison with legacy MAU and one comparison with actual MAU and no simulated historical data. That one is expected to be pretty bad, but we
+need to run it because it's the data we actually have." Delivered as <code>COMPARISONS.html</code> (renderer <code>scripts/render_glean_history_comparisons.py</code>,
+plots <code>scripts/plot_glean_history_comparisons.py</code> → <code>plots/comparisons/</code>). No new model run; both builds are the ones of §11b.</p>
+<ul>
+<li><b>Legacy</b>: presented world and per OS with both histories and both forecasts, plus the Glean-equivalent ÷ Legacy ratio through the horizon (flat: solid history
+continues into dashed forecast ÷ forecast). Conclusion unchanged from §11b — the same forecast in other units. Mac is the one visible drift (0.987 → 0.999 MAU).</li>
+<li><b>Real Glean, no simulated history</b>: presented honestly (world MAU 169M → 229M; Windows DAU and Linux MAU negative). Three reasons, in order: one autumn seen once
+(trend misread, consistent with the round-1 backtest's &lt;4-year seams); <b>the run masked Aug 16 – Dec 10 2025 with the <code>LegacyOutage2025</code> calendar, which the runner
+applies unconditionally and which real Glean does not need</b> — a defect of the run as executed, found while presenting it; the Glean-equivalent-unit Iran fill (small, DAU ratio within 1%).
+A shorter horizon does not help: the build is +14.6% over the locked forecast and +8% over its own last actual after one month (<code>csv/glean2027_vs_glean_real_comparison.csv</code>).</li>
+<li><b>What the real data does say</b>: real ÷ Glean-equivalent over the 17-month overlap measures the two excluded terms — duplicate-id MAU inflation (world 1.077 mid-2025 → 1.040 at the seam;
+Windows 1.087 → 1.016) and the Linux temporary term (Linux MAU 1.295 last 30 days, 1.40 at the seam). DAU within 1%. The locked forecast × the last-30-day ratio is written as
+<code>csv/glean2027_in_real_glean_units.csv</code> (world MAU 2027-12-15 restated 163,477,422) and labelled a restatement, not a forecast.</li>
+<li><b>Options put to Brendan (nothing run)</b>: (a) rerun real Glean without the outage mask and with a real-Glean Iran fill (needs a runner flag; recommended, for the record;
+still not usable at 14 months); (b) shorter horizon — not informative; (c) show the real-units restatement beside the headline with its caveat — recommended; (d) real-Glean trend with
+Legacy seasonality — the simulated-history approach by another route, not independent.</li>
+</ul>
+
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
@@ -506,7 +525,8 @@ data-official/2027-glean-draft/
   raw_glean_history_2026-10-09/       adapter output with the continuation
   _shakedown_nofill_2026-09-09/       runner shakedown without the fill (record only)
   csv/, plots/                        build-5 curves, summary, plots, build 4 vs 5 comparison; build1_seam2026-09-09/, build2_plain_seam2026-10-10/, build3_o-dauonly_seam2026-10-10/, build4_g01_seam2026-10-10/ keep the earlier ones
-  intervals/                          build-1 DAU Prophet bands (see the band note above)</pre>
+  intervals/                          build-1 DAU Prophet bands (see the band note above)
+  COMPARISONS.html, plots/comparisons/ the two formal comparisons (§12); csv/glean2027_vs_glean_real_comparison.csv, csv/glean2027_in_real_glean_units.csv</pre>
 
 </body>
 </html>

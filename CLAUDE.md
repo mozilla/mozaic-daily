@@ -322,7 +322,7 @@ The `scripts/` directory contains helper scripts for common tasks:
   and passed as `additional_fills`. No head/tailwinds; the China MozillaOnline step is applied as a DATA CORRECTION (`o`, DAU + MAU,
   windows/mac split). LOCKED 2026-10-12 at build 5 (`LOCK.md`). The rest of the tooling (`export_glean_history_curves.py`,
   `plot_glean_history_canonical.py`, `render_glean_history_report.py`, `render_glean_history_handoff.py`, `score_glean_history_seam.py`,
-  `run_glean_history_backtest.py`, `build_glean_history_cn_offsets.py`, `build_comparison_raw_frames.py`, `compare_glean_history_builds.py`)
+  `run_glean_history_backtest.py`, `build_glean_history_cn_offsets.py`, `build_comparison_raw_frames.py`, `compare_glean_history_builds.py`, `plot_glean_history_comparisons.py`, `render_glean_history_comparisons.py`)
   is listed in `scripts/_index.md`. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
