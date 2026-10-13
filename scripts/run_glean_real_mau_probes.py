@@ -57,6 +57,13 @@ GRIDS: dict[str, dict[str, list[str]]] = {
         "cps0.05_ncp10_cpr0.8_sps0.1": ["--changepoint-prior-scale", "0.05", "--n-changepoints", "10", "--changepoint-range", "0.8",
                                         "--seasonality-prior-scale", "0.1"],
     },
+    # Round 2 (approved 2026-10-13): near-linear trend so each OS gets its mean slope over the 17 months; one additive-regime run
+    "round2": {
+        **{f"cps{cps}_ncp{ncp}_cpr{cpr}": ["--changepoint-prior-scale", str(cps), "--n-changepoints", str(ncp), "--changepoint-range", str(cpr)]
+           for cps in (0.005, 0.001) for ncp in (3, 2) for cpr in (0.8, 0.5)},
+        "cps0.005_ncp3_cpr0.8_additive": ["--changepoint-prior-scale", "0.005", "--n-changepoints", "3", "--changepoint-range", "0.8",
+                                          "--seasonality-regime", "additive"],
+    },
 }
 
 
@@ -97,8 +104,12 @@ def cmd_score(args):
     actual_os = {os_name: actual[actual[os_name]].groupby("x")["y"].sum().astype(float) for os_name in ("windows", "mac", "linux")}
     actual_os["world"] = actual_world
     rows, paths, os_paths = [], {}, {o: {} for o in OS_SEGMENTS}
+    keep = set(GRIDS[args.grid]) if args.grid else None
+    suffix = f"_{args.grid}" if args.grid else ""
     for parquet in sorted(PROBES_DIR.glob("*/*/mozaic_daily_forecast.*.parquet")):
         name = parquet.parent.parent.name
+        if keep is not None and name not in keep:
+            continue
         params = json.loads((parquet.parent / "parameters.json").read_text())["config"]
         row = {"probe": name, "cps": params["prophet_changepoint_prior_scale"], "ncp": params["prophet_n_changepoints"],
                "cpr": params["prophet_changepoint_range"], "sps": params["prophet_seasonality_prior_scale"]}
@@ -116,7 +127,7 @@ def cmd_score(args):
         row["any_negative"] = any(row[f"{o}_min"] < 0 for o in OS_SEGMENTS)
         rows.append(row)
     scores = pd.DataFrame(rows).sort_values("world_2027-12-15")
-    scores.to_csv(PROBES_DIR / "scores.csv", index=False)
+    scores.to_csv(PROBES_DIR / f"scores{suffix}.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(16, 7))
     ax.plot(actual_world.loc["2025-05-22":], color="black", linewidth=2, label="Actuals, real Glean MAU")
@@ -135,7 +146,7 @@ def cmd_score(args):
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
     ax.set_title("Real Glean only, MAU world: parameter probes (outage mask off) vs actuals and the locked forecast", fontsize=13)
     ax.set_ylabel("MAU"); ax.grid(True, alpha=0.3); ax.legend(fontsize=7, loc="upper left", ncol=2)
-    save(fig, PROBES_DIR / "probes_world_mau.png")
+    save(fig, PROBES_DIR / f"probes_world_mau{suffix}.png")
     # Per-OS small multiples: the world total can look tame while Windows and Linux errors cancel
     fig, axes = plt.subplots(2, 2, figsize=(16, 9))
     for ax, os_name in zip(axes.ravel(), OS_SEGMENTS):
@@ -153,7 +164,7 @@ def cmd_score(args):
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
         ax.set_title(f"{os_name} MAU: probes vs actuals and locked (y clipped to 0.6–1.6× actual range)", fontsize=11)
         ax.grid(True, alpha=0.3); ax.legend(fontsize=6, loc="upper left", ncol=2)
-    save(fig, PROBES_DIR / "probes_by_os_mau.png")
+    save(fig, PROBES_DIR / f"probes_by_os_mau{suffix}.png")
     pd.set_option("display.width", 250)
     cols = ["probe", "cps", "ncp", "cpr", "sps", "world_2026-12-15", "world_2027-12-15", "world_dec_to_dec", "world_oct27_vs_oct26_actual", "world_vs_locked_2027-12-15", "any_negative"]
     print(scores[cols].to_string(index=False, float_format=lambda v: f"{v:+.1%}" if abs(v) < 5 else f"{v:,.0f}"))
@@ -164,7 +175,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run"); r.add_argument("--grid", default="round1", choices=sorted(GRIDS)); r.add_argument("--jobs", type=int, default=3)
     r.add_argument("--force", action="store_true", help="rerun probes that already have a parquet")
-    sub.add_parser("score")
+    sc = sub.add_parser("score"); sc.add_argument("--grid", default=None, choices=sorted(GRIDS), help="score only this grid's probes (default: all)")
     args = p.parse_args()
     {"run": cmd_run, "score": cmd_score}[args.cmd](args)
 
