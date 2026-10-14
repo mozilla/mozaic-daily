@@ -1,0 +1,9 @@
+metric,statistic,os,date,value,translation_band_pct,translation_band_abs
+mau,daily,world,2026-12-15,166290298,1.139,1894344
+mau,daily,world,2027-12-15,161546764,1.139,1840307
+mau,daily,windows,2026-12-15,135713391,1.144,1552772
+mau,daily,windows,2027-12-15,128872745,1.144,1474505
+mau,daily,mac,2026-12-15,11228681,0.483,54178
+mau,daily,mac,2027-12-15,11571194,0.483,55831
+mau,daily,linux,2026-12-15,19348226,1.636,316445
+mau,daily,linux,2027-12-15,21102825,1.636,345142

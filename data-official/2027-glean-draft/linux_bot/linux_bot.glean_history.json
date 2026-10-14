@@ -1,0 +1,55 @@
+{
+  "type": "desktop_overlay",
+  "platform": "desktop",
+  "data_file": "linux_bot_dau.2026-10-09.parquet",
+  "value_column": "linux_bot_dau_daily",
+  "allocation": {
+    "key": "fixed_country_shares",
+    "flag_column": "linux",
+    "window_days": 28,
+    "shares": {
+      "ROW": 0.4348,
+      "DE": 0.2653,
+      "US": 0.2525,
+      "BR": 0.0196,
+      "FR": 0.0107,
+      "IN": 0.0083,
+      "PL": 0.0062,
+      "RU": 0.0011,
+      "JP": 0.0009,
+      "CN": 0.0003,
+      "CA": 0.0002,
+      "IT": 0.0001,
+      "ID": 0.0001,
+      "MX": 0.0,
+      "AR": 0.0,
+      "IR": 0.0
+    },
+    "population_shares": {
+      "DAU": {
+        "linux": 1.0
+      },
+      "MAU": {
+        "linux": 1.0
+      }
+    }
+  },
+  "scope": {
+    "exclude_countries": []
+  },
+  "model_meta_file": "linux_bot.2026-10-09.meta.json",
+  "applies_to_forecast_start": "2026-10-10",
+  "applies_to_data_source": "glean_history_desktop",
+  "placeholder": false,
+  "metrics": {
+    "DAU": {
+      "data_file": "linux_bot_dau.2026-10-09.parquet",
+      "value_column": "linux_bot_dau_daily"
+    },
+    "MAU": {
+      "data_file": "linux_bot_mau.2026-10-09.parquet",
+      "value_column": "linux_bot_mau_daily"
+    }
+  },
+  "notes": "Linux bot-like (hosting-ISP) component measured from real Glean alone (code `b`, registry description has the definition). World daily DAU and MAU of flagged clients, 7-day centred mean over 2025-05-22..2026-10-09, held flat after the seam at the last-28-day mean (DAU 213,047, MAU 4,212,828) \u2014 a planning choice. Country shares = last-28-day shares of the MAU component. Applied to `linux` rows only (Windows 0.2% of MAU, Mac ~0). Subtracted from training before mozaic, added back after, so the surge is not read as trend. Gated to the 2026-10-10 seam."
+}

@@ -1,0 +1,44 @@
+{
+  "produced_by": "scripts/build_glean_real_linux_bot_overlay.py",
+  "written_at": "2026-10-14T15:39:26",
+  "source_csv": "data-official/2027-glean-draft/linux_bot/bot_isp_daily_curve.csv",
+  "source_sha1": "c0d1f10d3c9bbb2f910cc1b10b83ac392dbdeb14",
+  "sql": "scripts/sql/glean_real_bot_isp_daily_curve.sql",
+  "definition": "ISP behavioural share >= 0.8 (see registry code b)",
+  "sample": "10% (sample_id 0-9) scaled x10",
+  "smoothing_days": 7,
+  "hold": "flat",
+  "hold_window_days": 28,
+  "held_levels": {
+    "DAU": 213047.14285714287,
+    "MAU": 4212828.214285715
+  },
+  "data_edge": "2026-10-09",
+  "seam": "2026-10-10",
+  "country_shares_mau_last28d": {
+    "ROW": 0.4348,
+    "DE": 0.2653,
+    "US": 0.2525,
+    "BR": 0.0196,
+    "FR": 0.0107,
+    "IN": 0.0083,
+    "PL": 0.0062,
+    "RU": 0.0011,
+    "JP": 0.0009,
+    "CN": 0.0003,
+    "CA": 0.0002,
+    "IT": 0.0001,
+    "ID": 0.0001,
+    "MX": 0.0,
+    "AR": 0.0,
+    "IR": 0.0
+  },
+  "baseline_2025_mean": {
+    "DAU": 22827.056074766355,
+    "MAU": 481539.15887850465
+  },
+  "share_of_linux_last28d": {
+    "DAU": 0.06356352644527075,
+    "MAU": 0.23496124188505707
+  }
+}

@@ -171,6 +171,50 @@ def main():
     ratio_figure(numerator=real, denominator=locked, start=real_start, end=SEAM - pd.Timedelta(days=1),
                  title="real Glean ÷ Glean-equivalent, overlap only", label="ratio", hline_label="last 30 days →",
                  shade=True, out=out / "glean_real_ratio_by_os.png")
+    if GLEAN_REAL_MAU_B_CURVES.exists():
+        round5_figure(locked, real_mau, load_curves(GLEAN_REAL_MAU_B_CURVES), real_start, out / "glean_real_round5_mau_by_os.png")
+
+
+GLEAN_REAL_MAU_B_CURVES = DRAFT / "comparison_glean_real_mau_additive_b_2026-10-14/csv/comparison_glean_real_mau_b_canonical_curves.csv"
+LINUX_BOT_SPEC = DRAFT / "linux_bot/linux_bot.glean_history.json"
+
+
+def round5_figure(locked, adopted, with_b, start, out):
+    """Round 5: the adopted real-Glean build with and without the Linux bot overlay `b`, per OS, against actuals and the locked build.
+
+    The dotted orange line is the overlay build minus its own held add-back path (the `b` MAU curve after the seam, Linux only), i.e.
+    what the model forecasts for the non-bot population; comparing it with the locked (Glean-equivalent) build per OS is the point.
+    """
+    import json
+    spec = json.loads(LINUX_BOT_SPEC.read_text())
+    curve = pd.read_parquet(LINUX_BOT_SPEC.parent / spec["metrics"]["MAU"]["data_file"])[spec["metrics"]["MAU"]["value_column"]]
+    curve.index = pd.DatetimeIndex(curve.index)
+    fig, axes = plt.subplots(2, 2, figsize=(16, 9))
+    for ax, os_name in zip(axes.ravel(), OS_ORDER):
+        col = f"mau_{os_name}"
+        act, _ = split(adopted, col)
+        _, l_fc = split(locked, col)
+        _, a_fc = split(adopted, col)
+        _, b_fc = split(with_b, col)
+        shade_outage(ax)
+        ax.plot(act[act.index >= start], color="black", linewidth=2, label="Actuals, real Glean")
+        ax.plot(l_fc, color="green", linewidth=1.4, label="Locked build (Glean-equivalent history)")
+        ax.plot(a_fc, color=COMPARISON_COLOR, linewidth=1.1, label="Adopted real-Glean build (no bot overlay)")
+        ax.plot(b_fc, color="tab:orange", linewidth=1.3, label="With Linux bot overlay `b` (held flat add-back)")
+        if os_name in ("world", "linux"):
+            underlying = b_fc - curve.reindex(b_fc.index).fillna(0.0)
+            ax.plot(underlying, color="tab:orange", linewidth=1.1, linestyle=":", label="… minus the add-back: the non-bot population")
+        mark_dates(ax, start)
+        ax.set_xlim(start - pd.Timedelta(days=3), HORIZON_END + pd.Timedelta(days=3))
+        for series, color, dy in ((l_fc, "green", 10), (a_fc, COMPARISON_COLOR, -14), (b_fc, "tab:orange", 24)):
+            v = series.get(pd.Timestamp(2027, *MEASUREMENT_DAY))
+            if v is not None and pd.notna(v):
+                ax.annotate(f"{v:,.0f}", xy=(pd.Timestamp(2027, *MEASUREMENT_DAY), v), xytext=(-70, dy), textcoords="offset points", fontsize=8, color=color)
+        scope = "Desktop" if os_name == "world" else f"Desktop {os_name}"
+        style_time_axis(ax, title=f"{scope} MAU: round 5, Linux bot overlay", ylabel="MAU, raw daily", legend_loc="upper left")
+        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3)); ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+        ax.legend(fontsize=7)
+    save(fig, out)
 
 
 if __name__ == "__main__":

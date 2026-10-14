@@ -243,6 +243,25 @@ codes:
       is removed; the September rerun that follows ingest must not include it.
     spec_glob: "data-official/*/launch_at_login_existing_users/launch_at_login_existing_users.json"
 
+  b:
+    name: linux_bot_isp
+    applier: per_tile_overlay
+    description: >
+      Linux desktop bot-like (LLM / automation) traffic measured from real Glean telemetry alone, for the
+      2027 Glean-history draft's real-Glean comparison (2026-10-14, Brendan: "go with the ISP definition").
+      A client is bot-like on a day if its ISP's behavioural share that day is >= 0.8, where the share is the
+      fraction of the ISP's MAU clients first seen inside the 28-day window with <= 2 active days; hosting and
+      cloud providers (Hetzner, Aruba Networks, Azure, Google Cloud, Oracle, Tencent, ...) come out at 0.95-1.00,
+      residential ISPs ~0.3, so hosting is an outcome rather than a hand-curated list. Daily DAU and MAU of those
+      clients per country, Linux only (Windows 0.2% of MAU, Mac ~0; not applied there), 10% sample scaled x10,
+      7-day centred smoothing, held flat after the seam at the last 28-day mean (planning choice; decay / zero
+      are the alternates). Subtracted from the `linux` training rows before mozaic and added back after, so the
+      surge is not read as trend. Linux world MAU component ~5.4M in Oct 2026 (27% of Linux MAU; 0.4-0.7M baseline
+      through 2025), DAU ~0.23M. Independent of the export project's Glean-equivalent column, whose Linux
+      temporary term (+4.2M on the same day) it agrees with. Source: firefox_desktop.baseline_active_users;
+      SQL scripts/sql/glean_real_bot_isp_daily_curve.sql; producer scripts/build_glean_real_linux_bot_overlay.py.
+      Not a production code: only the Glean-history runner's --overlay-spec path can apply it.
+    spec_glob: "data-official/*/linux_bot/linux_bot.json"
   d:
     name: duplicate_id_inflation
     applier: display_layer
