@@ -86,3 +86,41 @@ def test_runner_default_config_is_the_october_mobile_lock_including_unexposed_ra
 
 def test_runner_exposes_no_holiday_radius_knobs():
     assert not {"holiday_max_radius", "holiday_min_radius"} & {f for f, _ in runner.KNOBS.values()}
+
+
+# ---- organic MAU split -------------------------------------------------------------------------
+
+def test_mau_split_frame_partitions_and_renames():
+    import build_fenix_organic_mau_split as bld
+    pull = pd.DataFrame({
+        "submission_date": pd.to_datetime(["2026-01-01"] * 3 + ["2026-01-01"]),
+        "country": ["US", "US", "US", "DE"],
+        "growth_source": ["organic", "paid_rolling_12mo", "paid_prior_1yr", "organic"],
+        "mau": [900, 60, 40, 500],
+    })
+    split = bld.mau_split_frame(pull)
+    assert list(split.columns) == ["submission_date", "country", "organic_mau", "paid_mau", "total_mau", "organic_share"]
+    us = split[split.country == "US"].iloc[0]
+    assert (us.organic_mau, us.paid_mau, us.total_mau, us.organic_share) == (900, 100, 1000, 0.9)
+    assert split[split.country == "DE"].iloc[0].organic_share == 1.0
+
+
+def test_runner_organic_split_scales_fenix_only_holds_share_backwards_and_skips_ir(tmp_path):
+    dates = pd.date_range("2026-01-01", periods=4, freq="D")
+    rows = []
+    for d in dates:
+        for c in ("US", "IR"):
+            rows.append({"x": d, "country": c, "fenix_android": True, "firefox_ios": False, "focus_android": False, "focus_ios": False, "y": 1000})
+            rows.append({"x": d, "country": c, "fenix_android": False, "firefox_ios": True, "focus_android": False, "focus_ios": False, "y": 300})
+    frame = pd.DataFrame(rows)
+    # split measured only from the third day: the first two days must hold the earliest share (0.8) flat backwards
+    split = pd.DataFrame({"submission_date": list(dates[2:]) * 2, "country": ["US"] * 2 + ["IR"] * 2, "organic_share": [0.8, 0.5, 0.9, 0.9]})
+    split_path = tmp_path / "split.parquet"
+    split.to_parquet(split_path, index=False)
+    organic, record = runner.apply_organic_split(frame, split_path, ["IR"])
+    us_fenix = organic[(organic.country == "US") & organic.fenix_android].set_index("x")["y"].astype(int).tolist()
+    assert us_fenix == [800, 800, 800, 500]
+    assert (organic[(organic.country == "IR") & organic.fenix_android]["y"] == 1000).all()
+    assert (organic[organic.firefox_ios]["y"] == 300).all()
+    assert record["fenix_paid_mau_removed_last_day"] == 500 and record["fenix_world_total_mau_last_day"] == 2000
+    assert record["share_measured_from"] == "2026-01-03"

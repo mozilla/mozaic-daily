@@ -8,11 +8,15 @@ history is the real production table from 2020-12-31 (``scripts/sql/glean_mobile
 
 1. loads ``mozaic_parts.raw.glean.mobile.MAU.parquet`` from ``--raw-dir`` -- no BigQuery, no pre-flight;
 2. splices the regenerated Iran rolling-28 MAU fill (``--iran-fill``; the packaged mobile fill has no MAU metric);
-3. runs ``main.process_data_source`` for ``DataSource.GLEAN_MOBILE`` with the configured ``MobileModelConfig``
-   (default: the October 2026 mobile lock) and the production ``MobileEvents`` calendar. **No paid/organic split**:
-   `p` is measured on DAU and has no MAU counterpart, so this is a total-MAU forecast with nothing added or removed;
-4. writes ``mozaic_daily_forecast.<seam>.gm-M.raw.parquet`` + sidecar meta, the fitted pickle and ``parameters.json``
-   under ``<results-dir>/<config slug>/``; prints Dec-15 2026 / 2027 world values.
+3. optionally scales Fenix MAU training rows to their ORGANIC component (``--organic-split``: the measured paid/organic
+   MAU split from ``build_fenix_organic_mau_split.py``, held flat backwards before its first day like `p`; IR excluded).
+   Brendan, 2026-10-15: "we only forecast the organic part of mobile; marketing forecasts paid" — so there is NO add-back:
+   the output is organic mobile MAU, history rows included. Without the flag it is a total-MAU forecast;
+4. runs ``main.process_data_source`` for ``DataSource.GLEAN_MOBILE`` with the configured ``MobileModelConfig``
+   (default: the October 2026 mobile lock) and the production ``MobileEvents`` calendar;
+5. writes ``mozaic_daily_forecast.<seam>.gm-M.raw.parquet`` + sidecar meta (``extra.organic_only`` records the split when
+   one was applied; the filename marker stays ``.raw.`` because no registered adjustment is added back), the fitted
+   pickle and ``parameters.json`` under ``<results-dir>/<config slug>/``; prints Dec-15 2026 / 2027 world values.
 
 Usage:
     python scripts/run_mobile_mau_forecast.py \\
@@ -46,6 +50,7 @@ from mozaic_daily.config import get_runtime_config  # noqa: E402
 from mozaic_daily.main import (  # noqa: E402
     get_checkpoint_filename, get_mozaic_objects_filename, process_data_source, save_mozaic_objects,
 )
+from mozaic_daily.organic import build_share_lookup, split_training_to_organic  # noqa: E402
 from mozaic_daily.queries import ADDITIONAL_HOLIDAYS, DataSource, Metric  # noqa: E402
 from mozaic_daily.tables import format_output_table  # noqa: E402
 
@@ -103,6 +108,24 @@ def load_raw_frame(raw_dir: Path) -> pd.DataFrame:
     return pd.read_parquet(path)
 
 
+def apply_organic_split(frame: pd.DataFrame, split_path: Path, exclude_countries: list[str]) -> tuple[pd.DataFrame, dict]:
+    """Fenix MAU training rows x measured organic share (held flat backwards before the split starts); returns the frame and a record."""
+    split = pd.read_parquet(split_path)
+    split["submission_date"] = pd.to_datetime(split["submission_date"])
+    lookup = build_share_lookup(split, share_column="organic_share", training_dates=pd.DatetimeIndex(pd.to_datetime(frame["x"]).unique()),
+                                countries=sorted(frame["country"].unique()))
+    organic, measured_paid = split_training_to_organic(frame, share_lookup=lookup, flag_column="fenix_android",
+                                                       exclude_countries=exclude_countries, sentinel_attr="organic_mau_split_applied")
+    last_day = pd.to_datetime(frame["x"]).max()
+    fenix_last = frame[(pd.to_datetime(frame["x"]) == last_day) & frame["fenix_android"]]
+    paid_last = measured_paid.xs(last_day, level="submission_date").sum() if not measured_paid.empty else 0
+    record = {"split_file": str(split_path), "share_measured_from": str(split["submission_date"].min().date()),
+              "share_held_flat_before": str(split["submission_date"].min().date()), "exclude_countries": exclude_countries,
+              "fenix_world_total_mau_last_day": int(fenix_last["y"].sum()), "fenix_paid_mau_removed_last_day": int(paid_last),
+              "fenix_paid_share_last_day": float(paid_last / fenix_last["y"].sum()) if len(fenix_last) else None}
+    return organic, record
+
+
 def world_value(df: pd.DataFrame, column: str, on: str) -> float:
     row = df[(df["country"] == "ALL") & (df["app_name"] == "ALL MOBILE") & (df["target_date"] == on)]
     return float(row[column].item()) if len(row) == 1 else float("nan")
@@ -115,6 +138,9 @@ def parse_args():
     p.add_argument("--results-dir", type=Path, required=True)
     p.add_argument("--iran-fill", type=Path, default=None,
                    help="rolling-28 MAU IR fill parquet (generate_mobile_mau_iran_fill.py); omit for no fill")
+    p.add_argument("--organic-split", type=Path, default=None,
+                   help="measured Fenix paid/organic MAU split parquet (build_fenix_organic_mau_split.py): forecast ORGANIC MAU, no add-back")
+    p.add_argument("--organic-exclude", nargs="*", default=["IR"], help="countries left total under --organic-split (default IR, as in `p`)")
     p.add_argument("--dry-run", action="store_true")
     add_knob_arguments(p, defaults=OCTOBER_MOBILE_LOCK)
     return p.parse_args()
@@ -135,7 +161,7 @@ def main() -> None:
     print(f"Raw dir             : {args.raw_dir}")
     print(f"Iran fill           : {args.iran_fill or 'none'}")
     print(f"Holidays            : {holiday_names}")
-    print(f"Paid/organic split  : not applied (DAU-only mechanism)")
+    print(f"Organic split       : {args.organic_split or 'none (total MAU)'}{' ex ' + ','.join(args.organic_exclude) if args.organic_split else ''}")
     print(f"Output dir          : {slug_dir}")
     print(f"Config              : {json.dumps(config.to_dict(), indent=2)}")
 
@@ -149,12 +175,20 @@ def main() -> None:
         "iran_fill": str(args.iran_fill) if args.iran_fill else None,
         "additional_holidays": holiday_names,
         "adjustment_code": None,
+        "organic_split": str(args.organic_split) if args.organic_split else None,
+        "organic_exclude": args.organic_exclude if args.organic_split else None,
     }, indent=2) + "\n")
     if args.dry_run:
         print("[dry-run] stopping before the forecast")
         return
 
     frame = load_raw_frame(args.raw_dir)
+    organic_record = None
+    if args.organic_split:
+        frame, organic_record = apply_organic_split(frame, args.organic_split, list(args.organic_exclude))
+        print(f"Organic split: Fenix paid MAU removed on the last training day {organic_record['fenix_paid_mau_removed_last_day']:,} "
+              f"of {organic_record['fenix_world_total_mau_last_day']:,} ({organic_record['fenix_paid_share_last_day']:.2%}); "
+              f"share measured from {organic_record['share_measured_from']}, held flat before")
     fills = [pd.read_parquet(args.iran_fill)] if args.iran_fill else None
     datasets = {"mobile": {"glean": {METRIC.value: frame}}}
 
@@ -187,7 +221,9 @@ def main() -> None:
             "populations": POPULATIONS,
             "additional_holidays": holiday_names,
             "iran_fill": str(args.iran_fill) if args.iran_fill else None,
-            "paid_organic_split": "not applied (DAU-only mechanism; total MAU)",
+            "organic_only": organic_record,
+            "paid_organic_split": ("ORGANIC ONLY: Fenix training rows scaled by the measured organic MAU share, nothing added back"
+                                   if organic_record else "not applied (total MAU)"),
             "inputs_meta": json.loads(inputs_meta_path.read_text()) if inputs_meta_path.exists() else None,
             "run_at": datetime.now().isoformat(timespec="seconds"),
         },
