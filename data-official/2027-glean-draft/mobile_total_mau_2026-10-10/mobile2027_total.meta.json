@@ -1,0 +1,204 @@
+{
+  "produced_by": "scripts/compose_mobile_total_mau.py",
+  "written_at": "2026-10-15T11:49:42",
+  "organic_parquet": "data-official/2027-glean-draft/mobile_organic_mau_2026-10-10/cps0.0065_thresh055_recent13_cpr0.87_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-10-10.gm-M.raw.parquet",
+  "organic_sha1": "698379c99bc76ae7b5a0499b52e2177fadbef34e",
+  "organic_model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.055,
+    "prophet_changepoint_prior_scale": 0.0065,
+    "prophet_changepoint_range": 0.87,
+    "prophet_n_changepoints": 25,
+    "prophet_recent_weeks": 13,
+    "prophet_seasonality_prior_scale": 0.1,
+    "seasonality_corr_threshold": 0.0,
+    "seasonality_regime": "auto"
+  },
+  "organic_corrections": {
+    "organic_only": {
+      "exclude_countries": [
+        "IR"
+      ],
+      "fenix_paid_mau_removed_last_day": 8980862,
+      "fenix_paid_share_last_day": 0.21283578020430463,
+      "fenix_world_total_mau_last_day": 42196204,
+      "share_held_flat_before": "2024-10-01",
+      "share_measured_from": "2024-10-01",
+      "split_file": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/organic_mau/fenix_paid_organic_mau.2026-10-09.parquet"
+    },
+    "ios_rate_cap": {
+      "cap_file": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/organic_mau/ios_rate_cap/ios_rate_cap.ID_IN.2026-04-01.parquet",
+      "countries": [
+        "ID",
+        "IN"
+      ],
+      "from_date": "2026-04-01",
+      "peak_removed_share_of_organic": {
+        "ID": 0.12382096644841578,
+        "IN": 0.11146204036298818
+      },
+      "removed_mau_last_day": {
+        "ID": 43696,
+        "IN": 396385
+      },
+      "removed_mau_last_day_total": 440081,
+      "rows_capped": 384,
+      "through": "2026-10-09"
+    },
+    "iran_fill": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/iran_fill_mobile/iran_fill.glean_mobile.MAU.parquet"
+  },
+  "raw_actuals": "data-official/2027-glean-draft/raw_glean_mobile_countryxapp_2026-10-09/mozaic_parts.raw.glean.mobile.MAU.parquet",
+  "raw_sha1": "57fc9ffa9fc8f18750bee07e9925fe86955d05ee",
+  "paid_plan": "data-official/2027-glean-draft/paid_mau_2027/paid_mau_2027.opt_dec15_mau.pull2026-10-15.parquet",
+  "paid_sha1": "f57c940de656e3bde4e980c643f03ce33536cca8",
+  "paid_meta": {
+    "produced_by": "scripts/pull_paid_mau_2027.py",
+    "pull_date": "2026-10-15",
+    "written_at": "2026-10-15T11:38:12",
+    "scenario": "opt_dec15_mau",
+    "scenario_label": "Optimized for Dec-15 MAU",
+    "scenarios_available": [
+      "flat",
+      "opt_dec15_mau"
+    ],
+    "channels": "uac+meta_android",
+    "basis": "attributed (quick site provenance line; the optimizer ran on incremental and re-projected)",
+    "curve_run": "2026-10-12",
+    "generated_at": "2026-10-14 15:01:53",
+    "mau_per_dau": 4.792,
+    "ci_level": 0.9,
+    "n_draws": 1000,
+    "sources": {
+      "plan_daily": {
+        "table": "mozdata.analysis.ahe_gmio_plan2027_mau_daily_20261014",
+        "stmo_query": 128941,
+        "json_sha1": "99a1faf0dda34b11dd2d614841fb6d3488c66848",
+        "rows": 730
+      },
+      "weekly_totals": {
+        "table": "mozdata.analysis.ahe_gmio_weekly_paid_dau_totals_20261013",
+        "view": "total",
+        "json_sha1": "3597804bf00d964ad9709fcd16e04c42fb481228",
+        "rows": 52
+      },
+      "weekly_by_country": {
+        "table": "mozdata.analysis.ahe_gmio_weekly_paid_dau_by_country_20261013",
+        "view": "total",
+        "json_sha1": "2fb4b066b76d5ae8937818a27c89eb10173a18db",
+        "rows": 2600,
+        "use": "reference only"
+      },
+      "quick_site": {
+        "url": "https://ahe-2027-planning-first-scenario.quick.mozilla.cloud/2027%20planning%20-%20flat%20budget.html",
+        "copied_from": "gs://moz-fx-quick-prod-sites/ahe-2027-planning-first-scenario/",
+        "dir": "quick_site"
+      },
+      "extra": [
+        "query_128941.json"
+      ],
+      "organic_split_for_shares": {
+        "file": "data-official/2027-glean-draft/organic_mau/fenix_paid_organic_mau.2026-10-09.parquet",
+        "sha1": "3f8a3fc53f7443637f7204f1f123f15349135fb0"
+      }
+    },
+    "construction": {
+      "bridge": "2026-10-10..2026-12-31: weekly 'total' paid DAU (ISO Monday weeks; p50 / lo / hi from the quick site's embedded data, which covers week 53 of 2026 and carries the upper bound; cross-checked against the BQ weekly table on shared weeks) x mau_per_dau x day-of-week ratio \u2014 the plan's own daily rule. As delivered, unscaled",
+      "plan_2027": "the table's own daily rows for the chosen scenario",
+      "country_allocation": "paid_country_shares csv: each country's share of OUR measured paid Fenix MAU over the last 28 measured days; IR = 0 (excluded from the split); apply to the world paid series"
+    },
+    "numbers": {
+      "last_measured_paid_mau": {
+        "date": "2026-10-09",
+        "value": 9005217.0
+      },
+      "bridge_first_day": {
+        "date": "2026-10-10",
+        "paid_mau": 8984549.525643999,
+        "vs_last_measured": -0.002295055672284274
+      },
+      "bridge_last_day": {
+        "date": "2026-12-31",
+        "paid_mau": 9905808.0241296
+      },
+      "plan_first_day": {
+        "date": "2027-01-01",
+        "paid_mau": 9949399.66209761,
+        "step_vs_dec31": 0.004400614050042773
+      },
+      "paid_mau_2026-12-15": 9698449.784712,
+      "paid_mau_2027-12-15": {
+        "value": 14341803.684818558,
+        "low_90": 13808774.575031996,
+        "high_90": 14941205.515242873
+      },
+      "flat_scenario_2027-12-15": 13327526.923079742,
+      "country_shares_top5": {
+        "IN": 0.3242,
+        "ROW": 0.2788,
+        "ID": 0.0757,
+        "US": 0.0753,
+        "BR": 0.0574
+      }
+    },
+    "caveats_from_source": [
+      "hypothetical plan, no seasonality, no cross-channel interaction (upper bound)",
+      "MAU = DAU x 4.792, a global multiplier, not a model",
+      "retention extrapolated beyond the fitted range by late 2027",
+      "interval calibration unverified; bands cover curve parameters only"
+    ]
+  },
+  "country_shares": "data-official/2027-glean-draft/paid_mau_2027/paid_country_shares.2026-10-09.csv",
+  "cap_file": "data-official/2027-glean-draft/organic_mau/ios_rate_cap/ios_rate_cap.ID_IN.2026-04-01.parquet",
+  "cap_policy": "hold_flat",
+  "organic_bands": "data-official/2027-glean-draft/mobile_organic_mau_2026-10-10/intervals/csv/mobile_organic_mau_daily_bands.csv",
+  "rules": [
+    "history rows = raw actuals (paid shown = raw - organic)",
+    "forecast paid = delivered plan (bridge + 2027), a level, Fenix and world only",
+    "India + Indonesia cap excess hold_flat in the forecast",
+    "per-country forecast paid by fixed trailing-28d measured-paid share",
+    "total 90% band = organic and paid half-widths in quadrature (independence assumed); component bands as delivered"
+  ],
+  "numbers": {
+    "world": {
+      "2026-12-15": {
+        "organic": 48049658.09549089,
+        "paid": 10138530.784712,
+        "total": 58188188.88020289,
+        "total_low_90": 56142570.173083864,
+        "total_high_90": 60449434.67447334
+      },
+      "2027-12-15": {
+        "organic": 51545439.29270135,
+        "paid": 14781884.684818558,
+        "total": 66327323.97751991,
+        "total_low_90": 61554555.063778386,
+        "total_high_90": 71576697.28664032
+      }
+    },
+    "fenix": {
+      "2026-12-15": {
+        "organic": 33618278.48350934,
+        "paid": 10138530.784712,
+        "total": 43756809.26822134
+      },
+      "2027-12-15": {
+        "organic": 35717368.36483799,
+        "paid": 14781884.684818558,
+        "total": 50499253.04965655
+      }
+    },
+    "last_actual_total_world": 56407844.0,
+    "last_actual_paid_world": 9420943.0,
+    "seam_step_7d": {
+      "total": -0.014163226759302705,
+      "organic": -0.015356755159889879,
+      "paid": -0.008208268690691467
+    },
+    "cap_excess_held_flat_world": 440081.0,
+    "dec_to_dec_total": 0.1398760685621916
+  },
+  "seam": "2026-10-10",
+  "training_end": "2026-10-09"
+}

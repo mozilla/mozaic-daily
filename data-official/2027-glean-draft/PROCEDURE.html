@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-15 11:30 PDT</span>
+  <span><b>Generated:</b> 2026-10-15 12:20 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 19 — desktop headline unchanged (§14, LOCK.md); §16: mobile is ORGANIC MAU — build chosen (prior 0.0065 / range 0.87, world 51,545,439 on 2027-12-15, LOCK.md mobile row), India + Indonesia iOS-rate cap provisional, handoff re-rendered as organic; duplicate-id secondary comparison pending</span>
+  <span><b>Status:</b> DRAFT 19 — desktop headline unchanged (§14, LOCK.md); §16: mobile deliverable = TOTAL MAU = organic (prior 0.0065 / range 0.87, 51.5M) + marketing's paid plan (opt_dec15_mau, 14.8M) = 66,327,324 on 2027-12-15 with bands; IN + ID cap provisional; duplicate-id secondary comparison pending</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -631,6 +631,20 @@ reads the sidecar: organic-only paragraph, the cap as a provisional treatment, a
 moved to <code>handoff/_superseded_total_mau_2026-10-14/</code>. Mobile MAU may grow Dec→Dec (the desktop "must not grow" soft constraint does not apply). Open: the mobile backtest
 for an uncertainty statement; the marketing DS team's read on the India/Indonesia attribution (decides whether the cap stays; rollback = a rerun without the flag into a new directory).</p>
 
+<p><b>Paid, and the TOTAL (2026-10-15, later).</b> Brendan: "we need to incorporate paid ... the handoff needs to include both paid and organic" (the organic-only package
+was wrong as a deliverable). The marketing DS team's 2027 plan (STMO 128941 → <code>mozdata.analysis.ahe_gmio_plan2027_mau_daily_20261014</code>; quick site
+<code>ahe-2027-planning-first-scenario</code>, behind IAP but readable from its GCS bucket, copied verbatim) is daily paid Fenix MAU for 2027 = weekly paid DAU (UAC + Meta Android,
+world, <b>attributed</b> basis) × 4.792 × a day-of-week factor, two scenarios; chosen <b><code>opt_dec15_mau</code></b> (same budget, reallocated to maximise Dec-15 MAU: 14,341,804
+on 2027-12-15 vs flat 13,327,527). Bridge 2026-10-10..12-31 = the same run's weekly "total" paid DAU by the same rule, as delivered (opens 8.98M vs our measured 9.01M, −0.23%;
+week 53 and the upper bound from the site's embedded data, cross-checked against BQ). <code>scripts/pull_paid_mau_2027.py</code> → <code>paid_mau_2027/</code>.
+Organic band: <code>compute_forecast_intervals.py</code> on the chosen build's pickle (90% ±4.6M on the 28d mean at 2027-12-15; Prophet predictive, uncalibrated).
+Composition <code>scripts/compose_mobile_total_mau.py</code> (<code>mozaic_daily.mobile_total_mau</code>) → <code>mobile_total_mau_2026-10-10/</code>: history rows = raw actuals
+exactly (asserted); forecast paid = the plan as a level on Fenix and world; the IN + ID cap excess (440,081) held flat in the forecast (it is paid the plan does not count; dropping it
+would open a 0.9% hole in India); per country by trailing-28d measured-paid share; total band = organic and paid half-widths in quadrature. <b>World TOTAL mobile MAU 2027-12-15 =
+66,327,324 [61.55M, 71.58M] = organic 51,545,439 + paid 14,781,885</b>; 2026-12-15 58,188,189; seam −1.4%; Dec→Dec +14.0%, mostly the marketing plan. Handoff
+<code>handoff/glean2027_mobile_mau_handoff/</code> (+ zip) and <code>handoff/glean2027_mau_desktop_and_mobile.csv</code> (desktop total + mobile total / organic / paid) from
+<code>render_mobile_total_mau_handoff.py</code>; the organic-only package moved to <code>handoff/_superseded_organic_only_2026-10-15/</code>. LOCK.md mobile rows updated.</p>
+
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
@@ -654,7 +668,9 @@ data-official/2027-glean-draft/
   COMPARISONS.html, plots/comparisons/ the two formal comparisons (§12, §13); csv/glean2027_vs_glean_real_comparison.csv, csv/glean2027_in_real_glean_units.csv
   raw_glean_mobile_countryxapp_2026-10-09/, iran_fill_mobile/, mobile_mau_2026-10-10/   the mobile MAU companion (§15): frames, Iran MAU fill, first build + csv/ + plots/
   mobile_organic_mau_2026-10-10/      THE CHOSEN ORGANIC MOBILE MAU BUILD (§16, LOCK.md): parquet copy + csv/ + plots/canonical/; pickle in probes_mobile_mau/round3_ioscap/cps0.0065_cpr0.87/
-  handoff/glean2027_mobile_organic_mau_handoff(.zip), handoff/glean2027_mau_desktop_and_mobile_organic.csv   organic mobile package and the combined curve file; the total-MAU package of 2026-10-14 in handoff/_superseded_total_mau_2026-10-14/
+  paid_mau_2027/                      marketing DS paid Fenix MAU plan (scenario opt_dec15_mau) bridged from 2026-10-10, country shares, source_data/ (BQ JSON, STMO query, quick site)
+  mobile_total_mau_2026-10-10/        THE MOBILE DELIVERABLE: total = organic + paid, csv/ (curves with bands, by country, Dec-15 summary), plots/canonical/
+  handoff/glean2027_mobile_mau_handoff(.zip), handoff/glean2027_mau_desktop_and_mobile.csv   total mobile package (organic + paid, bands) and the combined curve file; superseded packages in handoff/_superseded_*/
   organic_mau/                        the measured Fenix paid/organic MAU split, the correlation check, ios_rate_cap/ (the provisional IN + ID correction, IOS_RATE_CAP.md)
   probes_mobile_mau/                  organic mobile MAU changepoint probes: round 1 <slug>/ uncorrected + round1.html; round2_ioscap/, round3_ioscap/ capped + round2.html, round3.html; scores_*.csv, plots/
   probes_glean_real_mau/              real-Glean MAU parameter probes, rounds 1–3 (scores_round*.csv, plots); comparison_glean_real_mau_additive_2026-10-13/ the round-3 export

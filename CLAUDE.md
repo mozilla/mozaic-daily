@@ -335,8 +335,12 @@ The `scripts/` directory contains helper scripts for common tasks:
   (`build_fenix_organic_mau_split.py`, `organic_mau/`) with **no add-back**; `run_mobile_mau_probes.py` runs the changepoint probes (round 1 uncorrected,
   round 2 on the capped series); `build_ios_rate_cap.py` + `--ios-rate-cap` is the **provisional** India + Indonesia correction (organic Fenix capped at its own
   Firefox iOS growth from 2026-04-01 after the paid-vs-organic correlation check found +15/+7 pt over the high spend period; 440K MAU removed; rollback = drop the
-  flag, `organic_mau/ios_rate_cap/IOS_RATE_CAP.md`). **Chosen build (2026-10-15): `mobile_organic_mau_2026-10-10/`**, prior 0.0065 / range 0.87, world organic mobile MAU
-  2027-12-15 51,545,439 (+7.3% Dec→Dec, seam −1.5%), handoff `handoff/glean2027_mobile_organic_mau_handoff/`; LOCK.md mobile row. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
+  flag, `organic_mau/ios_rate_cap/IOS_RATE_CAP.md`). **Chosen organic build (2026-10-15): `mobile_organic_mau_2026-10-10/`**, prior 0.0065 / range 0.87, world organic
+  mobile MAU 2027-12-15 51,545,439 (+7.3% Dec→Dec, seam −1.5%). **The mobile deliverable is TOTAL = organic + paid**: `pull_paid_mau_2027.py` checkpoints the marketing
+  DS team's 2027 paid Fenix MAU plan (`paid_mau_2027/`, scenario `opt_dec15_mau`, bridged from 2026-10-10 with their 2026 run), `compose_mobile_total_mau.py`
+  (`mozaic_daily.mobile_total_mau`) adds it as a level on Fenix and world with history = raw actuals and both bands → `mobile_total_mau_2026-10-10/`: **world total
+  2027-12-15 66,327,324** [61.55M, 71.58M]; handoff `handoff/glean2027_mobile_mau_handoff/` from `render_mobile_total_mau_handoff.py`; LOCK.md mobile rows. Read
+  `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
   sampled date windows. Run before using training rows as a stand-in for an actuals query (e.g. the canonical

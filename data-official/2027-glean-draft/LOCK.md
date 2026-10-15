@@ -1,4 +1,4 @@
-# LOCK — 2027 pre-draft: the desktop headline forecast, its validation build, and the ORGANIC mobile MAU build
+# LOCK — 2027 pre-draft: the desktop headline forecast, its validation build, and the mobile MAU build (TOTAL = organic + paid)
 
 ## Headline (the "best" forecast) — promoted 2026-10-14 (Brendan: "promote that to the new best forecast")
 
@@ -33,7 +33,18 @@
 Why 0.87 and nothing else: PROCEDURE.html §9b (changepoint range closes the seam; 0.90+ over-extrapolate the autumn ramp and
 fail the soft constraint) and §9c (changepoint prior scale is insensitive). Unlocking means a new build directory and a new row here.
 
-## Mobile — ORGANIC mobile MAU (chosen 2026-10-15, Brendan: "pick that one")
+## Mobile — THE DELIVERABLE: TOTAL mobile MAU = organic + paid (composed 2026-10-15)
+
+| | |
+|---|---|
+| build | `mobile_total_mau_2026-10-10/` — `scripts/compose_mobile_total_mau.py` on the organic build below + the marketing DS team's paid plan (`paid_mau_2027/paid_mau_2027.opt_dec15_mau.pull2026-10-15.parquet`: STMO 128941 / `ahe_gmio_plan2027_mau_daily_20261014`, scenario **`opt_dec15_mau`** = the optimal spend model, attributed basis, bridged 2026-10-10..12-31 from the same run) |
+| rules | history rows = raw actuals exactly; forecast paid = the plan as delivered, a level on Fenix and world only; IN + ID cap excess (440,081) held flat; per-country paid by trailing-28d measured-paid share; organic band (Prophet, from the pickle) and paid band (the plan's) as delivered, total band = quadrature |
+| headline | **world TOTAL mobile MAU 2027-12-15 = 66,327,324** [90% 61,554,555, 71,576,697] = organic 51,545,439 + paid 14,781,885; 2026-12-15 58,188,189; Dec→Dec +14.0% (organic +7.3%, the rest is the marketing plan: paid 9.4M at the edge → 14.8M). Flat-budget scenario would give paid 13,327,527 |
+| seam | 7-day-mean step −1.4% total (organic −1.5%, paid −0.8%) |
+| outputs | `mobile_total_mau_2026-10-10/csv/`, `plots/canonical/`; **`handoff/glean2027_mobile_mau_handoff/` + `.zip`; `handoff/glean2027_mau_desktop_and_mobile.csv`** (desktop total + mobile total / organic / paid, never summed). The organic-only package of earlier on 2026-10-15 is in `handoff/_superseded_organic_only_2026-10-15/` |
+| status | PRE-DRAFT. Neither half backtested; cap provisional; a new marketing scenario = recompose into a new directory + a new row |
+
+## Mobile — the ORGANIC component (chosen 2026-10-15, Brendan: "pick that one")
 
 | | |
 |---|---|
@@ -47,6 +58,6 @@ fail the soft constraint) and §9c (changepoint prior scale is insensitive). Unl
 | seam | 7-day-mean step −1.5% world (Fenix −2.3%); the last organic actual 46,986,901 (capped series; 47,426,982 uncorrected). No "must not grow" constraint on mobile |
 | why this one | PROCEDURE §16 / `probes_mobile_mau/round3.html`: on the capped series the probes form a smooth seam-vs-slope frontier (~2 pt of Dec→Dec per pt of seam); 0.0065/0.87 is marginally better than 0.005/0.87 on both and keeps 2027 growth (+7.3%; Oct→Oct +6.0%) under the capped data's own last year (+6.9%). 0.008/0.87 (seam −0.8%, +8.9%) was the seam-first alternative |
 | uncertainty | not backtested yet (history long enough; next step). The frontier itself is the honest band: 0.80 → 48.7M, 0.90 at the same prior → 53.9M |
-| outputs | `mobile_organic_mau_2026-10-10/csv/`, `plots/`, `plots/canonical/`; `handoff/glean2027_mobile_organic_mau_handoff/` + `.zip`; `handoff/glean2027_mau_desktop_and_mobile_organic.csv` (desktop total + mobile organic, side by side, never summed). The total-MAU package of 2026-10-14 is in `handoff/_superseded_total_mau_2026-10-14/` |
+| outputs | `mobile_organic_mau_2026-10-10/csv/`, `plots/`, `plots/canonical/`, `intervals/` (Prophet band from the pickle: 90% ±4.6M on the 28d mean at 2027-12-15). Not a deliverable on its own: it is the organic half of the total above (the organic-only handoff of 2026-10-15 is in `handoff/_superseded_organic_only_2026-10-15/`; the 2026-10-14 total-MAU model package in `handoff/_superseded_total_mau_2026-10-14/`) |
 | status | PRE-DRAFT. The cap is under review with the marketing DS team; reversing it means a new build directory and a new row here |
 
