@@ -28,8 +28,10 @@
   .mini-control .head { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; }
   .mini-control .rate { font-size: 18px; }
   .mini-control input[type=range] { width: 100%; margin: 2px 0 0; }
-  .mini-results { font-size: 14px; text-align: right; line-height: 1.35; }
-  .mini-results b { font-size: 18px; }
+  .mini-results { font-size: 12px; display: grid; grid-template-columns: repeat(3, auto); column-gap: 14px; text-align: center; line-height: 1.2; }
+  .mini-results .title { grid-column: 1 / -1; font-size: 13px; margin-bottom: 1px; }
+  .mini-results b { font-size: 18px; display: block; }
+  .mini-results .delta { color: #555; white-space: nowrap; }
   .toy-tag { float: right; font-size: 13px; color: #c62828; border: 2px dashed #c62828; border-radius: 8px; padding: 1px 8px; }
   .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
   .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 6px 12px 6px; background: #fff; }
@@ -62,8 +64,10 @@
       <input type="range" step="0.5" data-slider="desktop" tabindex="-1"></div>
     <div class="mini-control"><div class="head"><span style="color: var(--mob)">Mobile: change per year</span><span class="rate" data-rate="mobile"></span></div>
       <input type="range" step="0.5" data-slider="mobile" tabindex="-1"></div>
-    <div class="mini-results">Dec 15 2027 (toy):<br><b style="color: var(--desk)" data-out="desktop"></b> + <b style="color: var(--mob)" data-out="mobile"></b>
-      = <b style="color: var(--sum)" data-out="sum"></b></div>
+    <div class="mini-results"><div class="title">Dec 15 2027 (toy)</div>
+      <div><b style="color: var(--desk)" data-out="desktop"></b><span class="delta" data-delta-short="desktop"></span></div>
+      <div><b style="color: var(--mob)" data-out="mobile"></b><span class="delta" data-delta-short="mobile"></span></div>
+      <div><b style="color: var(--sum)" data-out="sum"></b><span class="delta" data-delta-short="sum"></span></div></div>
   </div>
 </div>
 <main>
@@ -93,9 +97,9 @@
   </div>
   <div class="results">
     <div><button id="reset">Reset to the<br>pre-draft pace</button></div>
-    <div class="result"><div>Desktop, Dec 15 2027</div><div class="big" style="color: var(--desk)" data-out="desktop"></div><div class="hint" id="desktopDelta"></div></div>
-    <div class="result"><div>Mobile, Dec 15 2027</div><div class="big" style="color: var(--mob)" data-out="mobile"></div><div class="hint" id="mobileDelta"></div></div>
-    <div class="result"><div>Desktop + Mobile, Dec 15 2027</div><div class="big" style="color: var(--sum)" data-out="sum"></div><div class="hint" id="sumDelta"></div></div>
+    <div class="result"><div>Desktop, Dec 15 2027</div><div class="big" style="color: var(--desk)" data-out="desktop"></div><div class="hint" data-delta-long="desktop"></div></div>
+    <div class="result"><div>Mobile, Dec 15 2027</div><div class="big" style="color: var(--mob)" data-out="mobile"></div><div class="hint" data-delta-long="mobile"></div></div>
+    <div class="result"><div>Desktop + Mobile, Dec 15 2027</div><div class="big" style="color: var(--sum)" data-out="sum"></div><div class="hint" data-delta-long="sum"></div></div>
   </div>
   </div>
 
@@ -113,6 +117,7 @@ const toDate = s => new Date(s + "T00:00:00Z");
 const lastDate = toDate(DATA.last.date);
 const endDate = toDate(DATA.horizon_end);
 const startDate = toDate(DATA.history.dates[0]);
+const dec15_2026 = toDate("2026-12-15");
 const dec15_2027 = toDate("2027-12-15");
 const PROJECTION_STEP_DAYS = 7;
 const COLORS = { desktop: "#3d6fb0", mobile: "#d9772b", sum: "#4a8a3c" };   // literal: SVG attributes do not resolve CSS variables
@@ -317,9 +322,14 @@ const ranges = {
 const sumHistory = DATA.history.desktop.map((v, i) => v + DATA.history.mobile[i]);
 ranges.sum = [Math.min(...sumHistory, ranges.desktop[0] + ranges.mobile[0]), Math.max(...sumHistory, ranges.desktop[1] + ranges.mobile[1])];
 
-function setDelta(id, value, base) {
-  const change = value / base - 1;
-  document.getElementById(id).textContent = `${change >= 0 ? "up" : "down"} ${Math.abs(change * 100).toFixed(0)}% from today's ${fmtM(base)}`;
+// The change that matters is Dec 15 to Dec 15, shown in profiles (the slider already gives the percentage). Both ends
+// are read off the same toy line. One decimal so a small move is visible while the totals stay rounded to the million.
+function fmtDeltaM(change) { return (change < 0 ? "\u2212" : "+") + Math.abs(change / 1e6).toFixed(1) + "M"; }
+
+function setDelta(key, dec15Next, dec15This) {
+  const change = fmtDeltaM(dec15Next - dec15This);
+  setText(`[data-delta-long="${key}"]`, `${change} vs Dec 15 2026 (${fmtM(dec15This)})`);
+  setText(`[data-delta-short="${key}"]`, `${change} vs Dec 15 '26`);
 }
 
 function render() {
@@ -333,9 +343,11 @@ function render() {
   setText('[data-out="desktop"]', fmtM(desktop));
   setText('[data-out="mobile"]', fmtM(mobile));
   setText('[data-out="sum"]', fmtM(desktop + mobile));
-  setDelta("desktopDelta", desktop, DATA.last.desktop);
-  setDelta("mobileDelta", mobile, DATA.last.mobile);
-  setDelta("sumDelta", desktop + mobile, DATA.last.desktop + DATA.last.mobile);
+  const desktop2026 = projectLevel("desktop", desktopRate, dec15_2026);
+  const mobile2026 = projectLevel("mobile", mobileRate, dec15_2026);
+  setDelta("desktop", desktop, desktop2026);
+  setDelta("mobile", mobile, mobile2026);
+  setDelta("sum", desktop + mobile, desktop2026 + mobile2026);
   drawHistogram("desktop", desktopRate, COLORS.desktop);
   drawHistogram("mobile", mobileRate, COLORS.mobile);
   platformChart(document.getElementById("chartDesktop"), "desktop", COLORS.desktop, "Desktop", desktopRate, ranges.desktop);
