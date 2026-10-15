@@ -53,6 +53,7 @@ Start with `LOCK.md` (what is locked and why), then `PROCEDURE.html` (every deci
 | `csv/`, `plots/`, `plots/canonical/`, `plots/comparisons/` | the locked build's curves, Dec-15 summary, build comparison, Legacy comparison table, real-Glean comparison by horizon, real-units restatement, Easter alignment; canonical-format plots (purple PRE-DRAFT); comparison plots |
 | `intervals/` | build-1 DAU Prophet bands (kept; the Prophet band is not usable at this horizon) |
 | `plots/publication/` | doc-ready progress plots, 2026–2027 continuous: desktop, mobile total, desktop + mobile summed (MAU = active profiles, so they add), seam close-up, `index.html` (`scripts/plot_glean2027_mau_publication.py`, 2026-10-15) |
+| `calculator/` | the stakeholder what-if toy: rate sliders over YoY histograms, cartoon compounding lines, no forecast curves (`scripts/build_mau_sensitivity_calculator.py`, 2026-10-15; `_index.md` inside) |
 | `_internal_plots/`, `_shakedown_nofill_*`, `_superseded_float_inputs_*` | internal diagnostics and records; not for circulation |
 
 ## Rules for this directory

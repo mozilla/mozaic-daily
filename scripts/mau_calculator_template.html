@@ -1,0 +1,287 @@
+<!doctype html>
+<!-- Template for scripts/build_mau_sensitivity_calculator.py. The builder replaces the DATA placeholder below with a JSON object;
+     everything else is static. No external libraries or fonts, so the page works offline and on quick as one file. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firefox MAU — what-if toy (not a forecast)</title>
+<style>
+  :root { --ink: #2b2b2b; --desk: #3d6fb0; --mob: #d9772b; --sum: #4a8a3c; --paper: #fffdf6; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive; }
+  .banner { font-family: -apple-system, Helvetica, Arial, sans-serif; font-size: 12px; background: #6a1b9a; color: #fff;
+            padding: 6px 14px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 8px 20px 40px; }
+  h1 { font-size: 30px; margin: 14px 0 4px; }
+  .warning { border: 3px dashed #c62828; background: #fff3f0; padding: 10px 14px; border-radius: 12px; font-size: 16px;
+             transform: rotate(-0.4deg); margin: 12px 0 18px; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 10px; }
+  .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 10px 14px; background: #fff; }
+  .control h3 { margin: 0 0 6px; font-size: 19px; }
+  .control input[type=range] { width: 100%; margin: 0; }
+  .hist { width: 100%; height: auto; display: block; }
+  .rate { font-size: 26px; font-weight: bold; }
+  .hint { font-size: 13px; color: #666; }
+  button { font-family: inherit; font-size: 15px; border: 2px solid var(--ink); border-radius: 10px; background: #fff;
+           padding: 4px 12px; cursor: pointer; }
+  .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 14px 0 6px; }
+  .result { border: 2.5px solid var(--ink); border-radius: 16px 12px 18px 14px; padding: 8px 12px; text-align: center; background: #fff; }
+  .result .big { font-size: 30px; font-weight: bold; }
+  .chart { position: relative; margin-top: 18px; }
+  .chart svg { width: 100%; height: auto; display: block; }
+  .stamp { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg);
+           font-size: 54px; font-weight: bold; color: rgba(198, 40, 40, 0.13); white-space: nowrap; pointer-events: none; }
+  .how { font-size: 15px; line-height: 1.5; margin-top: 26px; border-top: 2px dashed #aaa; padding-top: 10px; }
+  @media (max-width: 800px) { .controls, .results { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="banner" id="banner"></div>
+<main>
+  <h1>Firefox monthly active profiles: a what-if toy</h1>
+  <div class="warning"><b>This is not a forecast.</b> The lines after today are deliberately silly: each one just grows
+    (or shrinks) at one steady yearly rate. Real profiles have seasons, holidays and surprises, and none of that is here.
+    Use it only to get a ballpark feel for <i>how much the 2027 total moves when each rate moves</i>.</div>
+
+  <div class="controls">
+    <div class="control">
+      <h3 style="color: var(--desk)">Desktop: yearly change</h3>
+      <div class="rate" id="desktopRateLabel"></div>
+      <svg class="hist" id="desktopHist" viewBox="0 0 500 110"></svg>
+      <input type="range" id="desktopRate" step="0.5">
+      <div class="hint" id="desktopHint"></div>
+    </div>
+    <div class="control">
+      <h3 style="color: var(--mob)">Mobile: yearly change</h3>
+      <div class="rate" id="mobileRateLabel"></div>
+      <svg class="hist" id="mobileHist" viewBox="0 0 500 110"></svg>
+      <input type="range" id="mobileRate" step="0.5">
+      <div class="hint" id="mobileHint"></div>
+    </div>
+  </div>
+  <button id="reset">Reset to the pre-draft pace</button>
+
+  <div class="results">
+    <div class="result"><div>Desktop, Dec 15 2027</div><div class="big" style="color: var(--desk)" id="desktopOut"></div><div class="hint" id="desktopDelta"></div></div>
+    <div class="result"><div>Mobile, Dec 15 2027</div><div class="big" style="color: var(--mob)" id="mobileOut"></div><div class="hint" id="mobileDelta"></div></div>
+    <div class="result"><div>Desktop + Mobile, Dec 15 2027</div><div class="big" style="color: var(--sum)" id="sumOut"></div><div class="hint" id="sumDelta"></div></div>
+  </div>
+
+  <div class="chart"><svg id="chartDesktop" viewBox="0 0 1060 300"></svg><div class="stamp">TOY, NOT A FORECAST</div></div>
+  <div class="chart"><svg id="chartMobile" viewBox="0 0 1060 300"></svg><div class="stamp">TOY, NOT A FORECAST</div></div>
+  <div class="chart"><svg id="chartSum" viewBox="0 0 1060 340"></svg><div class="stamp">TOY, NOT A FORECAST</div></div>
+
+  <div class="how" id="how"></div>
+</main>
+
+<script>
+const DATA = __CALC_DATA__;
+const DAY_MS = 86400000;
+const toDate = s => new Date(s + "T00:00:00Z");
+const lastDate = toDate(DATA.last.date);
+const endDate = toDate(DATA.horizon_end);
+const startDate = toDate(DATA.history.dates[0]);
+const dec15_2027 = toDate("2027-12-15");
+const PROJECTION_STEP_DAYS = 7;
+const COLORS = { desktop: "#3d6fb0", mobile: "#d9772b", sum: "#4a8a3c" };   // literal: SVG attributes do not resolve CSS variables
+
+function fmtM(v) { return "~" + (v / 1e6).toFixed(0) + "M"; }
+function fmtRate(r) { return (r > 0 ? "+" : "") + r.toFixed(1) + "% a year"; }
+
+// The whole "model": today's level compounded at one yearly rate. Nothing else.
+function projectLevel(lastValue, ratePercent, date) {
+  const years = (date - lastDate) / DAY_MS / 365;
+  return lastValue * Math.pow(1 + ratePercent / 100, years);
+}
+
+function projectionDates() {
+  const dates = [];
+  for (let t = lastDate.getTime(); t <= endDate.getTime(); t += PROJECTION_STEP_DAYS * DAY_MS) dates.push(new Date(t));
+  dates.push(endDate);
+  return dates;
+}
+
+// Deterministic wobble so lines look hand-drawn but do not jitter while a slider moves.
+function wobble(i, salt) { return Math.sin(i * 1.73 + salt) * 0.9 + Math.sin(i * 0.41 + salt * 2.1) * 1.4; }
+
+function sketchPath(points, salt) {
+  return points.map(([x, y], i) => (i ? "L" : "M") + (x + wobble(i, salt) * 0.6).toFixed(1) + "," + (y + wobble(i + 7, salt)).toFixed(1)).join(" ");
+}
+
+function makeScales(svg, yMin, yMax) {
+  const box = svg.viewBox.baseVal, left = 70, right = box.width - 20, top = 34, bottom = box.height - 40;
+  return {
+    left, right, top, bottom,
+    x: d => left + (d - startDate) / (endDate - startDate) * (right - left),
+    y: v => bottom - (v - yMin) / (yMax - yMin) * (bottom - top),
+  };
+}
+
+function el(name, attrs, text) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+  for (const k in attrs) node.setAttribute(k, attrs[k]);
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function drawFrame(svg, scales, yMin, yMax, title) {
+  svg.innerHTML = "";
+  const s = scales;
+  svg.appendChild(el("text", { x: s.left, y: 22, "font-size": 20, "font-weight": "bold", fill: "#2b2b2b" }, title));
+  svg.appendChild(el("path", { d: sketchPath([[s.left, s.top], [s.left, s.bottom], [s.right, s.bottom]], 3), stroke: "#2b2b2b", "stroke-width": 2, fill: "none" }));
+  const step = niceStep((yMax - yMin) / 4);
+  for (let v = Math.ceil(yMin / step) * step; v <= yMax; v += step) {
+    svg.appendChild(el("line", { x1: s.left, x2: s.right, y1: s.y(v), y2: s.y(v), stroke: "#ddd", "stroke-dasharray": "3 5" }));
+    svg.appendChild(el("text", { x: s.left - 8, y: s.y(v) + 5, "font-size": 14, "text-anchor": "end", fill: "#555" }, (v / 1e6).toFixed(0) + "M"));
+  }
+  for (const label of ["2026-01-01", "2026-07-01", "2027-01-01", "2027-07-01", "2028-01-01"]) {
+    const d = toDate(label);
+    if (d > endDate) continue;
+    svg.appendChild(el("text", { x: s.x(d), y: s.bottom + 24, "font-size": 14, "text-anchor": "middle", fill: "#555" },
+      d.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })));
+  }
+  const xToday = s.x(lastDate);
+  svg.appendChild(el("line", { x1: xToday, x2: xToday, y1: s.top, y2: s.bottom, stroke: "#999", "stroke-width": 1.5, "stroke-dasharray": "6 5" }));
+  svg.appendChild(el("text", { x: xToday + 6, y: s.top + 14, "font-size": 14, fill: "#777" }, "last real data"));
+  svg.appendChild(el("text", { x: s.x(lastDate) - 8, y: s.top + 14, "font-size": 14, fill: "#777", "text-anchor": "end" }, "what happened"));
+  svg.appendChild(el("text", { x: s.right - 4, y: s.top + 14, "font-size": 14, fill: "#777", "text-anchor": "end" }, "make-believe straight-ish line"));
+}
+
+function niceStep(raw) {
+  const power = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (m * power >= raw) return m * power;
+  return 10 * power;
+}
+
+function drawLine(svg, points, color, width, salt, dashed) {
+  const attrs = { d: sketchPath(points, salt), stroke: color, "stroke-width": width, fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" };
+  if (dashed) attrs["stroke-dasharray"] = "10 7";
+  svg.appendChild(el("path", attrs));
+  svg.appendChild(el("path", Object.assign({}, attrs, { d: sketchPath(points, salt + 11), "stroke-width": width * 0.45, opacity: 0.5 })));
+}
+
+function drawDot(svg, scales, value, color) {
+  const cx = scales.x(dec15_2027), cy = scales.y(value);
+  svg.appendChild(el("circle", { cx, cy, r: 7, fill: "#fff", stroke: color, "stroke-width": 3 }));
+  svg.appendChild(el("text", { x: cx - 12, y: cy - 14, "font-size": 16, "text-anchor": "end", fill: color, "font-weight": "bold" }, fmtM(value)));
+}
+
+function platformChart(svg, key, color, title, rate, yRange) {
+  const s = makeScales(svg, yRange[0], yRange[1]);
+  drawFrame(svg, s, yRange[0], yRange[1], title);
+  const history = DATA.history.dates.map((d, i) => [s.x(toDate(d)), s.y(DATA.history[key][i])]);
+  drawLine(svg, history, "#2b2b2b", 3, 1);
+  const projection = projectionDates().map(d => [s.x(d), s.y(projectLevel(DATA.last[key], rate, d))]);
+  drawLine(svg, projection, color, 3.5, 5, true);
+  drawDot(svg, s, projectLevel(DATA.last[key], rate, dec15_2027), color);
+}
+
+function sumChart(svg, desktopRate, mobileRate, yRange) {
+  const s = makeScales(svg, yRange[0], yRange[1]);
+  drawFrame(svg, s, yRange[0], yRange[1], "Desktop + Mobile (profiles add up)");
+  const history = DATA.history.dates.map((d, i) => [s.x(toDate(d)), s.y(DATA.history.desktop[i] + DATA.history.mobile[i])]);
+  drawLine(svg, history, "#2b2b2b", 3, 2);
+  const sumAt = d => projectLevel(DATA.last.desktop, desktopRate, d) + projectLevel(DATA.last.mobile, mobileRate, d);
+  drawLine(svg, projectionDates().map(d => [s.x(d), s.y(sumAt(d))]), COLORS.sum, 3.5, 9, true);
+  drawDot(svg, s, sumAt(dec15_2027), COLORS.sum);
+}
+
+// Histogram of the past two years' year-over-year readings, drawn on the slider's own scale so the thumb sits
+// under the bar it matches. HIST_PAD approximates the range input's thumb inset at each end of the track.
+const HIST_PAD = 9, HIST_W = 500, HIST_BASE = 84;
+function histX(rate, slider) { return HIST_PAD + (rate - slider.min) / (slider.max - slider.min) * (HIST_W - 2 * HIST_PAD); }
+
+function drawHistogram(key, rate, color) {
+  const svg = document.getElementById(key + "Hist"), slider = DATA.slider[key], yoy = DATA.yoy[key];
+  svg.innerHTML = "";
+  const counts = new Map();
+  for (const v of yoy.values) {
+    const clamped = Math.min(Math.max(v, slider.min), slider.max - 1e-9);   // off-scale readings pile into the edge bins
+    const binStart = Math.floor(clamped / yoy.bin_width) * yoy.bin_width;
+    counts.set(binStart, (counts.get(binStart) || 0) + 1);
+  }
+  const tallest = Math.max(...counts.values());
+  for (const [binStart, count] of counts) {
+    const x0 = histX(binStart, slider), x1 = histX(binStart + yoy.bin_width, slider), h = count / tallest * 58;
+    svg.appendChild(el("path", { d: sketchPath([[x0 + 1, HIST_BASE], [x0 + 1, HIST_BASE - h], [x1 - 1, HIST_BASE - h], [x1 - 1, HIST_BASE]], binStart),
+      fill: "#d8d2c4", stroke: "#6b6457", "stroke-width": 1.4 }));
+  }
+  svg.appendChild(el("line", { x1: HIST_PAD, x2: HIST_W - HIST_PAD, y1: HIST_BASE, y2: HIST_BASE, stroke: "#2b2b2b", "stroke-width": 1.5 }));
+  for (let tick = Math.ceil(slider.min / 5) * 5; tick <= slider.max; tick += 5)
+    svg.appendChild(el("text", { x: histX(tick, slider), y: HIST_BASE + 16, "font-size": 12, fill: "#666",
+      "text-anchor": tick === slider.min ? "start" : tick === slider.max ? "end" : "middle" }, (tick > 0 ? "+" : "") + tick + "%"));
+  const xRate = histX(rate, slider);
+  svg.appendChild(el("line", { x1: xRate, x2: xRate, y1: 12, y2: HIST_BASE, stroke: color, "stroke-width": 3 }));
+  const atOrBelow = yoy.values.filter(v => v <= rate).length;
+  svg.appendChild(el("text", { x: Math.min(Math.max(xRate, 120), HIST_W - 120), y: 10, "font-size": 13, "text-anchor": "middle", fill: color, "font-weight": "bold" },
+    `${atOrBelow} of ${yoy.values.length} past readings at or below this`));
+}
+
+// Fixed axes per chart, wide enough for every slider position, so moving a slider moves the line, not the axis.
+function axisRange(historyValues, lastValue, minRate, maxRate) {
+  const lo = Math.min(...historyValues, projectLevel(lastValue, minRate, endDate));
+  const hi = Math.max(...historyValues, projectLevel(lastValue, maxRate, endDate));
+  const pad = (hi - lo) * 0.08;
+  return [lo - pad, hi + pad];
+}
+
+const sliders = { desktop: document.getElementById("desktopRate"), mobile: document.getElementById("mobileRate") };
+for (const key of ["desktop", "mobile"]) {
+  Object.assign(sliders[key], { min: DATA.slider[key].min, max: DATA.slider[key].max, value: DATA.defaults[key] });
+  const yoy = DATA.yoy[key];
+  document.getElementById(key + "Hint").innerHTML = `Bars: how much ${key} actually changed year over year, read every two weeks
+    from ${yoy.first} to ${DATA.last.date} (${yoy.values.length} readings, ${yoy.source}${key === "desktop" ?
+    "; Legacy is the older desktop telemetry system, used here because the newer one only starts in May 2025, and our Glean-equivalent history gives the same readings within 0.3 points" : ""}).
+    Pre-draft pace: ${fmtRate(DATA.defaults[key])}.`;
+}
+const ranges = {
+  desktop: axisRange(DATA.history.desktop, DATA.last.desktop, DATA.slider.desktop.min, DATA.slider.desktop.max),
+  mobile: axisRange(DATA.history.mobile, DATA.last.mobile, DATA.slider.mobile.min, DATA.slider.mobile.max),
+};
+const sumHistory = DATA.history.desktop.map((v, i) => v + DATA.history.mobile[i]);
+ranges.sum = [Math.min(...sumHistory, ranges.desktop[0] + ranges.mobile[0]), Math.max(...sumHistory, ranges.desktop[1] + ranges.mobile[1])];
+
+function setDelta(id, value, base) {
+  const change = value / base - 1;
+  document.getElementById(id).textContent = `${change >= 0 ? "up" : "down"} ${Math.abs(change * 100).toFixed(0)}% from today's ${fmtM(base)}`;
+}
+
+function render() {
+  const desktopRate = Number(sliders.desktop.value), mobileRate = Number(sliders.mobile.value);
+  document.getElementById("desktopRateLabel").textContent = fmtRate(desktopRate);
+  document.getElementById("mobileRateLabel").textContent = fmtRate(mobileRate);
+  const desktop = projectLevel(DATA.last.desktop, desktopRate, dec15_2027);
+  const mobile = projectLevel(DATA.last.mobile, mobileRate, dec15_2027);
+  document.getElementById("desktopOut").textContent = fmtM(desktop);
+  document.getElementById("mobileOut").textContent = fmtM(mobile);
+  document.getElementById("sumOut").textContent = fmtM(desktop + mobile);
+  setDelta("desktopDelta", desktop, DATA.last.desktop);
+  setDelta("mobileDelta", mobile, DATA.last.mobile);
+  setDelta("sumDelta", desktop + mobile, DATA.last.desktop + DATA.last.mobile);
+  drawHistogram("desktop", desktopRate, COLORS.desktop);
+  drawHistogram("mobile", mobileRate, COLORS.mobile);
+  platformChart(document.getElementById("chartDesktop"), "desktop", COLORS.desktop, "Desktop", desktopRate, ranges.desktop);
+  platformChart(document.getElementById("chartMobile"), "mobile", COLORS.mobile, "Mobile", mobileRate, ranges.mobile);
+  sumChart(document.getElementById("chartSum"), desktopRate, mobileRate, ranges.sum);
+}
+
+sliders.desktop.addEventListener("input", render);
+sliders.mobile.addEventListener("input", render);
+document.getElementById("reset").addEventListener("click", () => {
+  sliders.desktop.value = DATA.defaults.desktop; sliders.mobile.value = DATA.defaults.mobile; render();
+});
+
+document.getElementById("banner").innerHTML =
+  `<b>Generated:</b> ${DATA.generated} &nbsp;|&nbsp; <b>Source:</b> ${DATA.source} &nbsp;|&nbsp; <b>Data as of:</b> ${DATA.last.date}`;
+document.getElementById("how").innerHTML = `<b>How the toy works.</b> The black lines are real monthly active profiles
+  (Firefox Desktop and the four Firefox mobile apps, one point a week) through ${DATA.last.date}. After that, each coloured line is
+  <i>today's level × (1 + yearly rate)</i>, compounded smoothly, and nothing more: no seasons, no holidays, no marketing calendar.
+  The starting slider positions are the steady yearly rates that land on our <b>pre-draft</b> 2027 forecast's Dec 15 2027 values
+  (desktop ${fmtRate(DATA.defaults.desktop)}, mobile ${fmtRate(DATA.defaults.mobile)}); that forecast itself is unfinished and is not
+  shown here. Desktop and mobile add up because monthly active users counts profiles, and a desktop profile and a mobile profile are
+  different profiles. Numbers are rounded to the nearest million on purpose.`;
+render();
+</script>
+</body>
+</html>
