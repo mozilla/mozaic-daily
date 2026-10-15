@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 16)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 17)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-13 14:20 PDT</span>
+  <span><b>Generated:</b> 2026-10-14 23:30 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 16 — build 5 LOCKED; real-Glean MAU comparison re-tuned over three probe rounds and adopted temporarily (§13); Linux short-component round pending</span>
+  <span><b>Status:</b> DRAFT 17 — the real-Glean MAU build with the Linux bot overlay is the HEADLINE (§14, LOCK.md); build 5 is the validation build; duplicate-id secondary comparison pending</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -526,6 +526,32 @@ The export only extends recorded windows, so the newest ROW surge is partly insi
 measurement must not use Glean-equivalent (circular). Options from real Glean alone are in the session message of 2026-10-13 and will be recorded here with the chosen one.</li>
 </ul>
 
+<h2>14. Round 5 and the promotion: the real-Glean build becomes the headline (2026-10-14)</h2>
+<p><b>Measurement (Brendan: "go with the ISP definition").</b> From <code>firefox_desktop.baseline_active_users</code> (client level, the aggregates' own is_dau / is_mau; 10% sample
+scaled ×10): the behavioural segment (first seen inside the 28-day window AND ≤ 2 active days) has a ~37% baseline on Linux and rises to 53% world / 71% DE / 72% US in the surges;
+per ISP it is near-binary (hosting / cloud 0.95–1.00: Hetzner, Aruba Networks, Azure, Google Cloud, Oracle, Tencent, Ace Data Centers, Lumen, Strato, DataCrunch; residential ~0.3).
+Definition adopted: a client is bot-like if its ISP's behavioural share that day is ≥ 0.8 (min 500 MAU). Daily curve per country × OS, 2025-05-22 → 2026-10-09 (727 GB scan):
+Linux hosting-ISP MAU 5.4M in Oct 2026 (27% of Linux MAU; 0.4–0.7M through 2025), DAU 0.23M; Windows 0.2% of MAU, Mac ~0 → Linux only. Agrees with the export's independent
+term (+4.2M real − Glean-equivalent on the same day). Files: <code>linux_bot/</code>, SQL <code>scripts/sql/glean_real_linux_*.sql</code>, <code>glean_real_bot_isp_daily_curve.sql</code>.</p>
+<p><b>Overlay <code>b</code> (registered, per_tile_overlay; spec_glob points at a production layout that does not exist so cycle runs cannot see it).</b> World curve, 7-day centred mean,
+held flat after the seam at the last-28-day mean (MAU 4,212,828; DAU 213,047), fixed country shares from the MAU component (ROW 43%, DE 27%, US 25%), flag <code>linux</code>,
+population share 1. Producer <code>scripts/build_glean_real_linux_bot_overlay.py</code>. Run on the adopted configuration (additive, 0.005 / 3 / 0.8, mask off, MAU only):
+<code>comparison_glean_real_mau_additive_b_2026-10-14/</code>, <b>world MAU 2027-12-15 161,546,764</b> (2026-12-15 166,290,298, −2.9%). Linux 21.9M → 21.1M; Windows +3.6M and Mac +0.4M
+from a Linux-only overlay = top-down reconciliation. Minus the add-back: <b>157.3M, equal to build 5's 157.2M</b> — the non-bot real-Glean forecast reproduces the 6.8-year
+Glean-equivalent model at the world level.</p>
+<p><b>Add-back path (Brendan: "we need some bot traffic, and we're honestly expecting it to grow; the conservative thing is to hold it flat").</b> Checked: flat is conservative
+relative to expected growth, not relative to the locked headline (which excludes the term by definition, so flat adds 2.7% for a definitional reason); labelled a <b>no-growth
+planning path</b>; level 4.2M is the last-28-day mean (last day 5.4M; 2026 average ~2M; the series ratchets up); the KPI's treatment of bots in 2027 is open. Agreed.</p>
+<p><b>Promotion (Brendan: "promote that to the new best forecast; drop others from previous iterations").</b> Objections recorded and accepted: the January-2027 dip is a
+duplicate-id artifact; the parameters were chosen by inspection (justified by the agreement with build 5); no backtest is possible; "drop" = re-point, never delete. Then the
+correction of record: <b>the real-data forecast stays uncorrected except where implausible</b> (Linux bots); the duplicate-id fix is <b>calculated as a secondary comparison</b>,
+not applied to the headline. <code>LOCK.md</code> rewritten (headline row + build 5 as the validation build), <code>REPORT.html</code> re-rendered for the headline
+(<code>scripts/render_glean_real_report.py</code>; build 5's report → <code>REPORT_build5_glean_equivalent.html</code>), the MAU handoff package re-rendered (DAU package removed: the
+headline is MAU only), canonical plots for the build, <code>COMPARISONS.html</code> updated.</p>
+<p><b>Duplicate-id measurement attempt.</b> <code>profile_group_id</code> (survives id regeneration) does not isolate the term: null for 12–58% of pre-148 clients, and legitimate
+multi-profile installs give 148+ clients a 1.2% "duplicate" rate (<code>scripts/sql/glean_real_dupid_snapshot.sql</code>). The secondary comparison will need another route (version-mix
+× an inflation rate, or the export's per-month term); pending.</p>
+
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
@@ -547,7 +573,10 @@ data-official/2027-glean-draft/
   csv/, plots/                        build-5 curves, summary, plots, build 4 vs 5 comparison; build1_seam2026-09-09/, build2_plain_seam2026-10-10/, build3_o-dauonly_seam2026-10-10/, build4_g01_seam2026-10-10/ keep the earlier ones
   intervals/                          build-1 DAU Prophet bands (see the band note above)
   COMPARISONS.html, plots/comparisons/ the two formal comparisons (§12, §13); csv/glean2027_vs_glean_real_comparison.csv, csv/glean2027_in_real_glean_units.csv
-  probes_glean_real_mau/              real-Glean MAU parameter probes, rounds 1–3 (scores_round*.csv, plots); comparison_glean_real_mau_additive_2026-10-13/ the adopted export</pre>
+  probes_glean_real_mau/              real-Glean MAU parameter probes, rounds 1–3 (scores_round*.csv, plots); comparison_glean_real_mau_additive_2026-10-13/ the round-3 export
+  linux_bot/                          the Linux bot-ISP measurement (CSVs), overlay curves + spec (code b), plots
+  comparison_glean_real_mau_additive_b_2026-10-14/  THE HEADLINE BUILD (§14): real Glean, additive, Linux bot overlay; csv/, plots/canonical/
+  REPORT.html                         the headline's external copy; REPORT_build5_glean_equivalent.html the validation build's</pre>
 
 </body>
 </html>

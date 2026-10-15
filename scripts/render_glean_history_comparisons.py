@@ -172,7 +172,7 @@ figure{{margin:16px 0}} figure img{{max-width:100%;border:1px solid #d9d9d9}} fi
 .wm{{position:fixed;top:40%;left:4%;font-size:150px;color:rgba(106,27,154,.10);transform:rotate(-20deg);pointer-events:none;z-index:0}}
 </style></head><body>
 <div class="wm">PRE-DRAFT</div>
-<div class="banner"><span><b>Generated:</b> {now}</span><span><b>Source:</b> <code>scripts/render_glean_history_comparisons.py</code> (plots: <code>plot_glean_history_comparisons.py</code>, <code>run_glean_real_mau_probes.py score</code>, <code>plot_glean_real_linux_components.py</code>), mozaic-daily <code>{commit}</code>, branch glean-2027-forecast</span><span><b>Data as of:</b> {data_end} (all inputs)</span><span><b>Status:</b> PRE-DRAFT — comparisons against the LOCKED build 5 (<code>LOCK.md</code>); real-Glean build adopted temporarily (2026-10-13), Linux overlay round pending</span></div>
+<div class="banner"><span><b>Generated:</b> {now}</span><span><b>Source:</b> <code>scripts/render_glean_history_comparisons.py</code> (plots: <code>plot_glean_history_comparisons.py</code>, <code>run_glean_real_mau_probes.py score</code>, <code>plot_glean_real_linux_components.py</code>), mozaic-daily <code>{commit}</code>, branch glean-2027-forecast</span><span><b>Data as of:</b> {data_end} (all inputs)</span><span><b>Status:</b> PRE-DRAFT — the real-Glean build with the Linux bot overlay is the HEADLINE since 2026-10-14 (<code>LOCK.md</code>, <code>REPORT.html</code>); build 5 on Glean-equivalent history is the validation build</span></div>
 
 <h1>PRE-DRAFT — The two comparisons for the 2027 Glean-history forecast</h1>
 <p>The locked 2027 forecast (world MAU 2027-12-15 <b>{fmt(locked.loc[DEC27, 'mau_world'])}</b>) is trained on a <em>simulated</em> Glean history: Legacy telemetry restated
@@ -247,8 +247,11 @@ Build <code>comparison_glean_real_mau_additive_2026-10-13/</code>.</div>
 <h3>Table: world MAU by horizon, adopted build and first run (<code>csv/glean2027_vs_glean_real_comparison.csv</code>)</h3>
 <table><tr><th>horizon</th><th class=num>locked</th><th class=num>adopted real-only</th><th class=num>vs locked</th><th class=num>vs own last actual</th><th class=num>first run</th><th class=num>first run vs own last actual</th></tr>
 {''.join(hz_rows)}</table>
-<div class="callout warn"><b>Still open: Linux.</b> The adopted build still extrapolates Linux's bot-like surge as trend (19.9M at the seam → 21.9M), only more gently.
-That is a trend misread by construction: the surge is a short component (§5), not a trend marker. The next round separates it.</div>
+<div class="callout ok"><b>Round 5 (2026-10-14): the Linux bot-like surge separated and the build promoted.</b> The component was measured from real Glean client data (hosting-ISP
+clients, §5), subtracted from Linux training rows and added back held flat at 4.2M (code <code>b</code>). World MAU 2027-12-15 <b>161,546,764</b>; minus the add-back 157.3M, equal to the
+locked build's 157.2M. Brendan promoted this build to the headline forecast; <code>REPORT.html</code> and the handoff package describe it. Plot below; build
+<code>comparison_glean_real_mau_additive_b_2026-10-14/</code>.</div>
+{img(PLOTS / 'glean_real_round5_mau_by_os.png') if (PLOTS / 'glean_real_round5_mau_by_os.png').exists() else ''}
 
 <h2>5. What the real data does tell us: the units, and the Linux short component</h2>
 <p>Over the 17-month overlap, real Glean ÷ Glean-equivalent (<code>csv/glean2027_in_real_glean_units.csv</code>) is the part of real Glean the <code>glean_equivalent</code>
@@ -267,10 +270,12 @@ September–October alone; US in two episodes, July 2025 and March–October 202
 only extends windows it already recorded, so the newest ROW surge is partly inside Glean-equivalent too — the separation is good but not complete at the edge, which is
 also why the locked build's Linux climbs to 16.6M.</p>
 {img(DRAFT / 'plots/linux_real_vs_glean_equivalent.png')}
-<div class="callout ask"><b>Next round (pending): a Linux short-component overlay on the adopted build</b> — the per-tile overlay mechanism the production cycle uses
-for the Japan bot population (<code>j</code>): subtract a measured bot-like curve from the Linux training rows before the model, add back a chosen path after. Brendan
-asked that the measurement <em>not</em> use the Glean-equivalent series (circular); the candidate measurements from real Glean alone are listed in the session notes and
-PROCEDURE.html §13.</div>
+<div class="callout ok"><b>Measured from real Glean alone (2026-10-14), not from this ratio.</b> Brendan asked that the measurement not use the Glean-equivalent series (circular).
+From client-level data (<code>firefox_desktop.baseline_active_users</code>, 10% sample): the behavioural definition "first seen inside the 28-day window, ≤ 2 active days" has a ~37%
+baseline on Linux but is near-binary per ISP — hosting / cloud providers 0.95–1.00, residential ~0.3 — so "ISP share ≥ 0.8" is the definition. Linux hosting-ISP MAU is 5.4M in
+October (27% of Linux), 0.4–0.7M through 2025; Windows 0.2%, Mac ~0. It agrees with the export's independent term (+4.2M on the same day). Tables under <code>linux_bot/</code>,
+plots <code>plots/linux_bot_segment_shares.png</code>, <code>linux_bot/plots/linux_bot_curve.png</code>. The duplicate-id step cannot be isolated the same way: <code>profile_group_id</code>
+is null for 12–58% of pre-148 clients and legitimate multi-profile installs give 148+ clients a 1.2% "duplicate" rate (<code>scripts/sql/glean_real_dupid_snapshot.sql</code>).</div>
 
 <h2>6. Provenance</h2>
 <ul>

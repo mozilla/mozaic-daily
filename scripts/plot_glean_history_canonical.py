@@ -42,6 +42,7 @@ SHOW_DRAFT_WATERMARK = True
 WATERMARK_TEXT = "PRE-DRAFT"      # Brendan, 2026-10-12: louder than the monthly DRAFT; purple so it cannot be mistaken for a cycle plot
 WATERMARK_COLOR = "#6a1b9a"
 MEASUREMENT_DAY = (12, 15)
+ACTUALS_LABEL = "Actuals (Glean-equivalent history)"
 
 
 def millions_formatter(x, pos):
@@ -102,11 +103,13 @@ def draw_year(ax, *, year, current, actual_mask, comparison, seam, ylabel):
     actual = window[actual_mask.reindex(window.index).fillna(False)]
     forecast = window[~actual_mask.reindex(window.index).fillna(False)]
     if not actual.empty:
-        ax.plot(actual, color="black", linewidth=2, label="Actuals (Glean-equivalent history)")
+        ax.plot(actual, color="black", linewidth=2, label=ACTUALS_LABEL)
     if comparison is not None:
         cmp_window = comparison[(comparison.index >= max(start, seam)) & (comparison.index <= end)]
         ax.plot(cmp_window, color="blue", linewidth=1, label="Raw model, no China correction (same seam)")
     ax.plot(forecast, color="green", linewidth=1, label="Forecast")
+    if actual.empty and current[actual_mask.reindex(current.index).fillna(False)].empty:
+        pass
     ax.axvline(measurement, color="red", linestyle=":", alpha=0.5, label="Dec 15")
     if start <= seam <= end:
         ax.axvline(seam, color="grey", linestyle="--", alpha=0.6, label=f"Seam {seam.date()}")
@@ -125,14 +128,19 @@ def main():
     p.add_argument("--seam", required=True)
     p.add_argument("--out-dir", type=Path, required=True)
     p.add_argument("--label", default="Glean-history draft")
+    p.add_argument("--actuals-label", default=None, help="legend text for the black actuals line (default: Glean-equivalent history)")
     args = p.parse_args()
+    global ACTUALS_LABEL
+    if args.actuals_label:
+        ACTUALS_LABEL = args.actuals_label
     seam = pd.Timestamp(args.seam)
     curves = pd.read_csv(args.curves, parse_dates=["date"]).set_index("date")
     comparison = pd.read_csv(args.comparison_curves, parse_dates=["date"]).set_index("date") if args.comparison_curves else None
     actual_mask = curves["data_type"] == "training"
     out = args.out_dir / "canonical"
 
-    for metric_key, (metric_name, statistic) in METRICS.items():
+    present = {k: v for k, v in METRICS.items() if f"{k}_world" in curves.columns}   # a MAU-only build has no dau_28ma_* columns
+    for metric_key, (metric_name, statistic) in present.items():
         for os_name in OS_ORDER:
             col = f"{metric_key}_{os_name}"
             for year in (seam.year, seam.year + 1):

@@ -38,7 +38,7 @@ def score(df: pd.DataFrame, seam: pd.Timestamp) -> list[dict]:
     rows = []
     last = seam - pd.Timedelta(days=1)
     y = seam.year
-    for metric in ("dau", "mau"):
+    for metric in [m for m in ("dau", "mau") if m in df.columns and df[m].notna().any()]:   # MAU-only builds have no dau
         for os_name in OS_ORDER:
             s = world_series(df, metric, os_name)
             a7 = s[last - pd.Timedelta(days=6):last].mean()

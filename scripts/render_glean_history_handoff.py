@@ -39,6 +39,61 @@ from mozaic_daily.adjustments import load_forecast  # noqa: E402
 
 DRAFT = repo_root / "data-official/2027-glean-draft"
 LOCKED_PARQUET_GLOB = "desktop_glean_history_cpr087_o_2026-10-10/cps*/mozaic_daily_forecast.*.adj-o.parquet"
+
+# Which build the package describes. `real_glean` is the headline since 2026-10-14 (LOCK.md); `glean_equivalent` is build 5,
+# the validation build (still renderable for the record). Prose differs because the histories and corrections differ.
+FLAVORS = {
+    "glean_equivalent": {
+        "parquet_glob": LOCKED_PARQUET_GLOB,
+        "curves": "csv/glean2027_canonical_curves.csv", "summary": "csv/glean2027_dec15_summary.csv", "plots_dir": "plots/canonical",
+        "metrics": ("mau", "dau"),
+        "intro": ("in <b>Glean</b> telemetry terms. The history it is trained on is Glean-equivalent: Legacy telemetry restated the way Glean counts people, "
+                  "because Glean's own desktop history is too short to forecast from."),
+        "predraft": ("Earlier than a normal draft: the history is a simulated (translated) series, the method is new, and the number will move as the "
+                     "inputs are re-issued. Use it to see shape and magnitude; do not quote it as a plan number."),
+        "history_start": "2020-01-01",
+        "error_intro": "The same model, run from eight past dates, missed the following year by",
+        "error_tail": ("Those past forecasts ran <b>low</b> more often than high (median {median:+.1%}). Separately, the translated history itself carries an uncertainty "
+                       "of about ±{trans:.1f}% (how well Legacy can be restated as Glean); it is small next to the forecast error."),
+        "scope_bullets": [
+            "Glean terms: the series is what Glean telemetry would have reported, restated from Legacy. Published Glean dashboards may read slightly higher "
+            "because they still include some double-counted and automated clients that this series excludes; those terms are tracked separately and not added here.",
+            "No adjustments for planned launches, marketing, or known headwinds. The regular monthly forecast carries those; this one does not.",
+            "The history and therefore the forecast will be re-issued when the translation is updated (expected late October 2026).",
+        ],
+        "readme_line": "Pre-draft: trained on a translated (Glean-equivalent) history; will be re-issued when the translation is updated.",
+    },
+    "real_glean": {
+        "parquet_glob": "comparison_glean_real_mau_additive_b_2026-10-14/cps*/mozaic_daily_forecast.*.adj-bo.parquet",
+        "curves": "comparison_glean_real_mau_additive_b_2026-10-14/csv/comparison_glean_real_mau_b_canonical_curves.csv",
+        "summary": "comparison_glean_real_mau_additive_b_2026-10-14/csv/comparison_glean_real_mau_b_dec15_summary.csv",
+        "plots_dir": "comparison_glean_real_mau_additive_b_2026-10-14/plots/canonical",
+        "metrics": ("mau",),
+        "intro": ("trained on the <b>real Glean desktop telemetry we have</b>: 17 months, from 2025-05-22. With that little history the standard model "
+                  "extrapolates wildly, so the trend and seasonality settings were re-tuned for a short series (near-linear trend, additive seasonality). "
+                  "One correction is applied, because the forecast is implausible without it: Linux automated traffic from hosting providers (about 5.4M MAU in October, "
+                  "27% of Linux) is measured and taken out of the training data, then carried forward <b>flat at 4.2M</b>, a no-growth planning assumption. "
+                  "Everything else in the data is left as it is."),
+        "predraft": ("Earlier than a normal draft: one observed year of seasonality, no backtest is possible, and the Linux bot level is a planning choice "
+                     "worth about 2.6% of the headline. Use it to see shape and magnitude; do not quote it as a plan number."),
+        "history_start": "2025-05-22",
+        "error_intro": ("No backtest is possible on 17 months of history. By analogy, the same model family run on the longer Glean-equivalent history from eight past dates "
+                        "missed the following year by"),
+        "error_tail": ("Treat that as the floor of the uncertainty, not the estimate: this build has a shorter history. Two other ranges matter: the parameter neighbourhood "
+                       "(±1.6M on the headline) and the Linux bot path (0 if the fleet vanishes, +4.2M as built, more if it grows). The world number is the one to quote; "
+                       "the per-OS split is affected by how the model reconciles tiles."),
+        "scope_bullets": [
+            "Real Glean terms: what the Glean dashboard counts, including the double-counted ids that older Firefox versions still produce (about 1% of Windows MAU) and the "
+            "Linux automated traffic (held flat). Known artifact: real MAU fell 13M in January 2026 when Firefox 148 fixed the id duplication; the model repeats that dip in "
+            "January 2027. It is not real, and it does not affect December 15.",
+            "Cross-check: with the Linux bot component removed, this forecast gives 157.3M on 2027-12-15, and an independent model trained on 6.8 years of translated Legacy "
+            "history gives 157.2M.",
+            "No adjustments for planned launches, marketing, or known headwinds. The regular monthly forecast carries those; this one does not.",
+            "The history will be re-pulled when the forecast is refreshed; the Linux bot measurement is re-run with it.",
+        ],
+        "readme_line": "Pre-draft: trained on 17 months of real Glean telemetry, re-tuned for a short history; Linux automated traffic measured and held flat (4.2M MAU).",
+    },
+}
 OS_ORDER = ["world", "windows", "mac", "linux"]
 METRIC = {
     "mau": dict(name="MAU", long="monthly active users", column="mau", curve_prefix="mau", stat="raw daily value of the rolling 28-day MAU",
@@ -93,14 +148,18 @@ def build_csvs(df: pd.DataFrame, curves: pd.DataFrame, m: dict, out: Path, metri
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--metric", choices=["mau", "dau"], required=True)
+    p.add_argument("--build", choices=sorted(FLAVORS), default="real_glean", help="which build the package describes (default: the headline, LOCK.md)")
     p.add_argument("--out-dir", type=Path, default=DRAFT / "handoff")
     args = p.parse_args()
     m = METRIC[args.metric]
-    parquet = sorted(DRAFT.glob(LOCKED_PARQUET_GLOB))[0]
+    flavor = FLAVORS[args.build]
+    if args.metric not in flavor["metrics"]:
+        raise SystemExit(f"build {args.build} has no {args.metric.upper()} forecast (metrics: {flavor['metrics']})")
+    parquet = sorted(DRAFT.glob(flavor["parquet_glob"]))[0]
     df, meta = load_forecast(str(parquet))
     df["target_date"] = pd.to_datetime(df["target_date"])
-    curves = pd.read_csv(DRAFT / "csv/glean2027_canonical_curves.csv", parse_dates=["date"]).set_index("date")
-    summary = pd.read_csv(DRAFT / "csv/glean2027_dec15_summary.csv")
+    curves = pd.read_csv(DRAFT / flavor["curves"], parse_dates=["date"]).set_index("date")
+    summary = pd.read_csv(DRAFT / flavor["summary"])
     bt = pd.read_csv(DRAFT / "backtest/errors_summary.csv")
     bt_row = bt[(bt.metric == m["name"]) & (bt.horizon_days == HEADLINE_HORIZON)].iloc[0]
     commit = subprocess.check_output(["git", "-C", str(repo_root), "rev-parse", "--short", "HEAD"], text=True).strip()
@@ -114,7 +173,7 @@ def main():
     csv1, csv2 = build_csvs(df, curves, m, pkg, args.metric)
     plot_names = [f"{m['plot_prefix']}_world_2027.png", f"{m['plot_prefix']}_world_2026.png", f"{m['plot_prefix']}_by_os_2027.png"]
     for name in plot_names + [f"{m['plot_prefix']}_{o}_{y}.png" for o in ("windows", "mac", "linux") for y in (2026, 2027)]:
-        shutil.copy(DRAFT / "plots/canonical" / name, pkg / "plots" / name)
+        shutil.copy(DRAFT / flavor["plots_dir"] / name, pkg / "plots" / name)
 
     # headline table
     rows = ""
@@ -151,22 +210,19 @@ ul li{{margin:3px 0}}
 <div class="banner"><span><b>Generated:</b> {now}</span><span><b>Source:</b> <code>scripts/render_glean_history_handoff.py</code> on build <code>{parquet.parent.parent.name}</code>, mozaic-daily <code>{commit}</code></span><span><b>Data as of:</b> {data_end}</span><span><b>Status:</b> PRE-DRAFT</span></div>
 
 <h1>PRE-DRAFT — {title}</h1>
-<p>A forecast of Firefox Desktop <b>{m['long']} ({m['name']})</b> from {data_end} through 2027-12-31, in <b>Glean</b> telemetry terms. The history it is trained on is
-Glean-equivalent: Legacy telemetry restated the way Glean counts people, because Glean's own desktop history is too short to forecast from.
+<p>A forecast of Firefox Desktop <b>{m['long']} ({m['name']})</b> from {data_end} through 2027-12-31, {flavor['intro']}
 {'This is the headline metric for 2027: the number is the <b>raw daily MAU on 2027-12-15</b>.' if m['headline'] else 'DAU is the secondary metric for 2027; the headline is MAU (separate package). DAU is reported as a 28-day trailing mean, the usual convention.'}
 No head- or tailwinds are applied: this is the model's view of the history, nothing added.</p>
-<div class="callout"><b>Pre-draft.</b> Earlier than a normal draft: the history is a simulated (translated) series, the method is new, and the number will move as the
-inputs are re-issued. Use it to see shape and magnitude; do not quote it as a plan number.</div>
+<div class="callout"><b>Pre-draft.</b> {flavor['predraft']}</div>
 
-<div class="callout"><b>Data in this package (the forecast itself):</b> <code>{csv1.name}</code> — every day from 2020-01-01 to 2027-12-31, history and forecast,
+<div class="callout"><b>Data in this package (the forecast itself):</b> <code>{csv1.name}</code> — every day from {flavor['history_start']} to 2027-12-31, history and forecast,
 world and per OS; <code>{csv2.name}</code> — the same per country; {'<code>glean2027_dau_daily_unsmoothed.csv</code> — the raw daily DAU behind the 28-day mean; ' if args.metric == 'dau' else ''}<code>plots/</code> — the charts. Details in section 4.</div>
 
 <h2>1. The numbers</h2>
 <table><tr><th></th><th class=num>2026-12-15</th><th class=num>2027-12-15</th><th class=num>Dec → Dec</th></tr>{rows}</table>
-<p><b>How far off could it be?</b> The same model, run from eight past dates, missed the following year by <b>{band50:.0%} or less half the time and by
+<p><b>How far off could it be?</b> {flavor['error_intro']} <b>{band50:.0%} or less half the time and by
 {band90:.0%} or less nine times in ten</b> at this horizon. Around {fmt(world27)} that is roughly ±{fmt(world27 * band50)} to ±{fmt(world27 * band90)}.
-Those past forecasts ran <b>low</b> more often than high (median {bt_row['median']:+.1%}). Separately, the translated history itself carries an uncertainty
-of about ±{trans:.1f}% (how well Legacy can be restated as Glean); it is small next to the forecast error.</p>
+{flavor['error_tail'].format(median=bt_row['median'], trans=trans)}</p>
 
 <h2>2. What it looks like</h2>
 <p>Grey: the previous year on the same calendar, for shape. Black: history. Green: the forecast. Dotted red: December 15.</p>
@@ -180,7 +236,7 @@ of about ±{trans:.1f}% (how well Legacy can be restated as Glean); it is small 
 
 <h2>4. How to use the files</h2>
 <ul>
-<li><code>{csv1.name}</code> — one row per day from 2020-01-01 to 2027-12-31: <code>date</code>, <code>data_type</code> (<code>training</code> = history, <code>forecast</code>),
+<li><code>{csv1.name}</code> — one row per day from {flavor['history_start']} to 2027-12-31: <code>date</code>, <code>data_type</code> (<code>training</code> = history, <code>forecast</code>),
 then <code>world</code>, <code>windows</code>, <code>mac</code>, <code>linux</code>. Values are the <b>{m['stat']}</b>, whole people. The world is the sum of the three OS.</li>
 <li><code>{csv2.name}</code> — the same statistic per country (all OS) from 2024-01-01, plus <code>world</code>.</li>
 <li><code>plots/</code> — the charts above and one per OS per year.</li>
@@ -191,10 +247,7 @@ then <code>world</code>, <code>windows</code>, <code>mac</code>, <code>linux</co
 <h2>5. What is and is not in it</h2>
 <ul>
 <li>Desktop only (Windows, Mac, Linux; Linux included in the world). Mobile comes from the regular monthly forecast.</li>
-<li>Glean terms: the series is what Glean telemetry would have reported, restated from Legacy. Published Glean dashboards may read slightly higher
-because they still include some double-counted and automated clients that this series excludes; those terms are tracked separately and not added here.</li>
-<li>No adjustments for planned launches, marketing, or known headwinds. The regular monthly forecast carries those; this one does not.</li>
-<li>The history and therefore the forecast will be re-issued when the translation is updated (expected late October 2026).</li>
+{''.join(f"<li>{b}</li>" for b in flavor['scope_bullets'])}
 </ul>
 
 <h2>6. Where it came from</h2>
@@ -205,13 +258,13 @@ how it was built lives with the repository (<code>data-official/2027-glean-draft
     (pkg / "README.txt").write_text(f"""{title} — PRE-DRAFT (generated {now})
 
 Open index.html. It explains the numbers, shows the charts, and describes the two CSVs:
-  {csv1.name}     daily series 2020-01-01..2027-12-31: date, data_type, world, windows, mac, linux ({m['stat']})
+  {csv1.name}     daily series {flavor['history_start']}..2027-12-31: date, data_type, world, windows, mac, linux ({m['stat']})
   {csv2.name}  the same statistic per country (all OS) from 2024-01-01
 {'  glean2027_dau_daily_unsmoothed.csv  raw daily DAU, world and per OS, 2020-01-01..2027-12-31' if args.metric == 'dau' else ''}
   plots/                           the charts (PNG)
 
 Headline: world {m['name']} on 2027-12-15 = {fmt(world27)} ({m['stat']}). History ends {data_end}; rows after that are forecast.
-Pre-draft: trained on a translated (Glean-equivalent) history; will be re-issued when the translation is updated.
+{flavor['readme_line']}
 Source: mozaic-daily branch glean-2027-forecast @ {commit}, build {parquet.parent.parent.name}. Owner: Brendan Wells.
 """)
     zip_path = shutil.make_archive(str(args.out_dir / f"glean2027_{args.metric}_handoff"), "zip", root_dir=args.out_dir, base_dir=pkg.name)

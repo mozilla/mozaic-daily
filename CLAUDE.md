@@ -122,7 +122,7 @@ the frozen copy was left alone, so June's and July's delivered curves cannot mov
 Analysis and supporting work splits along two axes:
 
 - **Month-scoped artifact** (the composite producer notebook, a sanity check tied to one month's data, that month's adjusted CSV) → `data-official/{YYYY-MM}/`. The directory already holds the production parquets, sidecar `.meta.json` files, adjustment specs, and parameters.json — keep the producer + diagnostic notebooks alongside them.
-- **Cross-month or topic-anchored work** (mechanism diagnostics, model exploration, validation against actuals over time, version-spanning approaches) → `research/{topic}/`. Topics **currently on disk**: `param-scans/`, `mobile-organic/`, `marketing-lift/`, `headwinds/`, `ma-seam-turbulence/`, `csv-vs-actuals/`, `summer-slump/`, `autumn-decoupling/`, `collaboration-review/`, `forecast-vs-summer-actuals/`, `forecast-intervals/`, `executive-plot/`. Archived to GCS and removed from the tree at the July button-down (do **not** treat these paths as live): `iran/`, `april-vs-june-mechanism/`, `marketing-lift/v1-convolution/`, `desktop-gap-decomp/`, `country-overrides/`. See `research/_index.md`.
+- **Cross-month or topic-anchored work** (mechanism diagnostics, model exploration, validation against actuals over time, version-spanning approaches) → `research/{topic}/`. Topics **currently on disk**: `param-scans/`, `mobile-organic/`, `marketing-lift/`, `headwinds/`, `ma-seam-turbulence/`, `csv-vs-actuals/`, `summer-slump/`, `autumn-decoupling/`, `collaboration-review/`, `forecast-vs-summer-actuals/`, `forecast-intervals/`, `executive-plot/`, `holidays-2027/`. Archived to GCS and removed from the tree at the July button-down (do **not** treat these paths as live): `iran/`, `april-vs-june-mechanism/`, `marketing-lift/v1-convolution/`, `desktop-gap-decomp/`, `country-overrides/`. See `research/_index.md`.
 
 Per-cycle inputs that the pipeline *consumes* get their own subdirectory under `data-official/{YYYY-MM}/`, each with a spec JSON gated by `applies_to_forecast_start`, a data file, a sidecar `.meta.json`, and an `_index.md`: `adjustments/` (`h`), `marketing/` (`m`, retired), `launch_at_login_new_users/` (`l`; `launch_on_login/` through 2026-08), `mozillaonline/` (`o`), `organic/` (`p`).
 
@@ -320,9 +320,13 @@ The `scripts/` directory contains helper scripts for common tasks:
   and the new `Metric.MAU`. The adapter is `mozaic_daily.glean_history`; the 2025 Legacy outage is masked by the
   `LegacyOutage2025` calendar (`glean_history_holidays.py`); the Iran crater by a fill regenerated for this layout
   and passed as `additional_fills`. No head/tailwinds; the China MozillaOnline step is applied as a DATA CORRECTION (`o`, DAU + MAU,
-  windows/mac split). LOCKED 2026-10-12 at build 5 (`LOCK.md`). The rest of the tooling (`export_glean_history_curves.py`,
+  windows/mac split). Build 5 on that history was LOCKED 2026-10-12; **since 2026-10-14 the HEADLINE is the real-Glean MAU build**
+  (`comparison_glean_real_mau_additive_b_2026-10-14/`: 17 months of real Glean, model re-tuned for a short history — additive regime,
+  cps 0.005 / 3 changepoints / range 0.8, `--no-outage-calendar` — plus the Linux bot-ISP overlay `b` measured from real Glean client
+  data and held flat; world MAU 2027-12-15 161,546,764) and build 5 is the validation build (`LOCK.md`). The real-data forecast stays
+  UNCORRECTED except where implausible (Brendan); the duplicate-id fix is a secondary comparison. The rest of the tooling (`export_glean_history_curves.py`,
   `plot_glean_history_canonical.py`, `render_glean_history_report.py`, `render_glean_history_handoff.py`, `score_glean_history_seam.py`,
-  `run_glean_history_backtest.py`, `build_glean_history_cn_offsets.py`, `build_comparison_raw_frames.py`, `compare_glean_history_builds.py`, `plot_glean_history_comparisons.py`, `render_glean_history_comparisons.py`)
+  `run_glean_history_backtest.py`, `build_glean_history_cn_offsets.py`, `build_comparison_raw_frames.py`, `compare_glean_history_builds.py`, `plot_glean_history_comparisons.py`, `render_glean_history_comparisons.py`, `run_glean_real_mau_probes.py`, `build_glean_real_linux_bot_overlay.py`, `render_glean_real_report.py`)
   is listed in `scripts/_index.md`. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
