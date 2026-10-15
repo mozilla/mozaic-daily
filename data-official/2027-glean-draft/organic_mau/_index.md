@@ -9,6 +9,7 @@ here feeds or checks the organic Fenix MAU series the mobile MAU runner trains o
 | `plots/fenix_paid_mau_share.png` | paid share over time, world + the five most-paid countries |
 | `paid_organic_correlation.html` + `paid_organic_*.csv` + `plots/paid_organic_*.png`, `plots/paid_vs_excess_over_ios.png` | the sanity check (`scripts/analyze_paid_organic_correlation.py`): is organic growth correlated with paid? Sections A–C: nothing systematic in the demeaned monthly panel. Section D: India (+15 pt) and Indonesia (+7 pt) above their own Firefox iOS over the high spend period as paid share passed 30%; handed to the marketing DS team |
 | `paid_organic_quarterly.html` + `.csv`, `plots/paid_vs_excess_over_ios_quarterly*.png` | section D by calendar quarter, Q4 2024 → Q3 2026 (`scripts/analyze_paid_organic_quarterly.py`), for the marketing DS conversation |
+| `paid_organic_6mo.html` + `.csv`, `plots/paid_vs_excess_over_ios_6mo*.png` | the same in six-month periods (`--months 6`): Oct 2024–Mar 2025, Apr–Sep 2025, Oct 2025–Mar 2026, Apr–Sep 2026 |
 | `ios_rate_cap/` | the **provisional data correction** that follows from section D: IN + ID organic Fenix capped at their own iOS growth from 2026-04-01, excess removed with no add-back. `IOS_RATE_CAP.md` is the rollback note; read it before touching any mobile build |
 
 Not here: the raw country × app pull (`../raw_glean_mobile_countryxapp_2026-10-09/`), the probe builds (`../probes_mobile_mau/`),
