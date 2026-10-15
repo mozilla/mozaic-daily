@@ -12,6 +12,9 @@ history is the real production table from 2020-12-31 (``scripts/sql/glean_mobile
    MAU split from ``build_fenix_organic_mau_split.py``, held flat backwards before its first day like `p`; IR excluded).
    Brendan, 2026-10-15: "we only forecast the organic part of mobile; marketing forecasts paid" — so there is NO add-back:
    the output is organic mobile MAU, history rows included. Without the flag it is a total-MAU forecast;
+   3b. optionally applies the iOS-rate cap DATA CORRECTION (``--ios-rate-cap``: the parquet from ``build_ios_rate_cap.py``;
+   India + Indonesia organic Fenix from 2026-04-01 capped at their own Firefox iOS growth, excess removed, no add-back;
+   requires ``--organic-split``; rollback = drop the flag, see ``organic_mau/ios_rate_cap/IOS_RATE_CAP.md``);
 4. runs ``main.process_data_source`` for ``DataSource.GLEAN_MOBILE`` with the configured ``MobileModelConfig``
    (default: the October 2026 mobile lock) and the production ``MobileEvents`` calendar;
 5. writes ``mozaic_daily_forecast.<seam>.gm-M.raw.parquet`` + sidecar meta (``extra.organic_only`` records the split when
@@ -47,6 +50,7 @@ if str(repo_root / "src") not in sys.path:
 from mozaic.models import MobileModelConfig  # noqa: E402
 from mozaic_daily.adjustments import insert_state_marker, write_meta  # noqa: E402
 from mozaic_daily.config import get_runtime_config  # noqa: E402
+from mozaic_daily.ios_rate_cap import apply_ios_rate_cap  # noqa: E402
 from mozaic_daily.main import (  # noqa: E402
     get_checkpoint_filename, get_mozaic_objects_filename, process_data_source, save_mozaic_objects,
 )
@@ -141,6 +145,8 @@ def parse_args():
     p.add_argument("--organic-split", type=Path, default=None,
                    help="measured Fenix paid/organic MAU split parquet (build_fenix_organic_mau_split.py): forecast ORGANIC MAU, no add-back")
     p.add_argument("--organic-exclude", nargs="*", default=["IR"], help="countries left total under --organic-split (default IR, as in `p`)")
+    p.add_argument("--ios-rate-cap", type=Path, default=None,
+                   help="iOS-rate cap parquet (build_ios_rate_cap.py): subtract the recorded excess from the capped countries' organic Fenix rows; needs --organic-split")
     p.add_argument("--dry-run", action="store_true")
     add_knob_arguments(p, defaults=OCTOBER_MOBILE_LOCK)
     return p.parse_args()
@@ -153,6 +159,8 @@ def main() -> None:
     slug_dir = args.results_dir / slug
     slug_dir.mkdir(parents=True, exist_ok=True)
 
+    if args.ios_rate_cap and not args.organic_split:
+        raise SystemExit("--ios-rate-cap is a correction to the ORGANIC series; pass --organic-split with it")
     runtime = get_runtime_config(forecast_start_date_override=args.forecast_start_date)
     holiday_names = [h.__name__ for h in ADDITIONAL_HOLIDAYS.get(DATA_SOURCE, [])]
     print("=" * 60 + "\nMobile MAU forecast (file-fed)\n" + "=" * 60)
@@ -162,6 +170,7 @@ def main() -> None:
     print(f"Iran fill           : {args.iran_fill or 'none'}")
     print(f"Holidays            : {holiday_names}")
     print(f"Organic split       : {args.organic_split or 'none (total MAU)'}{' ex ' + ','.join(args.organic_exclude) if args.organic_split else ''}")
+    print(f"iOS-rate cap        : {args.ios_rate_cap or 'none'}")
     print(f"Output dir          : {slug_dir}")
     print(f"Config              : {json.dumps(config.to_dict(), indent=2)}")
 
@@ -177,6 +186,7 @@ def main() -> None:
         "adjustment_code": None,
         "organic_split": str(args.organic_split) if args.organic_split else None,
         "organic_exclude": args.organic_exclude if args.organic_split else None,
+        "ios_rate_cap": str(args.ios_rate_cap) if args.ios_rate_cap else None,
     }, indent=2) + "\n")
     if args.dry_run:
         print("[dry-run] stopping before the forecast")
@@ -189,6 +199,12 @@ def main() -> None:
         print(f"Organic split: Fenix paid MAU removed on the last training day {organic_record['fenix_paid_mau_removed_last_day']:,} "
               f"of {organic_record['fenix_world_total_mau_last_day']:,} ({organic_record['fenix_paid_share_last_day']:.2%}); "
               f"share measured from {organic_record['share_measured_from']}, held flat before")
+    cap_record = None
+    if args.ios_rate_cap:
+        frame, cap_record = apply_ios_rate_cap(frame, pd.read_parquet(args.ios_rate_cap))
+        cap_record["cap_file"] = str(args.ios_rate_cap)
+        print(f"iOS-rate cap: {cap_record['countries']} from {cap_record['from_date']}, removed on the last training day "
+              f"{cap_record['removed_mau_last_day']} (total {cap_record['removed_mau_last_day_total']:,}), no add-back")
     fills = [pd.read_parquet(args.iran_fill)] if args.iran_fill else None
     datasets = {"mobile": {"glean": {METRIC.value: frame}}}
 
@@ -222,6 +238,7 @@ def main() -> None:
             "additional_holidays": holiday_names,
             "iran_fill": str(args.iran_fill) if args.iran_fill else None,
             "organic_only": organic_record,
+            "ios_rate_cap": cap_record,
             "paid_organic_split": ("ORGANIC ONLY: Fenix training rows scaled by the measured organic MAU share, nothing added back"
                                    if organic_record else "not applied (total MAU)"),
             "inputs_meta": json.loads(inputs_meta_path.read_text()) if inputs_meta_path.exists() else None,

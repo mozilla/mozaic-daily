@@ -9,6 +9,8 @@ panels are flat zero and the world paid panel equals Fenix).
 
 Usage:
     python scripts/plot_mobile_mau_organic_paid.py --probe cps0.035_cpr0.725 --probe cps0.035_cpr0.87
+    python scripts/plot_mobile_mau_organic_paid.py --probe round2_ioscap/cps0.01_cpr0.8 --tag round2 --organic-only \
+        --history-label "organic history, IN+ID iOS-rate cap"      # a probe slug may carry its grid subdirectory
 """
 
 from __future__ import annotations
@@ -101,7 +103,11 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--probe", action="append", default=None, help="probe slug under probes_mobile_mau/ (repeatable); default the lock and cpr 0.87")
     p.add_argument("--out-dir", type=Path, default=PROBES / "plots")
+    p.add_argument("--tag", default="", help="suffix for the output file names, e.g. round2 -> mobile_mau_organic_2x5_round2.png")
+    p.add_argument("--history-label", default="organic history (real Glean)", help="legend label for the training rows (say when they are corrected)")
+    p.add_argument("--organic-only", action="store_true", help="skip the paid figure (it does not depend on the probes)")
     args = p.parse_args()
+    suffix = f"_{args.tag}" if args.tag else ""
     slugs = args.probe or ["cps0.035_cpr0.725", "cps0.035_cpr0.87"]
     frames = probe_frames(slugs)
     first = frames[slugs[0]]
@@ -115,9 +121,11 @@ def main():
     def organic_forecasts(pop):
         return {f"organic forecast {slug}": series(df, pop).loc[lambda s: s["data_type"] == "forecast", "mau"].astype(float) for slug, df in frames.items()}
 
-    figure("organic", organic_history, organic_forecasts, args.out_dir / "mobile_mau_organic_2x5.png",
+    figure("organic", organic_history, organic_forecasts, args.out_dir / f"mobile_mau_organic_2x5{suffix}.png",
            "Mobile MAU, ORGANIC only (Fenix × measured organic share; other apps carry no paid) — history and probe forecasts",
-           "organic history (real Glean)")
+           args.history_label)
+    if args.organic_only:
+        return
     figure("paid", lambda pop: paid_series(split, pop), lambda pop: {}, args.out_dir / "mobile_mau_paid_2x5.png",
            f"Mobile MAU, PAID only (measured from client-level attribution, {split['submission_date'].min().date()} on; Fenix only, no forecast — marketing forecasts paid)",
            "paid MAU (measured)")

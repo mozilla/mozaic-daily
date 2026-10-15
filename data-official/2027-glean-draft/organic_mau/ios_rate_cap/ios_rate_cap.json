@@ -1,0 +1,16 @@
+{
+  "correction": "ios_rate_cap",
+  "applies_to": "organic Fenix MAU training rows (2027 organic mobile MAU draft)",
+  "countries": [
+    "ID",
+    "IN"
+  ],
+  "from_date": "2026-04-01",
+  "smoothing_days": 28,
+  "data_file": "ios_rate_cap.ID_IN.2026-04-01.parquet",
+  "data_sha1": "fad4959bff414abb645acc7b7bd307529bb39b75",
+  "meta_file": "ios_rate_cap.ID_IN.2026-04-01.meta.json",
+  "runner_flag": "--ios-rate-cap data-official/2027-glean-draft/organic_mau/ios_rate_cap/ios_rate_cap.ID_IN.2026-04-01.parquet",
+  "rollback": "drop the runner flag and rerun; see IOS_RATE_CAP.md",
+  "evidence": "data-official/2027-glean-draft/organic_mau/paid_organic_correlation.html (section D)"
+}

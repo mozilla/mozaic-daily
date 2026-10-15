@@ -1,0 +1,64 @@
+{
+  "produced_by": "scripts/build_ios_rate_cap.py",
+  "written_at": "2026-10-15T10:30:36",
+  "what": "organic Fenix MAU training rows for the named countries capped, from from_date, at organic(from_date) x the trailing 28-day-mean ratio of the country's own Firefox iOS MAU; the positive excess is treated as paid and removed with no add-back",
+  "why": "paid share passed 30% in these countries while organic Fenix pulled above the same country's iOS (IN +15pt, ID +7pt over the high spend period); peers at the same paid share did not; likely non-Play-Store campaign installs counted organic",
+  "evidence": "data-official/2027-glean-draft/organic_mau/paid_organic_correlation.html (section D)",
+  "decision": "Brendan 2026-10-15; provisional pending the marketing DS team's read; rollback = drop --ios-rate-cap",
+  "countries": [
+    "ID",
+    "IN"
+  ],
+  "from_date": "2026-04-01",
+  "smoothing_days": 28,
+  "raw_dir": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/raw_glean_mobile_countryxapp_2026-10-09",
+  "raw_sha1": "57fc9ffa9fc8f18750bee07e9925fe86955d05ee",
+  "organic_split": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/organic_mau/fenix_paid_organic_mau.2026-10-09.parquet",
+  "organic_split_sha1": "3f8a3fc53f7443637f7204f1f123f15349135fb0",
+  "organic_exclude": [
+    "IR"
+  ],
+  "organic_split_record": {
+    "split_file": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/organic_mau/fenix_paid_organic_mau.2026-10-09.parquet",
+    "share_measured_from": "2024-10-01",
+    "share_held_flat_before": "2024-10-01",
+    "exclude_countries": [
+      "IR"
+    ],
+    "fenix_world_total_mau_last_day": 42196204,
+    "fenix_paid_mau_removed_last_day": 8980862,
+    "fenix_paid_share_last_day": 0.21283578020430463
+  },
+  "data_file": "ios_rate_cap.ID_IN.2026-04-01.parquet",
+  "data_sha1": "fad4959bff414abb645acc7b7bd307529bb39b75",
+  "plot": "data-official/2027-glean-draft/organic_mau/ios_rate_cap/plots/ios_rate_cap.ID_IN.2026-04-01.png",
+  "numbers": {
+    "last_day": "2026-10-09",
+    "removed_mau_last_day": {
+      "ID": 43696,
+      "IN": 396385
+    },
+    "removed_mau_last_day_total": 440081,
+    "removed_share_of_world_organic_fenix_last_day": 0.013249329180473288,
+    "organic_mau_last_day": {
+      "ID": 650910,
+      "IN": 3812610
+    },
+    "ios_ratio_smoothed_last_day": {
+      "ID": 1.1439541746752095,
+      "IN": 1.1661134405306324
+    },
+    "organic_growth_since_from": {
+      "ID": 0.22627415444147836,
+      "IN": 0.30141774492060636
+    },
+    "days_capped": {
+      "ID": 162,
+      "IN": 96
+    },
+    "first_capped_day": {
+      "ID": "2026-04-02",
+      "IN": "2026-04-03"
+    }
+  }
+}

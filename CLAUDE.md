@@ -330,7 +330,12 @@ The `scripts/` directory contains helper scripts for common tasks:
   is listed in `scripts/_index.md`. **Mobile MAU companion (2026-10-14):** `run_mobile_mau_forecast.py` (file-fed `glean_mobile` MAU on the real country × app
   pull from 2020-12-31, October mobile lock, Iran rolling-28 MAU fill from `generate_mobile_mau_iran_fill.py`, no `p`), `export_mobile_mau_curves.py`,
   `render_mobile_mau_handoff.py` (+ the combined desktop/mobile MAU curve CSV). First build `mobile_mau_2026-10-10/`: world MAU 2027-12-15 59.4M, but the
-  forecast opens 7% below the last actual (changepoint range 0.725 cannot follow the 2026 Fenix run-up) — not settled. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
+  forecast opens 7% below the last actual (changepoint range 0.725 cannot follow the 2026 Fenix run-up). **Since 2026-10-15 mobile is forecast as ORGANIC MAU**
+  (Brendan: we only forecast organic; marketing forecasts paid): the runner's `--organic-split` scales Fenix training rows by the measured organic MAU share
+  (`build_fenix_organic_mau_split.py`, `organic_mau/`) with **no add-back**; `run_mobile_mau_probes.py` runs the changepoint probes (round 1 uncorrected,
+  round 2 on the capped series); `build_ios_rate_cap.py` + `--ios-rate-cap` is the **provisional** India + Indonesia correction (organic Fenix capped at its own
+  Firefox iOS growth from 2026-04-01 after the paid-vs-organic correlation check found +15/+7 pt over the high spend period; 440K MAU removed; rollback = drop the
+  flag, `organic_mau/ios_rate_cap/IOS_RATE_CAP.md`). Not settled. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
   sampled date windows. Run before using training rows as a stand-in for an actuals query (e.g. the canonical
