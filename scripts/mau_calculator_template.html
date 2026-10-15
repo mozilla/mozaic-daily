@@ -39,6 +39,12 @@
   .stamp { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg);
            font-size: 54px; font-weight: bold; color: rgba(198, 40, 40, 0.13); white-space: nowrap; pointer-events: none; }
   .how { font-size: 15px; line-height: 1.5; margin-top: 26px; border-top: 2px dashed #aaa; padding-top: 10px; }
+  /* Compact mode while the panel is pinned: just title, rate and slider in each box, big numbers in the results. */
+  .sticky.compact .hist, .sticky.compact .sources, .sticky.compact .hint { display: none; }
+  .sticky.compact .control { padding: 4px 12px 8px; }
+  .sticky.compact .control h3 { margin-bottom: 4px; }
+  .sticky.compact .result { padding: 1px 10px; }
+  .sticky-sentinel { height: 1px; }
   @media (max-width: 800px) { .controls, .results { grid-template-columns: 1fr; } .sticky { position: static; } }
 </style>
 </head>
@@ -51,7 +57,8 @@
     surprises, and none of that is here. Use it only to get a ballpark feel for
     <i>how much the 2027 total moves when each rate moves</i>.</div>
 
-  <div class="sticky">
+  <div class="sticky-sentinel" id="stickySentinel"></div>
+  <div class="sticky" id="stickyPanel">
 
   <div class="controls">
     <div class="control">
@@ -342,6 +349,13 @@ document.getElementById("how").innerHTML = `<b>How the toy works.</b> The black 
   and is not shown here. Desktop and mobile add up because monthly active users counts profiles, and a desktop profile and a mobile
   profile are different profiles. Numbers are rounded to the nearest million on purpose.`;
 render();
+
+// Collapse the panel once it is pinned (its sentinel has scrolled out of view) and expand it again back at the top.
+// The sentinel sits above the panel, so the panel's own change in height cannot flip the state back and forth.
+new IntersectionObserver(([entry]) => {
+  const pinned = !entry.isIntersecting && entry.boundingClientRect.top < 0 && getComputedStyle(document.getElementById("stickyPanel")).position === "sticky";
+  document.getElementById("stickyPanel").classList.toggle("compact", pinned);
+}).observe(document.getElementById("stickySentinel"));
 </script>
 </body>
 </html>

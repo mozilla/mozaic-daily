@@ -9,7 +9,8 @@ pull in `raw_legacy_osxcountry_2026-10-09/`. Deployable as-is with `quick deploy
 to its centred 365-day mean, fitted with four yearly waves; desktop from Legacy since 2020, mobile from Glean since 2021). Because `S`
 repeats yearly, the slider is exactly the Dec-15-to-Dec-15 change. Sliders start at the rate that lands the cartoon on the pre-draft
 builds' 2027-12-15 values (desktop −4.0%/yr, mobile +12.5%/yr at the 0.5 step). The slider panel is sticky (stays at the top while the
-charts scroll; static below 800 px wide). Above each slider is a histogram of the real year-over-year change, read every two weeks
+charts scroll; static below 800 px wide) and collapses while pinned to just titles, rates, sliders and the big result numbers
+(histograms, source radios and captions return at the top of the page). Above each slider is a histogram of the real year-over-year change, read every two weeks
 over the past two years. Desktop has a radio button for the source (Brendan 2026-10-15): **Legacy** (default; 53 readings, median
 −4.5%), **Simulated Glean** (the Glean-equivalent build-5 input; median −4.3%), **Actual Glean** (11 readings since 2026-05-22 only,
 median −6.5%). Mobile: Glean (median +7.0%). A dotted line marks the pre-draft's expected Dec 15 2025 → Dec 15 2026 change on the bars' own basis: build 5 (simulated)
