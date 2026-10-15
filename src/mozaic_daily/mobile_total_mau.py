@@ -8,9 +8,12 @@ Pure functions; ``scripts/compose_mobile_total_mau.py`` does the I/O. The rules,
   first day). Nothing is estimated for history.
 * **Paid is a level, added after the model.** Forecast rows get the delivered paid plan (bridge + 2027). No Prophet interaction.
 * **Only Fenix and the world move.** Firefox iOS and the Focus apps carry no paid acquisition.
-* **The India/Indonesia cap excess** (organic removed from training as "treated as paid") is HELD FLAT at its last value in the
-  forecast: it is paid that marketing's plan does not count, and dropping it would open a ~0.9% hole at the seam in India.
-  ``policy='drop'`` gives the other reading.
+* **The India/Indonesia cap excess** ("inauthentic organic": organic removed from training because it outgrew the country's own iOS
+  as paid share climbed) is its own column, ``organic_inauthentic_<pop>``: the removed series over history, then HELD FLAT at its
+  last value through 2027 (Brendan, 2026-10-15: "keep it flat, but document that choice"). It is neither in our organic model nor
+  in marketing's plan (which counts Play-Store-attributed installs only); flat is the no-information choice, as for the desktop
+  Linux bot component. ``policy='drop'`` zeroes the forecast part (opens a ~0.9% hole at the seam in India). Total =
+  authentic organic + inauthentic organic + paid.
 * **Per country**: forecast paid is allocated by a fixed share vector (each country's share of measured paid over the last 28
   days); the cap excess goes to its own country.
 * **Bands**: organic and paid bands are each quoted as delivered; the total band treats them as independent — half-widths
@@ -25,8 +28,9 @@ import pandas as pd
 PAID_POPULATIONS = ("world", "fenix_android")      # the only populations paid lands in
 
 
-def cap_excess_forecast(cap: pd.DataFrame, training_end: pd.Timestamp, horizon_end: pd.Timestamp, policy: str = "hold_flat") -> pd.DataFrame:
-    """Date x country frame of the cap's removed MAU over the FORECAST days: last removed value held flat (or zero)."""
+def cap_excess_series(cap: pd.DataFrame, training_end: pd.Timestamp, horizon_end: pd.Timestamp, policy: str = "hold_flat") -> pd.DataFrame:
+    """Date x country frame of the cap's removed MAU ("inauthentic organic"): as removed over history (zero before the cap starts),
+    then the last value held flat (or zero) through ``horizon_end``."""
     if policy not in ("hold_flat", "drop"):
         raise ValueError(f"cap policy {policy!r}; use 'hold_flat' or 'drop'")
     cap = cap.copy()
@@ -36,7 +40,8 @@ def cap_excess_forecast(cap: pd.DataFrame, training_end: pd.Timestamp, horizon_e
         raise ValueError(f"cap series ends {wide.index.max().date()}, training end is {training_end.date()}")
     future = pd.date_range(training_end + pd.Timedelta(days=1), horizon_end, freq="D")
     last = wide.iloc[-1] if policy == "hold_flat" else wide.iloc[-1] * 0.0
-    out = pd.DataFrame([last.to_numpy()] * len(future), index=future, columns=wide.columns)
+    tail = pd.DataFrame([last.to_numpy()] * len(future), index=future, columns=wide.columns)
+    out = pd.concat([wide, tail]).sort_index()
     out.index.name = "date"
     return out
 
@@ -54,30 +59,33 @@ def check_plan_covers(plan: pd.DataFrame, training_end: pd.Timestamp, horizon_en
 
 def compose_populations(organic: pd.DataFrame, raw: pd.DataFrame, plan: pd.DataFrame, excess_world: pd.Series,
                         populations: list[str], training_end: pd.Timestamp) -> pd.DataFrame:
-    """Per population: organic_<p>, paid_<p>, total_<p>; plus paid_world_low_90 / high_90 on forecast rows.
+    """Per population: organic_<p>, organic_inauthentic_<p>, paid_<p>, total_<p>; plus paid_world_low_90 / high_90 on forecast rows.
 
     ``organic`` / ``raw`` are curves frames (index date, ``data_type`` + ``mau_<population>``) of the organic build and of the raw
-    actuals; ``plan`` is the paid parquet (date, paid_mau, paid_mau_low_90, paid_mau_high_90); ``excess_world`` the cap excess
-    summed over countries, forecast days only."""
+    actuals; ``plan`` is the paid parquet (date, paid_mau, paid_mau_low_90, paid_mau_high_90); ``excess_world`` the cap excess summed
+    over countries, history and forecast days (``cap_excess_series``). History: paid = raw − organic − inauthentic."""
     plan = check_plan_covers(plan, training_end, organic.index.max())
     out = pd.DataFrame({"data_type": organic["data_type"]}, index=organic.index)
     hist = organic.index <= training_end
-    fc_paid = (plan["paid_mau"] + excess_world.reindex(plan.index).fillna(0.0))
+    excess = excess_world.reindex(organic.index).fillna(0.0)
     for pop in populations:
         o = organic[f"mau_{pop}"].astype(float)
         if pop in PAID_POPULATIONS:
             r = raw[f"mau_{pop}"].astype(float).reindex(organic.index)
-            paid_hist = (r - o).where(hist)
+            inauth = excess.where(o.notna())
+            paid_hist = (r - o - inauth).where(hist)
             if (paid_hist.dropna() < -0.5).any():
-                raise ValueError(f"{pop}: organic above raw on {int((paid_hist < -0.5).sum())} history days")
-            p = paid_hist.fillna(fc_paid.reindex(organic.index)).where(o.notna())
+                raise ValueError(f"{pop}: organic + inauthentic above raw on {int((paid_hist < -0.5).sum())} history days")
+            p = paid_hist.fillna(plan["paid_mau"].reindex(organic.index)).where(o.notna())
         else:
+            inauth = pd.Series(0.0, index=organic.index).where(o.notna())
             p = pd.Series(0.0, index=organic.index).where(o.notna())
         out[f"organic_{pop}"] = o
+        out[f"organic_inauthentic_{pop}"] = inauth
         out[f"paid_{pop}"] = p
-        out[f"total_{pop}"] = o + p
-    out["paid_world_low_90"] = (plan["paid_mau_low_90"] + excess_world.reindex(plan.index).fillna(0.0)).reindex(organic.index)
-    out["paid_world_high_90"] = (plan["paid_mau_high_90"] + excess_world.reindex(plan.index).fillna(0.0)).reindex(organic.index)
+        out[f"total_{pop}"] = o + inauth + p
+    out["paid_world_low_90"] = plan["paid_mau_low_90"].reindex(organic.index)
+    out["paid_world_high_90"] = plan["paid_mau_high_90"].reindex(organic.index)
     out.index.name = "date"
     return out
 
@@ -90,6 +98,7 @@ def combine_bands(composed: pd.DataFrame, organic_low: pd.Series, organic_high: 
     p = out["paid_world"]
     p_lo_hw, p_hi_hw = p - out["paid_world_low_90"], out["paid_world_high_90"] - p
     out["organic_world_low_90"], out["organic_world_high_90"] = o_low, o_high
+    # the inauthentic column is a fixed level (held flat), so it widens nothing
     out["total_world_low_90"] = out["total_world"] - np.sqrt((o - o_low) ** 2 + p_lo_hw ** 2)
     out["total_world_high_90"] = out["total_world"] + np.sqrt((o_high - o) ** 2 + p_hi_hw ** 2)
     return out

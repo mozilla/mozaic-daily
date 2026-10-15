@@ -1,6 +1,6 @@
 {
   "produced_by": "scripts/compose_mobile_total_mau.py",
-  "written_at": "2026-10-15T11:49:42",
+  "written_at": "2026-10-15T11:58:01",
   "organic_parquet": "data-official/2027-glean-draft/mobile_organic_mau_2026-10-10/cps0.0065_thresh055_recent13_cpr0.87_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-10-10.gm-M.raw.parquet",
   "organic_sha1": "698379c99bc76ae7b5a0499b52e2177fadbef34e",
   "organic_model_config": {
@@ -154,24 +154,26 @@
   "cap_policy": "hold_flat",
   "organic_bands": "data-official/2027-glean-draft/mobile_organic_mau_2026-10-10/intervals/csv/mobile_organic_mau_daily_bands.csv",
   "rules": [
-    "history rows = raw actuals (paid shown = raw - organic)",
+    "history rows = raw actuals (paid shown = raw - authentic organic - inauthentic organic)",
     "forecast paid = delivered plan (bridge + 2027), a level, Fenix and world only",
-    "India + Indonesia cap excess hold_flat in the forecast",
-    "per-country forecast paid by fixed trailing-28d measured-paid share",
+    "India + Indonesia cap excess = organic_inauthentic_ column, hold_flat in the forecast (Brendan 2026-10-15: keep it flat, document the choice; it is in neither our model nor marketing's plan)",
+    "per-country forecast paid by fixed trailing-28d measured-paid share; the inauthentic column stays in its own country",
     "total 90% band = organic and paid half-widths in quadrature (independence assumed); component bands as delivered"
   ],
   "numbers": {
     "world": {
       "2026-12-15": {
         "organic": 48049658.09549089,
-        "paid": 10138530.784712,
+        "organic_inauthentic": 440081.0,
+        "paid": 9698449.784712,
         "total": 58188188.88020289,
         "total_low_90": 56142570.173083864,
         "total_high_90": 60449434.67447334
       },
       "2027-12-15": {
         "organic": 51545439.29270135,
-        "paid": 14781884.684818558,
+        "organic_inauthentic": 440081.0,
+        "paid": 14341803.684818558,
         "total": 66327323.97751991,
         "total_low_90": 61554555.063778386,
         "total_high_90": 71576697.28664032
@@ -180,23 +182,29 @@
     "fenix": {
       "2026-12-15": {
         "organic": 33618278.48350934,
-        "paid": 10138530.784712,
+        "organic_inauthentic": 440081.0,
+        "paid": 9698449.784712,
         "total": 43756809.26822134
       },
       "2027-12-15": {
         "organic": 35717368.36483799,
-        "paid": 14781884.684818558,
+        "organic_inauthentic": 440081.0,
+        "paid": 14341803.684818558,
         "total": 50499253.04965655
       }
     },
     "last_actual_total_world": 56407844.0,
-    "last_actual_paid_world": 9420943.0,
+    "last_actual_paid_world": 8980862.0,
     "seam_step_7d": {
       "total": -0.014163226759302705,
       "organic": -0.015356755159889879,
-      "paid": -0.008208268690691467
+      "paid": -0.00599581500140034
     },
     "cap_excess_held_flat_world": 440081.0,
+    "cap_excess_by_country_forecast": {
+      "ID": 43696.0,
+      "IN": 396385.0
+    },
     "dec_to_dec_total": 0.1398760685621916
   },
   "seam": "2026-10-10",

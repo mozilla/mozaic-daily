@@ -639,11 +639,10 @@ on 2027-12-15 vs flat 13,327,527). Bridge 2026-10-10..12-31 = the same run's wee
 week 53 and the upper bound from the site's embedded data, cross-checked against BQ). <code>scripts/pull_paid_mau_2027.py</code> → <code>paid_mau_2027/</code>.
 Organic band: <code>compute_forecast_intervals.py</code> on the chosen build's pickle (90% ±4.6M on the 28d mean at 2027-12-15; Prophet predictive, uncalibrated).
 Composition <code>scripts/compose_mobile_total_mau.py</code> (<code>mozaic_daily.mobile_total_mau</code>) → <code>mobile_total_mau_2026-10-10/</code>: history rows = raw actuals
-exactly (asserted); forecast paid = the plan as a level on Fenix and world; the IN + ID cap excess (440,081) held flat in the forecast (it is paid the plan does not count; dropping it
-would open a 0.9% hole in India); per country by trailing-28d measured-paid share; total band = organic and paid half-widths in quadrature. <b>World TOTAL mobile MAU 2027-12-15 =
-66,327,324 [61.55M, 71.58M] = organic 51,545,439 + paid 14,781,885</b>; 2026-12-15 58,188,189; seam −1.4%; Dec→Dec +14.0%, mostly the marketing plan. Handoff
+exactly (asserted); forecast paid = the plan as a level on Fenix and world; the IN + ID cap excess carried as its own <b>inauthentic organic</b> column and <b>held flat</b> at 440,081 (Brendan: "keep it flat, but document that choice" — it is in neither our model nor the plan; scaling it with the paid plan or dropping it were the alternatives, recorded in <code>IOS_RATE_CAP.md</code>); per country by trailing-28d measured-paid share; total band = organic and paid half-widths in quadrature. <b>World TOTAL mobile MAU 2027-12-15 =
+66,327,324 [61.55M, 71.58M] = authentic organic 51,545,439 + inauthentic organic 440,081 + paid 14,341,804</b>; 2026-12-15 58,188,189; seam −1.4%; Dec→Dec +14.0%, mostly the marketing plan. Handoff
 <code>handoff/glean2027_mobile_mau_handoff/</code> (+ zip) and <code>handoff/glean2027_mau_desktop_and_mobile.csv</code> (desktop total + mobile total / organic / paid) from
-<code>render_mobile_total_mau_handoff.py</code>; the organic-only package moved to <code>handoff/_superseded_organic_only_2026-10-15/</code>. LOCK.md mobile rows updated.</p>
+<code>render_mobile_total_mau_handoff.py</code> (index.html, README, and <code>HANDOFF.md</code> — the briefing for the recipient's AI agent, mirroring the desktop package Brendan is handing to his boss); the organic-only package moved to <code>handoff/_superseded_organic_only_2026-10-15/</code>. LOCK.md mobile rows updated.</p>
 
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1

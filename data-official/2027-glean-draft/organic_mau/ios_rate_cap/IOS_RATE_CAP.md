@@ -43,12 +43,29 @@ slope that is partly spend.
 Why iOS as the yardstick: it is the same country, the same months and the same market, and it carries no paid acquisition
 at all, so it removes the "marketing spends where mobile grows" explanation.
 
+## In the forecast: the excess is carried FLAT (Brendan, 2026-10-15: "keep it flat, but document that choice")
+
+The removed series is the **inauthentic organic** component. It is in neither of the two forecasts that make up the total: our organic
+model trained on the capped (authentic) series, and the marketing DS plan counts only Play-Store-attributed installs. So the composition
+(`scripts/compose_mobile_total_mau.py`) carries it as its own column, `organic_inauthentic_<population>`: the removed series over history,
+then the last value (India 396,385, Indonesia 43,696; 440,081 together) **held flat** through 2027-12-31, in its own country. Total =
+authentic organic + inauthentic organic + paid, and history rows still equal the raw actuals exactly.
+
+Why flat: there is no model for it and no information about how it will move; flat is the same no-information choice as the desktop
+Linux bot component. The alternatives considered on 2026-10-15 were (a) scale it with each country's paid plan (it is ~14% of India's
+measured paid, ~6% of Indonesia's; would take India's from 396K to ~640K by December 2027 and the world total up ~0.3M), on the
+reading that it is campaign installs arriving outside the Play Store; (b) drop it (`--cap-policy drop`), which opens a 0.9% hole at the
+seam in India. Either is a recompose into a new directory, no model run.
+
 ## What carries it
 
 | build | cap | notes |
 |---|---|---|
 | `probes_mobile_mau/<slug>/` (round 1, six probes) | **off** | uncorrected organic; the comparison beside the corrected runs |
 | `probes_mobile_mau/round2_ioscap/<slug>/` (round 2, six probes) | **on** | sidecar `extra.ios_rate_cap` + `parameters.json.ios_rate_cap` name the file |
+| `probes_mobile_mau/round3_ioscap/<slug>/` (round 3, eleven probes) | **on** | same; `cps0.0065_cpr0.87` is the chosen organic build |
+| `mobile_organic_mau_2026-10-10/` (the chosen organic build, copy) | **on** | the organic half of the deliverable |
+| `mobile_total_mau_2026-10-10/` + `handoff/glean2027_mobile_mau_handoff/` | **on**, excess held flat | the deliverable; the `organic_inauthentic_` columns are this correction's removed series |
 
 Every build that carries it says so in two places: `parameters.json` → `"ios_rate_cap": "<path>"` and the parquet sidecar
 `extra.ios_rate_cap` (countries, from date, removed per country on the last day, cap file). A build whose sidecar has

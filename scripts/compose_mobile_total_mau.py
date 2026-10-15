@@ -7,11 +7,11 @@ Brendan, 2026-10-15: "the handoff for the mobile forecast needs to include both 
     organic build      mobile_organic_mau_2026-10-10/<slug>/mozaic_daily_forecast.2026-10-10.gm-M.raw.parquet (+ its curves csv)
     raw actuals        raw_glean_mobile_countryxapp_2026-10-09/mozaic_parts.raw.glean.mobile.MAU.parquet (history = real actuals)
     paid plan          paid_mau_2027/paid_mau_2027.<scenario>.pull<date>.parquet (bridge + 2027, 90% band) + paid_country_shares csv
-    cap                organic_mau/ios_rate_cap/ios_rate_cap.*.parquet (the IN + ID excess, held flat in the forecast)
+    cap                organic_mau/ios_rate_cap/ios_rate_cap.*.parquet (the IN + ID excess = "inauthentic organic", its own column; held flat in the forecast, Brendan 2026-10-15)
     organic band       mobile_organic_mau_2026-10-10/intervals/csv/mobile_organic_mau_daily_bands.csv (90% daily, world)
 
 Writes ``data-official/2027-glean-draft/mobile_total_mau_2026-10-10/``:
-    csv/mobile2027_total_curves.csv            date, data_type, organic_/paid_/total_<population>, the three 90% world bands
+    csv/mobile2027_total_curves.csv            date, data_type, organic_/organic_inauthentic_/paid_/total_<population>, the three 90% world bands
     csv/mobile2027_total_canonical_curves.csv  the total in the canonical ``mau_<population>`` layout (for plot_glean_history_canonical.py)
     csv/mobile2027_total_by_country.csv        date, data_type, total per country (all apps) + world
     csv/mobile2027_total_dec15_summary.csv     organic / paid / total per population on 2026-12-15 and 2027-12-15, with bands
@@ -46,7 +46,7 @@ for sub in ("src", "scripts"):
     if str(repo_root / sub) not in sys.path:
         sys.path.insert(0, str(repo_root / sub))
 from mozaic_daily.adjustments import load_forecast  # noqa: E402
-from mozaic_daily.mobile_total_mau import cap_excess_forecast, combine_bands, compose_by_country, compose_populations  # noqa: E402
+from mozaic_daily.mobile_total_mau import cap_excess_series, combine_bands, compose_by_country, compose_populations  # noqa: E402
 from export_mobile_mau_curves import APP_NAME_FOR, POPULATIONS, build_curves  # noqa: E402
 
 DRAFT = repo_root / "data-official/2027-glean-draft"
@@ -87,8 +87,9 @@ def plot_components(c: pd.DataFrame, seam: pd.Timestamp, out: Path) -> None:
     fig, ax = plt.subplots(figsize=(15, 7))
     win = c.loc["2025-10-01":]
     hist, fc = win[win.index < seam], win[win.index >= seam]
-    for col, color, label in (("organic_world", "#1f77b4", "organic (our model)"), ("paid_world", "#d62728", "paid (marketing plan; history = measured)"),
-                              ("total_world", "#222", "TOTAL = organic + paid")):
+    for col, color, label in (("organic_world", "#1f77b4", "authentic organic (our model)"), ("paid_world", "#d62728", "paid (marketing plan; history = measured)"),
+                              ("organic_inauthentic_world", "#9467bd", "inauthentic organic (IN + ID cap excess; held flat)"),
+                              ("total_world", "#222", "TOTAL = authentic organic + inauthentic organic + paid")):
         ax.plot(hist[col], color=color, lw=1.6, label=label)
         ax.plot(fc[col], color=color, lw=1.6, ls="--")
     for col, color in (("organic_world", "#1f77b4"), ("paid_world", "#d62728"), ("total_world", "#222")):
@@ -149,7 +150,7 @@ def main() -> None:
     shares_path = args.shares or sorted(DRAFT.glob("paid_mau_2027/paid_country_shares.*.csv"))[-1]
     shares = pd.read_csv(shares_path).set_index("country")["paid_share"]
     cap_path = args.cap or sorted(DRAFT.glob("organic_mau/ios_rate_cap/ios_rate_cap.*.parquet"))[-1]
-    excess_bc = cap_excess_forecast(pd.read_parquet(cap_path), training_end, organic.index.max(), args.cap_policy)
+    excess_bc = cap_excess_series(pd.read_parquet(cap_path), training_end, organic.index.max(), args.cap_policy)
     bands = pd.read_csv(args.organic_build / "intervals/csv/mobile_organic_mau_daily_bands.csv", parse_dates=["date"]).set_index("date")
     # the band file's median must be the organic point forecast (the interval tool asserts it against the parquet; re-check here)
     med = bands["median"].dropna(); dev = (med - organic["mau_world"].reindex(med.index)).abs().max()
@@ -183,7 +184,7 @@ def main() -> None:
     for on in HEADLINE_DATES:
         d = pd.Timestamp(on); r = composed.loc[d]
         for pop in POPULATIONS:
-            rows.append({"date": on, "population": pop, "organic": round(r[f"organic_{pop}"]), "paid": round(r[f"paid_{pop}"]), "total": round(r[f"total_{pop}"]),
+            rows.append({"date": on, "population": pop, "organic": round(r[f"organic_{pop}"]), "organic_inauthentic": round(r[f"organic_inauthentic_{pop}"]), "paid": round(r[f"paid_{pop}"]), "total": round(r[f"total_{pop}"]),
                          "organic_low_90": round(r["organic_world_low_90"]) if pop == "world" else None, "organic_high_90": round(r["organic_world_high_90"]) if pop == "world" else None,
                          "paid_low_90": round(r["paid_world_low_90"]) if pop == "world" else None, "paid_high_90": round(r["paid_world_high_90"]) if pop == "world" else None,
                          "total_low_90": round(r["total_world_low_90"]) if pop == "world" else None, "total_high_90": round(r["total_world_high_90"]) if pop == "world" else None})
@@ -194,11 +195,11 @@ def main() -> None:
     w = lambda d, col: float(composed.loc[pd.Timestamp(d), col])
     step = lambda col: composed.loc[seam:seam + pd.Timedelta(days=6), col].mean() / composed.loc[seam - pd.Timedelta(days=7):training_end, col].mean() - 1
     numbers = {
-        "world": {on: {k: w(on, f"{k}_world") for k in ("organic", "paid", "total")} | {"total_low_90": w(on, "total_world_low_90"), "total_high_90": w(on, "total_world_high_90")} for on in HEADLINE_DATES},
-        "fenix": {on: {k: w(on, f"{k}_fenix_android") for k in ("organic", "paid", "total")} for on in HEADLINE_DATES},
+        "world": {on: {k: w(on, f"{k}_world") for k in ("organic", "organic_inauthentic", "paid", "total")} | {"total_low_90": w(on, "total_world_low_90"), "total_high_90": w(on, "total_world_high_90")} for on in HEADLINE_DATES},
+        "fenix": {on: {k: w(on, f"{k}_fenix_android") for k in ("organic", "organic_inauthentic", "paid", "total")} for on in HEADLINE_DATES},
         "last_actual_total_world": w(training_end, "total_world"), "last_actual_paid_world": w(training_end, "paid_world"),
         "seam_step_7d": {"total": float(step("total_world")), "organic": float(step("organic_world")), "paid": float(step("paid_world"))},
-        "cap_excess_held_flat_world": float(excess_bc.sum(axis=1).iloc[0]) if args.cap_policy == "hold_flat" else 0.0,
+        "cap_excess_held_flat_world": float(excess_bc.sum(axis=1).iloc[-1]), "cap_excess_by_country_forecast": {c: float(excess_bc[c].iloc[-1]) for c in excess_bc.columns},
         "dec_to_dec_total": w("2027-12-15", "total_world") / w("2026-12-15", "total_world") - 1,
     }
     meta_out = {
@@ -209,8 +210,9 @@ def main() -> None:
         "paid_plan": str(paid_path.relative_to(repo_root)), "paid_sha1": sha1(paid_path), "paid_meta": json.loads(Path(str(paid_path).replace(".parquet", ".meta.json")).read_text()),
         "country_shares": str(shares_path.relative_to(repo_root)), "cap_file": str(cap_path.relative_to(repo_root)), "cap_policy": args.cap_policy,
         "organic_bands": str((args.organic_build / "intervals/csv/mobile_organic_mau_daily_bands.csv").relative_to(repo_root)),
-        "rules": ["history rows = raw actuals (paid shown = raw - organic)", "forecast paid = delivered plan (bridge + 2027), a level, Fenix and world only",
-                  f"India + Indonesia cap excess {args.cap_policy} in the forecast", "per-country forecast paid by fixed trailing-28d measured-paid share",
+        "rules": ["history rows = raw actuals (paid shown = raw - authentic organic - inauthentic organic)", "forecast paid = delivered plan (bridge + 2027), a level, Fenix and world only",
+                  f"India + Indonesia cap excess = organic_inauthentic_ column, {args.cap_policy} in the forecast (Brendan 2026-10-15: keep it flat, document the choice; it is in neither our model nor marketing's plan)",
+                  "per-country forecast paid by fixed trailing-28d measured-paid share; the inauthentic column stays in its own country",
                   "total 90% band = organic and paid half-widths in quadrature (independence assumed); component bands as delivered"],
         "numbers": numbers, "seam": str(seam.date()), "training_end": str(training_end.date()),
     }
@@ -219,7 +221,7 @@ def main() -> None:
     print(f"history total == raw actuals: OK ({int(hist.sum())} days, {len(POPULATIONS)} populations)")
     for on in HEADLINE_DATES:
         x = n["world"][on]
-        print(f"{on}: organic {x['organic']:,.0f} + paid {x['paid']:,.0f} = TOTAL {x['total']:,.0f}  [90% {x['total_low_90']:,.0f}, {x['total_high_90']:,.0f}]")
+        print(f"{on}: organic {x['organic']:,.0f} + inauthentic {x['organic_inauthentic']:,.0f} + paid {x['paid']:,.0f} = TOTAL {x['total']:,.0f}  [90% {x['total_low_90']:,.0f}, {x['total_high_90']:,.0f}]")
     print(f"last actual total {n['last_actual_total_world']:,.0f} (paid {n['last_actual_paid_world']:,.0f}); seam step total {n['seam_step_7d']['total']:+.2%} "
           f"(organic {n['seam_step_7d']['organic']:+.2%}, paid {n['seam_step_7d']['paid']:+.2%}); Dec->Dec total {n['dec_to_dec_total']:+.1%}; cap excess held flat {n['cap_excess_held_flat_world']:,.0f}")
     print(f"wrote {out}/csv/, plots/, mobile2027_total.meta.json")
