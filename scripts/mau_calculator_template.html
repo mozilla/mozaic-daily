@@ -189,7 +189,6 @@ function drawLine(svg, points, color, width, salt, dashed) {
   const attrs = { d: sketchPath(points, salt), stroke: color, "stroke-width": width, fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" };
   if (dashed) attrs["stroke-dasharray"] = "10 7";
   svg.appendChild(el("path", attrs));
-  svg.appendChild(el("path", Object.assign({}, attrs, { d: sketchPath(points, salt + 11), "stroke-width": width * 0.45, opacity: 0.5 })));
 }
 
 function drawDot(svg, scales, value, color) {
