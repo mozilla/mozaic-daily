@@ -5,14 +5,17 @@
 Audience: a coworker who wants to use the forecast and see what it looks like — not how it was built. Current
 state only: no build history, no seam or China discussion. One package per metric (``--metric mau`` or ``dau``):
 
-    <out>/glean2027_<metric>_handoff/
+    <out>/glean2027_desktop_<metric>_handoff/
         index.html                       the page (plots embedded, PRE-DRAFT stamp, freshness banner)
-        glean2027_<metric>_forecast.csv  date, data_type, world + per-OS values (MAU raw daily / DAU 28-day MA)
-        glean2027_<metric>_by_country.csv  date, data_type, one column per country (all OS), same statistic
-        plots/*.png                      the canonical plots for this metric
+        glean2027_desktop_<metric>_forecast.csv  date, data_type, desktop_world + per-OS values (MAU raw daily / DAU 28-day MA)
+        glean2027_desktop_<metric>_by_country.csv  date, data_type, one column per country (all OS), same statistic
+        plots/desktop_*.png              the canonical plots for this metric
         README.txt                       what the files are and how to read them
         HANDOFF.md                       briefing for the recipient's AI agent (pre-draft caveats first, numbers, file guide)
-    <out>/glean2027_<metric>_handoff.zip
+    <out>/glean2027_desktop_<metric>_handoff.zip
+
+Every shipped name says "desktop" (package, zip, CSVs, plots, the `desktop_world` column) so nothing in it can be read as
+all-Firefox or mobile once it leaves this directory.
 
 Usage:
     python scripts/render_glean_history_handoff.py --metric mau
@@ -113,6 +116,10 @@ FLAVORS = {
     },
 }
 OS_ORDER = ["world", "windows", "mac", "linux"]
+# Shipped names: the package leaves the repo, so every file and the total column carry "desktop".
+PACKAGE_PREFIX = "glean2027_desktop"
+WORLD_COLUMN = "desktop_world"
+PLOT_FILE_PREFIX = "desktop_"
 METRIC = {
     "mau": dict(name="MAU", long="monthly active users", column="mau", curve_prefix="mau", stat="raw daily value of the rolling 28-day MAU",
                 stat_short="daily MAU", plot_prefix="mau", headline=True),
@@ -133,20 +140,20 @@ def fmt(v) -> str:
 
 def build_csvs(df: pd.DataFrame, curves: pd.DataFrame, m: dict, out: Path, metric: str) -> tuple[Path, Path]:
     cols = {f"{m['curve_prefix']}_{o}": o for o in OS_ORDER}
-    forecast = curves[["data_type", *cols]].rename(columns=cols)
+    forecast = curves[["data_type", *cols]].rename(columns=cols).rename(columns={"world": WORLD_COLUMN})
     forecast.index.name = "date"
-    p1 = out / f"glean2027_{metric}_forecast.csv"
+    p1 = out / f"{PACKAGE_PREFIX}_{metric}_forecast.csv"
     forecast.to_csv(p1, float_format="%.0f")
 
     allos = df[df["segment"] == json.dumps({"os": "ALL"})]
     by_country = allos.pivot_table(index="target_date", columns="country", values=m["column"])
     if metric == "dau":
         by_country = by_country.rolling(28).mean()
-    by_country = by_country.rename(columns={"ALL": "world"})
+    by_country = by_country.rename(columns={"ALL": WORLD_COLUMN})
     by_country.insert(0, "data_type", curves["data_type"].reindex(by_country.index))
     by_country.index.name = "date"
     by_country = by_country.loc[pd.Timestamp("2024-01-01"):]
-    p2 = out / f"glean2027_{metric}_by_country.csv"
+    p2 = out / f"{PACKAGE_PREFIX}_{metric}_by_country.csv"
     by_country.to_csv(p2, float_format="%.0f")
     if metric == "dau":
         # the unsmoothed daily series as well, world + per OS
@@ -154,12 +161,12 @@ def build_csvs(df: pd.DataFrame, curves: pd.DataFrame, m: dict, out: Path, metri
         for os_name in OS_ORDER:
             seg = json.dumps({"os": "ALL" if os_name == "world" else os_name})
             w = df[(df["country"] == "ALL") & (df["segment"] == seg)].set_index("target_date").sort_index()
-            daily[os_name] = w["dau"]
+            daily[WORLD_COLUMN if os_name == "world" else os_name] = w["dau"]
             daily_type = w["data_type"]
         daily = pd.DataFrame(daily)
         daily.insert(0, "data_type", daily_type)
         daily.index.name = "date"
-        daily.to_csv(out / "glean2027_dau_daily_unsmoothed.csv", float_format="%.0f")
+        daily.to_csv(out / f"{PACKAGE_PREFIX}_dau_daily_unsmoothed.csv", float_format="%.0f")
     return p1, p2
 
 
@@ -213,15 +220,15 @@ a lower bound on the real uncertainty.
 
 | file | contents |
 |---|---|
-| `{csv1.name}` | one row per day, {flavor['history_start']} → 2027-12-31: `date`, `data_type` (`training` = actual history, `forecast`), `world`, `windows`, `mac`, `linux`. Whole people; `world` = sum of the three OS |
-| `{csv2.name}` | the same statistic per country (all OS), 2024-01-01 → 2027-12-31, plus `world` |
+| `{csv1.name}` | one row per day, {flavor['history_start']} → 2027-12-31: `date`, `data_type` (`training` = actual history, `forecast`), `desktop_world`, `windows`, `mac`, `linux`. Whole people; `desktop_world` = Windows + Mac + Linux (no mobile) |
+| `{csv2.name}` | the same statistic per country (all OS), 2024-01-01 → 2027-12-31, plus `desktop_world` |
 | `plots/*.png` | world and per-OS charts for 2026 and 2027 (grey = prior year, black = history, green = forecast, dotted red = Dec 15) |
 | `index.html` | the human-readable page (same numbers, charts embedded) |
 
 How to read the CSVs:
 - History ends {data_end}; filter on `data_type`, not on a date.
 - {'MAU is already a rolling 28-day quantity: use the daily value as is and do not smooth it again.' if metric == 'mau' else 'DAU columns are 28-day trailing means.'}
-- Desktop only. No adjustments for launches, marketing, or headwinds are applied; the monthly forecast carries those, this one does not.
+- **Desktop only** (Windows + Mac + Linux; no mobile anywhere in this package). No adjustments for launches, marketing, or headwinds are applied; the monthly forecast carries those, this one does not.
 
 ## What not to do
 
@@ -256,14 +263,14 @@ def main():
     data_end = curves[curves["data_type"] == "training"].index.max().date()
     now = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
 
-    pkg = args.out_dir / f"glean2027_{args.metric}_handoff"
+    pkg = args.out_dir / f"{PACKAGE_PREFIX}_{args.metric}_handoff"
     if pkg.exists():
         shutil.rmtree(pkg)
     (pkg / "plots").mkdir(parents=True)
     csv1, csv2 = build_csvs(df, curves, m, pkg, args.metric)
     plot_names = [f"{m['plot_prefix']}_world_2027.png", f"{m['plot_prefix']}_world_2026.png", f"{m['plot_prefix']}_by_os_2027.png"]
     for name in plot_names + [f"{m['plot_prefix']}_{o}_{y}.png" for o in ("windows", "mac", "linux") for y in (2026, 2027)]:
-        shutil.copy(DRAFT / flavor["plots_dir"] / name, pkg / "plots" / name)
+        shutil.copy(DRAFT / flavor["plots_dir"] / name, pkg / "plots" / f"{PLOT_FILE_PREFIX}{name}")
 
     # headline table
     rows = ""
@@ -279,7 +286,7 @@ def main():
     # by-country table at the two dates
     bc = pd.read_csv(csv2, parse_dates=["date"]).set_index("date")
     country_rows = ""
-    for c in [c for c in bc.columns if c not in ("data_type", "world")]:
+    for c in [c for c in bc.columns if c not in ("data_type", WORLD_COLUMN)]:
         v26, v27 = bc.loc["2026-12-15", c], bc.loc["2027-12-15", c]
         country_rows += f"<tr><td>{c}</td><td class=num>{fmt(v26)}</td><td class=num>{fmt(v27)}</td><td class=num>{v27 / v26 - 1:+.1%}</td></tr>"
 
@@ -306,7 +313,7 @@ No head- or tailwinds are applied: this is the model's view of the history, noth
 <div class="callout"><b>Pre-draft.</b> {flavor['predraft']}</div>
 
 <div class="callout"><b>Data in this package (the forecast itself):</b> <code>{csv1.name}</code> — every day from {flavor['history_start']} to 2027-12-31, history and forecast,
-world and per OS; <code>{csv2.name}</code> — the same per country; {'<code>glean2027_dau_daily_unsmoothed.csv</code> — the raw daily DAU behind the 28-day mean; ' if args.metric == 'dau' else ''}<code>plots/</code> — the charts. Details in section 4.</div>
+world and per OS; <code>{csv2.name}</code> — the same per country; {'<code>glean2027_desktop_dau_daily_unsmoothed.csv</code> — the raw daily DAU behind the 28-day mean; ' if args.metric == 'dau' else ''}<code>plots/</code> — the charts. Details in section 4.</div>
 
 <h2>1. The numbers</h2>
 <table><tr><th></th><th class=num>2026-12-15</th><th class=num>2027-12-15</th><th class=num>Dec → Dec</th></tr>{rows}</table>
@@ -316,9 +323,9 @@ world and per OS; <code>{csv2.name}</code> — the same per country; {'<code>gle
 
 <h2>2. What it looks like</h2>
 <p>Grey: the previous year on the same calendar, for shape. Black: history. Green: the forecast. Dotted red: December 15.</p>
-{img(pkg / "plots" / plot_names[0])}
-{img(pkg / "plots" / plot_names[1])}
-{img(pkg / "plots" / plot_names[2])}
+{img(pkg / "plots" / (PLOT_FILE_PREFIX + plot_names[0]))}
+{img(pkg / "plots" / (PLOT_FILE_PREFIX + plot_names[1]))}
+{img(pkg / "plots" / (PLOT_FILE_PREFIX + plot_names[2]))}
 
 <h2>3. By country</h2>
 <p>{m['stat_short'].capitalize()}, all OS, 15 named markets plus the rest of the world (ROW). Full daily series in <code>{csv2.name}</code>.</p>
@@ -327,11 +334,11 @@ world and per OS; <code>{csv2.name}</code> — the same per country; {'<code>gle
 <h2>4. How to use the files</h2>
 <ul>
 <li><code>{csv1.name}</code> — one row per day from {flavor['history_start']} to 2027-12-31: <code>date</code>, <code>data_type</code> (<code>training</code> = history, <code>forecast</code>),
-then <code>world</code>, <code>windows</code>, <code>mac</code>, <code>linux</code>. Values are the <b>{m['stat']}</b>, whole people. The world is the sum of the three OS.</li>
-<li><code>{csv2.name}</code> — the same statistic per country (all OS) from 2024-01-01, plus <code>world</code>.</li>
+then <code>desktop_world</code>, <code>windows</code>, <code>mac</code>, <code>linux</code>. Values are the <b>{m['stat']}</b>, whole people. <code>desktop_world</code> is the sum of the three desktop OS; there is no mobile in it.</li>
+<li><code>{csv2.name}</code> — the same statistic per country (all OS) from 2024-01-01, plus <code>desktop_world</code>.</li>
 <li><code>plots/</code> — the charts above and one per OS per year.</li>
 <li>Read the 2027-12-15 row for the headline; read <code>data_type</code> to know where history ends ({data_end}) and the forecast begins.</li>
-<li>{'MAU is already a 28-day quantity, so take the daily value as is; do not smooth it again.' if args.metric == 'mau' else 'The DAU columns are 28-day trailing means; <code>glean2027_dau_daily_unsmoothed.csv</code> has the raw daily values (world and per OS) if you need them.'}</li>
+<li>{'MAU is already a 28-day quantity, so take the daily value as is; do not smooth it again.' if args.metric == 'mau' else 'The DAU columns are 28-day trailing means; <code>glean2027_desktop_dau_daily_unsmoothed.csv</code> has the raw daily values (world and per OS) if you need them.'}</li>
 </ul>
 
 <h2>5. What is and is not in it</h2>
@@ -351,7 +358,7 @@ Open index.html. It explains the numbers, shows the charts, and describes the tw
 Using an AI agent? Point it at HANDOFF.md first.
   {csv1.name}     daily series {flavor['history_start']}..2027-12-31: date, data_type, world, windows, mac, linux ({m['stat']})
   {csv2.name}  the same statistic per country (all OS) from 2024-01-01
-{'  glean2027_dau_daily_unsmoothed.csv  raw daily DAU, world and per OS, 2020-01-01..2027-12-31' if args.metric == 'dau' else ''}
+{'  glean2027_desktop_dau_daily_unsmoothed.csv  raw daily DAU, world and per OS, 2020-01-01..2027-12-31' if args.metric == 'dau' else ''}
   plots/                           the charts (PNG)
 
 Headline: world {m['name']} on 2027-12-15 = {fmt(world27)} ({m['stat']}). History ends {data_end}; rows after that are forecast.
@@ -360,7 +367,7 @@ Source: mozaic-daily branch glean-2027-forecast @ {commit}, build {parquet.paren
 """)
     write_agent_handoff(pkg, title=title, now=now, m=m, flavor=flavor, metric=args.metric, summary=summary, bt_row=bt_row,
                         csv1=csv1, csv2=csv2, data_end=data_end, commit=commit, build=parquet.parent.parent.name)
-    zip_path = shutil.make_archive(str(args.out_dir / f"glean2027_{args.metric}_handoff"), "zip", root_dir=args.out_dir, base_dir=pkg.name)
+    zip_path = shutil.make_archive(str(args.out_dir / f"{PACKAGE_PREFIX}_{args.metric}_handoff"), "zip", root_dir=args.out_dir, base_dir=pkg.name)
     print(f"page  {pkg / 'index.html'}\nzip   {zip_path} ({Path(zip_path).stat().st_size / 1e6:.1f} MB)")
 
 

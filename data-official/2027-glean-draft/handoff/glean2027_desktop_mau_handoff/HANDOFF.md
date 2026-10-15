@@ -1,6 +1,6 @@
 # HANDOFF — Firefox Desktop MAU forecast through 2027 (PRE-DRAFT)
 
-Generated 2026-10-15 09:49 PDT by `scripts/render_glean_history_handoff.py` (mozaic-daily `glean-2027-forecast` @ `32014b8`, build `comparison_glean_real_mau_additive_b_2026-10-14`). Data as of 2026-10-09.
+Generated 2026-10-15 09:51 PDT by `scripts/render_glean_history_handoff.py` (mozaic-daily `glean-2027-forecast` @ `b026cd3`, build `comparison_glean_real_mau_additive_b_2026-10-14`). Data as of 2026-10-09.
 Owner: Brendan Wells (brwells@mozilla.com). This file briefs an AI agent working with this package; `index.html` is the human version.
 
 ## Read this first: this is a PRE-DRAFT, and a very preliminary one
@@ -46,15 +46,15 @@ a lower bound on the real uncertainty.
 
 | file | contents |
 |---|---|
-| `glean2027_mau_forecast.csv` | one row per day, 2025-05-22 → 2027-12-31: `date`, `data_type` (`training` = actual history, `forecast`), `world`, `windows`, `mac`, `linux`. Whole people; `world` = sum of the three OS |
-| `glean2027_mau_by_country.csv` | the same statistic per country (all OS), 2024-01-01 → 2027-12-31, plus `world` |
+| `glean2027_desktop_mau_forecast.csv` | one row per day, 2025-05-22 → 2027-12-31: `date`, `data_type` (`training` = actual history, `forecast`), `desktop_world`, `windows`, `mac`, `linux`. Whole people; `desktop_world` = Windows + Mac + Linux (no mobile) |
+| `glean2027_desktop_mau_by_country.csv` | the same statistic per country (all OS), 2024-01-01 → 2027-12-31, plus `desktop_world` |
 | `plots/*.png` | world and per-OS charts for 2026 and 2027 (grey = prior year, black = history, green = forecast, dotted red = Dec 15) |
 | `index.html` | the human-readable page (same numbers, charts embedded) |
 
 How to read the CSVs:
 - History ends 2026-10-09; filter on `data_type`, not on a date.
 - MAU is already a rolling 28-day quantity: use the daily value as is and do not smooth it again.
-- Desktop only. No adjustments for launches, marketing, or headwinds are applied; the monthly forecast carries those, this one does not.
+- **Desktop only** (Windows + Mac + Linux; no mobile anywhere in this package). No adjustments for launches, marketing, or headwinds are applied; the monthly forecast carries those, this one does not.
 
 ## What not to do
 

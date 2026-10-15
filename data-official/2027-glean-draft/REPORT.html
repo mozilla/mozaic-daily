@@ -11,7 +11,7 @@ figure{margin:16px 0} figure img{max-width:100%;border:1px solid #d9d9d9} figcap
 .wm{position:fixed;top:40%;left:4%;font-size:150px;color:rgba(106,27,154,.10);transform:rotate(-20deg);pointer-events:none;z-index:0}
 </style></head><body>
 <div class="wm">PRE-DRAFT</div>
-<div class="banner"><span><b>Generated:</b> 2026-10-14 22:54 PDT</span><span><b>Source:</b> <code>scripts/render_glean_real_report.py</code> on <code>comparison_glean_real_mau_additive_b_2026-10-14</code>, mozaic-daily <code>d47d2bd</code>, branch glean-2027-forecast</span><span><b>Data as of:</b> 2026-10-09 (real Glean, from 2025-05-22)</span><span><b>Status:</b> PRE-DRAFT — the headline build since 2026-10-14 (<code>LOCK.md</code>); not for circulation</span></div>
+<div class="banner"><span><b>Generated:</b> 2026-10-15 09:51 PDT</span><span><b>Source:</b> <code>scripts/render_glean_real_report.py</code> on <code>comparison_glean_real_mau_additive_b_2026-10-14</code>, mozaic-daily <code>b026cd3</code>, branch glean-2027-forecast</span><span><b>Data as of:</b> 2026-10-09 (real Glean, from 2025-05-22)</span><span><b>Status:</b> PRE-DRAFT — the headline build since 2026-10-14 (<code>LOCK.md</code>); not for circulation</span></div>
 
 <h1>PRE-DRAFT — Firefox Desktop MAU through 2027, on real Glean telemetry</h1>
 <p>The headline 2027 desktop forecast: <b>raw daily MAU on 2027-12-15</b>, trained on the real Glean desktop telemetry we have (2025-05-22 → 2026-10-09, 17 months), with
@@ -82,7 +82,7 @@ units (<code>glean_equivalent</code>) exclude both, which is why its 157.2M is c
 <tr><td>model config</td><td><code>{"prophet_recent_weeks": 17, "prophet_changepoint_range": 0.8, "prophet_n_changepoints": 3, "holiday_threshold": -0.032, "holiday_max_radius": 5, "holiday_min_radius": 3, "holiday_effect_floor": -0.6, "seasonality_regime": "additive", "seasonality_corr_threshold": 0.0, "prophet_changepoint_prior_scale": 0.005, "prophet_seasonality_prior_scale": 0.00825}</code></td></tr>
 <tr><td>inputs</td><td><code>raw_glean_real_osxcountry_2026-10-09/</code> (SQL <code>scripts/sql/glean_history_comparison_glean_desktop_os_country.sql</code>); Iran fill <code>iran_fill/</code>; holidays: none</td></tr>
 <tr><td>Linux component</td><td><code>linux_bot/</code>: spec, curves (edge 2026-10-09), meta, measurement CSVs; SQL <code>scripts/sql/glean_real_bot_isp_daily_curve.sql</code>; producer <code>scripts/build_glean_real_linux_bot_overlay.py</code></td></tr>
-<tr><td>record</td><td><code>LOCK.md</code> (headline + validation rows), <code>PROCEDURE.html</code> §12–§14, <code>COMPARISONS.html</code>; branch <code>glean-2027-forecast</code> @ d47d2bd</td></tr>
-<tr><td>CSVs</td><td><code>data-official/2027-glean-draft/comparison_glean_real_mau_additive_b_2026-10-14/csv/comparison_glean_real_mau_b_canonical_curves.csv</code>, <code>data-official/2027-glean-draft/comparison_glean_real_mau_additive_b_2026-10-14/csv/comparison_glean_real_mau_b_dec15_summary.csv</code>; handoff package <code>handoff/glean2027_mau_handoff.zip</code></td></tr>
+<tr><td>record</td><td><code>LOCK.md</code> (headline + validation rows), <code>PROCEDURE.html</code> §12–§14, <code>COMPARISONS.html</code>; branch <code>glean-2027-forecast</code> @ b026cd3</td></tr>
+<tr><td>CSVs</td><td><code>data-official/2027-glean-draft/comparison_glean_real_mau_additive_b_2026-10-14/csv/comparison_glean_real_mau_b_canonical_curves.csv</code>, <code>data-official/2027-glean-draft/comparison_glean_real_mau_additive_b_2026-10-14/csv/comparison_glean_real_mau_b_dec15_summary.csv</code>; handoff package <code>handoff/glean2027_desktop_mau_handoff.zip</code></td></tr>
 </table>
 </body></html>

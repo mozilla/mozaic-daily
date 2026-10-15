@@ -165,7 +165,7 @@ units (<code>glean_equivalent</code>) exclude both, which is why its 157.2M is c
 <tr><td>inputs</td><td><code>raw_glean_real_osxcountry_2026-10-09/</code> (SQL <code>scripts/sql/glean_history_comparison_glean_desktop_os_country.sql</code>); Iran fill <code>iran_fill/</code>; holidays: none</td></tr>
 <tr><td>Linux component</td><td><code>linux_bot/</code>: spec, curves (edge {bot_meta['data_edge']}), meta, measurement CSVs; SQL <code>scripts/sql/glean_real_bot_isp_daily_curve.sql</code>; producer <code>scripts/build_glean_real_linux_bot_overlay.py</code></td></tr>
 <tr><td>record</td><td><code>LOCK.md</code> (headline + validation rows), <code>PROCEDURE.html</code> §12–§14, <code>COMPARISONS.html</code>; branch <code>glean-2027-forecast</code> @ {commit}</td></tr>
-<tr><td>CSVs</td><td><code>{CURVES.relative_to(repo_root)}</code>, <code>{SUMMARY.relative_to(repo_root)}</code>; handoff package <code>handoff/glean2027_mau_handoff.zip</code></td></tr>
+<tr><td>CSVs</td><td><code>{CURVES.relative_to(repo_root)}</code>, <code>{SUMMARY.relative_to(repo_root)}</code>; handoff package <code>handoff/glean2027_desktop_mau_handoff.zip</code></td></tr>
 </table>
 </body></html>
 """

@@ -39,7 +39,7 @@ if str(repo_root / "src") not in sys.path:
 from mozaic_daily.adjustments import load_forecast  # noqa: E402
 
 DRAFT = repo_root / "data-official/2027-glean-draft"
-DESKTOP_HANDOFF_CSV = DRAFT / "handoff/glean2027_mau_handoff/glean2027_mau_forecast.csv"
+DESKTOP_HANDOFF_CSV = DRAFT / "handoff/glean2027_desktop_mau_handoff/glean2027_desktop_mau_forecast.csv"
 POPULATIONS = ["world", "fenix_android", "firefox_ios", "focus_android", "focus_ios"]
 LABEL = {"world": "Mobile, all apps", "fenix_android": "Firefox Android (Fenix)", "firefox_ios": "Firefox iOS",
          "focus_android": "Focus Android", "focus_ios": "Focus iOS"}
@@ -73,9 +73,9 @@ def build_csvs(df: pd.DataFrame, curves: pd.DataFrame, out: Path) -> tuple[Path,
 
 def build_combined(mobile_forecast_csv: Path, desktop_forecast_csv: Path, out: Path) -> Path:
     """Desktop (headline build) and mobile world MAU side by side, one row per day over the union of their dates."""
-    d = pd.read_csv(desktop_forecast_csv, parse_dates=["date"]).set_index("date")[["data_type", "world"]]
+    d = pd.read_csv(desktop_forecast_csv, parse_dates=["date"]).set_index("date")[["data_type", "desktop_world"]]
     m = pd.read_csv(mobile_forecast_csv, parse_dates=["date"]).set_index("date")[["data_type", "world"]]
-    combined = d.rename(columns={"data_type": "desktop_data_type", "world": "desktop_mau"}).join(
+    combined = d.rename(columns={"data_type": "desktop_data_type", "desktop_world": "desktop_mau"}).join(
         m.rename(columns={"data_type": "mobile_data_type", "world": "mobile_mau"}), how="outer").sort_index()
     combined.index.name = "date"
     path = out / "glean2027_mau_desktop_and_mobile.csv"
