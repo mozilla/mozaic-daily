@@ -24,7 +24,7 @@
   .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 6px 12px 6px; background: #fff; }
   .control h3 { margin: 0; font-size: 17px; display: flex; justify-content: space-between; align-items: baseline; }
   .control input[type=range] { width: 100%; margin: 0; }
-  .hist { width: 100%; height: auto; display: block; }
+  .hist { width: 100%; height: auto; display: block; overflow: visible; }   /* a caption near the right end may spill into the padding */
   .rate { font-size: 22px; font-weight: bold; color: var(--ink); }
   .hint { font-size: 12px; color: #666; }
   .sources { font-size: 13px; margin: 2px 0 0; }
@@ -251,8 +251,13 @@ function drawHistogram(key, rate, color) {
   // dotted line: the pre-draft's expected Dec 15 2025 -> Dec 15 2026 change, on the same basis as these bars
   const xExpected = histX(Math.min(Math.max(readings.expected, slider.min), slider.max), slider);
   svg.appendChild(el("line", { x1: xExpected, x2: xExpected, y1: 26, y2: HIST_BASE, stroke: "#2b2b2b", "stroke-width": 2, "stroke-dasharray": "2 4" }));
-  svg.appendChild(el("text", { x: xExpected + (readings.expected < (slider.min + slider.max) / 2 ? 5 : -5), y: 32, "font-size": 11, fill: "#2b2b2b", stroke: "#fff", "stroke-width": 3, "paint-order": "stroke",
-    "text-anchor": readings.expected < (slider.min + slider.max) / 2 ? "start" : "end" }, `2026 expected ${readings.expected > 0 ? "+" : ""}${readings.expected.toFixed(1)}%`));
+  // caption always right of the line, left-justified, on two lines so it fits even near the right end of the scale
+  const caption = el("text", { x: xExpected + 5, y: 30, "font-size": 11, fill: "#2b2b2b", stroke: "#fff", "stroke-width": 3,
+    "paint-order": "stroke", "text-anchor": "start" });
+  const expectedText = `${readings.expected > 0 ? "+" : ""}${readings.expected.toFixed(1)}%`;
+  ["Expected 2026-12-15", `YoY ${expectedText}`].forEach((line, i) =>
+    caption.appendChild(el("tspan", { x: xExpected + 5, dy: i === 0 ? 0 : 12 }, line)));
+  svg.appendChild(caption);
   const xRate = histX(rate, slider);
   svg.appendChild(el("line", { x1: xRate, x2: xRate, y1: 14, y2: HIST_BASE, stroke: color, "stroke-width": 3 }));
   const atOrBelow = readings.values.filter(v => v <= rate).length;
