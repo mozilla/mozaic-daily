@@ -19,7 +19,7 @@ what has been normal. Desktop has three sources behind a radio button (Brendan 2
 (build 5's training rows), and **actual Glean** (real Glean desktop starts 2025-05-22, so only the readings since
 2026-05-22 exist). Mobile has one source, the real Glean mobile series in the curves file. A dotted line marks the
 pre-draft's **expected** Dec 15 2025 → Dec 15 2026 change on the same basis as the bars (Brendan 2026-10-15): build 5
-(simulated history) for the Legacy and simulated options, the headline real-Glean build for actual Glean (whose
+(Simulated Glean) for the Legacy and Simulated Glean options, the headline real-Glean build for actual Glean (whose
 Dec 2025 level still carries the duplicate-id inflation), the mobile total for mobile.
 
 Desktop and mobile are summed: MAU is the official proxy for monthly active profiles, and desktop and mobile profiles
@@ -135,13 +135,13 @@ def build_calculator_data(curves: pd.DataFrame, *, legacy_desktop: pd.Series, si
     mobile_actuals = curves.loc[curves["mobile_data_type"].eq("training"), "mobile_mau"]
     glean_desktop = curves.loc[curves["desktop_data_type"].eq("training"), "desktop_mau"]
     simulated_desktop = simulated_curves.loc[simulated_curves["data_type"].eq("training"), "mau_world"].dropna()
-    simulated_expected = (expected_change(simulated_curves["mau_world"]), "simulated-history build")
+    simulated_expected = (expected_change(simulated_curves["mau_world"]), "Simulated Glean build")
     headline_expected = {platform: (expected_change(curves[f"{platform}_mau"]), "headline build") for platform in ["desktop", "mobile"]}
     long_history = {"desktop": (legacy_desktop, "Legacy desktop telemetry"), "mobile": (mobile_actuals, "Glean mobile telemetry")}
     # (id, radio label, series, partial history allowed, note, expected 2025->2026 change on the same basis); first = default
     yoy_options = {
         "desktop": [("legacy", "Legacy", legacy_desktop, False, "the older desktop telemetry system", simulated_expected),
-                    ("simulated", "Simulated history", simulated_desktop, False, "Legacy translated into Glean terms (our build-5 input)",
+                    ("simulated", "Simulated Glean", simulated_desktop, False, "Legacy translated into Glean terms (our build-5 input)",
                      simulated_expected),
                     ("glean", "Actual Glean", glean_desktop, True, "real Glean only starts May 2025, so only readings since May 2026 exist",
                      headline_expected["desktop"])],

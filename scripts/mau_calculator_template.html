@@ -326,11 +326,11 @@ document.getElementById("how").innerHTML = `<b>How the toy works.</b> The black 
   exactly the change from one Dec 15 to the next, the same thing the bars above it measure.
   <br><br><b>The bars.</b> Each bar counts how often the real year-over-year change landed in that range, read every two weeks over
   the past two years. Desktop can be read three ways. <i>Legacy</i> is the older desktop telemetry system, with a long, steady record.
-  <i>Simulated history</i> is Legacy translated into the newer Glean system's terms; it is what our pre-draft desktop model trains
+  <i>Simulated Glean</i> is Legacy translated into the newer Glean system's terms; it is what our pre-draft desktop model trains
   on, and it agrees with Legacy within 0.3 points. <i>Actual Glean</i> is the newer system itself, but it only starts in May 2025,
   so it has only a handful of readings, all from the last few months.
   The dotted line is what our pre-draft work expects for Dec 15 2025 → Dec 15 2026, measured on the same basis as the bars:
-  the simulated-history build for <i>Legacy</i> and <i>Simulated history</i>, the headline build for <i>Actual Glean</i> (its Dec 2025
+  the Simulated Glean build for <i>Legacy</i> and <i>Simulated Glean</i>, the headline build for <i>Actual Glean</i> (its Dec 2025
   level is still inflated by a since-fixed duplicate-profile bug, which exaggerates that drop) and for mobile.
   <br><br>The starting slider positions are the steady changes that land the toy on our <b>pre-draft</b> 2027 forecast's
   Dec 15 2027 values (desktop ${fmtRate(DATA.defaults.desktop)}, mobile ${fmtRate(DATA.defaults.mobile)}); that forecast is unfinished
