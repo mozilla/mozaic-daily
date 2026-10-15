@@ -16,9 +16,20 @@
   h1 { font-size: 30px; margin: 14px 0 4px; }
   .warning { border: 3px dashed #c62828; background: #fff3f0; padding: 10px 14px; border-radius: 12px; font-size: 16px;
              transform: rotate(-0.4deg); margin: 12px 0 18px; }
-  /* The slider panel stays pinned while the charts scroll underneath, so any chart can be watched while dragging. */
-  .sticky { position: sticky; top: 0; z-index: 10; background: var(--paper); padding: 8px 0 8px;
-            border-bottom: 2.5px dashed #bbb; box-shadow: 0 6px 10px -8px rgba(0,0,0,0.25); }
+  .panel { padding: 8px 0 8px; border-bottom: 2.5px dashed #bbb; }
+  /* Once the full panel scrolls away, a slim fixed bar with the same sliders slides in over the top, so any chart can be
+     watched while dragging. It is fixed (out of the page flow) on purpose: collapsing an in-flow sticky panel changed
+     the page height, the browser's scroll anchoring then moved the page, and the panel flickered between states. */
+  .minibar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; background: var(--paper); border-bottom: 2.5px dashed #bbb;
+             box-shadow: 0 6px 10px -8px rgba(0,0,0,0.3); transform: translateY(-110%); transition: transform 0.18s ease-out; }
+  .minibar.shown { transform: translateY(0); }
+  .minibar-inner { max-width: 1100px; margin: 0 auto; padding: 6px 20px 8px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 14px; align-items: center; }
+  .mini-control { border: 2.5px solid var(--ink); border-radius: 12px 16px 10px 14px; padding: 3px 12px 6px; background: #fff; }
+  .mini-control .head { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; }
+  .mini-control .rate { font-size: 18px; }
+  .mini-control input[type=range] { width: 100%; margin: 2px 0 0; }
+  .mini-results { font-size: 14px; text-align: right; line-height: 1.35; }
+  .mini-results b { font-size: 18px; }
   .toy-tag { float: right; font-size: 13px; color: #c62828; border: 2px dashed #c62828; border-radius: 8px; padding: 1px 8px; }
   .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
   .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 6px 12px 6px; background: #fff; }
@@ -39,17 +50,22 @@
   .stamp { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg);
            font-size: 54px; font-weight: bold; color: rgba(198, 40, 40, 0.13); white-space: nowrap; pointer-events: none; }
   .how { font-size: 15px; line-height: 1.5; margin-top: 26px; border-top: 2px dashed #aaa; padding-top: 10px; }
-  /* Compact mode while the panel is pinned: just title, rate and slider in each box, big numbers in the results. */
-  .sticky.compact .hist, .sticky.compact .sources, .sticky.compact .hint { display: none; }
-  .sticky.compact .control { padding: 4px 12px 8px; }
-  .sticky.compact .control h3 { margin-bottom: 4px; }
-  .sticky.compact .result { padding: 1px 10px; }
-  .sticky-sentinel { height: 1px; }
-  @media (max-width: 800px) { .controls, .results { grid-template-columns: 1fr; } .sticky { position: static; } }
+  @media (max-width: 800px) { .controls, .results { grid-template-columns: 1fr; }
+                              .minibar-inner { grid-template-columns: 1fr 1fr; } .mini-results { grid-column: 1 / -1; text-align: center; } }
 </style>
 </head>
 <body>
 <div class="banner" id="banner"></div>
+<div class="minibar" id="miniBar" aria-hidden="true">
+  <div class="minibar-inner">
+    <div class="mini-control"><div class="head"><span style="color: var(--desk)">Desktop: change per year</span><span class="rate" data-rate="desktop"></span></div>
+      <input type="range" step="0.5" data-slider="desktop" tabindex="-1"></div>
+    <div class="mini-control"><div class="head"><span style="color: var(--mob)">Mobile: change per year</span><span class="rate" data-rate="mobile"></span></div>
+      <input type="range" step="0.5" data-slider="mobile" tabindex="-1"></div>
+    <div class="mini-results">Dec 15 2027 (toy):<br><b style="color: var(--desk)" data-out="desktop"></b> + <b style="color: var(--mob)" data-out="mobile"></b>
+      = <b style="color: var(--sum)" data-out="sum"></b></div>
+  </div>
+</div>
 <main>
   <h1>Firefox monthly active profiles: a what-if toy <span class="toy-tag">toy, not a forecast</span></h1>
   <div class="warning"><b>This is not a forecast.</b> The lines after today are deliberately simple: a typical year's
@@ -57,30 +73,29 @@
     surprises, and none of that is here. Use it only to get a ballpark feel for
     <i>how much the 2027 total moves when each rate moves</i>.</div>
 
-  <div class="sticky-sentinel" id="stickySentinel"></div>
-  <div class="sticky" id="stickyPanel">
+  <div class="panel" id="fullPanel">
 
   <div class="controls">
     <div class="control">
-      <h3><span style="color: var(--desk)">Desktop: change per year</span><span class="rate" id="desktopRateLabel"></span></h3>
+      <h3><span style="color: var(--desk)">Desktop: change per year</span><span class="rate" data-rate="desktop"></span></h3>
       <div class="sources" id="desktopSources"></div>
       <svg class="hist" id="desktopHist" viewBox="0 0 500 82"></svg>
-      <input type="range" id="desktopRate" step="0.5">
+      <input type="range" step="0.5" data-slider="desktop">
       <div class="hint" id="desktopHint"></div>
     </div>
     <div class="control">
-      <h3><span style="color: var(--mob)">Mobile: change per year</span><span class="rate" id="mobileRateLabel"></span></h3>
+      <h3><span style="color: var(--mob)">Mobile: change per year</span><span class="rate" data-rate="mobile"></span></h3>
       <div class="sources" id="mobileSources"></div>
       <svg class="hist" id="mobileHist" viewBox="0 0 500 82"></svg>
-      <input type="range" id="mobileRate" step="0.5">
+      <input type="range" step="0.5" data-slider="mobile">
       <div class="hint" id="mobileHint"></div>
     </div>
   </div>
   <div class="results">
     <div><button id="reset">Reset to the<br>pre-draft pace</button></div>
-    <div class="result"><div>Desktop, Dec 15 2027</div><div class="big" style="color: var(--desk)" id="desktopOut"></div><div class="hint" id="desktopDelta"></div></div>
-    <div class="result"><div>Mobile, Dec 15 2027</div><div class="big" style="color: var(--mob)" id="mobileOut"></div><div class="hint" id="mobileDelta"></div></div>
-    <div class="result"><div>Desktop + Mobile, Dec 15 2027</div><div class="big" style="color: var(--sum)" id="sumOut"></div><div class="hint" id="sumDelta"></div></div>
+    <div class="result"><div>Desktop, Dec 15 2027</div><div class="big" style="color: var(--desk)" data-out="desktop"></div><div class="hint" id="desktopDelta"></div></div>
+    <div class="result"><div>Mobile, Dec 15 2027</div><div class="big" style="color: var(--mob)" data-out="mobile"></div><div class="hint" id="mobileDelta"></div></div>
+    <div class="result"><div>Desktop + Mobile, Dec 15 2027</div><div class="big" style="color: var(--sum)" data-out="sum"></div><div class="hint" id="sumDelta"></div></div>
   </div>
   </div>
 
@@ -284,9 +299,15 @@ function axisRange(key, historyValues, minRate, maxRate) {
   return [lo - pad, hi + pad];
 }
 
-const sliders = { desktop: document.getElementById("desktopRate"), mobile: document.getElementById("mobileRate") };
+// Two sliders per platform (full panel + slide-down bar); one shared rate is the single source of truth.
+const rates = { desktop: DATA.defaults.desktop, mobile: DATA.defaults.mobile };
+const slidersFor = key => document.querySelectorAll(`[data-slider="${key}"]`);
+const setText = (selector, text) => document.querySelectorAll(selector).forEach(node => { node.textContent = text; });
 for (const key of ["desktop", "mobile"]) {
-  Object.assign(sliders[key], { min: DATA.slider[key].min, max: DATA.slider[key].max, value: DATA.defaults[key] });
+  slidersFor(key).forEach(slider => {
+    Object.assign(slider, { min: DATA.slider[key].min, max: DATA.slider[key].max, value: rates[key] });
+    slider.addEventListener("input", () => { rates[key] = Number(slider.value); render(); });
+  });
   buildSourcePicker(key);
 }
 const ranges = {
@@ -302,14 +323,16 @@ function setDelta(id, value, base) {
 }
 
 function render() {
-  const desktopRate = Number(sliders.desktop.value), mobileRate = Number(sliders.mobile.value);
-  document.getElementById("desktopRateLabel").textContent = fmtRate(desktopRate);
-  document.getElementById("mobileRateLabel").textContent = fmtRate(mobileRate);
+  const desktopRate = rates.desktop, mobileRate = rates.mobile;
+  for (const key of ["desktop", "mobile"]) {
+    slidersFor(key).forEach(slider => { if (Number(slider.value) !== rates[key]) slider.value = rates[key]; });
+    setText(`[data-rate="${key}"]`, fmtRate(rates[key]));
+  }
   const desktop = projectLevel("desktop", desktopRate, dec15_2027);
   const mobile = projectLevel("mobile", mobileRate, dec15_2027);
-  document.getElementById("desktopOut").textContent = fmtM(desktop);
-  document.getElementById("mobileOut").textContent = fmtM(mobile);
-  document.getElementById("sumOut").textContent = fmtM(desktop + mobile);
+  setText('[data-out="desktop"]', fmtM(desktop));
+  setText('[data-out="mobile"]', fmtM(mobile));
+  setText('[data-out="sum"]', fmtM(desktop + mobile));
   setDelta("desktopDelta", desktop, DATA.last.desktop);
   setDelta("mobileDelta", mobile, DATA.last.mobile);
   setDelta("sumDelta", desktop + mobile, DATA.last.desktop + DATA.last.mobile);
@@ -320,10 +343,8 @@ function render() {
   sumChart(document.getElementById("chartSum"), desktopRate, mobileRate, ranges.sum);
 }
 
-sliders.desktop.addEventListener("input", render);
-sliders.mobile.addEventListener("input", render);
 document.getElementById("reset").addEventListener("click", () => {
-  sliders.desktop.value = DATA.defaults.desktop; sliders.mobile.value = DATA.defaults.mobile; render();
+  rates.desktop = DATA.defaults.desktop; rates.mobile = DATA.defaults.mobile; render();
 });
 
 document.getElementById("banner").innerHTML =
@@ -349,12 +370,15 @@ document.getElementById("how").innerHTML = `<b>How the toy works.</b> The black 
   profile are different profiles. Numbers are rounded to the nearest million on purpose.`;
 render();
 
-// Collapse the panel once it is pinned (its sentinel has scrolled out of view) and expand it again back at the top.
-// The sentinel sits above the panel, so the panel's own change in height cannot flip the state back and forth.
+// Show the slide-down bar once the full panel has scrolled up out of view; hide it when the panel is back on screen.
+// The bar is position: fixed, so showing it changes nothing in the page flow and cannot feed back into the scroll.
+const miniBar = document.getElementById("miniBar");
 new IntersectionObserver(([entry]) => {
-  const pinned = !entry.isIntersecting && entry.boundingClientRect.top < 0 && getComputedStyle(document.getElementById("stickyPanel")).position === "sticky";
-  document.getElementById("stickyPanel").classList.toggle("compact", pinned);
-}).observe(document.getElementById("stickySentinel"));
+  const shown = !entry.isIntersecting && entry.boundingClientRect.bottom < 0;
+  miniBar.classList.toggle("shown", shown);
+  miniBar.setAttribute("aria-hidden", String(!shown));
+  miniBar.querySelectorAll("input").forEach(input => { input.tabIndex = shown ? 0 : -1; });
+}).observe(document.getElementById("fullPanel"));
 </script>
 </body>
 </html>
