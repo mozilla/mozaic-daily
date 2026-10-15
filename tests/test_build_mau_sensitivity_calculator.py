@@ -69,17 +69,34 @@ def test_periodic_yoy_refuses_a_series_too_short_for_two_years():
         calc.periodic_yoy(values, last_actual=LAST_ACTUAL)
 
 
-def test_build_data_defaults_land_on_the_forecast_dec15_and_use_the_separate_desktop_yoy_source():
+def test_periodic_yoy_partial_keeps_only_supported_readings():
+    values = _daily("2025-05-22", "2026-10-09", 0.05)   # the real-Glean desktop span: readings from 2026-05-22 only
+    readings = calc.periodic_yoy(values, last_actual=LAST_ACTUAL, allow_partial=True)
+    assert readings.index.min() >= pd.Timestamp("2026-05-21")
+    assert len(readings) == 11
+    assert readings.to_numpy() == pytest.approx([5.0] * 11)
+
+
+def test_periodic_yoy_partial_still_refuses_almost_no_history():
+    values = _daily("2025-09-01", "2026-10-09", 0.05)
+    with pytest.raises(ValueError, match="readings possible"):
+        calc.periodic_yoy(values, last_actual=LAST_ACTUAL, allow_partial=True)
+
+
+def test_build_data_keeps_the_three_desktop_sources_apart_and_lands_on_the_forecast_dec15():
     curves = _curves(desktop_growth=-0.04, mobile_growth=0.12)
-    legacy = _daily("2023-01-01", "2026-10-09", -0.02, 150e6)     # deliberately a different rate from the curves file
-    data = calc.build_calculator_data(curves, desktop_yoy_values=legacy, generated="g", source="s")
-    assert data["last"]["date"] == "2026-10-09"
-    # a 364-day compounding expressed per 365 days: -4% / +12% a year, give or take the day-count convention
-    assert data["implied_exact"]["desktop"] == pytest.approx(-4.0, abs=0.02)
+    legacy = _daily("2019-01-01", "2026-10-09", -0.02, 150e6)       # each source at its own rate, so a mix-up shows
+    simulated = _daily("2019-01-01", "2026-10-09", -0.03, 152e6)
+    data = calc.build_calculator_data(curves, legacy_desktop=legacy, simulated_desktop=simulated, generated="g", source="s")
+    desktop_options = {o["id"]: o for o in data["yoy"]["desktop"]["options"]}
+    assert list(desktop_options) == ["legacy", "simulated", "glean"]                  # legacy first = the default
+    assert desktop_options["legacy"]["values"] == pytest.approx([-2.0] * 53, abs=0.01)
+    assert desktop_options["simulated"]["values"] == pytest.approx([-3.0] * 53, abs=0.01)
+    assert desktop_options["glean"]["values"] == pytest.approx([-4.0] * 53, abs=0.01)  # the curves file's own desktop rows
+    assert [o["id"] for o in data["yoy"]["mobile"]["options"]] == ["glean"]
+    # no seasonality in the fixture, so the shape is flat and the default is the plain implied rate
+    assert data["implied_exact"]["desktop"] == pytest.approx(-4.0, abs=0.05)
     assert data["implied_exact"]["mobile"] == pytest.approx(12.0, abs=0.05)
-    assert data["yoy"]["desktop"]["values"] == pytest.approx([-2.0] * 53, abs=0.01)
-    assert data["yoy"]["mobile"]["values"] == pytest.approx([12.0] * 53, abs=0.01)
-    assert data["yoy"]["desktop"]["source"] == "Legacy desktop telemetry"
 
 
 def test_render_page_substitutes_json_once_and_guards_the_template():
