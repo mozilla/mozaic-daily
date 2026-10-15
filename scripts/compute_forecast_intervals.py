@@ -59,7 +59,7 @@ WORLD_COUNTRY = "ALL"
 # mobile is unsegmented but carries one row per app, so the "ALL MOBILE" app row has to be selected too.
 WORLD_SEGMENT_BY_PLATFORM = {"desktop": '{"os": "ALL"}', "mobile": "{}"}
 WORLD_APP_BY_PLATFORM = {"desktop": None, "mobile": "ALL MOBILE"}
-PLATFORM_BY_FILENAME_TAG = {"ld-D": "desktop", "gm-D": "mobile", "gh-D+M": "desktop", "gh-D": "desktop", "gh-M": "desktop"}
+PLATFORM_BY_FILENAME_TAG = {"ld-D": "desktop", "gm-D": "mobile", "gm-M": "mobile", "gh-D+M": "desktop", "gh-D": "desktop", "gh-M": "desktop"}
 BAND_ALPHAS = {"50": 0.45, "80": 0.30, "90": 0.18}
 BAND_COLOR = "#1f77b4"
 ACTUALS_COLOR = "#333333"

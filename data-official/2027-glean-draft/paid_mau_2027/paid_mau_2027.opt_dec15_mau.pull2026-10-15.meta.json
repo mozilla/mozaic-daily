@@ -1,0 +1,96 @@
+{
+  "produced_by": "scripts/pull_paid_mau_2027.py",
+  "pull_date": "2026-10-15",
+  "written_at": "2026-10-15T11:38:12",
+  "scenario": "opt_dec15_mau",
+  "scenario_label": "Optimized for Dec-15 MAU",
+  "scenarios_available": [
+    "flat",
+    "opt_dec15_mau"
+  ],
+  "channels": "uac+meta_android",
+  "basis": "attributed (quick site provenance line; the optimizer ran on incremental and re-projected)",
+  "curve_run": "2026-10-12",
+  "generated_at": "2026-10-14 15:01:53",
+  "mau_per_dau": 4.792,
+  "ci_level": 0.9,
+  "n_draws": 1000,
+  "sources": {
+    "plan_daily": {
+      "table": "mozdata.analysis.ahe_gmio_plan2027_mau_daily_20261014",
+      "stmo_query": 128941,
+      "json_sha1": "99a1faf0dda34b11dd2d614841fb6d3488c66848",
+      "rows": 730
+    },
+    "weekly_totals": {
+      "table": "mozdata.analysis.ahe_gmio_weekly_paid_dau_totals_20261013",
+      "view": "total",
+      "json_sha1": "3597804bf00d964ad9709fcd16e04c42fb481228",
+      "rows": 52
+    },
+    "weekly_by_country": {
+      "table": "mozdata.analysis.ahe_gmio_weekly_paid_dau_by_country_20261013",
+      "view": "total",
+      "json_sha1": "2fb4b066b76d5ae8937818a27c89eb10173a18db",
+      "rows": 2600,
+      "use": "reference only"
+    },
+    "quick_site": {
+      "url": "https://ahe-2027-planning-first-scenario.quick.mozilla.cloud/2027%20planning%20-%20flat%20budget.html",
+      "copied_from": "gs://moz-fx-quick-prod-sites/ahe-2027-planning-first-scenario/",
+      "dir": "quick_site"
+    },
+    "extra": [
+      "query_128941.json"
+    ],
+    "organic_split_for_shares": {
+      "file": "data-official/2027-glean-draft/organic_mau/fenix_paid_organic_mau.2026-10-09.parquet",
+      "sha1": "3f8a3fc53f7443637f7204f1f123f15349135fb0"
+    }
+  },
+  "construction": {
+    "bridge": "2026-10-10..2026-12-31: weekly 'total' paid DAU (ISO Monday weeks; p50 / lo / hi from the quick site's embedded data, which covers week 53 of 2026 and carries the upper bound; cross-checked against the BQ weekly table on shared weeks) x mau_per_dau x day-of-week ratio \u2014 the plan's own daily rule. As delivered, unscaled",
+    "plan_2027": "the table's own daily rows for the chosen scenario",
+    "country_allocation": "paid_country_shares csv: each country's share of OUR measured paid Fenix MAU over the last 28 measured days; IR = 0 (excluded from the split); apply to the world paid series"
+  },
+  "numbers": {
+    "last_measured_paid_mau": {
+      "date": "2026-10-09",
+      "value": 9005217.0
+    },
+    "bridge_first_day": {
+      "date": "2026-10-10",
+      "paid_mau": 8984549.525643999,
+      "vs_last_measured": -0.002295055672284274
+    },
+    "bridge_last_day": {
+      "date": "2026-12-31",
+      "paid_mau": 9905808.0241296
+    },
+    "plan_first_day": {
+      "date": "2027-01-01",
+      "paid_mau": 9949399.66209761,
+      "step_vs_dec31": 0.004400614050042773
+    },
+    "paid_mau_2026-12-15": 9698449.784712,
+    "paid_mau_2027-12-15": {
+      "value": 14341803.684818558,
+      "low_90": 13808774.575031996,
+      "high_90": 14941205.515242873
+    },
+    "flat_scenario_2027-12-15": 13327526.923079742,
+    "country_shares_top5": {
+      "IN": 0.3242,
+      "ROW": 0.2788,
+      "ID": 0.0757,
+      "US": 0.0753,
+      "BR": 0.0574
+    }
+  },
+  "caveats_from_source": [
+    "hypothetical plan, no seasonality, no cross-channel interaction (upper bound)",
+    "MAU = DAU x 4.792, a global multiplier, not a model",
+    "retention extrapolated beyond the fitted range by late 2027",
+    "interval calibration unverified; bands cover curve parameters only"
+  ]
+}
