@@ -1,0 +1,141 @@
+{
+  "additional_holidays": [
+    "MobileEvents"
+  ],
+  "adjustments_applied": [],
+  "artifact_sha1": "698379c99bc76ae7b5a0499b52e2177fadbef34e",
+  "data_source": "glean_mobile",
+  "forecast_start_date": "2026-10-10",
+  "inputs_meta": {
+    "inputs": {
+      "DAU": {
+        "countries": [
+          "AR",
+          "BR",
+          "CA",
+          "CN",
+          "DE",
+          "FR",
+          "ID",
+          "IN",
+          "IR",
+          "IT",
+          "JP",
+          "MX",
+          "PL",
+          "ROW",
+          "RU",
+          "US"
+        ],
+        "date_range": [
+          "2020-12-31",
+          "2026-10-09"
+        ],
+        "output_file": "mozaic_parts.raw.glean.mobile.DAU.parquet",
+        "rows": 129648,
+        "source_file": "tmp/mobile_mau_pull/glean_mobile_country_app.json",
+        "source_sha1": "13f6def764be9f30904884700ac1881d4efcc63f",
+        "world_last_day": 18209209.0
+      },
+      "MAU": {
+        "countries": [
+          "AR",
+          "BR",
+          "CA",
+          "CN",
+          "DE",
+          "FR",
+          "ID",
+          "IN",
+          "IR",
+          "IT",
+          "JP",
+          "MX",
+          "PL",
+          "ROW",
+          "RU",
+          "US"
+        ],
+        "date_range": [
+          "2020-12-31",
+          "2026-10-09"
+        ],
+        "output_file": "mozaic_parts.raw.glean.mobile.MAU.parquet",
+        "rows": 129648,
+        "source_file": "tmp/mobile_mau_pull/glean_mobile_country_app.json",
+        "source_sha1": "13f6def764be9f30904884700ac1881d4efcc63f",
+        "world_last_day": 56407844.0
+      }
+    },
+    "layout": "mobile_app",
+    "populations": [
+      "fenix_android",
+      "firefox_ios",
+      "focus_android",
+      "focus_ios"
+    ],
+    "produced_by": "scripts/build_comparison_raw_frames.py",
+    "rows_dropped_unmapped_segment": 0,
+    "source": "Glean mobile telemetry (glean_telemetry.active_users_aggregates), four apps, country x app, 2020-12-31..2026-10-09",
+    "value_column": "dau/mau from the aggregates table (whole people)",
+    "written_at": "2026-10-14T23:05:22"
+  },
+  "ios_rate_cap": {
+    "cap_file": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/organic_mau/ios_rate_cap/ios_rate_cap.ID_IN.2026-04-01.parquet",
+    "countries": [
+      "ID",
+      "IN"
+    ],
+    "from_date": "2026-04-01",
+    "peak_removed_share_of_organic": {
+      "ID": 0.12382096644841578,
+      "IN": 0.11146204036298818
+    },
+    "removed_mau_last_day": {
+      "ID": 43696,
+      "IN": 396385
+    },
+    "removed_mau_last_day_total": 440081,
+    "rows_capped": 384,
+    "through": "2026-10-09"
+  },
+  "iran_fill": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/iran_fill_mobile/iran_fill.glean_mobile.MAU.parquet",
+  "metrics": [
+    "MAU"
+  ],
+  "model_config": {
+    "holiday_effect_floor": -0.6,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_threshold": -0.055,
+    "prophet_changepoint_prior_scale": 0.0065,
+    "prophet_changepoint_range": 0.87,
+    "prophet_n_changepoints": 25,
+    "prophet_recent_weeks": 13,
+    "prophet_seasonality_prior_scale": 0.1,
+    "seasonality_corr_threshold": 0.0,
+    "seasonality_regime": "auto"
+  },
+  "mozaic_daily_commit": "7ebf90eff9367daa3b56679cdd8f03a8b34e3071",
+  "organic_only": {
+    "exclude_countries": [
+      "IR"
+    ],
+    "fenix_paid_mau_removed_last_day": 8980862,
+    "fenix_paid_share_last_day": 0.21283578020430463,
+    "fenix_world_total_mau_last_day": 42196204,
+    "share_held_flat_before": "2024-10-01",
+    "share_measured_from": "2024-10-01",
+    "split_file": "/Users/brendanwells/work/mozaic-daily/data-official/2027-glean-draft/organic_mau/fenix_paid_organic_mau.2026-10-09.parquet"
+  },
+  "paid_organic_split": "ORGANIC ONLY: Fenix training rows scaled by the measured organic MAU share, nothing added back",
+  "populations": [
+    "fenix_android",
+    "firefox_ios",
+    "focus_android",
+    "focus_ios"
+  ],
+  "produced_at": "2026-10-15T17:55:43.736619+00:00Z",
+  "produced_by": "scripts/run_mobile_mau_forecast.py",
+  "run_at": "2026-10-15T10:55:43"
+}

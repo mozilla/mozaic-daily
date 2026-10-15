@@ -21,6 +21,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
 
 repo_root = Path(__file__).resolve().parent.parent
@@ -52,6 +55,28 @@ def score_table(scores: pd.DataFrame, with_targets: bool) -> str:
                     f"<td class=num>{r.dec15_2026:,.0f}</td><td class=num>{r.dec15_2027:,.0f}</td><td class='num{dec_cls}'>{r.dec_to_dec:+.1%}</td>"
                     f"<td class=num>{r.yoy_forecast_oct9_2027:+.1%}</td></tr>")
     return f"<table>{''.join(rows)}</table>"
+
+
+def plot_tradeoff(scores: pd.DataFrame, other: pd.DataFrame | None, grid: str) -> Path:
+    """Seam step vs Dec->Dec for every probe on the page: the plain trade-off, with the brief's band only lightly shaded."""
+    fig, ax = plt.subplots(figsize=(10, 7))
+    ax.axvspan(-TARGET_SEAM_ABS, TARGET_SEAM_ABS, color="#6a1b9a", alpha=0.06)
+    ax.axhspan(TARGET_DEC_TO_DEC[0], TARGET_DEC_TO_DEC[1], color="#6a1b9a", alpha=0.06)
+    for frame, marker, label in ((other, "o", None), (scores, "s", grid)):
+        if frame is None:
+            continue
+        for _, r in frame.iterrows():
+            ax.scatter(r.seam_step_world, r.dec_to_dec, marker=marker, s=70, color="#1f77b4" if frame is scores else "#999", zorder=3)
+            ax.annotate(r.probe, (r.seam_step_world, r.dec_to_dec), textcoords="offset points", xytext=(6, 4), fontsize=8,
+                        color="#1f77b4" if frame is scores else "#777")
+    ax.axvline(0, color="k", lw=0.6); ax.set_xlabel("seam step, world organic MAU (first forecast week vs last training week)")
+    ax.set_ylabel("Dec-15 2026 → Dec-15 2027"); ax.set_title(f"Seam vs 2027 slope — squares {grid}, circles the comparison round; shaded = the round-2 brief's band")
+    ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=1)); ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
+    ax.grid(True, alpha=0.3)
+    ax.text(0.5, 0.5, "PRE-DRAFT", transform=ax.transAxes, fontsize=60, color="#6a1b9a", alpha=0.14, ha="center", va="center", rotation=28, fontweight="bold")
+    out = PROBES / "plots" / f"probes_{grid}_tradeoff.png"
+    fig.tight_layout(); fig.savefig(out, dpi=110); plt.close(fig)
+    return out
 
 
 def cap_section(cap_meta: dict) -> str:
@@ -113,6 +138,7 @@ Meets both: <b>{', '.join(f'<code>{m}</code>' for m in meets) if meets else 'non
     if other is not None:
         parts.append(f"<h2>{n}. For comparison: {args.compare_to} ({'uncorrected organic' if not GRIDS[args.compare_to]['ios_rate_cap'] else 'capped'}), same targets</h2>"
                      f"<p>Last actual there: {other['last_actual'].iloc[0]:,.0f}; the {args.grid} series is {last_actual - other['last_actual'].iloc[0]:+,.0f} on the same day.</p>{score_table(other, True)}"); n += 1
+    parts.append(f"<h2>{n}. The trade-off itself: seam step against 2027 slope</h2><p>Every probe on this page. The shaded band is the brief's; the choice is where on the frontier to sit.</p>{img(plot_tradeoff(scores, other, args.grid))}"); n += 1
     parts.append(f"<h2>{n}. Forecasts over the actuals: world, Fenix, and the capped countries</h2>{img(PROBES / 'plots' / f'probes_{args.grid}_world.png')}"); n += 1
     if args.organic_2x5:
         parts.append(f"<h2>{n}. The 2 × 5 layout, organic only</h2><p>History is the series the probes trained on; one line per probe shown.</p>{img(args.organic_2x5)}"); n += 1

@@ -11,6 +11,7 @@ under ``data-official/2027-glean-draft/probes_mobile_mau/<slug>/``; scoring read
     python scripts/run_mobile_mau_probes.py score [--grid round1]
     python scripts/run_mobile_mau_probes.py run --grid round2          # on the iOS-rate-capped organic series
     python scripts/run_mobile_mau_probes.py score --grid round2 --compare-to round1
+    python scripts/run_mobile_mau_probes.py run --grid round3          # the 3 x 4 neighbourhood of 0.005 / 0.87 (centre reused from round 2)
 
 Round 2 (Brendan, 2026-10-15, after the correlation check): the organic series with the India + Indonesia iOS-rate cap
 (``build_ios_rate_cap.py``, passed through as ``--ios-rate-cap``), changepoint range {0.80, 0.87} x prior scale
@@ -64,6 +65,11 @@ GRIDS = {
     "round2": {"knobs": [{"changepoint_range": cpr, "changepoint_prior_scale": cps}
                          for cpr, cps in itertools.product([0.80, 0.87], [0.005, 0.01, 0.02])],
                "subdir": "round2_ioscap", "ios_rate_cap": True},
+    # Brendan 2026-10-15: "0.005/0.87 is the best so far ... walk around that space in both axes"; the centre is reused from round 2
+    "round3": {"knobs": [{"changepoint_range": cpr, "changepoint_prior_scale": cps}
+                         for cpr, cps in itertools.product([0.84, 0.87, 0.90], [0.004, 0.005, 0.0065, 0.008])
+                         if not (cpr == 0.87 and cps == 0.005)],
+               "subdir": "round3_ioscap", "ios_rate_cap": True},
 }
 CAPPED_COUNTRIES = ["IN", "ID"]
 

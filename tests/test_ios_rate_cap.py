@@ -110,3 +110,15 @@ def test_round2_grid_is_six_capped_probes_in_its_own_directory():
     assert {k["changepoint_prior_scale"] for k in grid["knobs"]} == {0.005, 0.01, 0.02}
     assert probes.grid_dir("round2") != probes.grid_dir("round1")
     assert probes.GRIDS["round1"]["ios_rate_cap"] is False
+
+
+def test_round3_grid_is_the_neighbourhood_of_the_round2_centre_without_repeating_it():
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import run_mobile_mau_probes as probes
+    grid = probes.GRIDS["round3"]
+    assert grid["ios_rate_cap"] is True and len(grid["knobs"]) == 11
+    assert {"changepoint_range": 0.87, "changepoint_prior_scale": 0.005} not in grid["knobs"]   # reused from round 2
+    assert {k["changepoint_range"] for k in grid["knobs"]} == {0.84, 0.87, 0.90}
+    assert {k["changepoint_prior_scale"] for k in grid["knobs"]} == {0.004, 0.005, 0.0065, 0.008}
