@@ -11,9 +11,9 @@ Seam gaps are shown, not hidden: actuals and forecast are separate lines with no
 states the seam step (mean of the first 7 forecast days vs the last 7 actual days, the LOCK.md definition). A zoomed
 figure around the seam makes the step legible.
 
-The combined figure sums platform MAU. A person active on desktop and mobile is counted in both, so the sum overstates
-distinct people; the figure says so on its face (the mobile HANDOFF.md forbids summing in the handoff package —
-this view was requested by Brendan on 2026-10-15 for a progress doc).
+The combined figure sums platform MAU. MAU is the official proxy for monthly active profiles, and desktop and mobile
+profiles are different things, so the sum is a valid profile count (Brendan's manager, 2026-10-15). The figure states
+the definition so readers do not take it for a count of people.
 
 Outputs (``<out-dir>/``): ``desktop_mau_2026_2027.png``, ``mobile_mau_2026_2027.png``, ``combined_mau_2026_2027.png``,
 ``seam_zoom_2026.png``, ``mau_overview_2026_2027.png`` (three stacked panels), ``numbers.csv``, and ``index.html`` (review page
@@ -54,7 +54,7 @@ ZOOM_END = pd.Timestamp("2026-11-15")
 DESKTOP_FILL = "#4a7fb5"
 MOBILE_FILL = "#e08a3c"
 VALUES_BOX_AT = {"desktop": (0.62, 0.03), "mobile": (0.99, 0.03), "combined": (0.99, 0.12)}   # clear of each curve's trough
-DOUBLE_COUNT_NOTE = "Sum of platform MAU: a person active on both desktop and mobile is counted twice."
+PROFILE_NOTE = "MAU = monthly active profiles. Desktop and mobile profiles are distinct, so they add."
 
 
 def load_platform_series(curves: pd.DataFrame) -> dict[str, tuple[pd.Series, pd.Series]]:
@@ -120,7 +120,7 @@ def style_axis(ax, *, title: str, start: pd.Timestamp, end: pd.Timestamp, month_
 PLATFORM_TITLES = {
     "desktop": "Desktop MAU (Firefox Desktop, all countries)",
     "mobile": "Mobile MAU (four apps, organic + marketing's paid plan)",
-    "combined": "Desktop + Mobile MAU (summed)",
+    "combined": "Desktop + Mobile MAU (active profiles, summed)",
 }
 
 
@@ -147,7 +147,7 @@ def plot_combined_stacked(series, out_dir: Path) -> None:
     style_axis(ax, title=f"{PLATFORM_TITLES['combined']}, 2026–2027", start=VIEW_START, end=VIEW_END)
     ax.set_ylim(0, combined[(combined.index >= VIEW_START)].max() * 1.12)
     ax.legend(loc="upper left", fontsize=8, ncol=2)
-    ax.text(0.99, 0.03, DOUBLE_COUNT_NOTE, transform=ax.transAxes, ha="right", va="bottom", fontsize=9, style="italic",
+    ax.text(0.99, 0.03, PROFILE_NOTE, transform=ax.transAxes, ha="right", va="bottom", fontsize=9, style="italic",
             bbox=dict(boxstyle="round,pad=0.3", facecolor="white", edgecolor="none", alpha=0.85))
     save(fig, out_dir / "combined_mau_2026_2027.png")
 
@@ -158,7 +158,7 @@ def plot_overview(series, out_dir: Path) -> None:
         values, is_actual = series[platform]
         draw_platform(ax, values, is_actual, start=VIEW_START, end=VIEW_END, values_box_at=VALUES_BOX_AT[platform])
         style_axis(ax, title=PLATFORM_TITLES[platform], start=VIEW_START, end=VIEW_END)
-    axes[-1].text(0.99, 0.02, DOUBLE_COUNT_NOTE, transform=axes[-1].transAxes, ha="right", va="bottom", fontsize=9, style="italic")
+    axes[-1].text(0.99, 0.02, PROFILE_NOTE, transform=axes[-1].transAxes, ha="right", va="bottom", fontsize=9, style="italic")
     save(fig, out_dir / "mau_overview_2026_2027.png")
 
 
@@ -197,7 +197,7 @@ FIGURES = [
     ("desktop_mau_2026_2027.png", "Desktop MAU. Real Glean desktop telemetry, 17 months of history; the 2027 dip in January repeats the "
                                   "Dec-2025 duplicate-id step the model learned as seasonality (not corrected, by choice)."),
     ("mobile_mau_2026_2027.png", "Mobile MAU, all four apps: our organic forecast plus the marketing data-science team's 2027 paid plan."),
-    ("combined_mau_2026_2027.png", "Desktop + Mobile, summed, with each platform stacked underneath. People active on both are counted twice."),
+    ("combined_mau_2026_2027.png", "Desktop + Mobile, summed, with each platform stacked underneath. MAU counts active profiles, and desktop and mobile profiles are distinct, so they add."),
     ("seam_zoom_2026.png", "Seam close-up, Sep 1 to Nov 15 2026. The forecast is not bridged to the actuals; the gap is what the "
                            "model gives today."),
 ]
@@ -229,8 +229,8 @@ code {{ background: #f4f4f4; padding: 1px 4px; }}
 &nbsp;|&nbsp; <b>Data as of:</b> {data_end} (last actual; forecast from the next day)</div>
 <h1>2027 MAU forecast — progress plots (PRE-DRAFT)</h1>
 <div class="callout"><b>Progress, not a forecast.</b> Both halves are pre-draft: neither is backtested, the mobile India/Indonesia
-correction is provisional, and the seam steps below are shown as they are, not smoothed. The combined line sums platform MAU,
-so anyone active on both desktop and mobile is counted twice.</div>
+correction is provisional, and the seam steps below are shown as they are, not smoothed. The combined line adds desktop and mobile
+MAU: MAU is the official proxy for monthly active <i>profiles</i>, and desktop and mobile profiles are distinct, so they add.</div>
 <p>Input: <code>{html.escape(str(curves_path))}</code> (desktop headline build beside the mobile total). PNGs sit beside this page, ready to paste into a doc.</p>
 <table><tr><th>population</th><th>last actual MAU</th><th>seam step (7-day means)</th><th>Dec 15 2026</th><th>Dec 15 2027</th><th>Dec→Dec</th></tr>{rows}</table>
 {figures}

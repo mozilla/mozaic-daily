@@ -52,7 +52,7 @@ Start with `LOCK.md` (what is locked and why), then `PROCEDURE.html` (every deci
 | `linux_bot/`, `comparison_glean_real_mau_additive_b_2026-10-14/` | the Linux bot-ISP measurement from real Glean client data (CSVs, `_index.md`), the `b` overlay curves + spec; **the headline build** with its `csv/` and `plots/canonical/` |
 | `csv/`, `plots/`, `plots/canonical/`, `plots/comparisons/` | the locked build's curves, Dec-15 summary, build comparison, Legacy comparison table, real-Glean comparison by horizon, real-units restatement, Easter alignment; canonical-format plots (purple PRE-DRAFT); comparison plots |
 | `intervals/` | build-1 DAU Prophet bands (kept; the Prophet band is not usable at this horizon) |
-| `plots/publication/` | doc-ready progress plots, 2026–2027 continuous: desktop, mobile total, desktop + mobile summed (double-counts cross-device people), seam close-up, `index.html` (`scripts/plot_glean2027_mau_publication.py`, 2026-10-15) |
+| `plots/publication/` | doc-ready progress plots, 2026–2027 continuous: desktop, mobile total, desktop + mobile summed (MAU = active profiles, so they add), seam close-up, `index.html` (`scripts/plot_glean2027_mau_publication.py`, 2026-10-15) |
 | `_internal_plots/`, `_shakedown_nofill_*`, `_superseded_float_inputs_*` | internal diagnostics and records; not for circulation |
 
 ## Rules for this directory
