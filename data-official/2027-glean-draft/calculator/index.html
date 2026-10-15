@@ -16,56 +16,65 @@
   h1 { font-size: 30px; margin: 14px 0 4px; }
   .warning { border: 3px dashed #c62828; background: #fff3f0; padding: 10px 14px; border-radius: 12px; font-size: 16px;
              transform: rotate(-0.4deg); margin: 12px 0 18px; }
-  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 10px; }
-  .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 10px 14px; background: #fff; }
-  .control h3 { margin: 0 0 6px; font-size: 19px; }
+  /* The slider panel stays pinned while the charts scroll underneath, so any chart can be watched while dragging. */
+  .sticky { position: sticky; top: 0; z-index: 10; background: var(--paper); padding: 8px 0 8px;
+            border-bottom: 2.5px dashed #bbb; box-shadow: 0 6px 10px -8px rgba(0,0,0,0.25); }
+  .toy-tag { float: right; font-size: 13px; color: #c62828; border: 2px dashed #c62828; border-radius: 8px; padding: 1px 8px; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
+  .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 6px 12px 6px; background: #fff; }
+  .control h3 { margin: 0; font-size: 17px; display: flex; justify-content: space-between; align-items: baseline; }
   .control input[type=range] { width: 100%; margin: 0; }
   .hist { width: 100%; height: auto; display: block; }
-  .rate { font-size: 26px; font-weight: bold; }
-  .hint { font-size: 13px; color: #666; }
+  .rate { font-size: 22px; font-weight: bold; color: var(--ink); }
+  .hint { font-size: 12px; color: #666; }
+  .sources { font-size: 13px; margin: 2px 0 0; }
+  .sources label { margin-right: 10px; cursor: pointer; white-space: nowrap; }
   button { font-family: inherit; font-size: 15px; border: 2px solid var(--ink); border-radius: 10px; background: #fff;
            padding: 4px 12px; cursor: pointer; }
-  .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 14px 0 6px; }
-  .result { border: 2.5px solid var(--ink); border-radius: 16px 12px 18px 14px; padding: 8px 12px; text-align: center; background: #fff; }
-  .result .big { font-size: 30px; font-weight: bold; }
+  .results { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 12px; align-items: center; }
+  .result { border: 2.5px solid var(--ink); border-radius: 16px 12px 18px 14px; padding: 3px 10px; text-align: center; background: #fff; font-size: 14px; }
+  .result .big { font-size: 22px; font-weight: bold; }
   .chart { position: relative; margin-top: 18px; }
   .chart svg { width: 100%; height: auto; display: block; }
   .stamp { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg);
            font-size: 54px; font-weight: bold; color: rgba(198, 40, 40, 0.13); white-space: nowrap; pointer-events: none; }
   .how { font-size: 15px; line-height: 1.5; margin-top: 26px; border-top: 2px dashed #aaa; padding-top: 10px; }
-  @media (max-width: 800px) { .controls, .results { grid-template-columns: 1fr; } }
+  @media (max-width: 800px) { .controls, .results { grid-template-columns: 1fr; } .sticky { position: static; } }
 </style>
 </head>
 <body>
 <div class="banner" id="banner"></div>
 <main>
-  <h1>Firefox monthly active profiles: a what-if toy</h1>
-  <div class="warning"><b>This is not a forecast.</b> The lines after today are deliberately silly: each one just grows
-    (or shrinks) at one steady yearly rate. Real profiles have seasons, holidays and surprises, and none of that is here.
-    Use it only to get a ballpark feel for <i>how much the 2027 total moves when each rate moves</i>.</div>
+  <h1>Firefox monthly active profiles: a what-if toy <span class="toy-tag">toy, not a forecast</span></h1>
+  <div class="warning"><b>This is not a forecast.</b> The lines after today are deliberately simple: a typical year's
+    up-and-down shape, multiplied by one steady yearly change that you choose. Real profiles have holidays, shocks and
+    surprises, and none of that is here. Use it only to get a ballpark feel for
+    <i>how much the 2027 total moves when each rate moves</i>.</div>
+
+  <div class="sticky">
 
   <div class="controls">
     <div class="control">
-      <h3 style="color: var(--desk)">Desktop: yearly change</h3>
-      <div class="rate" id="desktopRateLabel"></div>
-      <svg class="hist" id="desktopHist" viewBox="0 0 500 110"></svg>
+      <h3><span style="color: var(--desk)">Desktop: change per year</span><span class="rate" id="desktopRateLabel"></span></h3>
+      <div class="sources" id="desktopSources"></div>
+      <svg class="hist" id="desktopHist" viewBox="0 0 500 82"></svg>
       <input type="range" id="desktopRate" step="0.5">
       <div class="hint" id="desktopHint"></div>
     </div>
     <div class="control">
-      <h3 style="color: var(--mob)">Mobile: yearly change</h3>
-      <div class="rate" id="mobileRateLabel"></div>
-      <svg class="hist" id="mobileHist" viewBox="0 0 500 110"></svg>
+      <h3><span style="color: var(--mob)">Mobile: change per year</span><span class="rate" id="mobileRateLabel"></span></h3>
+      <div class="sources" id="mobileSources"></div>
+      <svg class="hist" id="mobileHist" viewBox="0 0 500 82"></svg>
       <input type="range" id="mobileRate" step="0.5">
       <div class="hint" id="mobileHint"></div>
     </div>
   </div>
-  <button id="reset">Reset to the pre-draft pace</button>
-
   <div class="results">
+    <div><button id="reset">Reset to the<br>pre-draft pace</button></div>
     <div class="result"><div>Desktop, Dec 15 2027</div><div class="big" style="color: var(--desk)" id="desktopOut"></div><div class="hint" id="desktopDelta"></div></div>
     <div class="result"><div>Mobile, Dec 15 2027</div><div class="big" style="color: var(--mob)" id="mobileOut"></div><div class="hint" id="mobileDelta"></div></div>
     <div class="result"><div>Desktop + Mobile, Dec 15 2027</div><div class="big" style="color: var(--sum)" id="sumOut"></div><div class="hint" id="sumDelta"></div></div>
+  </div>
   </div>
 
   <div class="chart"><svg id="chartDesktop" viewBox="0 0 1060 300"></svg><div class="stamp">TOY, NOT A FORECAST</div></div>
@@ -76,7 +85,7 @@
 </main>
 
 <script>
-const DATA = {"generated": "2026-10-15 14:31 PDT", "source": "scripts/build_mau_sensitivity_calculator.py @ 51e4c55", "horizon_end": "2027-12-31", "last": {"date": "2026-10-09", "desktop": 169179300.0, "mobile": 56407844.0}, "defaults": {"desktop": -4.0, "mobile": 14.5}, "implied_exact": {"desktop": -3.825, "mobile": 14.668}, "slider": {"desktop": {"min": -15.0, "max": 10.0}, "mobile": {"min": -10.0, "max": 30.0}}, "history": {"desktop": [162657253, 160763176, 159497089, 162146455, 164832117, 164296175, 163308203, 161792214, 160891396, 160340282, 160178001, 160391501, 158597056, 157451839, 156878878, 158155881, 158236471, 158219430, 158900582, 158571517, 158280906, 157785952, 158488348, 158895633, 158609255, 158346704, 157469724, 155740706, 153805339, 152533560, 151388282, 151114211, 150712207, 150614338, 150914848, 153592303, 157649918, 161767468, 165528905, 167954328, 169179300], "dates": ["2026-01-02", "2026-01-09", "2026-01-16", "2026-01-23", "2026-01-30", "2026-02-06", "2026-02-13", "2026-02-20", "2026-02-27", "2026-03-06", "2026-03-13", "2026-03-20", "2026-03-27", "2026-04-03", "2026-04-10", "2026-04-17", "2026-04-24", "2026-05-01", "2026-05-08", "2026-05-15", "2026-05-22", "2026-05-29", "2026-06-05", "2026-06-12", "2026-06-19", "2026-06-26", "2026-07-03", "2026-07-10", "2026-07-17", "2026-07-24", "2026-07-31", "2026-08-07", "2026-08-14", "2026-08-21", "2026-08-28", "2026-09-04", "2026-09-11", "2026-09-18", "2026-09-25", "2026-10-02", "2026-10-09"], "mobile": [46727527, 46347648, 45942203, 46227680, 46670410, 46632697, 46806423, 46629811, 46277673, 45874637, 45573810, 45380497, 44614603, 44564268, 44938848, 45336165, 45652423, 46102791, 46511376, 47027884, 47665529, 49452911, 50502218, 51261716, 51881556, 52023233, 51976529, 51924114, 51854399, 51978159, 52164789, 52431833, 52670217, 52911963, 53341896, 53771912, 54424589, 55200162, 55745458, 56372280, 56407844]}, "yoy": {"desktop": {"values": [-4.52, -4.19, -4.68, -4.53, -4.09, -3.44, -4.52, -4.93, -4.35, -3.34, -2.99, -3.91, -3.34, -2.79, -4.1, -4.87, -3.71, -4.3, -4.88, -5.02, -4.02, -3.44, -3.33, -4.51, -5.07, -4.82, -4.81, -5.73, -5.1, -4.21, -4.45, -4.98, -4.02, -5.4, -5.36, -5.22, -6.61, -6.55, -7.19, -7.5, -5.99, -5.16, -6.22, -4.77, -2.54, -1.61, -2.86, -3.14, -2.7, -2.06, -1.15, -0.32, 0.06], "source": "Legacy desktop telemetry", "first": "2024-10-11", "bin_width": 1.0}, "mobile": {"values": [-1.01, 0.4, -0.1, 0.74, 2.54, 3.82, 5.67, 6.85, 7.12, 7.48, 7.19, 7.73, 10.35, 8.09, 7.08, 6.17, 6.19, 6.68, 6.97, 7.95, 7.62, 6.85, 6.36, 6.68, 7.24, 7.36, 6.98, 6.38, 6.19, 7.28, 9.18, 10.26, 8.03, 5.21, 4.73, 3.75, 2.51, 0.78, -2.21, 0.67, 2.47, 5.52, 8.52, 14.21, 16.7, 15.89, 15.44, 16.87, 18.08, 18.88, 20.01, 22.07, 23.4], "source": "Glean mobile telemetry", "first": "2024-10-11", "bin_width": 2.0}}};
+const DATA = {"generated": "2026-10-15 14:46 PDT", "source": "scripts/build_mau_sensitivity_calculator.py @ b6de828", "horizon_end": "2027-12-31", "last": {"date": "2026-10-09", "desktop": 169179300.0, "mobile": 56407844.0}, "defaults": {"desktop": -4.0, "mobile": 12.5}, "implied_exact": {"desktop": -3.923, "mobile": 12.663}, "slider": {"desktop": {"min": -15.0, "max": 10.0}, "mobile": {"min": -10.0, "max": 30.0}}, "history": {"desktop": [162657253, 160763176, 159497089, 162146455, 164832117, 164296175, 163308203, 161792214, 160891396, 160340282, 160178001, 160391501, 158597056, 157451839, 156878878, 158155881, 158236471, 158219430, 158900582, 158571517, 158280906, 157785952, 158488348, 158895633, 158609255, 158346704, 157469724, 155740706, 153805339, 152533560, 151388282, 151114211, 150712207, 150614338, 150914848, 153592303, 157649918, 161767468, 165528905, 167954328, 169179300], "dates": ["2026-01-02", "2026-01-09", "2026-01-16", "2026-01-23", "2026-01-30", "2026-02-06", "2026-02-13", "2026-02-20", "2026-02-27", "2026-03-06", "2026-03-13", "2026-03-20", "2026-03-27", "2026-04-03", "2026-04-10", "2026-04-17", "2026-04-24", "2026-05-01", "2026-05-08", "2026-05-15", "2026-05-22", "2026-05-29", "2026-06-05", "2026-06-12", "2026-06-19", "2026-06-26", "2026-07-03", "2026-07-10", "2026-07-17", "2026-07-24", "2026-07-31", "2026-08-07", "2026-08-14", "2026-08-21", "2026-08-28", "2026-09-04", "2026-09-11", "2026-09-18", "2026-09-25", "2026-10-02", "2026-10-09"], "mobile": [46727527, 46347648, 45942203, 46227680, 46670410, 46632697, 46806423, 46629811, 46277673, 45874637, 45573810, 45380497, 44614603, 44564268, 44938848, 45336165, 45652423, 46102791, 46511376, 47027884, 47665529, 49452911, 50502218, 51261716, 51881556, 52023233, 51976529, 51924114, 51854399, 51978159, 52164789, 52431833, 52670217, 52911963, 53341896, 53771912, 54424589, 55200162, 55745458, 56372280, 56407844]}, "yoy": {"desktop": {"options": [{"id": "legacy", "label": "Legacy", "note": "the older desktop telemetry system", "values": [-4.52, -4.19, -4.68, -4.53, -4.09, -3.44, -4.52, -4.93, -4.35, -3.34, -2.99, -3.91, -3.34, -2.79, -4.1, -4.87, -3.71, -4.3, -4.88, -5.02, -4.02, -3.44, -3.33, -4.51, -5.07, -4.82, -4.81, -5.73, -5.1, -4.21, -4.45, -4.98, -4.02, -5.4, -5.36, -5.22, -6.61, -6.55, -7.19, -7.5, -5.99, -5.16, -6.22, -4.77, -2.54, -1.61, -2.86, -3.14, -2.7, -2.06, -1.15, -0.32, 0.06], "first": "2024-10-11"}, {"id": "simulated", "label": "Simulated history", "note": "Legacy translated into Glean terms (our build-5 input)", "values": [-4.49, -4.15, -4.65, -4.5, -4.06, -3.42, -4.48, -4.89, -4.32, -3.28, -2.91, -3.85, -3.29, -2.72, -4.07, -4.84, -3.65, -4.24, -4.83, -4.97, -3.98, -3.38, -3.27, -4.44, -5.0, -4.73, -4.72, -5.62, -4.96, -4.07, -4.3, -4.82, -3.88, -5.26, -5.19, -5.03, -6.47, -6.41, -7.0, -7.31, -5.77, -4.91, -6.01, -4.6, -2.33, -1.38, -2.63, -2.91, -2.47, -1.84, -0.94, -0.14, 0.24], "first": "2024-10-11"}, {"id": "glean", "label": "Actual Glean", "note": "real Glean only starts May 2025, so only readings since May 2026 exist", "values": [-9.97, -9.18, -6.69, -5.63, -6.87, -7.06, -6.54, -6.44, -5.68, -3.67, -2.4], "first": "2026-05-22"}], "bin_width": 1.0}, "mobile": {"options": [{"id": "glean", "label": "Glean", "note": "the only mobile telemetry", "values": [-1.01, 0.4, -0.1, 0.74, 2.54, 3.82, 5.67, 6.85, 7.12, 7.48, 7.19, 7.73, 10.35, 8.09, 7.08, 6.17, 6.19, 6.68, 6.97, 7.95, 7.62, 6.85, 6.36, 6.68, 7.24, 7.36, 6.98, 6.38, 6.19, 7.28, 9.18, 10.26, 8.03, 5.21, 4.73, 3.75, 2.51, 0.78, -2.21, 0.67, 2.47, 5.52, 8.52, 14.21, 16.7, 15.89, 15.44, 16.87, 18.08, 18.88, 20.01, 22.07, 23.4], "first": "2024-10-11"}], "bin_width": 2.0}}, "seasonal": {"desktop": {"coefficients": [1.0, 0.020143, 0.011198, -0.009951, -0.014604, -0.012717, 0.00311, 0.001751, -0.006397], "source": "Legacy desktop telemetry", "from": "2020-01-01"}, "mobile": {"coefficients": [1.0, 0.026188, 0.002133, -0.005285, 0.004153, -0.002881, -0.00072, 0.00235, -0.008194], "source": "Glean mobile telemetry", "from": "2020-12-31"}}};
 const DAY_MS = 86400000;
 const toDate = s => new Date(s + "T00:00:00Z");
 const lastDate = toDate(DATA.last.date);
@@ -89,10 +98,25 @@ const COLORS = { desktop: "#3d6fb0", mobile: "#d9772b", sum: "#4a8a3c" };   // l
 function fmtM(v) { return "~" + (v / 1e6).toFixed(0) + "M"; }
 function fmtRate(r) { return (r > 0 ? "+" : "") + r.toFixed(1) + "% a year"; }
 
-// The whole "model": today's level compounded at one yearly rate. Nothing else.
-function projectLevel(lastValue, ratePercent, date) {
+// Day of a 365-day year (Feb 29 folds onto Feb 28), matching day_of_year_365 in the builder.
+function dayOfYear(date) {
+  const month = date.getUTCMonth(), day = month === 1 ? Math.min(date.getUTCDate(), 28) : date.getUTCDate();
+  return (Date.UTC(2001, month, day) - Date.UTC(2001, 0, 1)) / DAY_MS + 1;
+}
+
+// Typical-year shape: 1 + sum of a few yearly waves (coefficients from the builder's seasonal_profile).
+function seasonalIndex(key, date) {
+  const c = DATA.seasonal[key].coefficients, angle = 2 * Math.PI * (dayOfYear(date) - 1) / 365;
+  let index = c[0];
+  for (let k = 1; 2 * k < c.length; k++) index += c[2 * k - 1] * Math.cos(k * angle) + c[2 * k] * Math.sin(k * angle);
+  return index;
+}
+
+// The whole "model": today's level, moved along the typical year's shape, times one steady yearly change. Nothing else.
+// Same formula as seasonal_projection in the builder.
+function projectLevel(key, ratePercent, date) {
   const years = (date - lastDate) / DAY_MS / 365;
-  return lastValue * Math.pow(1 + ratePercent / 100, years);
+  return DATA.last[key] * seasonalIndex(key, date) / seasonalIndex(key, lastDate) * Math.pow(1 + ratePercent / 100, years);
 }
 
 function projectionDates() {
@@ -145,7 +169,7 @@ function drawFrame(svg, scales, yMin, yMax, title) {
   svg.appendChild(el("line", { x1: xToday, x2: xToday, y1: s.top, y2: s.bottom, stroke: "#999", "stroke-width": 1.5, "stroke-dasharray": "6 5" }));
   svg.appendChild(el("text", { x: xToday + 6, y: s.top + 14, "font-size": 14, fill: "#777" }, "last real data"));
   svg.appendChild(el("text", { x: s.x(lastDate) - 8, y: s.top + 14, "font-size": 14, fill: "#777", "text-anchor": "end" }, "what happened"));
-  svg.appendChild(el("text", { x: s.right - 4, y: s.top + 14, "font-size": 14, fill: "#777", "text-anchor": "end" }, "make-believe straight-ish line"));
+  svg.appendChild(el("text", { x: s.right - 4, y: s.top + 14, "font-size": 14, fill: "#777", "text-anchor": "end" }, "make-believe: typical year × steady change"));
 }
 
 function niceStep(raw) {
@@ -172,9 +196,9 @@ function platformChart(svg, key, color, title, rate, yRange) {
   drawFrame(svg, s, yRange[0], yRange[1], title);
   const history = DATA.history.dates.map((d, i) => [s.x(toDate(d)), s.y(DATA.history[key][i])]);
   drawLine(svg, history, "#2b2b2b", 3, 1);
-  const projection = projectionDates().map(d => [s.x(d), s.y(projectLevel(DATA.last[key], rate, d))]);
+  const projection = projectionDates().map(d => [s.x(d), s.y(projectLevel(key, rate, d))]);
   drawLine(svg, projection, color, 3.5, 5, true);
-  drawDot(svg, s, projectLevel(DATA.last[key], rate, dec15_2027), color);
+  drawDot(svg, s, projectLevel(key, rate, dec15_2027), color);
 }
 
 function sumChart(svg, desktopRate, mobileRate, yRange) {
@@ -182,28 +206,41 @@ function sumChart(svg, desktopRate, mobileRate, yRange) {
   drawFrame(svg, s, yRange[0], yRange[1], "Desktop + Mobile (profiles add up)");
   const history = DATA.history.dates.map((d, i) => [s.x(toDate(d)), s.y(DATA.history.desktop[i] + DATA.history.mobile[i])]);
   drawLine(svg, history, "#2b2b2b", 3, 2);
-  const sumAt = d => projectLevel(DATA.last.desktop, desktopRate, d) + projectLevel(DATA.last.mobile, mobileRate, d);
+  const sumAt = d => projectLevel("desktop", desktopRate, d) + projectLevel("mobile", mobileRate, d);
   drawLine(svg, projectionDates().map(d => [s.x(d), s.y(sumAt(d))]), COLORS.sum, 3.5, 9, true);
   drawDot(svg, s, sumAt(dec15_2027), COLORS.sum);
 }
 
 // Histogram of the past two years' year-over-year readings, drawn on the slider's own scale so the thumb sits
 // under the bar it matches. HIST_PAD approximates the range input's thumb inset at each end of the track.
-const HIST_PAD = 9, HIST_W = 500, HIST_BASE = 84;
+const HIST_PAD = 9, HIST_W = 500, HIST_BASE = 62, HIST_BAR_MAX = 40;
 function histX(rate, slider) { return HIST_PAD + (rate - slider.min) / (slider.max - slider.min) * (HIST_W - 2 * HIST_PAD); }
 
+const selectedSource = { desktop: 0, mobile: 0 };   // index into DATA.yoy[key].options; the first option is the default
+
+function currentReadings(key) { return DATA.yoy[key].options[selectedSource[key]]; }
+
+// Radio buttons to switch the histogram's data source; only drawn when a platform has more than one source.
+function buildSourcePicker(key) {
+  const box = document.getElementById(key + "Sources"), options = DATA.yoy[key].options;
+  if (options.length < 2) { box.textContent = `Bars from ${options[0].label}: ${options[0].note}.`; box.className = "hint"; return; }
+  box.innerHTML = "Bars from: " + options.map((o, i) =>
+    `<label title="${o.note}"><input type="radio" name="${key}Source" value="${i}"${i === 0 ? " checked" : ""}> ${o.label}</label>`).join("");
+  box.querySelectorAll("input").forEach(input => input.addEventListener("change", () => { selectedSource[key] = Number(input.value); render(); }));
+}
+
 function drawHistogram(key, rate, color) {
-  const svg = document.getElementById(key + "Hist"), slider = DATA.slider[key], yoy = DATA.yoy[key];
+  const svg = document.getElementById(key + "Hist"), slider = DATA.slider[key], yoy = DATA.yoy[key], readings = currentReadings(key);
   svg.innerHTML = "";
   const counts = new Map();
-  for (const v of yoy.values) {
+  for (const v of readings.values) {
     const clamped = Math.min(Math.max(v, slider.min), slider.max - 1e-9);   // off-scale readings pile into the edge bins
     const binStart = Math.floor(clamped / yoy.bin_width) * yoy.bin_width;
     counts.set(binStart, (counts.get(binStart) || 0) + 1);
   }
   const tallest = Math.max(...counts.values());
   for (const [binStart, count] of counts) {
-    const x0 = histX(binStart, slider), x1 = histX(binStart + yoy.bin_width, slider), h = count / tallest * 58;
+    const x0 = histX(binStart, slider), x1 = histX(binStart + yoy.bin_width, slider), h = count / tallest * HIST_BAR_MAX;
     svg.appendChild(el("path", { d: sketchPath([[x0 + 1, HIST_BASE], [x0 + 1, HIST_BASE - h], [x1 - 1, HIST_BASE - h], [x1 - 1, HIST_BASE]], binStart),
       fill: "#d8d2c4", stroke: "#6b6457", "stroke-width": 1.4 }));
   }
@@ -212,16 +249,20 @@ function drawHistogram(key, rate, color) {
     svg.appendChild(el("text", { x: histX(tick, slider), y: HIST_BASE + 16, "font-size": 12, fill: "#666",
       "text-anchor": tick === slider.min ? "start" : tick === slider.max ? "end" : "middle" }, (tick > 0 ? "+" : "") + tick + "%"));
   const xRate = histX(rate, slider);
-  svg.appendChild(el("line", { x1: xRate, x2: xRate, y1: 12, y2: HIST_BASE, stroke: color, "stroke-width": 3 }));
-  const atOrBelow = yoy.values.filter(v => v <= rate).length;
-  svg.appendChild(el("text", { x: Math.min(Math.max(xRate, 120), HIST_W - 120), y: 10, "font-size": 13, "text-anchor": "middle", fill: color, "font-weight": "bold" },
-    `${atOrBelow} of ${yoy.values.length} past readings at or below this`));
+  svg.appendChild(el("line", { x1: xRate, x2: xRate, y1: 14, y2: HIST_BASE, stroke: color, "stroke-width": 3 }));
+  const atOrBelow = readings.values.filter(v => v <= rate).length;
+  svg.appendChild(el("text", { x: Math.min(Math.max(xRate, 120), HIST_W - 120), y: 11, "font-size": 13, "text-anchor": "middle", fill: color, "font-weight": "bold" },
+    `${atOrBelow} of ${readings.values.length} past readings at or below this`));
+  const option = currentReadings(key);
+  document.getElementById(key + "Hint").textContent = `Bars: actual year-over-year change, every 2 weeks since ${option.first.slice(0, 7)}`
+    + ` (${option.label}: ${option.note}). Pre-draft pace ${fmtRate(DATA.defaults[key])}.`;
 }
 
 // Fixed axes per chart, wide enough for every slider position, so moving a slider moves the line, not the axis.
-function axisRange(historyValues, lastValue, minRate, maxRate) {
-  const lo = Math.min(...historyValues, projectLevel(lastValue, minRate, endDate));
-  const hi = Math.max(...historyValues, projectLevel(lastValue, maxRate, endDate));
+function axisRange(key, historyValues, minRate, maxRate) {
+  const dates = projectionDates();
+  const lo = Math.min(...historyValues, ...dates.map(d => projectLevel(key, minRate, d)));
+  const hi = Math.max(...historyValues, ...dates.map(d => projectLevel(key, maxRate, d)));
   const pad = (hi - lo) * 0.08;
   return [lo - pad, hi + pad];
 }
@@ -229,15 +270,11 @@ function axisRange(historyValues, lastValue, minRate, maxRate) {
 const sliders = { desktop: document.getElementById("desktopRate"), mobile: document.getElementById("mobileRate") };
 for (const key of ["desktop", "mobile"]) {
   Object.assign(sliders[key], { min: DATA.slider[key].min, max: DATA.slider[key].max, value: DATA.defaults[key] });
-  const yoy = DATA.yoy[key];
-  document.getElementById(key + "Hint").innerHTML = `Bars: how much ${key} actually changed year over year, read every two weeks
-    from ${yoy.first} to ${DATA.last.date} (${yoy.values.length} readings, ${yoy.source}${key === "desktop" ?
-    "; Legacy is the older desktop telemetry system, used here because the newer one only starts in May 2025, and our Glean-equivalent history gives the same readings within 0.3 points" : ""}).
-    Pre-draft pace: ${fmtRate(DATA.defaults[key])}.`;
+  buildSourcePicker(key);
 }
 const ranges = {
-  desktop: axisRange(DATA.history.desktop, DATA.last.desktop, DATA.slider.desktop.min, DATA.slider.desktop.max),
-  mobile: axisRange(DATA.history.mobile, DATA.last.mobile, DATA.slider.mobile.min, DATA.slider.mobile.max),
+  desktop: axisRange("desktop", DATA.history.desktop, DATA.slider.desktop.min, DATA.slider.desktop.max),
+  mobile: axisRange("mobile", DATA.history.mobile, DATA.slider.mobile.min, DATA.slider.mobile.max),
 };
 const sumHistory = DATA.history.desktop.map((v, i) => v + DATA.history.mobile[i]);
 ranges.sum = [Math.min(...sumHistory, ranges.desktop[0] + ranges.mobile[0]), Math.max(...sumHistory, ranges.desktop[1] + ranges.mobile[1])];
@@ -251,8 +288,8 @@ function render() {
   const desktopRate = Number(sliders.desktop.value), mobileRate = Number(sliders.mobile.value);
   document.getElementById("desktopRateLabel").textContent = fmtRate(desktopRate);
   document.getElementById("mobileRateLabel").textContent = fmtRate(mobileRate);
-  const desktop = projectLevel(DATA.last.desktop, desktopRate, dec15_2027);
-  const mobile = projectLevel(DATA.last.mobile, mobileRate, dec15_2027);
+  const desktop = projectLevel("desktop", desktopRate, dec15_2027);
+  const mobile = projectLevel("mobile", mobileRate, dec15_2027);
   document.getElementById("desktopOut").textContent = fmtM(desktop);
   document.getElementById("mobileOut").textContent = fmtM(mobile);
   document.getElementById("sumOut").textContent = fmtM(desktop + mobile);
@@ -276,11 +313,20 @@ document.getElementById("banner").innerHTML =
   `<b>Generated:</b> ${DATA.generated} &nbsp;|&nbsp; <b>Source:</b> ${DATA.source} &nbsp;|&nbsp; <b>Data as of:</b> ${DATA.last.date}`;
 document.getElementById("how").innerHTML = `<b>How the toy works.</b> The black lines are real monthly active profiles
   (Firefox Desktop and the four Firefox mobile apps, one point a week) through ${DATA.last.date}. After that, each coloured line is
-  <i>today's level × (1 + yearly rate)</i>, compounded smoothly, and nothing more: no seasons, no holidays, no marketing calendar.
-  The starting slider positions are the steady yearly rates that land on our <b>pre-draft</b> 2027 forecast's Dec 15 2027 values
-  (desktop ${fmtRate(DATA.defaults.desktop)}, mobile ${fmtRate(DATA.defaults.mobile)}); that forecast itself is unfinished and is not
-  shown here. Desktop and mobile add up because monthly active users counts profiles, and a desktop profile and a mobile profile are
-  different profiles. Numbers are rounded to the nearest million on purpose.`;
+  <i>today's level, moved along a typical year's shape, × (1 + yearly change)</i>, and nothing more: no holidays, no shocks,
+  no marketing calendar. The typical year is the usual up-and-down of each calendar day relative to its year's average, smoothed
+  into a few gentle waves (desktop from ${DATA.seasonal.desktop.source} since ${DATA.seasonal.desktop.from.slice(0, 4)}, mobile from
+  ${DATA.seasonal.mobile.source} since ${DATA.seasonal.mobile.from.slice(0, 4)}). Because the shape repeats every year, the slider is
+  exactly the change from one Dec 15 to the next, the same thing the bars above it measure.
+  <br><br><b>The bars.</b> Each bar counts how often the real year-over-year change landed in that range, read every two weeks over
+  the past two years. Desktop can be read three ways. <i>Legacy</i> is the older desktop telemetry system, with a long, steady record.
+  <i>Simulated history</i> is Legacy translated into the newer Glean system's terms; it is what our pre-draft desktop model trains
+  on, and it agrees with Legacy within 0.3 points. <i>Actual Glean</i> is the newer system itself, but it only starts in May 2025,
+  so it has only a handful of readings, all from the last few months.
+  <br><br>The starting slider positions are the steady changes that land the toy on our <b>pre-draft</b> 2027 forecast's
+  Dec 15 2027 values (desktop ${fmtRate(DATA.defaults.desktop)}, mobile ${fmtRate(DATA.defaults.mobile)}); that forecast is unfinished
+  and is not shown here. Desktop and mobile add up because monthly active users counts profiles, and a desktop profile and a mobile
+  profile are different profiles. Numbers are rounded to the nearest million on purpose.`;
 render();
 </script>
 </body>
