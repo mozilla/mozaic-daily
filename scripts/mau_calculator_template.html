@@ -7,14 +7,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Firefox MAU — what-if toy (not a forecast)</title>
 <style>
-  :root { --ink: #2b2b2b; --desk: #3d6fb0; --mob: #d9772b; --sum: #4a8a3c; --paper: #fffdf6; }
+  :root { --ink: #2b2b2b; --desk: #3d6fb0; --mob: #d9772b; --sum: #4a8a3c; --paper: #e9e9e7; --card: #fff; --warn-bg: #fff3f0; --muted: #666; }
+  /* Night mode: page colours via the variables above; the charts' SVG colours (set as attributes by the drawing code)
+     are swapped with attribute selectors so the drawing code itself is untouched. */
+  body.night { --ink: #e6e6e6; --desk: #7aa7e6; --mob: #f0a060; --sum: #7cc96a; --paper: #1e1f22; --card: #2a2c30; --warn-bg: #3a2426; --muted: #aaa; }
+  body.night svg [fill="#2b2b2b"] { fill: #e6e6e6; }
+  body.night svg [stroke="#2b2b2b"] { stroke: #e6e6e6; }
+  body.night svg [fill="#555"], body.night svg [fill="#666"], body.night svg [fill="#777"] { fill: #aaa; }
+  body.night svg [stroke="#999"] { stroke: #888; }
+  body.night svg [stroke="#ddd"] { stroke: #3d3f44; }
+  body.night svg [fill="#d8d2c4"] { fill: #4a4c52; }
+  body.night svg [stroke="#6b6457"] { stroke: #9a9a9a; }
+  body.night svg [fill="#fff"] { fill: #2a2c30; }
+  body.night svg [stroke="#fff"] { stroke: #2a2c30; }   /* caption halo sits on a card */
+  body.night svg [stroke="#3d6fb0"] { stroke: #7aa7e6; }  body.night svg [fill="#3d6fb0"] { fill: #7aa7e6; }
+  body.night svg [stroke="#d9772b"] { stroke: #f0a060; }  body.night svg [fill="#d9772b"] { fill: #f0a060; }
+  body.night svg [stroke="#4a8a3c"] { stroke: #7cc96a; }  body.night svg [fill="#4a8a3c"] { fill: #7cc96a; }
+  body.night .hint, body.night .mini-results .delta { color: var(--muted); }
+  body.night input[type=range] { accent-color: #7aa7e6; }
+  .mode-toggle { float: right; margin-left: 10px; font-size: 14px; padding: 2px 10px; }
   body { margin: 0; background: var(--paper); color: var(--ink);
          font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive; }
   .banner { font-family: -apple-system, Helvetica, Arial, sans-serif; font-size: 12px; background: #6a1b9a; color: #fff;
             padding: 6px 14px; }
   main { max-width: 1100px; margin: 0 auto; padding: 8px 20px 40px; }
   h1 { font-size: 30px; margin: 14px 0 4px; }
-  .warning { border: 3px dashed #c62828; background: #fff3f0; padding: 10px 14px; border-radius: 12px; font-size: 16px;
+  .warning { border: 3px dashed #c62828; background: var(--warn-bg); padding: 10px 14px; border-radius: 12px; font-size: 16px;
              transform: rotate(-0.4deg); margin: 12px 0 18px; }
   .panel { padding: 8px 0 8px; border-bottom: 2.5px dashed #bbb; }
   /* Once the full panel scrolls away, a slim fixed bar with the same sliders slides in over the top, so any chart can be
@@ -24,7 +42,7 @@
              box-shadow: 0 6px 10px -8px rgba(0,0,0,0.3); transform: translateY(-110%); transition: transform 0.18s ease-out; }
   .minibar.shown { transform: translateY(0); }
   .minibar-inner { max-width: 1100px; margin: 0 auto; padding: 6px 20px 8px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 14px; align-items: center; }
-  .mini-control { border: 2.5px solid var(--ink); border-radius: 12px 16px 10px 14px; padding: 3px 12px 6px; background: #fff; }
+  .mini-control { border: 2.5px solid var(--ink); border-radius: 12px 16px 10px 14px; padding: 3px 12px 6px; background: var(--card); }
   .mini-control .head { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; }
   .mini-control .rate { font-size: 18px; }
   .mini-control input[type=range] { width: 100%; margin: 2px 0 0; }
@@ -34,18 +52,18 @@
   .mini-results .delta { color: #555; white-space: nowrap; }
   .toy-tag { float: right; font-size: 13px; color: #c62828; border: 2px dashed #c62828; border-radius: 8px; padding: 1px 8px; }
   .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
-  .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 6px 12px 6px; background: #fff; }
+  .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 6px 12px 6px; background: var(--card); }
   .control h3 { margin: 0; font-size: 17px; display: flex; justify-content: space-between; align-items: baseline; }
   .control input[type=range] { width: 100%; margin: 0; }
   .hist { width: 100%; height: auto; display: block; overflow: visible; }   /* a caption near the right end may spill into the padding */
   .rate { font-size: 22px; font-weight: bold; color: var(--ink); }
-  .hint { font-size: 12px; color: #666; }
+  .hint { font-size: 12px; color: var(--muted); }
   .sources { font-size: 13px; margin: 2px 0 0; }
   .sources label { margin-right: 10px; cursor: pointer; white-space: nowrap; }
-  button { font-family: inherit; font-size: 15px; border: 2px solid var(--ink); border-radius: 10px; background: #fff;
+  button { color: var(--ink); font-family: inherit; font-size: 15px; border: 2px solid var(--ink); border-radius: 10px; background: var(--card);
            padding: 4px 12px; cursor: pointer; }
   .results { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 12px; align-items: center; }
-  .result { border: 2.5px solid var(--ink); border-radius: 16px 12px 18px 14px; padding: 3px 10px; text-align: center; background: #fff; font-size: 14px; }
+  .result { border: 2.5px solid var(--ink); border-radius: 16px 12px 18px 14px; padding: 3px 10px; text-align: center; background: var(--card); font-size: 14px; }
   .result .big { font-size: 22px; font-weight: bold; }
   .chart { position: relative; margin-top: 18px; }
   .chart svg { width: 100%; height: auto; display: block; }
@@ -71,7 +89,7 @@
   </div>
 </div>
 <main>
-  <h1>Firefox monthly active profiles: a what-if toy <span class="toy-tag">toy, not a forecast</span></h1>
+  <h1>Firefox monthly active profiles: a what-if toy <button class="mode-toggle" id="modeToggle" type="button"></button><span class="toy-tag">toy, not a forecast</span></h1>
   <div class="warning"><b>This is not a forecast.</b> The lines after today are deliberately simple: a typical year's
     up-and-down shape, multiplied by one steady yearly change that you choose. Real profiles have holidays, shocks and
     surprises, and none of that is here. Use it only to get a ballpark feel for
@@ -354,6 +372,21 @@ function render() {
   platformChart(document.getElementById("chartMobile"), "mobile", COLORS.mobile, "Mobile", mobileRate, ranges.mobile);
   sumChart(document.getElementById("chartSum"), desktopRate, mobileRate, ranges.sum);
 }
+
+// Night-mode toggle; the choice is remembered in this browser. Falls back to the OS preference on a first visit.
+const MODE_KEY = "mauToyNightMode";
+function applyMode(night) {
+  document.body.classList.toggle("night", night);
+  document.getElementById("modeToggle").textContent = night ? "\u2600 day" : "\u263E night";
+}
+let storedMode = null;
+try { storedMode = localStorage.getItem(MODE_KEY); } catch (e) { /* storage blocked: just don't remember */ }
+applyMode(storedMode === null ? window.matchMedia("(prefers-color-scheme: dark)").matches : storedMode === "1");
+document.getElementById("modeToggle").addEventListener("click", () => {
+  const night = !document.body.classList.contains("night");
+  applyMode(night);
+  try { localStorage.setItem(MODE_KEY, night ? "1" : "0"); } catch (e) { /* ignore */ }
+});
 
 document.getElementById("reset").addEventListener("click", () => {
   rates.desktop = DATA.defaults.desktop; rates.mobile = DATA.defaults.mobile; render();

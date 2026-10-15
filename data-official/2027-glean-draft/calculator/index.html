@@ -7,14 +7,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Firefox MAU — what-if toy (not a forecast)</title>
 <style>
-  :root { --ink: #2b2b2b; --desk: #3d6fb0; --mob: #d9772b; --sum: #4a8a3c; --paper: #fffdf6; }
+  :root { --ink: #2b2b2b; --desk: #3d6fb0; --mob: #d9772b; --sum: #4a8a3c; --paper: #e9e9e7; --card: #fff; --warn-bg: #fff3f0; --muted: #666; }
+  /* Night mode: page colours via the variables above; the charts' SVG colours (set as attributes by the drawing code)
+     are swapped with attribute selectors so the drawing code itself is untouched. */
+  body.night { --ink: #e6e6e6; --desk: #7aa7e6; --mob: #f0a060; --sum: #7cc96a; --paper: #1e1f22; --card: #2a2c30; --warn-bg: #3a2426; --muted: #aaa; }
+  body.night svg [fill="#2b2b2b"] { fill: #e6e6e6; }
+  body.night svg [stroke="#2b2b2b"] { stroke: #e6e6e6; }
+  body.night svg [fill="#555"], body.night svg [fill="#666"], body.night svg [fill="#777"] { fill: #aaa; }
+  body.night svg [stroke="#999"] { stroke: #888; }
+  body.night svg [stroke="#ddd"] { stroke: #3d3f44; }
+  body.night svg [fill="#d8d2c4"] { fill: #4a4c52; }
+  body.night svg [stroke="#6b6457"] { stroke: #9a9a9a; }
+  body.night svg [fill="#fff"] { fill: #2a2c30; }
+  body.night svg [stroke="#fff"] { stroke: #2a2c30; }   /* caption halo sits on a card */
+  body.night svg [stroke="#3d6fb0"] { stroke: #7aa7e6; }  body.night svg [fill="#3d6fb0"] { fill: #7aa7e6; }
+  body.night svg [stroke="#d9772b"] { stroke: #f0a060; }  body.night svg [fill="#d9772b"] { fill: #f0a060; }
+  body.night svg [stroke="#4a8a3c"] { stroke: #7cc96a; }  body.night svg [fill="#4a8a3c"] { fill: #7cc96a; }
+  body.night .hint, body.night .mini-results .delta { color: var(--muted); }
+  body.night input[type=range] { accent-color: #7aa7e6; }
+  .mode-toggle { float: right; margin-left: 10px; font-size: 14px; padding: 2px 10px; }
   body { margin: 0; background: var(--paper); color: var(--ink);
          font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive; }
   .banner { font-family: -apple-system, Helvetica, Arial, sans-serif; font-size: 12px; background: #6a1b9a; color: #fff;
             padding: 6px 14px; }
   main { max-width: 1100px; margin: 0 auto; padding: 8px 20px 40px; }
   h1 { font-size: 30px; margin: 14px 0 4px; }
-  .warning { border: 3px dashed #c62828; background: #fff3f0; padding: 10px 14px; border-radius: 12px; font-size: 16px;
+  .warning { border: 3px dashed #c62828; background: var(--warn-bg); padding: 10px 14px; border-radius: 12px; font-size: 16px;
              transform: rotate(-0.4deg); margin: 12px 0 18px; }
   .panel { padding: 8px 0 8px; border-bottom: 2.5px dashed #bbb; }
   /* Once the full panel scrolls away, a slim fixed bar with the same sliders slides in over the top, so any chart can be
@@ -24,7 +42,7 @@
              box-shadow: 0 6px 10px -8px rgba(0,0,0,0.3); transform: translateY(-110%); transition: transform 0.18s ease-out; }
   .minibar.shown { transform: translateY(0); }
   .minibar-inner { max-width: 1100px; margin: 0 auto; padding: 6px 20px 8px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 14px; align-items: center; }
-  .mini-control { border: 2.5px solid var(--ink); border-radius: 12px 16px 10px 14px; padding: 3px 12px 6px; background: #fff; }
+  .mini-control { border: 2.5px solid var(--ink); border-radius: 12px 16px 10px 14px; padding: 3px 12px 6px; background: var(--card); }
   .mini-control .head { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; }
   .mini-control .rate { font-size: 18px; }
   .mini-control input[type=range] { width: 100%; margin: 2px 0 0; }
@@ -34,18 +52,18 @@
   .mini-results .delta { color: #555; white-space: nowrap; }
   .toy-tag { float: right; font-size: 13px; color: #c62828; border: 2px dashed #c62828; border-radius: 8px; padding: 1px 8px; }
   .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
-  .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 6px 12px 6px; background: #fff; }
+  .control { border: 2.5px solid var(--ink); border-radius: 14px 18px 12px 16px; padding: 6px 12px 6px; background: var(--card); }
   .control h3 { margin: 0; font-size: 17px; display: flex; justify-content: space-between; align-items: baseline; }
   .control input[type=range] { width: 100%; margin: 0; }
   .hist { width: 100%; height: auto; display: block; overflow: visible; }   /* a caption near the right end may spill into the padding */
   .rate { font-size: 22px; font-weight: bold; color: var(--ink); }
-  .hint { font-size: 12px; color: #666; }
+  .hint { font-size: 12px; color: var(--muted); }
   .sources { font-size: 13px; margin: 2px 0 0; }
   .sources label { margin-right: 10px; cursor: pointer; white-space: nowrap; }
-  button { font-family: inherit; font-size: 15px; border: 2px solid var(--ink); border-radius: 10px; background: #fff;
+  button { color: var(--ink); font-family: inherit; font-size: 15px; border: 2px solid var(--ink); border-radius: 10px; background: var(--card);
            padding: 4px 12px; cursor: pointer; }
   .results { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 12px; align-items: center; }
-  .result { border: 2.5px solid var(--ink); border-radius: 16px 12px 18px 14px; padding: 3px 10px; text-align: center; background: #fff; font-size: 14px; }
+  .result { border: 2.5px solid var(--ink); border-radius: 16px 12px 18px 14px; padding: 3px 10px; text-align: center; background: var(--card); font-size: 14px; }
   .result .big { font-size: 22px; font-weight: bold; }
   .chart { position: relative; margin-top: 18px; }
   .chart svg { width: 100%; height: auto; display: block; }
@@ -71,7 +89,7 @@
   </div>
 </div>
 <main>
-  <h1>Firefox monthly active profiles: a what-if toy <span class="toy-tag">toy, not a forecast</span></h1>
+  <h1>Firefox monthly active profiles: a what-if toy <button class="mode-toggle" id="modeToggle" type="button"></button><span class="toy-tag">toy, not a forecast</span></h1>
   <div class="warning"><b>This is not a forecast.</b> The lines after today are deliberately simple: a typical year's
     up-and-down shape, multiplied by one steady yearly change that you choose. Real profiles have holidays, shocks and
     surprises, and none of that is here. Use it only to get a ballpark feel for
@@ -111,7 +129,7 @@
 </main>
 
 <script>
-const DATA = {"generated": "2026-10-15 15:05 PDT", "source": "scripts/build_mau_sensitivity_calculator.py @ 87eded8", "horizon_end": "2027-12-31", "last": {"date": "2026-10-09", "desktop": 169179300.0, "mobile": 56407844.0}, "defaults": {"desktop": -4.0, "mobile": 12.5}, "implied_exact": {"desktop": -3.923, "mobile": 12.663}, "slider": {"desktop": {"min": -15.0, "max": 10.0}, "mobile": {"min": -10.0, "max": 30.0}}, "history": {"desktop": [162657253, 160763176, 159497089, 162146455, 164832117, 164296175, 163308203, 161792214, 160891396, 160340282, 160178001, 160391501, 158597056, 157451839, 156878878, 158155881, 158236471, 158219430, 158900582, 158571517, 158280906, 157785952, 158488348, 158895633, 158609255, 158346704, 157469724, 155740706, 153805339, 152533560, 151388282, 151114211, 150712207, 150614338, 150914848, 153592303, 157649918, 161767468, 165528905, 167954328, 169179300], "dates": ["2026-01-02", "2026-01-09", "2026-01-16", "2026-01-23", "2026-01-30", "2026-02-06", "2026-02-13", "2026-02-20", "2026-02-27", "2026-03-06", "2026-03-13", "2026-03-20", "2026-03-27", "2026-04-03", "2026-04-10", "2026-04-17", "2026-04-24", "2026-05-01", "2026-05-08", "2026-05-15", "2026-05-22", "2026-05-29", "2026-06-05", "2026-06-12", "2026-06-19", "2026-06-26", "2026-07-03", "2026-07-10", "2026-07-17", "2026-07-24", "2026-07-31", "2026-08-07", "2026-08-14", "2026-08-21", "2026-08-28", "2026-09-04", "2026-09-11", "2026-09-18", "2026-09-25", "2026-10-02", "2026-10-09"], "mobile": [46727527, 46347648, 45942203, 46227680, 46670410, 46632697, 46806423, 46629811, 46277673, 45874637, 45573810, 45380497, 44614603, 44564268, 44938848, 45336165, 45652423, 46102791, 46511376, 47027884, 47665529, 49452911, 50502218, 51261716, 51881556, 52023233, 51976529, 51924114, 51854399, 51978159, 52164789, 52431833, 52670217, 52911963, 53341896, 53771912, 54424589, 55200162, 55745458, 56372280, 56407844]}, "yoy": {"desktop": {"options": [{"id": "legacy", "label": "Legacy", "note": "the older desktop telemetry system", "values": [-4.52, -4.19, -4.68, -4.53, -4.09, -3.44, -4.52, -4.93, -4.35, -3.34, -2.99, -3.91, -3.34, -2.79, -4.1, -4.87, -3.71, -4.3, -4.88, -5.02, -4.02, -3.44, -3.33, -4.51, -5.07, -4.82, -4.81, -5.73, -5.1, -4.21, -4.45, -4.98, -4.02, -5.4, -5.36, -5.22, -6.61, -6.55, -7.19, -7.5, -5.99, -5.16, -6.22, -4.77, -2.54, -1.61, -2.86, -3.14, -2.7, -2.06, -1.15, -0.32, 0.06], "first": "2024-10-11", "expected": -0.97, "expected_build": "Simulated Glean build"}, {"id": "simulated", "label": "Simulated Glean", "note": "Legacy translated into Glean terms (our build-5 input)", "values": [-4.49, -4.15, -4.65, -4.5, -4.06, -3.42, -4.48, -4.89, -4.32, -3.28, -2.91, -3.85, -3.29, -2.72, -4.07, -4.84, -3.65, -4.24, -4.83, -4.97, -3.98, -3.38, -3.27, -4.44, -5.0, -4.73, -4.72, -5.62, -4.96, -4.07, -4.3, -4.82, -3.88, -5.26, -5.19, -5.03, -6.47, -6.41, -7.0, -7.31, -5.77, -4.91, -6.01, -4.6, -2.33, -1.38, -2.63, -2.91, -2.47, -1.84, -0.94, -0.14, 0.24], "first": "2024-10-11", "expected": -0.97, "expected_build": "Simulated Glean build"}, {"id": "glean", "label": "Actual Glean", "note": "real Glean only starts May 2025, so only readings since May 2026 exist", "values": [-9.97, -9.18, -6.69, -5.63, -6.87, -7.06, -6.54, -6.44, -5.68, -3.67, -2.4], "first": "2026-05-22", "expected": -3.82, "expected_build": "headline build"}], "bin_width": 1.0}, "mobile": {"options": [{"id": "glean", "label": "Glean", "note": "the only mobile telemetry", "values": [-1.01, 0.4, -0.1, 0.74, 2.54, 3.82, 5.67, 6.85, 7.12, 7.48, 7.19, 7.73, 10.35, 8.09, 7.08, 6.17, 6.19, 6.68, 6.97, 7.95, 7.62, 6.85, 6.36, 6.68, 7.24, 7.36, 6.98, 6.38, 6.19, 7.28, 9.18, 10.26, 8.03, 5.21, 4.73, 3.75, 2.51, 0.78, -2.21, 0.67, 2.47, 5.52, 8.52, 14.21, 16.7, 15.89, 15.44, 16.87, 18.08, 18.88, 20.01, 22.07, 23.4], "first": "2024-10-11", "expected": 21.47, "expected_build": "headline build"}], "bin_width": 2.0}}, "seasonal": {"desktop": {"coefficients": [1.0, 0.020143, 0.011198, -0.009951, -0.014604, -0.012717, 0.00311, 0.001751, -0.006397], "source": "Legacy desktop telemetry", "from": "2020-01-01"}, "mobile": {"coefficients": [1.0, 0.026188, 0.002133, -0.005285, 0.004153, -0.002881, -0.00072, 0.00235, -0.008194], "source": "Glean mobile telemetry", "from": "2020-12-31"}}};
+const DATA = {"generated": "2026-10-15 15:16 PDT", "source": "scripts/build_mau_sensitivity_calculator.py @ d6e794f", "horizon_end": "2027-12-31", "last": {"date": "2026-10-09", "desktop": 169179300.0, "mobile": 56407844.0}, "defaults": {"desktop": -4.0, "mobile": 12.5}, "implied_exact": {"desktop": -3.923, "mobile": 12.663}, "slider": {"desktop": {"min": -15.0, "max": 10.0}, "mobile": {"min": -10.0, "max": 30.0}}, "history": {"desktop": [162657253, 160763176, 159497089, 162146455, 164832117, 164296175, 163308203, 161792214, 160891396, 160340282, 160178001, 160391501, 158597056, 157451839, 156878878, 158155881, 158236471, 158219430, 158900582, 158571517, 158280906, 157785952, 158488348, 158895633, 158609255, 158346704, 157469724, 155740706, 153805339, 152533560, 151388282, 151114211, 150712207, 150614338, 150914848, 153592303, 157649918, 161767468, 165528905, 167954328, 169179300], "dates": ["2026-01-02", "2026-01-09", "2026-01-16", "2026-01-23", "2026-01-30", "2026-02-06", "2026-02-13", "2026-02-20", "2026-02-27", "2026-03-06", "2026-03-13", "2026-03-20", "2026-03-27", "2026-04-03", "2026-04-10", "2026-04-17", "2026-04-24", "2026-05-01", "2026-05-08", "2026-05-15", "2026-05-22", "2026-05-29", "2026-06-05", "2026-06-12", "2026-06-19", "2026-06-26", "2026-07-03", "2026-07-10", "2026-07-17", "2026-07-24", "2026-07-31", "2026-08-07", "2026-08-14", "2026-08-21", "2026-08-28", "2026-09-04", "2026-09-11", "2026-09-18", "2026-09-25", "2026-10-02", "2026-10-09"], "mobile": [46727527, 46347648, 45942203, 46227680, 46670410, 46632697, 46806423, 46629811, 46277673, 45874637, 45573810, 45380497, 44614603, 44564268, 44938848, 45336165, 45652423, 46102791, 46511376, 47027884, 47665529, 49452911, 50502218, 51261716, 51881556, 52023233, 51976529, 51924114, 51854399, 51978159, 52164789, 52431833, 52670217, 52911963, 53341896, 53771912, 54424589, 55200162, 55745458, 56372280, 56407844]}, "yoy": {"desktop": {"options": [{"id": "legacy", "label": "Legacy", "note": "the older desktop telemetry system", "values": [-4.52, -4.19, -4.68, -4.53, -4.09, -3.44, -4.52, -4.93, -4.35, -3.34, -2.99, -3.91, -3.34, -2.79, -4.1, -4.87, -3.71, -4.3, -4.88, -5.02, -4.02, -3.44, -3.33, -4.51, -5.07, -4.82, -4.81, -5.73, -5.1, -4.21, -4.45, -4.98, -4.02, -5.4, -5.36, -5.22, -6.61, -6.55, -7.19, -7.5, -5.99, -5.16, -6.22, -4.77, -2.54, -1.61, -2.86, -3.14, -2.7, -2.06, -1.15, -0.32, 0.06], "first": "2024-10-11", "expected": -0.97, "expected_build": "Simulated Glean build"}, {"id": "simulated", "label": "Simulated Glean", "note": "Legacy translated into Glean terms (our build-5 input)", "values": [-4.49, -4.15, -4.65, -4.5, -4.06, -3.42, -4.48, -4.89, -4.32, -3.28, -2.91, -3.85, -3.29, -2.72, -4.07, -4.84, -3.65, -4.24, -4.83, -4.97, -3.98, -3.38, -3.27, -4.44, -5.0, -4.73, -4.72, -5.62, -4.96, -4.07, -4.3, -4.82, -3.88, -5.26, -5.19, -5.03, -6.47, -6.41, -7.0, -7.31, -5.77, -4.91, -6.01, -4.6, -2.33, -1.38, -2.63, -2.91, -2.47, -1.84, -0.94, -0.14, 0.24], "first": "2024-10-11", "expected": -0.97, "expected_build": "Simulated Glean build"}, {"id": "glean", "label": "Actual Glean", "note": "real Glean only starts May 2025, so only readings since May 2026 exist", "values": [-9.97, -9.18, -6.69, -5.63, -6.87, -7.06, -6.54, -6.44, -5.68, -3.67, -2.4], "first": "2026-05-22", "expected": -3.82, "expected_build": "headline build"}], "bin_width": 1.0}, "mobile": {"options": [{"id": "glean", "label": "Glean", "note": "the only mobile telemetry", "values": [-1.01, 0.4, -0.1, 0.74, 2.54, 3.82, 5.67, 6.85, 7.12, 7.48, 7.19, 7.73, 10.35, 8.09, 7.08, 6.17, 6.19, 6.68, 6.97, 7.95, 7.62, 6.85, 6.36, 6.68, 7.24, 7.36, 6.98, 6.38, 6.19, 7.28, 9.18, 10.26, 8.03, 5.21, 4.73, 3.75, 2.51, 0.78, -2.21, 0.67, 2.47, 5.52, 8.52, 14.21, 16.7, 15.89, 15.44, 16.87, 18.08, 18.88, 20.01, 22.07, 23.4], "first": "2024-10-11", "expected": 21.47, "expected_build": "headline build"}], "bin_width": 2.0}}, "seasonal": {"desktop": {"coefficients": [1.0, 0.020143, 0.011198, -0.009951, -0.014604, -0.012717, 0.00311, 0.001751, -0.006397], "source": "Legacy desktop telemetry", "from": "2020-01-01"}, "mobile": {"coefficients": [1.0, 0.026188, 0.002133, -0.005285, 0.004153, -0.002881, -0.00072, 0.00235, -0.008194], "source": "Glean mobile telemetry", "from": "2020-12-31"}}};
 const DAY_MS = 86400000;
 const toDate = s => new Date(s + "T00:00:00Z");
 const lastDate = toDate(DATA.last.date);
@@ -354,6 +372,21 @@ function render() {
   platformChart(document.getElementById("chartMobile"), "mobile", COLORS.mobile, "Mobile", mobileRate, ranges.mobile);
   sumChart(document.getElementById("chartSum"), desktopRate, mobileRate, ranges.sum);
 }
+
+// Night-mode toggle; the choice is remembered in this browser. Falls back to the OS preference on a first visit.
+const MODE_KEY = "mauToyNightMode";
+function applyMode(night) {
+  document.body.classList.toggle("night", night);
+  document.getElementById("modeToggle").textContent = night ? "\u2600 day" : "\u263E night";
+}
+let storedMode = null;
+try { storedMode = localStorage.getItem(MODE_KEY); } catch (e) { /* storage blocked: just don't remember */ }
+applyMode(storedMode === null ? window.matchMedia("(prefers-color-scheme: dark)").matches : storedMode === "1");
+document.getElementById("modeToggle").addEventListener("click", () => {
+  const night = !document.body.classList.contains("night");
+  applyMode(night);
+  try { localStorage.setItem(MODE_KEY, night ? "1" : "0"); } catch (e) { /* ignore */ }
+});
 
 document.getElementById("reset").addEventListener("click", () => {
   rates.desktop = DATA.defaults.desktop; rates.mobile = DATA.defaults.mobile; render();
