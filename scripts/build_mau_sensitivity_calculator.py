@@ -17,7 +17,10 @@ weeks back from the last actual (up to 53 readings), on the slider's own scale, 
 what has been normal. Desktop has three sources behind a radio button (Brendan 2026-10-15), each named on the page:
 **Legacy** telemetry (``telemetry.active_users_aggregates``; the default), the **simulated** Glean-equivalent history
 (build 5's training rows), and **actual Glean** (real Glean desktop starts 2025-05-22, so only the readings since
-2026-05-22 exist). Mobile has one source, the real Glean mobile series in the curves file.
+2026-05-22 exist). Mobile has one source, the real Glean mobile series in the curves file. A dotted line marks the
+pre-draft's **expected** Dec 15 2025 → Dec 15 2026 change on the same basis as the bars (Brendan 2026-10-15): build 5
+(simulated history) for the Legacy and simulated options, the headline real-Glean build for actual Glean (whose
+Dec 2025 level still carries the duplicate-id inflation), the mobile total for mobile.
 
 Desktop and mobile are summed: MAU is the official proxy for monthly active profiles, and desktop and mobile profiles
 are distinct (confirmed 2026-10-15).
@@ -52,6 +55,7 @@ TEMPLATE = repo_root / "scripts" / "mau_calculator_template.html"
 PLACEHOLDER = "__CALC_DATA__"
 HISTORY_START = pd.Timestamp("2026-01-01")
 TARGET_DATE = pd.Timestamp("2027-12-15")
+EXPECTED_FROM, EXPECTED_TO = pd.Timestamp("2025-12-15"), pd.Timestamp("2026-12-15")
 HISTORY_STEP_DAYS = 7
 YOY_STEP_DAYS = 14
 YOY_READINGS = 53            # two years of two-weekly readings, counting the last actual
@@ -109,13 +113,17 @@ def load_legacy_desktop_mau(path: Path) -> pd.Series:
     return raw.groupby(pd.to_datetime(raw["x"]))["y"].sum()
 
 
-def load_simulated_desktop_mau(path: Path) -> pd.Series:
-    """World desktop MAU per day from the Glean-equivalent ('simulated') build's canonical curves, history rows only."""
-    curves = pd.read_csv(path, parse_dates=["date"]).set_index("date")
-    return curves.loc[curves["data_type"].eq("training"), "mau_world"].dropna()
+def load_simulated_desktop_curves(path: Path) -> pd.DataFrame:
+    """The Glean-equivalent ('simulated') build's canonical curves: ``data_type`` and world ``mau_world``, history + forecast."""
+    return pd.read_csv(path, parse_dates=["date"]).set_index("date")[["data_type", "mau_world"]]
 
 
-def build_calculator_data(curves: pd.DataFrame, *, legacy_desktop: pd.Series, simulated_desktop: pd.Series,
+def expected_change(values: pd.Series) -> float:
+    """Percent change from EXPECTED_FROM (an actual) to EXPECTED_TO (the pre-draft forecast) in one build's series."""
+    return float(values[EXPECTED_TO] / values[EXPECTED_FROM] - 1) * 100
+
+
+def build_calculator_data(curves: pd.DataFrame, *, legacy_desktop: pd.Series, simulated_curves: pd.DataFrame,
                           generated: str, source: str) -> dict:
     is_actual = curves["desktop_data_type"].eq("training") & curves["mobile_data_type"].eq("training")
     last_actual = curves.index[is_actual].max()
@@ -126,13 +134,18 @@ def build_calculator_data(curves: pd.DataFrame, *, legacy_desktop: pd.Series, si
     # Desktop's long history (YoY readings and the typical-year shape) is Legacy; real Glean desktop starts 2025-05-22.
     mobile_actuals = curves.loc[curves["mobile_data_type"].eq("training"), "mobile_mau"]
     glean_desktop = curves.loc[curves["desktop_data_type"].eq("training"), "desktop_mau"]
+    simulated_desktop = simulated_curves.loc[simulated_curves["data_type"].eq("training"), "mau_world"].dropna()
+    simulated_expected = (expected_change(simulated_curves["mau_world"]), "simulated-history build")
+    headline_expected = {platform: (expected_change(curves[f"{platform}_mau"]), "headline build") for platform in ["desktop", "mobile"]}
     long_history = {"desktop": (legacy_desktop, "Legacy desktop telemetry"), "mobile": (mobile_actuals, "Glean mobile telemetry")}
-    # (id, radio label, series, partial history allowed, note shown under the radio); first entry is the default
+    # (id, radio label, series, partial history allowed, note, expected 2025->2026 change on the same basis); first = default
     yoy_options = {
-        "desktop": [("legacy", "Legacy", legacy_desktop, False, "the older desktop telemetry system"),
-                    ("simulated", "Simulated history", simulated_desktop, False, "Legacy translated into Glean terms (our build-5 input)"),
-                    ("glean", "Actual Glean", glean_desktop, True, "real Glean only starts May 2025, so only readings since May 2026 exist")],
-        "mobile": [("glean", "Glean", mobile_actuals, False, "the only mobile telemetry")],
+        "desktop": [("legacy", "Legacy", legacy_desktop, False, "the older desktop telemetry system", simulated_expected),
+                    ("simulated", "Simulated history", simulated_desktop, False, "Legacy translated into Glean terms (our build-5 input)",
+                     simulated_expected),
+                    ("glean", "Actual Glean", glean_desktop, True, "real Glean only starts May 2025, so only readings since May 2026 exist",
+                     headline_expected["desktop"])],
+        "mobile": [("glean", "Glean", mobile_actuals, False, "the only mobile telemetry", headline_expected["mobile"])],
     }
     data["seasonal"] = {}
     for platform in ["desktop", "mobile"]:
@@ -153,10 +166,11 @@ def build_calculator_data(curves: pd.DataFrame, *, legacy_desktop: pd.Series, si
         data["history"][platform] = [int(v) for v in history.values]
         data["history"]["dates"] = [str(d.date()) for d in history.index]
         options = []
-        for option_id, label, series, allow_partial, note in yoy_options[platform]:
+        for option_id, label, series, allow_partial, note, (expected, expected_build) in yoy_options[platform]:
             readings = periodic_yoy(series, last_actual=last_actual, allow_partial=allow_partial)
             options.append({"id": option_id, "label": label, "note": note, "values": [round(v, 2) for v in readings.values],
-                            "first": str(readings.index.min().date())})
+                            "first": str(readings.index.min().date()), "expected": round(expected, 2),
+                            "expected_build": expected_build})
         data["yoy"][platform] = {"options": options, "bin_width": YOY_BIN_WIDTH[platform]}
     return data
 
@@ -180,7 +194,7 @@ def main() -> None:
     curves = pd.read_csv(args.curves, parse_dates=["date"]).set_index("date")
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=repo_root).stdout.strip()
     data = build_calculator_data(curves, legacy_desktop=load_legacy_desktop_mau(args.legacy_desktop_mau),
-                                 simulated_desktop=load_simulated_desktop_mau(args.simulated_desktop_curves), generated=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z"),
+                                 simulated_curves=load_simulated_desktop_curves(args.simulated_desktop_curves), generated=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z"),
                                  source=f"scripts/build_mau_sensitivity_calculator.py @ {commit}")
     args.out_dir.mkdir(parents=True, exist_ok=True)
     out = args.out_dir / "index.html"
@@ -192,7 +206,7 @@ def main() -> None:
         for option in yoy["options"]:
             values = pd.Series(option["values"])
             print(f"{platform} YoY [{option['label']}] {len(values)} readings from {option['first']}: min {values.min():+.1f}, "
-                  f"median {values.median():+.1f}, max {values.max():+.1f}")
+                  f"median {values.median():+.1f}, max {values.max():+.1f}; expected 2025->2026 {option['expected']:+.2f}% ({option['expected_build']})")
     print(f"saved: {out}")
 
 

@@ -12,7 +12,8 @@ builds' 2027-12-15 values (desktop −4.0%/yr, mobile +12.5%/yr at the 0.5 step)
 charts scroll; static below 800 px wide). Above each slider is a histogram of the real year-over-year change, read every two weeks
 over the past two years. Desktop has a radio button for the source (Brendan 2026-10-15): **Legacy** (default; 53 readings, median
 −4.5%), **Simulated history** (the Glean-equivalent build-5 input; median −4.3%), **Actual Glean** (11 readings since 2026-05-22 only,
-median −6.5%). Mobile: Glean (median +7.0%). Desktop + mobile are summed: MAU counts profiles, and desktop and mobile profiles are distinct.
+median −6.5%). Mobile: Glean (median +7.0%). A dotted line marks the pre-draft's expected Dec 15 2025 → Dec 15 2026 change on the bars' own basis: build 5 (simulated)
+−1.0% for Legacy / Simulated, the headline −3.8% for Actual Glean (Dec 2025 still dup-id inflated, which exaggerates it), mobile +21.5%. Desktop + mobile are summed: MAU counts profiles, and desktop and mobile profiles are distinct.
 
 The ~2% desktop decline sometimes quoted is build 5's *forecast* for 2027 (−1.9% Dec→Dec) or the last four months of readings
 (−2.5% to 0%); the two-year historical median is about −4.5% in every source and window checked (1–5 years, MAU and DAU).

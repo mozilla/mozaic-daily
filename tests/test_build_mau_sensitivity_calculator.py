@@ -86,14 +86,22 @@ def test_periodic_yoy_partial_still_refuses_almost_no_history():
 def test_build_data_keeps_the_three_desktop_sources_apart_and_lands_on_the_forecast_dec15():
     curves = _curves(desktop_growth=-0.04, mobile_growth=0.12)
     legacy = _daily("2019-01-01", "2026-10-09", -0.02, 150e6)       # each source at its own rate, so a mix-up shows
-    simulated = _daily("2019-01-01", "2026-10-09", -0.03, 152e6)
-    data = calc.build_calculator_data(curves, legacy_desktop=legacy, simulated_desktop=simulated, generated="g", source="s")
+    simulated_values = _daily("2019-01-01", "2027-12-31", -0.03, 152e6)
+    simulated = pd.DataFrame({"data_type": ["training" if d <= LAST_ACTUAL else "forecast" for d in simulated_values.index],
+                              "mau_world": simulated_values.values}, index=simulated_values.index)
+    data = calc.build_calculator_data(curves, legacy_desktop=legacy, simulated_curves=simulated, generated="g", source="s")
     desktop_options = {o["id"]: o for o in data["yoy"]["desktop"]["options"]}
     assert list(desktop_options) == ["legacy", "simulated", "glean"]                  # legacy first = the default
     assert desktop_options["legacy"]["values"] == pytest.approx([-2.0] * 53, abs=0.01)
     assert desktop_options["simulated"]["values"] == pytest.approx([-3.0] * 53, abs=0.01)
     assert desktop_options["glean"]["values"] == pytest.approx([-4.0] * 53, abs=0.01)  # the curves file's own desktop rows
     assert [o["id"] for o in data["yoy"]["mobile"]["options"]] == ["glean"]
+    # the dotted 2025->2026 line follows the bars' basis: simulated build for legacy/simulated, headline curves otherwise
+    # (365 days of a 364-day compounding: a hair past the nominal rate)
+    assert desktop_options["legacy"]["expected"] == pytest.approx(-3.0, abs=0.02)
+    assert desktop_options["simulated"]["expected"] == pytest.approx(-3.0, abs=0.02)
+    assert desktop_options["glean"]["expected"] == pytest.approx(-4.0, abs=0.02)
+    assert data["yoy"]["mobile"]["options"][0]["expected"] == pytest.approx(12.0, abs=0.05)
     # no seasonality in the fixture, so the shape is flat and the default is the plain implied rate
     assert data["implied_exact"]["desktop"] == pytest.approx(-4.0, abs=0.05)
     assert data["implied_exact"]["mobile"] == pytest.approx(12.0, abs=0.05)

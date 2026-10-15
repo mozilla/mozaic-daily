@@ -248,6 +248,11 @@ function drawHistogram(key, rate, color) {
   for (let tick = Math.ceil(slider.min / 5) * 5; tick <= slider.max; tick += 5)
     svg.appendChild(el("text", { x: histX(tick, slider), y: HIST_BASE + 16, "font-size": 12, fill: "#666",
       "text-anchor": tick === slider.min ? "start" : tick === slider.max ? "end" : "middle" }, (tick > 0 ? "+" : "") + tick + "%"));
+  // dotted line: the pre-draft's expected Dec 15 2025 -> Dec 15 2026 change, on the same basis as these bars
+  const xExpected = histX(Math.min(Math.max(readings.expected, slider.min), slider.max), slider);
+  svg.appendChild(el("line", { x1: xExpected, x2: xExpected, y1: 26, y2: HIST_BASE, stroke: "#2b2b2b", "stroke-width": 2, "stroke-dasharray": "2 4" }));
+  svg.appendChild(el("text", { x: xExpected + (readings.expected < (slider.min + slider.max) / 2 ? 5 : -5), y: 32, "font-size": 11, fill: "#2b2b2b", stroke: "#fff", "stroke-width": 3, "paint-order": "stroke",
+    "text-anchor": readings.expected < (slider.min + slider.max) / 2 ? "start" : "end" }, `2026 expected ${readings.expected > 0 ? "+" : ""}${readings.expected.toFixed(1)}%`));
   const xRate = histX(rate, slider);
   svg.appendChild(el("line", { x1: xRate, x2: xRate, y1: 14, y2: HIST_BASE, stroke: color, "stroke-width": 3 }));
   const atOrBelow = readings.values.filter(v => v <= rate).length;
@@ -255,7 +260,8 @@ function drawHistogram(key, rate, color) {
     `${atOrBelow} of ${readings.values.length} past readings at or below this`));
   const option = currentReadings(key);
   document.getElementById(key + "Hint").textContent = `Bars: actual year-over-year change, every 2 weeks since ${option.first.slice(0, 7)}`
-    + ` (${option.label}: ${option.note}). Pre-draft pace ${fmtRate(DATA.defaults[key])}.`;
+    + ` (${option.label}: ${option.note}). Dotted: pre-draft's expected Dec 15 2025 → Dec 15 2026 change (${option.expected_build}).`
+    + ` Pre-draft pace for 2027: ${fmtRate(DATA.defaults[key])}.`;
 }
 
 // Fixed axes per chart, wide enough for every slider position, so moving a slider moves the line, not the axis.
@@ -323,6 +329,9 @@ document.getElementById("how").innerHTML = `<b>How the toy works.</b> The black 
   <i>Simulated history</i> is Legacy translated into the newer Glean system's terms; it is what our pre-draft desktop model trains
   on, and it agrees with Legacy within 0.3 points. <i>Actual Glean</i> is the newer system itself, but it only starts in May 2025,
   so it has only a handful of readings, all from the last few months.
+  The dotted line is what our pre-draft work expects for Dec 15 2025 → Dec 15 2026, measured on the same basis as the bars:
+  the simulated-history build for <i>Legacy</i> and <i>Simulated history</i>, the headline build for <i>Actual Glean</i> (its Dec 2025
+  level is still inflated by a since-fixed duplicate-profile bug, which exaggerates that drop) and for mobile.
   <br><br>The starting slider positions are the steady changes that land the toy on our <b>pre-draft</b> 2027 forecast's
   Dec 15 2027 values (desktop ${fmtRate(DATA.defaults.desktop)}, mobile ${fmtRate(DATA.defaults.mobile)}); that forecast is unfinished
   and is not shown here. Desktop and mobile add up because monthly active users counts profiles, and a desktop profile and a mobile
