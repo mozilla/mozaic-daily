@@ -24,3 +24,7 @@ The ~2% desktop decline sometimes quoted is build 5's *forecast* for 2027 (−1.
 **Where new code goes:** page drawing in `scripts/mau_calculator_template.html`; numbers in the builder, the typical-year maths in
 `scripts/mau_toy_seasonality.py` (its JavaScript twin is in the template; `tests/test_mau_toy_seasonality.py` runs both under node and
 fails if they drift); tests in `tests/test_build_mau_sensitivity_calculator.py`. Rebuilding refreshes the freshness banner.
+
+**Published:** https://brwells-firefox-mau-2027-whatif-cartoon.quick.mozilla.cloud/ (quick, staff sign-in; first deployed
+2026-10-15 from commit 95c38fd's build). Deploy **only `index.html`** (this `_index.md` is internal): copy it into an empty staging
+directory and run `quick deploy <staging-dir> brwells-firefox-mau-2027-whatif-cartoon`. Rebuild first so the banner is current.
