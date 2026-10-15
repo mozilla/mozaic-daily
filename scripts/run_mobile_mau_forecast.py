@@ -1,0 +1,203 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""One mobile MAU forecast on a file-fed country x app pull (the 2027 mobile companion to the desktop Glean-history draft).
+
+Brendan, 2026-10-14: "we need to build one for mobile MAU over the same time period". Mobile is Glean-native, so the
+history is the real production table from 2020-12-31 (``scripts/sql/glean_mobile_mau_country_app.sql`` ->
+``build_comparison_raw_frames.py --layout mobile_app``), no translation. This runner:
+
+1. loads ``mozaic_parts.raw.glean.mobile.MAU.parquet`` from ``--raw-dir`` -- no BigQuery, no pre-flight;
+2. splices the regenerated Iran rolling-28 MAU fill (``--iran-fill``; the packaged mobile fill has no MAU metric);
+3. runs ``main.process_data_source`` for ``DataSource.GLEAN_MOBILE`` with the configured ``MobileModelConfig``
+   (default: the October 2026 mobile lock) and the production ``MobileEvents`` calendar. **No paid/organic split**:
+   `p` is measured on DAU and has no MAU counterpart, so this is a total-MAU forecast with nothing added or removed;
+4. writes ``mozaic_daily_forecast.<seam>.gm-M.raw.parquet`` + sidecar meta, the fitted pickle and ``parameters.json``
+   under ``<results-dir>/<config slug>/``; prints Dec-15 2026 / 2027 world values.
+
+Usage:
+    python scripts/run_mobile_mau_forecast.py \\
+        --forecast-start-date 2026-10-10 \\
+        --raw-dir data-official/2027-glean-draft/raw_glean_mobile_countryxapp_2026-10-09 \\
+        --iran-fill data-official/2027-glean-draft/iran_fill_mobile/iran_fill.glean_mobile.MAU.parquet \\
+        --results-dir data-official/2027-glean-draft/mobile_mau_2026-10-10
+
+Knobs are the seven non-holiday ``MobileModelConfig`` fields plus the two holiday knobs the production lock carries
+(threshold, effect floor); radii stay at the package defaults by policy. Announce before any probe (Brendan).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+
+repo_root = Path(__file__).resolve().parent.parent
+if str(repo_root / "src") not in sys.path:
+    sys.path.insert(0, str(repo_root / "src"))
+
+from mozaic.models import MobileModelConfig  # noqa: E402
+from mozaic_daily.adjustments import insert_state_marker, write_meta  # noqa: E402
+from mozaic_daily.config import get_runtime_config  # noqa: E402
+from mozaic_daily.main import (  # noqa: E402
+    get_checkpoint_filename, get_mozaic_objects_filename, process_data_source, save_mozaic_objects,
+)
+from mozaic_daily.queries import ADDITIONAL_HOLIDAYS, DataSource, Metric  # noqa: E402
+from mozaic_daily.tables import format_output_table  # noqa: E402
+
+DATA_SOURCE = DataSource.GLEAN_MOBILE
+METRIC = Metric.MAU
+RAW_CHECKPOINT_TEMPLATE = "mozaic_parts.raw.glean.mobile.{metric}.parquet"
+POPULATIONS = ["fenix_android", "firefox_ios", "focus_android", "focus_ios"]
+
+# data-official/2026-10/mobile_cpr0725_paid1006_2026-10-05/*/parameters.json, field by field (the October 2026 mobile lock).
+OCTOBER_MOBILE_LOCK = {
+    "prophet_changepoint_prior_scale": 0.035,
+    "prophet_changepoint_range": 0.725,
+    "prophet_n_changepoints": 25,
+    "prophet_recent_weeks": 13,
+    "prophet_seasonality_prior_scale": 0.1,
+    "seasonality_regime": "auto",
+    "seasonality_corr_threshold": 0.0,
+    "holiday_threshold": -0.055,
+    "holiday_max_radius": 5,
+    "holiday_min_radius": 3,
+    "holiday_effect_floor": -0.6,
+}
+
+# CLI flag -> MobileModelConfig field. Radii are deliberately not exposed (holiday knobs are excluded from tuning by policy).
+KNOBS = {
+    "changepoint_prior_scale": ("prophet_changepoint_prior_scale", float),
+    "changepoint_range": ("prophet_changepoint_range", float),
+    "n_changepoints": ("prophet_n_changepoints", int),
+    "recent_weeks": ("prophet_recent_weeks", int),
+    "seasonality_prior_scale": ("prophet_seasonality_prior_scale", float),
+    "seasonality_regime": ("seasonality_regime", str),
+    "seasonality_corr_threshold": ("seasonality_corr_threshold", float),
+    "holiday_threshold": ("holiday_threshold", float),
+    "holiday_effect_floor": ("holiday_effect_floor", float),
+}
+
+
+def add_knob_arguments(parser: argparse.ArgumentParser, defaults: dict) -> None:
+    """Model knobs with the given defaults (the October mobile lock), so a plain run is the locked config."""
+    g = parser.add_argument_group("Model knobs (default: October 2026 mobile lock)")
+    for flag, (field, typ) in KNOBS.items():
+        g.add_argument(f"--{flag.replace('_', '-')}", dest=flag, type=typ, default=defaults[field])
+
+
+def build_config(args: argparse.Namespace) -> MobileModelConfig:
+    fields = {field: getattr(args, flag) for flag, (field, _) in KNOBS.items()}
+    fields.update({k: v for k, v in OCTOBER_MOBILE_LOCK.items() if k not in fields})   # the un-exposed radii
+    return MobileModelConfig(**fields)
+
+
+def load_raw_frame(raw_dir: Path) -> pd.DataFrame:
+    path = raw_dir / RAW_CHECKPOINT_TEMPLATE.format(metric=METRIC.value)
+    if not path.exists():
+        raise FileNotFoundError(f"raw checkpoint missing: {path}; run build_comparison_raw_frames.py --layout mobile_app")
+    return pd.read_parquet(path)
+
+
+def world_value(df: pd.DataFrame, column: str, on: str) -> float:
+    row = df[(df["country"] == "ALL") & (df["app_name"] == "ALL MOBILE") & (df["target_date"] == on)]
+    return float(row[column].item()) if len(row) == 1 else float("nan")
+
+
+def parse_args():
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--forecast-start-date", required=True, help="seam, YYYY-MM-DD (training ends the day before)")
+    p.add_argument("--raw-dir", type=Path, required=True)
+    p.add_argument("--results-dir", type=Path, required=True)
+    p.add_argument("--iran-fill", type=Path, default=None,
+                   help="rolling-28 MAU IR fill parquet (generate_mobile_mau_iran_fill.py); omit for no fill")
+    p.add_argument("--dry-run", action="store_true")
+    add_knob_arguments(p, defaults=OCTOBER_MOBILE_LOCK)
+    return p.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    config = build_config(args)
+    slug = config.to_slug()
+    slug_dir = args.results_dir / slug
+    slug_dir.mkdir(parents=True, exist_ok=True)
+
+    runtime = get_runtime_config(forecast_start_date_override=args.forecast_start_date)
+    holiday_names = [h.__name__ for h in ADDITIONAL_HOLIDAYS.get(DATA_SOURCE, [])]
+    print("=" * 60 + "\nMobile MAU forecast (file-fed)\n" + "=" * 60)
+    print(f"Seam / training end : {runtime['forecast_start_date']} / {runtime['training_end_date']}")
+    print(f"Horizon end         : {runtime['forecast_end_date']}")
+    print(f"Raw dir             : {args.raw_dir}")
+    print(f"Iran fill           : {args.iran_fill or 'none'}")
+    print(f"Holidays            : {holiday_names}")
+    print(f"Paid/organic split  : not applied (DAU-only mechanism)")
+    print(f"Output dir          : {slug_dir}")
+    print(f"Config              : {json.dumps(config.to_dict(), indent=2)}")
+
+    (slug_dir / "parameters.json").write_text(json.dumps({
+        "forecast_start_date": args.forecast_start_date,
+        "slug": slug,
+        "config": config.to_dict(),
+        "data_source": DATA_SOURCE.value,
+        "metrics": [METRIC.value],
+        "raw_dir": str(args.raw_dir),
+        "iran_fill": str(args.iran_fill) if args.iran_fill else None,
+        "additional_holidays": holiday_names,
+        "adjustment_code": None,
+    }, indent=2) + "\n")
+    if args.dry_run:
+        print("[dry-run] stopping before the forecast")
+        return
+
+    frame = load_raw_frame(args.raw_dir)
+    fills = [pd.read_parquet(args.iran_fill)] if args.iran_fill else None
+    datasets = {"mobile": {"glean": {METRIC.value: frame}}}
+
+    started = time.time()
+    df, mozaics = process_data_source(
+        DATA_SOURCE, datasets,
+        runtime["forecast_start_date"], runtime["forecast_end_date"],
+        training_end_date=runtime["training_end_date"],
+        model_configs={DATA_SOURCE: config},
+        additional_fills=fills,
+    )
+    df = format_output_table(df, runtime["forecast_start_date"], runtime["forecast_run_dt"])
+    print(f"\nForecast took {(time.time() - started) / 60:.1f} min")
+
+    save_mozaic_objects(mozaics, get_mozaic_objects_filename(args.forecast_start_date, DATA_SOURCE, str(slug_dir)))
+    unmarked = Path(get_checkpoint_filename(args.forecast_start_date, str(slug_dir),
+                                            data_source_filter={DATA_SOURCE}, metric_filter={METRIC}))
+    target = insert_state_marker(unmarked, [])
+    df.to_parquet(target)
+    inputs_meta_path = args.raw_dir / "glean_history_inputs.meta.json"
+    write_meta(
+        target,
+        forecast_start_date=args.forecast_start_date,
+        data_source=DATA_SOURCE.value,
+        produced_by="scripts/run_mobile_mau_forecast.py",
+        model_config=config.to_dict(),
+        adjustments_applied=[],
+        extra={
+            "metrics": [METRIC.value],
+            "populations": POPULATIONS,
+            "additional_holidays": holiday_names,
+            "iran_fill": str(args.iran_fill) if args.iran_fill else None,
+            "paid_organic_split": "not applied (DAU-only mechanism; total MAU)",
+            "inputs_meta": json.loads(inputs_meta_path.read_text()) if inputs_meta_path.exists() else None,
+            "run_at": datetime.now().isoformat(timespec="seconds"),
+        },
+    )
+    print(f"Wrote {target} (+ sidecar)")
+
+    print("\nWorld values (country ALL, app ALL MOBILE):")
+    for on in ("2026-12-15", "2027-12-15"):
+        print(f"  MAU {on}: {world_value(df, 'mau', on):,.0f}")
+
+
+if __name__ == "__main__":
+    main()

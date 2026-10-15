@@ -1,0 +1,11 @@
+metric,statistic,population,date,value
+mau,daily,world,2026-12-15,53700051
+mau,daily,world,2027-12-15,59424593
+mau,daily,fenix_android,2026-12-15,39530038
+mau,daily,fenix_android,2027-12-15,44053136
+mau,daily,firefox_ios,2026-12-15,12034812
+mau,daily,firefox_ios,2027-12-15,12909119
+mau,daily,focus_android,2026-12-15,1223899
+mau,daily,focus_android,2027-12-15,1505472
+mau,daily,focus_ios,2026-12-15,911302
+mau,daily,focus_ios,2027-12-15,956866

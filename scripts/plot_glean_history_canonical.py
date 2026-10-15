@@ -17,6 +17,10 @@ never carry the raw model.
 Outputs (``<out-dir>/canonical/``): ``{metric}_{os}_{year}.png`` for metric in {dau_28ma, mau}, os in {world,
 windows, mac, linux}, year in {2026, 2027}; plus ``{metric}_by_os_2027.png`` small multiples.
 
+``--populations`` / ``--scope`` re-point the per-population loop at another layout: the 2027 mobile MAU build passes
+``--populations world fenix_android firefox_ios focus_android focus_ios --scope Mobile`` (the small-multiples grid sizes
+itself; the file names keep ``by_os`` so the handoff renderers find them).
+
 Usage:
     python scripts/plot_glean_history_canonical.py \\
         --curves data-official/2027-glean-draft/csv/glean2027_canonical_curves.csv \\
@@ -36,7 +40,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import pandas as pd
 
-OS_ORDER = ["world", "windows", "mac", "linux"]
+OS_ORDER = ["world", "windows", "mac", "linux"]      # default populations; overridden by --populations
 METRICS = {"dau_28ma": ("DAU", "28-Day MA"), "mau": ("MAU", "raw daily (rolling 28-day metric)")}
 SHOW_DRAFT_WATERMARK = True
 WATERMARK_TEXT = "PRE-DRAFT"      # Brendan, 2026-10-12: louder than the monthly DRAFT; purple so it cannot be mistaken for a cycle plot
@@ -129,10 +133,13 @@ def main():
     p.add_argument("--out-dir", type=Path, required=True)
     p.add_argument("--label", default="Glean-history draft")
     p.add_argument("--actuals-label", default=None, help="legend text for the black actuals line (default: Glean-equivalent history)")
+    p.add_argument("--populations", nargs="+", default=OS_ORDER, help="curve suffixes to plot, 'world' first (default: the desktop OS list)")
+    p.add_argument("--scope", default="Desktop", help="platform word in titles (default: Desktop)")
     args = p.parse_args()
     global ACTUALS_LABEL
     if args.actuals_label:
         ACTUALS_LABEL = args.actuals_label
+    populations = args.populations
     seam = pd.Timestamp(args.seam)
     curves = pd.read_csv(args.curves, parse_dates=["date"]).set_index("date")
     comparison = pd.read_csv(args.comparison_curves, parse_dates=["date"]).set_index("date") if args.comparison_curves else None
@@ -141,23 +148,27 @@ def main():
 
     present = {k: v for k, v in METRICS.items() if f"{k}_world" in curves.columns}   # a MAU-only build has no dau_28ma_* columns
     for metric_key, (metric_name, statistic) in present.items():
-        for os_name in OS_ORDER:
+        for os_name in populations:
             col = f"{metric_key}_{os_name}"
             for year in (seam.year, seam.year + 1):
                 fig, ax = plt.subplots(figsize=(14, 6))
                 draw_year(ax, year=year, current=curves[col], actual_mask=actual_mask,
                           comparison=comparison[col] if comparison is not None else None, seam=seam, ylabel=metric_name)
-                scope = "Desktop" if os_name == "world" else f"Desktop {os_name}"
+                scope = args.scope if os_name == "world" else f"{args.scope} {os_name}"
                 style_time_axis(ax, title=f"{year} {scope} {metric_name} — {statistic} ({args.label})", ylabel=metric_name,
                                 legend_loc="lower left" if metric_key == "dau_28ma" else "upper right")
                 save(fig, out / f"{metric_key}_{os_name}_{year}.png")
         # small multiples for the horizon year
-        fig, axes = plt.subplots(2, 2, figsize=(16, 9))
-        for ax, os_name in zip(axes.ravel(), OS_ORDER):
+        ncols = 2 if len(populations) <= 4 else 3
+        nrows = -(-len(populations) // ncols)
+        fig, axes = plt.subplots(nrows, ncols, figsize=(8 * ncols, 4.5 * nrows))
+        for ax in axes.ravel()[len(populations):]:
+            ax.set_visible(False)
+        for ax, os_name in zip(axes.ravel(), populations):
             col = f"{metric_key}_{os_name}"
             draw_year(ax, year=seam.year + 1, current=curves[col], actual_mask=actual_mask,
                       comparison=comparison[col] if comparison is not None else None, seam=seam, ylabel=metric_name)
-            style_time_axis(ax, title=f"{seam.year + 1} {('Desktop' if os_name == 'world' else os_name)} {metric_name} — {statistic}",
+            style_time_axis(ax, title=f"{seam.year + 1} {(args.scope if os_name == 'world' else os_name)} {metric_name} — {statistic}",
                             ylabel=metric_name, legend_loc="lower left" if metric_key == "dau_28ma" else "upper right")
             ax.legend(fontsize=7)
         save(fig, out / f"{metric_key}_by_os_{seam.year + 1}.png")

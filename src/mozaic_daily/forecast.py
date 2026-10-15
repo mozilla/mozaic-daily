@@ -235,6 +235,7 @@ def get_mobile_forecast_dfs(
     additional_holidays: List[Type[holidays.HolidayBase]] = None,
     config: MobileModelConfig = None,
     data_source: str = None,
+    additional_fills: Optional[List[pd.DataFrame]] = None,
 ) -> ForecastResult:
     """Generate Mobile forecasts using Mozaic.
 
@@ -247,6 +248,9 @@ def get_mobile_forecast_dfs(
         config: MobileModelConfig with prophet/holiday params (default: None uses hardcoded defaults)
         data_source: Source identifier ("glean_mobile") forwarded to populate_tiles so it selects
             the matching built-in gap fill. None lets the package auto-resolve when unambiguous.
+        additional_fills: Caller-supplied counterfactual gap fills, applied beside the built-in
+            ones. The packaged mobile Iran fill has no rolling-28 ``MAU`` metric, so the 2027 mobile
+            MAU forecast (``scripts/run_mobile_mau_forecast.py``) passes its own here.
 
     Returns:
         ForecastResult with dfs and mozaics
@@ -261,4 +265,5 @@ def get_mobile_forecast_dfs(
         additional_holidays=additional_holidays,
         config=config,
         data_source=data_source,
+        additional_fills=additional_fills,
     )

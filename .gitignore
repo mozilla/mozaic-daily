@@ -189,3 +189,6 @@ data-official/*/handoff/*_handoff/
 !data-official/2027-glean-draft/csv/*.csv
 !data-official/2027-glean-draft/intervals/csv/*.csv
 !data-official/2027-glean-draft/handoff/*/*.csv
+# The mobile MAU pull copied beside its raw frames is 17 MB of JSON; the frames and meta carry its sha1.
+data-official/2027-glean-draft/raw_*/source_pull.json
+!data-official/2027-glean-draft/iran_fill_mobile/*.parquet

@@ -327,7 +327,10 @@ The `scripts/` directory contains helper scripts for common tasks:
   UNCORRECTED except where implausible (Brendan); the duplicate-id fix is a secondary comparison. The rest of the tooling (`export_glean_history_curves.py`,
   `plot_glean_history_canonical.py`, `render_glean_history_report.py`, `render_glean_history_handoff.py`, `score_glean_history_seam.py`,
   `run_glean_history_backtest.py`, `build_glean_history_cn_offsets.py`, `build_comparison_raw_frames.py`, `compare_glean_history_builds.py`, `plot_glean_history_comparisons.py`, `render_glean_history_comparisons.py`, `run_glean_real_mau_probes.py`, `build_glean_real_linux_bot_overlay.py`, `render_glean_real_report.py`)
-  is listed in `scripts/_index.md`. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
+  is listed in `scripts/_index.md`. **Mobile MAU companion (2026-10-14):** `run_mobile_mau_forecast.py` (file-fed `glean_mobile` MAU on the real country × app
+  pull from 2020-12-31, October mobile lock, Iran rolling-28 MAU fill from `generate_mobile_mau_iran_fill.py`, no `p`), `export_mobile_mau_curves.py`,
+  `render_mobile_mau_handoff.py` (+ the combined desktop/mobile MAU curve CSV). First build `mobile_mau_2026-10-10/`: world MAU 2027-12-15 59.4M, but the
+  forecast opens 7% below the last actual (changepoint range 0.725 cannot follow the 2026 Fenix run-up) — not settled. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
   sampled date windows. Run before using training rows as a stand-in for an actuals query (e.g. the canonical

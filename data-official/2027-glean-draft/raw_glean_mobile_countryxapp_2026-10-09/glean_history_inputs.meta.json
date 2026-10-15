@@ -1,0 +1,74 @@
+{
+  "produced_by": "scripts/build_comparison_raw_frames.py",
+  "written_at": "2026-10-14T23:05:22",
+  "layout": "mobile_app",
+  "source": "Glean mobile telemetry (glean_telemetry.active_users_aggregates), four apps, country x app, 2020-12-31..2026-10-09",
+  "value_column": "dau/mau from the aggregates table (whole people)",
+  "rows_dropped_unmapped_segment": 0,
+  "populations": [
+    "fenix_android",
+    "firefox_ios",
+    "focus_android",
+    "focus_ios"
+  ],
+  "inputs": {
+    "DAU": {
+      "source_file": "tmp/mobile_mau_pull/glean_mobile_country_app.json",
+      "source_sha1": "13f6def764be9f30904884700ac1881d4efcc63f",
+      "output_file": "mozaic_parts.raw.glean.mobile.DAU.parquet",
+      "rows": 129648,
+      "countries": [
+        "AR",
+        "BR",
+        "CA",
+        "CN",
+        "DE",
+        "FR",
+        "ID",
+        "IN",
+        "IR",
+        "IT",
+        "JP",
+        "MX",
+        "PL",
+        "ROW",
+        "RU",
+        "US"
+      ],
+      "date_range": [
+        "2020-12-31",
+        "2026-10-09"
+      ],
+      "world_last_day": 18209209.0
+    },
+    "MAU": {
+      "source_file": "tmp/mobile_mau_pull/glean_mobile_country_app.json",
+      "source_sha1": "13f6def764be9f30904884700ac1881d4efcc63f",
+      "output_file": "mozaic_parts.raw.glean.mobile.MAU.parquet",
+      "rows": 129648,
+      "countries": [
+        "AR",
+        "BR",
+        "CA",
+        "CN",
+        "DE",
+        "FR",
+        "ID",
+        "IN",
+        "IR",
+        "IT",
+        "JP",
+        "MX",
+        "PL",
+        "ROW",
+        "RU",
+        "US"
+      ],
+      "date_range": [
+        "2020-12-31",
+        "2026-10-09"
+      ],
+      "world_last_day": 56407844.0
+    }
+  }
+}

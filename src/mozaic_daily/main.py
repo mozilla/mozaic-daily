@@ -314,9 +314,10 @@ def process_data_source(
             through. Omitting it uses the package's hardcoded defaults — which is
             why a plain ``run_main.py`` run cannot reproduce a tuned build.
         additional_fills: Caller-supplied counterfactual gap fills forwarded to the
-            forecast function (desktop only today). The Glean-history runner passes its
+            forecast function (both platforms). The Glean-history runner passes its
             regenerated Iran fill here because that source's OS x country layout has
-            no packaged fill.
+            no packaged fill; the 2027 mobile MAU runner passes a rolling-28 MAU fill
+            because the packaged mobile fill carries no ``MAU`` metric.
         marketing_spec_path: If set and ``data_source == GLEAN_MOBILE``, applies
             the marketing-lift `m` adjustment: subtracts lift from the DAU
             training rows before mozaic and adds it back to the per-tile

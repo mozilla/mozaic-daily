@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 17)</title>
+<title>2027 Glean-history desktop forecast — goal, decisions, procedure (draft 18)</title>
 <style>
   :root { --ink:#1c1c1c; --muted:#5a5a5a; --rule:#d9d9d9; --accent:#1f5fa8; --warn-bg:#fff6e0; --warn-br:#e0a800; --ok-bg:#eef7ee; --ok-br:#3a8a3a; --q-bg:#eef3fb; --q-br:#1f5fa8; }
   body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -33,10 +33,10 @@
 <body>
 
 <div class="banner">
-  <span><b>Generated:</b> 2026-10-14 23:30 PDT</span>
+  <span><b>Generated:</b> 2026-10-14 23:37 PDT</span>
   <span><b>Source:</b> session <code>glean-dau-mau-2027-forecast</code>, branch <code>glean-2027-forecast</code>, written by hand from the context gathered 2026-10-12 (no notebook)</span>
   <span><b>Data as of:</b> export history 2026-09-08 + D-118 continuation to 2026-10-09 (<code>export-rollups</code> @ 22e01e2)</span>
-  <span><b>Status:</b> DRAFT 17 — the real-Glean MAU build with the Linux bot overlay is the HEADLINE (§14, LOCK.md); build 5 is the validation build; duplicate-id secondary comparison pending</span>
+  <span><b>Status:</b> DRAFT 18 — desktop headline unchanged (§14, LOCK.md); §15 adds the MOBILE MAU companion build (first build, seam not closed, awaiting Brendan); duplicate-id secondary comparison pending</span>
 </div>
 
 <h1>2027 Glean-history desktop forecast</h1>
@@ -552,6 +552,37 @@ headline is MAU only), canonical plots for the build, <code>COMPARISONS.html</co
 multi-profile installs give 148+ clients a 1.2% "duplicate" rate (<code>scripts/sql/glean_real_dupid_snapshot.sql</code>). The secondary comparison will need another route (version-mix
 × an inflation rate, or the export's per-month term); pending.</p>
 
+<h2>15. The mobile MAU companion build (2026-10-14, late)</h2>
+<p><b>Ask (Brendan).</b> "Package up our best forecast for desktop MAU. And then we need to build one for mobile MAU over the same time period" — clarified: the deliverable is
+the forecast <b>curves</b> from now to the end of 2027, not the Dec-15 number. The desktop package (<code>handoff/glean2027_mau_handoff/</code>, §14) already carries the daily
+series; no mobile MAU forecast existed anywhere in the repo (production forecasts mobile DAU, New Profiles and the Existing-Engagement pair; rolling-28 MAU only through the
+file-fed desktop source).</p>
+<p><b>Data.</b> Mobile telemetry is Glean-native, so there is no translation question: <code>glean_telemetry.active_users_aggregates</code>, the four production apps
+(Fenix, Firefox iOS, Focus Android, Focus iOS; no "other" bucket), 15 named markets + ROW, DAU and MAU, 2020-12-31 → 2026-10-09 (<code>scripts/sql/glean_mobile_mau_country_app.sql</code>;
+frames via <code>build_comparison_raw_frames.py --layout mobile_app</code> into <code>raw_glean_mobile_countryxapp_2026-10-09/</code>, production checkpoint names and app flags;
+Focus Android starts 2021-11-28, Fenix 2021-01-01, kept as is). World mobile MAU on 2026-10-09: 56,407,844; +23.4% YoY (46.1M on 2026-05-01 → 56.4M: the 2026 Fenix run-up).</p>
+<p><b>Iran.</b> The packaged mozaic fill for <code>glean_mobile</code> carries no rolling-28 <code>MAU</code>, so the 2026 crater (IR mobile MAU 1.85M → 0.05M) was bridged with a
+regenerated fill, same method as every other fill (<code>scripts/generate_mobile_mau_iran_fill.py</code>: mobile model on IR before 2026-02-28, window 2026-02-28..06-21,
+weekly amplitude restored, <code>iran_fill_mobile/</code>). Seam: fill 7-day mean 1,524,153 vs real 1,964,222 (+28.9%); <b>left unscaled (1.0)</b> because the real series
+overshoots to 2.09M on 2026-06-22 as the rolling window refills and falls back to 1.85M by July — scaling to the rebound would be wrong. The fill does sit ~10% under the
+late-February level (1.70M), a trend the model carried down; IR is ~3% of world mobile MAU and the fill touches only the training data. <code>get_mobile_forecast_dfs</code> now
+accepts <code>additional_fills</code> (it was desktop-only) so the fill reaches <code>populate_tiles</code>.</p>
+<p><b>Model.</b> The production mobile model with the October 2026 lock (cps 0.035, changepoint range 0.725, 25 changepoints, recent 13, sps 0.1, regime auto, holiday
+threshold −0.055, radius 5/3, floor −0.6), the production <code>MobileEvents</code> calendar, <b>no paid/organic split</b> (<code>p</code> is measured on DAU and has no MAU
+counterpart; this is total MAU), no head- or tailwinds. Runner <code>scripts/run_mobile_mau_forecast.py</code>; build <code>mobile_mau_2026-10-10/</code>, seam 2026-10-10,
+<code>mozaic_daily_forecast.2026-10-10.gm-M.raw.parquet</code>. 1.9 min.</p>
+<p><b>Result (first build).</b> World MAU 2026-12-15 53,700,051; <b>2027-12-15 59,424,593</b> (+10.7% Dec→Dec). Per app 2027-12-15: Fenix 44.1M (+11.4%), Firefox iOS 12.9M (+7.3%),
+Focus Android 1.51M (+23.0%), Focus iOS 0.96M (+5.0%). <b>Seam not closed: the forecast opens −7.2% below the last week of history (56.4M → 52.3M)</b>, Fenix −9.6%, Firefox iOS −2.3%,
+Focus Android +16.3%, Focus iOS +6.2%. Diagnosis (no new runs): with 5.8 years of history, changepoint range 0.725 puts the last changepoint at ~2025-03-09, so the trend cannot
+bend to the 2026 run-up and the fit sits far below the last actuals; the October production DAU build has the same shape at the same seam (−3.6% 7-day step) but smaller, because
+there <code>p</code> removes the paid run-up from Fenix's training rows and on MAU nothing does. Focus Android also learns its one-off September-2026 spike (1.39M peak) as
+seasonality and repeats it at 2.2M in September 2027. Curves <code>mobile_mau_2026-10-10/csv/</code>, plots <code>mobile_mau_2026-10-10/plots/</code> (+ <code>canonical/</code>
+via <code>plot_glean_history_canonical.py --populations … --scope Mobile</code>), handoff <code>handoff/glean2027_mobile_mau_handoff/</code> (red "seam not closed" callout on the
+page) and the combined <code>handoff/glean2027_mau_desktop_and_mobile.csv</code> (desktop headline + mobile world MAU side by side, not summed).</p>
+<p><b>Pending Brendan.</b> (a) a changepoint-range round for the mobile build (0.87 closed the desktop seam, §9b; 0.87 → last changepoint 2026-01-08, 0.95 → 2026-06-26) and whether
+the Focus Android spike should be treated; (b) the Iran MAU fill scale (1.0 as built); (c) a mobile MAU backtest for the uncertainty statement (the history is long enough).
+No tuning run has been made beyond the first build.</p>
+
 <h2>10. State on disk</h2>
 <pre>branch glean-2027-forecast (off october-forecast), pushed through build 1
 data-official/2027-glean-draft/
@@ -573,6 +604,8 @@ data-official/2027-glean-draft/
   csv/, plots/                        build-5 curves, summary, plots, build 4 vs 5 comparison; build1_seam2026-09-09/, build2_plain_seam2026-10-10/, build3_o-dauonly_seam2026-10-10/, build4_g01_seam2026-10-10/ keep the earlier ones
   intervals/                          build-1 DAU Prophet bands (see the band note above)
   COMPARISONS.html, plots/comparisons/ the two formal comparisons (§12, §13); csv/glean2027_vs_glean_real_comparison.csv, csv/glean2027_in_real_glean_units.csv
+  raw_glean_mobile_countryxapp_2026-10-09/, iran_fill_mobile/, mobile_mau_2026-10-10/   the mobile MAU companion (§15): frames, Iran MAU fill, first build + csv/ + plots/
+  handoff/glean2027_mobile_mau_handoff(.zip), handoff/glean2027_mau_desktop_and_mobile.csv   mobile package and the combined curve file
   probes_glean_real_mau/              real-Glean MAU parameter probes, rounds 1–3 (scores_round*.csv, plots); comparison_glean_real_mau_additive_2026-10-13/ the round-3 export
   linux_bot/                          the Linux bot-ISP measurement (CSVs), overlay curves + spec (code b), plots
   comparison_glean_real_mau_additive_b_2026-10-14/  THE HEADLINE BUILD (§14): real Glean, additive, Linux bot overlay; csv/, plots/canonical/
