@@ -75,7 +75,7 @@
 
   <div class="panel" id="fullPanel">
 
-  <div class="controls">
+  <div class="controls" id="sliderBoxes">
     <div class="control">
       <h3><span style="color: var(--desk)">Desktop: change per year</span><span class="rate" data-rate="desktop"></span></h3>
       <div class="sources" id="desktopSources"></div>
@@ -370,15 +370,17 @@ document.getElementById("how").innerHTML = `<b>How the toy works.</b> The black 
   profile are different profiles. Numbers are rounded to the nearest million on purpose.`;
 render();
 
-// Show the slide-down bar once the full panel has scrolled up out of view; hide it when the panel is back on screen.
+// Show the slide-down bar as soon as the full panel's slider boxes have scrolled up under where the bar sits (Brendan
+// 2026-10-15: appear when the slider boxes disappear, not when the totals do); hide it when they come back into view.
 // The bar is position: fixed, so showing it changes nothing in the page flow and cannot feed back into the scroll.
 const miniBar = document.getElementById("miniBar");
+const barHeight = miniBar.getBoundingClientRect().height;
 new IntersectionObserver(([entry]) => {
-  const shown = !entry.isIntersecting && entry.boundingClientRect.bottom < 0;
+  const shown = !entry.isIntersecting && entry.boundingClientRect.top < barHeight;
   miniBar.classList.toggle("shown", shown);
   miniBar.setAttribute("aria-hidden", String(!shown));
   miniBar.querySelectorAll("input").forEach(input => { input.tabIndex = shown ? 0 : -1; });
-}).observe(document.getElementById("fullPanel"));
+}, { rootMargin: `-${Math.round(barHeight)}px 0px 0px 0px` }).observe(document.getElementById("sliderBoxes"));
 </script>
 </body>
 </html>
