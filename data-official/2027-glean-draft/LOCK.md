@@ -1,4 +1,4 @@
-# LOCK — 2027 desktop pre-draft: the headline forecast and the validation build
+# LOCK — 2027 pre-draft: the desktop headline forecast, its validation build, and the ORGANIC mobile MAU build
 
 ## Headline (the "best" forecast) — promoted 2026-10-14 (Brendan: "promote that to the new best forecast")
 
@@ -32,3 +32,21 @@
 
 Why 0.87 and nothing else: PROCEDURE.html §9b (changepoint range closes the seam; 0.90+ over-extrapolate the autumn ramp and
 fail the soft constraint) and §9c (changepoint prior scale is insensitive). Unlocking means a new build directory and a new row here.
+
+## Mobile — ORGANIC mobile MAU (chosen 2026-10-15, Brendan: "pick that one")
+
+| | |
+|---|---|
+| build | `mobile_organic_mau_2026-10-10/cps0.0065_thresh055_recent13_cpr0.87_ncp25_clip0.6_sps0.1/mozaic_daily_forecast.2026-10-10.gm-M.raw.parquet` (= round-3 probe `probes_mobile_mau/round3_ioscap/cps0.0065_cpr0.87/`, where the pickle and run log stay) |
+| what it is | **organic** mobile MAU (Brendan 2026-10-15: we only forecast organic; marketing forecasts paid): real Glean mobile MAU, four apps × 15 markets + ROW, 2020-12-31 → 2026-10-09; Fenix training rows × the measured organic MAU share (`organic_mau/fenix_paid_organic_mau.2026-10-09.parquet`, IR excluded, 21.3% paid at the edge), **nothing added back**; history rows in the output are organic too |
+| seam / training end / horizon | 2026-10-10 / 2026-10-09 / 2027-12-31; MAU only |
+| model | October 2026 mobile lock with **changepoint prior scale 0.0065** and **changepoint range 0.87** (ncp 25, recent 13, sps 0.1, regime auto, thresh −0.055, radius 5/3, floor −0.6); production `MobileEvents` calendar |
+| corrections in the build | Iran rolling-28 MAU fill (scale 1.0, `iran_fill_mobile/`); **India + Indonesia iOS-rate cap, PROVISIONAL** (organic Fenix from 2026-04-01 capped at the country's own Firefox iOS growth; 440,081 MAU removed on 2026-10-09; `organic_mau/ios_rate_cap/IOS_RATE_CAP.md` — rollback = rerun without `--ios-rate-cap` into a new directory) |
+| adjustments | none; no `p` add-back by design |
+| headline | **world organic mobile MAU 2027-12-15 = 51,545,439** (2026-12-15 48,049,658, +7.3% Dec→Dec). Per app 2027-12-15: Fenix 35,717,368 (+6.2%), Firefox iOS 13,433,603 (+9.1%), Focus Android 1,428,514 (+19.3%), Focus iOS 965,954 (+5.3%); the all-apps figure is the one to quote |
+| seam | 7-day-mean step −1.5% world (Fenix −2.3%); the last organic actual 46,986,901 (capped series; 47,426,982 uncorrected). No "must not grow" constraint on mobile |
+| why this one | PROCEDURE §16 / `probes_mobile_mau/round3.html`: on the capped series the probes form a smooth seam-vs-slope frontier (~2 pt of Dec→Dec per pt of seam); 0.0065/0.87 is marginally better than 0.005/0.87 on both and keeps 2027 growth (+7.3%; Oct→Oct +6.0%) under the capped data's own last year (+6.9%). 0.008/0.87 (seam −0.8%, +8.9%) was the seam-first alternative |
+| uncertainty | not backtested yet (history long enough; next step). The frontier itself is the honest band: 0.80 → 48.7M, 0.90 at the same prior → 53.9M |
+| outputs | `mobile_organic_mau_2026-10-10/csv/`, `plots/`, `plots/canonical/`; `handoff/glean2027_mobile_organic_mau_handoff/` + `.zip`; `handoff/glean2027_mau_desktop_and_mobile_organic.csv` (desktop total + mobile organic, side by side, never summed). The total-MAU package of 2026-10-14 is in `handoff/_superseded_total_mau_2026-10-14/` |
+| status | PRE-DRAFT. The cap is under review with the marketing DS team; reversing it means a new build directory and a new row here |
+

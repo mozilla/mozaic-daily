@@ -335,7 +335,8 @@ The `scripts/` directory contains helper scripts for common tasks:
   (`build_fenix_organic_mau_split.py`, `organic_mau/`) with **no add-back**; `run_mobile_mau_probes.py` runs the changepoint probes (round 1 uncorrected,
   round 2 on the capped series); `build_ios_rate_cap.py` + `--ios-rate-cap` is the **provisional** India + Indonesia correction (organic Fenix capped at its own
   Firefox iOS growth from 2026-04-01 after the paid-vs-organic correlation check found +15/+7 pt over the high spend period; 440K MAU removed; rollback = drop the
-  flag, `organic_mau/ios_rate_cap/IOS_RATE_CAP.md`). Not settled. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
+  flag, `organic_mau/ios_rate_cap/IOS_RATE_CAP.md`). **Chosen build (2026-10-15): `mobile_organic_mau_2026-10-10/`**, prior 0.0065 / range 0.87, world organic mobile MAU
+  2027-12-15 51,545,439 (+7.3% Dec→Dec, seam −1.5%), handoff `handoff/glean2027_mobile_organic_mau_handoff/`; LOCK.md mobile row. Read `data-official/2027-glean-draft/LOCK.md` and `_index.md` first
 - `verify_forecast_states.py` - Audit on-disk forecast artifacts, verify raw/adj-h state, write `tmp/inventory.csv`
 - `verify_training_rows_are_actuals.py` - Confirm a forecast parquet's `training` rows equal raw BigQuery actuals over
   sampled date windows. Run before using training rows as a stand-in for an actuals query (e.g. the canonical
